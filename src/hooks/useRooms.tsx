@@ -87,11 +87,21 @@ export function useUnits() {
   });
 }
 
+export interface RoomConfig {
+  room: string;
+  bed_type: string;
+  max_pax: number;
+  rent: number;
+}
+
 export function useCreateUnit() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; access_info: any }) => {
-      // Create unit
+    mutationFn: async (payload: {
+      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_rate?: string; access_info: any };
+      roomConfigs: RoomConfig[];
+    }) => {
+      const { unit, roomConfigs } = payload;
       const { data: newUnit, error: uErr } = await supabase
         .from("units")
         .insert(unit)
@@ -99,27 +109,29 @@ export function useCreateUnit() {
         .single();
       if (uErr) throw uErr;
 
-      // Auto-create 5 rooms (A-E)
-      const roomNames = ["Room A", "Room B", "Room C", "Room D", "Room E"];
-      const rooms = roomNames.map((name) => ({
+      const rooms = roomConfigs.map((rc) => ({
         unit_id: (newUnit as any).id,
         building: unit.building,
         unit: unit.unit,
-        room: name,
+        room: rc.room,
         location: unit.location,
-        rent: 0,
-        room_type: "Medium Room",
+        rent: rc.rent,
+        bed_type: rc.bed_type,
+        room_type: rc.bed_type || "Medium Room",
         unit_type: unit.unit_type,
         status: "Available",
         available_date: "Available Now",
-        max_pax: 1,
+        max_pax: rc.max_pax,
         occupied_pax: 0,
+        pax_staying: 0,
         unit_max_pax: unit.unit_max_pax,
         unit_occupied_pax: 0,
         housemates: [],
         photos: [],
         access_info: unit.access_info,
         move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
+        tenant_gender: "",
+        tenant_race: "",
       }));
       const { error: rErr } = await supabase.from("rooms").insert(rooms);
       if (rErr) throw rErr;
