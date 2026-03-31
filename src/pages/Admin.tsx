@@ -228,11 +228,42 @@ export default function AdminPage() {
             {/* Room configs - only for new units */}
             {!u.id && (
               <>
-                <div className="text-lg font-semibold pt-2">Room Details</div>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-lg font-semibold">Room Details ({roomConfigs.length} rooms)</div>
+                  <div className="flex gap-2">
+                    {roomConfigs.length > 1 && (
+                      <button type="button" onClick={() => setRoomConfigs(roomConfigs.slice(0, -1))} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
+                        − Remove Last
+                      </button>
+                    )}
+                    <button type="button" onClick={() => {
+                      const nextNum = roomConfigs.length + 1;
+                      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                      const name = nextNum <= 26 ? `Room ${letters[nextNum - 1]}` : `Room ${nextNum}`;
+                      setRoomConfigs([...roomConfigs, { room: name, bed_type: "", max_pax: 1, rent: 0 }]);
+                    }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                      + Add Room
+                    </button>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground flex gap-4">
+                  <span>Unit Max Pax: <strong className="text-foreground">{u.unit_max_pax}</strong></span>
+                  <span>Total Room Max Pax: <strong className="text-foreground">{roomConfigs.reduce((s, r) => s + r.max_pax, 0)}</strong></span>
+                </div>
                 <div className="space-y-3">
                   {roomConfigs.map((rc, i) => (
-                    <div key={rc.room} className="rounded-lg border bg-secondary/30 p-4">
-                      <div className="text-sm font-semibold mb-3">{rc.room}</div>
+                    <div key={i} className="rounded-lg border bg-secondary/30 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm font-semibold">{rc.room}</div>
+                        {roomConfigs.length > 1 && (
+                          <button type="button" onClick={() => {
+                            const c = roomConfigs.filter((_, idx) => idx !== i);
+                            // Re-label rooms
+                            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                            setRoomConfigs(c.map((r, idx) => ({ ...r, room: idx < 26 ? `Room ${letters[idx]}` : `Room ${idx + 1}` })));
+                          }} className="text-xs text-destructive hover:underline">Remove</button>
+                        )}
+                      </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
