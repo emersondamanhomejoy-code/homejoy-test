@@ -71,6 +71,7 @@ export default function Index() {
 
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
+      if (room.room_type === "Car Park") return false;
       if (room.status !== "Available") return false;
       const keyword = search.trim().toLowerCase();
       const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);

@@ -659,7 +659,7 @@ export default function AdminPage() {
                               {/* Balance pax summary */}
                               <tr className="border-t bg-secondary/30 font-semibold">
                                 <td className="px-4 py-2" colSpan={2}>Balance Pax</td>
-                                <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
+                                <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.filter(r => r.room_type !== "Car Park").reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
                                 <td colSpan={4}></td>
                               </tr>
                             </tbody>
