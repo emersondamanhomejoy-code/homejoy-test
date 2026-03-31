@@ -372,17 +372,25 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work Info</div>
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work & Details</div>
                       <div className="text-sm space-y-1">
-                        <div>🏢 {b.company || "—"}</div>
-                        <div>💼 {b.position || "—"}</div>
-                        <div>💰 RM{b.monthly_salary || "—"}</div>
+                        <div>💼 {(b as any).occupation || b.company || "—"}</div>
+                        <div>💰 RM{b.monthly_salary || "—"}/month</div>
+                        <div>👥 Pax: {(b as any).pax_staying || "—"}</div>
+                        <div>🪪 Access Cards: {(b as any).access_card_count || 0}</div>
+                        <div>🅿️ Parking: {(b as any).parking || "0"} {(b as any).car_plate ? `(${(b as any).car_plate})` : ""}</div>
                       </div>
-                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact</div>
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 1</div>
                       <div className="text-sm space-y-1">
-                        <div>👤 {b.emergency_name || "—"}</div>
-                        <div>📞 {b.emergency_phone || "—"}</div>
-                        <div>🔗 {b.emergency_relationship || "—"}</div>
+                        <div>👤 {(b as any).emergency_1_name || b.emergency_name || "—"}</div>
+                        <div>📞 {(b as any).emergency_1_phone || b.emergency_phone || "—"}</div>
+                        <div>🔗 {(b as any).emergency_1_relationship || b.emergency_relationship || "—"}</div>
+                      </div>
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 2</div>
+                      <div className="text-sm space-y-1">
+                        <div>👤 {(b as any).emergency_2_name || "—"}</div>
+                        <div>📞 {(b as any).emergency_2_phone || "—"}</div>
+                        <div>🔗 {(b as any).emergency_2_relationship || "—"}</div>
                       </div>
                     </div>
                   </div>
