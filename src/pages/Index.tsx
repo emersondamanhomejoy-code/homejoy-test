@@ -90,11 +90,34 @@ export default function Index() {
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
     if (selectedRoom.status !== "Available") return "This room is no longer available.";
-    if (!bookingForm.tenantName || !bookingForm.phone || !bookingForm.gender || !bookingForm.moveInDate) return "Please complete all required fields.";
-    if (!bookingForm.icPassport) return "Please fill in NRIC/Passport No.";
+    const f = bookingForm;
+    if (!f.tenantName) return "Please fill in Full Name.";
+    if (!f.icPassport) return "Please fill in NRIC/Passport No.";
+    if (!f.email) return "Please fill in Email.";
+    if (!f.phone) return "Please fill in Contact No.";
+    if (!f.gender) return "Please select Gender.";
+    if (!f.nationality) return "Please fill in Nationality.";
+    if (!f.race) return "Please fill in Race.";
+    if (!f.moveInDate) return "Please select Move-in Date.";
+    if (!f.occupation) return "Please fill in Occupation.";
+    if (!f.tenancyDuration) return "Please fill in Tenancy Duration.";
+    if (!f.paxStaying) return "Please fill in Pax Staying.";
+    if (!f.emergency1Name || !f.emergency1Phone || !f.emergency1Relationship) return "Please complete Emergency Contact 1.";
+    if (!f.emergency2Name || !f.emergency2Phone || !f.emergency2Relationship) return "Please complete Emergency Contact 2.";
+    if (Number(f.parkingCount) > 0 && !f.carPlate) return "Please fill in Car Plate No.";
+    if (uploadedFiles.passport.length === 0) return "Please upload Passport / IC.";
+    if (uploadedFiles.offerLetter.length === 0) return "Please upload Offer Letter.";
+    if (uploadedFiles.transferSlip.length === 0) return "Please upload Transfer Slip.";
     return "";
   };
 
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("booking-docs").upload(path, file);
+    if (error) throw error;
+    return path;
+  };
 
   const submitBooking = async () => {
     const error = validateBooking();
@@ -102,6 +125,11 @@ export default function Index() {
     if (!selectedRoom || !user) return;
     setSubmitting(true);
     try {
+      // Upload files
+      const passportPaths = await Promise.all(uploadedFiles.passport.map(f => uploadFile(f, "passport")));
+      const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
+      const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
+
       const advance = Number(bookingForm.advance) || 0;
       const deposit = Number(bookingForm.deposit) || 0;
       const adminFee = Number(bookingForm.adminFee) || 0;
@@ -122,14 +150,20 @@ export default function Index() {
         occupation: bookingForm.occupation,
         pax_staying: Number(bookingForm.paxStaying) || 1,
         access_card_count: Number(bookingForm.accessCardCount) || 0,
-        emergency_name: bookingForm.emergencyContact1,
-        emergency_phone: "",
-        emergency_contact_2: bookingForm.emergencyContact2,
-        parking: bookingForm.parking,
+        emergency_1_name: bookingForm.emergency1Name,
+        emergency_1_phone: bookingForm.emergency1Phone,
+        emergency_1_relationship: bookingForm.emergency1Relationship,
+        emergency_2_name: bookingForm.emergency2Name,
+        emergency_2_phone: bookingForm.emergency2Phone,
+        emergency_2_relationship: bookingForm.emergency2Relationship,
+        parking: bookingForm.parkingCount,
         car_plate: bookingForm.carPlate,
         submitted_by: user.id,
         submitted_by_type: "agent",
         move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
+        doc_passport: passportPaths,
+        doc_offer_letter: offerPaths,
+        doc_transfer_slip: slipPaths,
       });
       if (dbErr) throw dbErr;
       setBookingSubmitted({ room: selectedRoom, announcement: bookingAnnouncement(selectedRoom) });
