@@ -260,7 +260,13 @@ export default function Index() {
                 <div className="mt-4 text-sm">
                   <div className="font-medium mb-2 text-foreground">Housemate Summary</div>
                   <div className="space-y-1 text-muted-foreground">
-                    {selectedRoom.housemates.map((item) => <div key={item}>{item}</div>)}
+                    {(() => {
+                      const unitRooms = roomsData.filter(r => r.unit_id === selectedRoom.unit_id && r.id !== selectedRoom.id && r.status !== "Available");
+                      if (unitRooms.length === 0) return <div>No housemates yet</div>;
+                      return unitRooms.map(r => (
+                        <div key={r.id}>{r.room}: {[r.tenant_gender, r.tenant_race].filter(Boolean).join(", ") || "—"} ({r.pax_staying || 0} pax)</div>
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
