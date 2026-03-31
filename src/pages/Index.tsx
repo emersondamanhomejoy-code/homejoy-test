@@ -46,6 +46,11 @@ export default function Index() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
+  const uniqueLocations = useMemo(() => {
+    const locs = new Set(roomsData.map((r) => r.location).filter(Boolean));
+    return Array.from(locs).sort();
+  }, [roomsData]);
+
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
       if (room.status !== "Available") return false;
@@ -512,7 +517,7 @@ export default function Index() {
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-muted-foreground pl-1">Area</label>
                   <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })}>
-                    <option>All</option><option>Ara Damansara</option><option>Subang</option><option>Pantai</option><option>Damansara</option>
+                    <option>All</option>{uniqueLocations.map((loc) => <option key={loc}>{loc}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
