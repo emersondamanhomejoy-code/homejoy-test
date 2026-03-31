@@ -21,7 +21,7 @@ const defaultRoomConfigs: RoomConfig[] = [
 
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
-  passcode: "", access_card: "", parking_rate: "",
+  passcode: "", access_card: "", parking_lot: "",
   access_info: { condoEntry: "", unitAccess: "", visitorParking: "", viewing: "" },
 };
 
