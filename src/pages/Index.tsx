@@ -62,6 +62,13 @@ export default function Index() {
     return Array.from(locs).sort();
   }, [roomsData]);
 
+  const uniqueBuildings = useMemo(() => {
+    let filtered = roomsData;
+    if (filters.location !== "All") filtered = filtered.filter((r) => r.location === filters.location);
+    const buildings = new Set(filtered.map((r) => r.building).filter(Boolean));
+    return Array.from(buildings).sort();
+  }, [roomsData, filters.location]);
+
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
       if (room.status !== "Available") return false;
