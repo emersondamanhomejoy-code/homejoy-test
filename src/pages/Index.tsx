@@ -29,6 +29,7 @@ const rankMedals = ["🥇", "🥈", "🥉"];
 export default function Index() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
   const [page, setPage] = useState("dashboard");
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -44,11 +45,11 @@ export default function Index() {
       const keyword = search.trim().toLowerCase();
       const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
       const matchesLocation = filters.location === "All" || room.location === filters.location;
-      const matchesUnitType = filters.unitType === "All" || room.unitType === filters.unitType;
+      const matchesUnitType = filters.unitType === "All" || room.unit_type === filters.unitType;
       const matchesPrice = filters.price === "All" || (filters.price === "Below RM700" && room.rent < 700) || (filters.price === "RM700 - RM900" && room.rent >= 700 && room.rent <= 900) || (filters.price === "Above RM900" && room.rent > 900);
       return matchesSearch && matchesLocation && matchesUnitType && matchesPrice;
     });
-  }, [search, filters]);
+  }, [search, filters, roomsData]);
 
   const handleGoogleLogin = async () => {
     setSigningIn(true);
@@ -72,7 +73,7 @@ export default function Index() {
   const ranking = agentType === "Internal" ? rankingData.internal : rankingData.external;
 
   const moveInCostText = (room: Room) =>
-    `Hi, here is the move-in cost breakdown:\n\n${room.building} ${room.unit} ${room.room}\nMonthly Rent: RM${room.rent}\n• 1 Month Advance: RM${room.moveInCost.advance}\n• Deposit: RM${room.moveInCost.deposit}\n• Access Card: RM${room.moveInCost.accessCard}\n• Move-in Fee: RM${room.moveInCost.moveInFee}\n\nTotal: RM${room.moveInCost.total}`;
+    `Hi, here is the move-in cost breakdown:\n\n${room.building} ${room.unit} ${room.room}\nMonthly Rent: RM${room.rent}\n• 1 Month Advance: RM${room.move_in_cost.advance}\n• Deposit: RM${room.move_in_cost.deposit}\n• Access Card: RM${room.move_in_cost.accessCard}\n• Move-in Fee: RM${room.move_in_cost.moveInFee}\n\nTotal: RM${room.move_in_cost.total}`;
 
   const bookingAnnouncement = (room: Room) =>
     `${room.building} ${room.unit} ${room.room} booking received\n${bookingForm.pax} pax ${bookingForm.race} ${bookingForm.gender}`;
@@ -84,7 +85,7 @@ export default function Index() {
     if (!selectedRoom) return "No room selected.";
     if (selectedRoom.status !== "Available") return "This room is no longer available.";
     if (!bookingForm.tenantName || !bookingForm.phone || !bookingForm.gender || !bookingForm.race || !bookingForm.moveInDate) return "Please complete all required fields.";
-    if (Number(bookingForm.pax) > selectedRoom.maxPax - selectedRoom.occupiedPax) return `Only ${selectedRoom.maxPax - selectedRoom.occupiedPax} pax slot left.`;
+    if (Number(bookingForm.pax) > selectedRoom.max_pax - selectedRoom.occupied_pax) return `Only ${selectedRoom.max_pax - selectedRoom.occupied_pax} pax slot left.`;
     if (!bookingForm.passportIcUploaded) return "Please upload Passport / IC soft copy.";
     if (!bookingForm.bankSlipUploaded) return "Please upload bank slip.";
     if (bookingForm.tenantCategory === "Student") {
@@ -144,9 +145,9 @@ export default function Index() {
                 <div className="text-3xl font-bold">{selectedRoom.building}</div>
                 <div className="text-muted-foreground mt-1">{selectedRoom.unit} • {selectedRoom.room} • RM{selectedRoom.rent}</div>
                 <div className="flex gap-2 flex-wrap mt-3">
-                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.roomType}</span>
-                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.unitType}</span>
-                  <span className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-sm font-medium">{selectedRoom.availableDate}</span>
+                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.room_type}</span>
+                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.unit_type}</span>
+                  <span className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-sm font-medium">{selectedRoom.available_date}</span>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-3">
@@ -157,11 +158,11 @@ export default function Index() {
               <div className="bg-secondary rounded-lg p-5">
                 <div className="text-lg font-semibold">Unit Occupancy</div>
                 <div className="mt-3 text-sm space-y-2 text-muted-foreground">
-                  <div>Room Max Pax: {selectedRoom.maxPax}</div>
-                  <div>Available Pax Left: {selectedRoom.maxPax - selectedRoom.occupiedPax}</div>
-                  <div>Unit Max Pax: {selectedRoom.unitMaxPax}</div>
-                  <div>Unit Occupied Pax: {selectedRoom.unitOccupiedPax}</div>
-                  <div>Unit Balance Pax: {selectedRoom.unitMaxPax - selectedRoom.unitOccupiedPax}</div>
+                  <div>Room Max Pax: {selectedRoom.max_pax}</div>
+                  <div>Available Pax Left: {selectedRoom.max_pax - selectedRoom.occupied_pax}</div>
+                  <div>Unit Max Pax: {selectedRoom.unit_max_pax}</div>
+                  <div>Unit Occupied Pax: {selectedRoom.unit_occupied_pax}</div>
+                  <div>Unit Balance Pax: {selectedRoom.unit_max_pax - selectedRoom.unit_occupied_pax}</div>
                 </div>
                 <div className="mt-4 text-sm">
                   <div className="font-medium mb-2 text-foreground">Housemate Summary</div>
@@ -175,20 +176,20 @@ export default function Index() {
               <div className="bg-secondary rounded-lg p-5">
                 <div className="text-lg font-semibold">Access</div>
                 <div className="mt-3 text-sm space-y-2 text-muted-foreground">
-                  <div>Condo Entry: {selectedRoom.access.condoEntry}</div>
-                  <div>Unit Access: {selectedRoom.access.unitAccess}</div>
-                  <div>Visitor Parking: {selectedRoom.access.visitorParking}</div>
-                  <div>Viewing: {selectedRoom.access.viewing}</div>
+                  <div>Condo Entry: {selectedRoom.access_info.condoEntry}</div>
+                  <div>Unit Access: {selectedRoom.access_info.unitAccess}</div>
+                  <div>Visitor Parking: {selectedRoom.access_info.visitorParking}</div>
+                  <div>Viewing: {selectedRoom.access_info.viewing}</div>
                 </div>
               </div>
               <div className="bg-secondary rounded-lg p-5">
                 <div className="text-lg font-semibold">Move-in Cost</div>
                 <div className="mt-3 text-sm space-y-2 text-muted-foreground">
-                  <div className="flex justify-between"><span>1 Month Advance</span><span>RM{selectedRoom.moveInCost.advance}</span></div>
-                  <div className="flex justify-between"><span>Deposit</span><span>RM{selectedRoom.moveInCost.deposit}</span></div>
-                  <div className="flex justify-between"><span>Access Card</span><span>RM{selectedRoom.moveInCost.accessCard}</span></div>
-                  <div className="flex justify-between"><span>Move-in Fee</span><span>RM{selectedRoom.moveInCost.moveInFee}</span></div>
-                  <div className="pt-2 border-t flex justify-between font-semibold text-foreground"><span>Total</span><span>RM{selectedRoom.moveInCost.total}</span></div>
+                  <div className="flex justify-between"><span>1 Month Advance</span><span>RM{selectedRoom.move_in_cost.advance}</span></div>
+                  <div className="flex justify-between"><span>Deposit</span><span>RM{selectedRoom.move_in_cost.deposit}</span></div>
+                  <div className="flex justify-between"><span>Access Card</span><span>RM{selectedRoom.move_in_cost.accessCard}</span></div>
+                  <div className="flex justify-between"><span>Move-in Fee</span><span>RM{selectedRoom.move_in_cost.moveInFee}</span></div>
+                  <div className="pt-2 border-t flex justify-between font-semibold text-foreground"><span>Total</span><span>RM{selectedRoom.move_in_cost.total}</span></div>
                 </div>
                 <div className="mt-4 rounded-md bg-card border p-3 text-xs whitespace-pre-wrap text-muted-foreground">{moveInCostText(selectedRoom)}</div>
                 <button
@@ -210,7 +211,7 @@ export default function Index() {
 
   // ─── BOOKING FORM ───
   if (page === "booking" && selectedRoom) {
-    const availablePax = selectedRoom.maxPax - selectedRoom.occupiedPax;
+    const availablePax = selectedRoom.max_pax - selectedRoom.occupied_pax;
     const inputClass = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
     const checkboxLabel = "rounded-lg border p-4 flex items-center gap-3 bg-card text-foreground cursor-pointer hover:bg-secondary transition-colors";
 
@@ -226,7 +227,7 @@ export default function Index() {
               <div className="text-muted-foreground mt-1">{selectedRoom.building} {selectedRoom.unit} {selectedRoom.room}</div>
             </div>
             <div className="rounded-lg bg-secondary p-4 text-sm text-muted-foreground space-y-1">
-              <div>Room Max Pax: {selectedRoom.maxPax}</div>
+              <div>Room Max Pax: {selectedRoom.max_pax}</div>
               <div>Available Pax Left: {availablePax}</div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
@@ -361,30 +362,34 @@ export default function Index() {
                   <option>All</option><option>Female Unit</option><option>Mix Unit</option>
                 </select>
               </div>
-              <div className="space-y-3">
-                {availableRooms.map((room) => (
-                  <div key={room.id} className="rounded-lg border p-5 grid md:grid-cols-[1fr_auto] gap-4 items-center hover:shadow-md transition-shadow">
-                    <div>
-                      <div className="text-lg font-semibold">{room.building} {room.unit}</div>
-                      <div className="text-muted-foreground mt-1">{room.room} — <span className="font-semibold text-foreground">RM{room.rent}</span>/mo</div>
-                      <div className="flex gap-2 flex-wrap mt-2">
-                        <span className="px-3 py-1 rounded-md bg-secondary text-sm font-medium">{room.roomType}</span>
-                        <span className="px-3 py-1 rounded-md bg-secondary text-sm font-medium">{room.unitType}</span>
-                        <span className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-sm font-medium">{room.availableDate}</span>
+              {roomsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading rooms...</div>
+              ) : (
+                <div className="space-y-3">
+                  {availableRooms.map((room) => (
+                    <div key={room.id} className="rounded-lg border p-5 grid md:grid-cols-[1fr_auto] gap-4 items-center hover:shadow-md transition-shadow">
+                      <div>
+                        <div className="text-lg font-semibold">{room.building} {room.unit}</div>
+                        <div className="text-muted-foreground mt-1">{room.room} — <span className="font-semibold text-foreground">RM{room.rent}</span>/mo</div>
+                        <div className="flex gap-2 flex-wrap mt-2">
+                          <span className="px-3 py-1 rounded-md bg-secondary text-sm font-medium">{room.room_type}</span>
+                          <span className="px-3 py-1 rounded-md bg-secondary text-sm font-medium">{room.unit_type}</span>
+                          <span className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-sm font-medium">{room.available_date}</span>
+                        </div>
+                        <div className="mt-3 text-sm text-muted-foreground flex gap-4">
+                          <span>Max: {room.unit_max_pax}</span>
+                          <span>Occupied: {room.unit_occupied_pax}</span>
+                          <span>Balance: {room.unit_max_pax - room.unit_occupied_pax}</span>
+                        </div>
                       </div>
-                      <div className="mt-3 text-sm text-muted-foreground flex gap-4">
-                        <span>Max: {room.unitMaxPax}</span>
-                        <span>Occupied: {room.unitOccupiedPax}</span>
-                        <span>Balance: {room.unitMaxPax - room.unitOccupiedPax}</span>
+                      <div className="flex flex-col gap-2 min-w-[140px]">
+                        <button onClick={() => openRoom(room)} className="px-4 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">View Details</button>
+                        <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book Now</button>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 min-w-[140px]">
-                      <button onClick={() => openRoom(room)} className="px-4 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">View Details</button>
-                      <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book Now</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
