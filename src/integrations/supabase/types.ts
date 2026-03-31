@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_signatures: {
+        Row: {
+          booking_data: Json
+          created_at: string
+          created_by: string
+          id: string
+          room_id: string | null
+          signature_data: string | null
+          signed: boolean
+          signed_at: string | null
+          tenant_name: string
+          token: string
+        }
+        Insert: {
+          booking_data?: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          room_id?: string | null
+          signature_data?: string | null
+          signed?: boolean
+          signed_at?: string | null
+          tenant_name: string
+          token?: string
+        }
+        Update: {
+          booking_data?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          room_id?: string | null
+          signature_data?: string | null
+          signed?: boolean
+          signed_at?: string | null
+          tenant_name?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_signatures_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           access_card_count: number
