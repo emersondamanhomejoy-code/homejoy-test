@@ -1,0 +1,2 @@
+ALTER TABLE public.units ADD COLUMN IF NOT EXISTS access_card_source text NOT NULL DEFAULT 'Provided by Us';
+ALTER TABLE public.units ADD COLUMN IF NOT EXISTS access_card_deposit numeric NOT NULL DEFAULT 0;
