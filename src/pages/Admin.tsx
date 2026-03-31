@@ -11,6 +11,10 @@ interface UserWithRoles {
   roles: string[];
 }
 
+const bedTypeMaxPax: Record<string, number> = {
+  MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
+};
+
 const defaultRoomConfigs: RoomConfig[] = [
   { room: "Room A", bed_type: "", max_pax: 1, rent: 0 },
   { room: "Room B", bed_type: "", max_pax: 1, rent: 0 },
@@ -158,7 +162,7 @@ export default function AdminPage() {
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground">Bed Type</label>
-                <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)}>
+                <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
                   <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
                 </select>
               </div>
@@ -274,7 +278,7 @@ export default function AdminPage() {
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
-                          <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }}>
+                          <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; const bt = e.target.value; c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }; setRoomConfigs(c); }}>
                             <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
                           </select>
                         </div>
