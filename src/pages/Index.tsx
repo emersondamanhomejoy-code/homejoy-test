@@ -26,6 +26,7 @@ const initialBookingForm = {
   emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
   parkingCount: "0", carPlates: [""] as string[],
+  selectedCarParks: [] as string[],
   advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
