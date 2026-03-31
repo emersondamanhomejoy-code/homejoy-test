@@ -588,8 +588,10 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {units.map((unit) => {
                   const isExpanded = expandedUnit === unit.id;
-                  const availableCount = unit.rooms?.filter(r => r.status === "Available").length ?? 0;
-                  const totalRooms = unit.rooms?.length ?? 0;
+                  const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
+                  const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+                  const availableCount = regularRooms.filter(r => r.status === "Available").length;
+                  const availableCP = carParks.filter(r => r.status === "Available").length;
                   return (
                     <div key={unit.id} className="bg-card rounded-lg shadow-sm overflow-hidden">
                       <div className="p-5 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}>
@@ -597,8 +599,9 @@ export default function AdminPage() {
                           <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
                           <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Max {unit.unit_max_pax} pax</div>
                           <div className="flex gap-2 flex-wrap mt-2">
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} available</span>
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} tenanted</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} rooms avail</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{regularRooms.length - availableCount} tenanted</span>
+                            {carParks.length > 0 && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">🅿️ {availableCP}/{carParks.length} car parks</span>}
                             {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
                             {(unit as any).access_card_source && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {(unit as any).access_card_source} {(unit as any).access_card_deposit ? `RM${(unit as any).access_card_deposit}` : ""}</span>}
                             {unit.parking_lot && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_lot}</span>}
