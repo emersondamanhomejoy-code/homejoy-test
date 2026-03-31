@@ -88,22 +88,56 @@ export default function Index() {
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
     if (selectedRoom.status !== "Available") return "This room is no longer available.";
-    if (!bookingForm.tenantName || !bookingForm.phone || !bookingForm.gender || !bookingForm.race || !bookingForm.moveInDate) return "Please complete all required fields.";
-    if (Number(bookingForm.pax) > selectedRoom.max_pax - selectedRoom.occupied_pax) return `Only ${selectedRoom.max_pax - selectedRoom.occupied_pax} pax slot left.`;
-    if (!bookingForm.passportIcUploaded) return "Please upload Passport / IC soft copy.";
-    if (!bookingForm.bankSlipUploaded) return "Please upload bank slip.";
-    if (bookingForm.tenantCategory === "Student") {
-      if (!bookingForm.studentIdUploaded) return "Please upload student ID.";
-      if (!bookingForm.offerLetterUploaded) return "Please upload offer letter.";
-    }
+    if (!bookingForm.tenantName || !bookingForm.phone || !bookingForm.gender || !bookingForm.moveInDate) return "Please complete all required fields.";
+    if (!bookingForm.icPassport) return "Please fill in NRIC/Passport No.";
     return "";
   };
 
-  const submitBooking = () => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitBooking = async () => {
     const error = validateBooking();
     if (error) { alert(error); return; }
-    setBookingSubmitted({ room: selectedRoom!, announcement: bookingAnnouncement(selectedRoom!) });
-    setPage("booking-success");
+    if (!selectedRoom || !user) return;
+    setSubmitting(true);
+    try {
+      const advance = Number(bookingForm.advance) || 0;
+      const deposit = Number(bookingForm.deposit) || 0;
+      const adminFee = Number(bookingForm.adminFee) || 0;
+      const electricityReload = Number(bookingForm.electricityReload) || 0;
+      const { error: dbErr } = await supabase.from("bookings").insert({
+        room_id: selectedRoom.id,
+        unit_id: selectedRoom.unit_id,
+        tenant_name: bookingForm.tenantName,
+        tenant_phone: bookingForm.phone,
+        tenant_email: bookingForm.email,
+        tenant_ic_passport: bookingForm.icPassport,
+        tenant_gender: bookingForm.gender,
+        tenant_race: bookingForm.race,
+        tenant_nationality: bookingForm.nationality,
+        move_in_date: bookingForm.moveInDate,
+        contract_months: Number(bookingForm.tenancyDuration) || 12,
+        monthly_salary: Number(bookingForm.monthlyRental) || selectedRoom.rent,
+        occupation: bookingForm.occupation,
+        pax_staying: Number(bookingForm.paxStaying) || 1,
+        access_card_count: Number(bookingForm.accessCardCount) || 0,
+        emergency_name: bookingForm.emergencyContact1,
+        emergency_phone: "",
+        emergency_contact_2: bookingForm.emergencyContact2,
+        parking: bookingForm.parking,
+        car_plate: bookingForm.carPlate,
+        submitted_by: user.id,
+        submitted_by_type: "agent",
+        move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
+      });
+      if (dbErr) throw dbErr;
+      setBookingSubmitted({ room: selectedRoom, announcement: bookingAnnouncement(selectedRoom) });
+      setPage("booking-success");
+    } catch (e: any) {
+      alert(e.message || "Failed to submit booking");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // ─── LOGIN ───
