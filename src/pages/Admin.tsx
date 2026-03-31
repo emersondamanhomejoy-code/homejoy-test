@@ -225,7 +225,35 @@ export default function AdminPage() {
               <input className={inputClass} placeholder="Visitor Parking" value={u.access_info.visitorParking} onChange={e => updateAccess("visitorParking", e.target.value)} />
               <input className={inputClass} placeholder="Viewing" value={u.access_info.viewing} onChange={e => updateAccess("viewing", e.target.value)} />
             </div>
-            {!u.id && <div className="rounded-lg bg-secondary p-4 text-sm text-muted-foreground">5 rooms (Room A - E) will be created automatically.</div>}
+            {/* Room configs - only for new units */}
+            {!u.id && (
+              <>
+                <div className="text-lg font-semibold pt-2">Room Details</div>
+                <div className="space-y-3">
+                  {roomConfigs.map((rc, i) => (
+                    <div key={rc.room} className="rounded-lg border bg-secondary/30 p-4">
+                      <div className="text-sm font-semibold mb-3">{rc.room}</div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Bed Type</label>
+                          <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }}>
+                            <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Max Pax</label>
+                          <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], max_pax: Number(e.target.value) }; setRoomConfigs(c); }} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                          <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
               <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
