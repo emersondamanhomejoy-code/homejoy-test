@@ -591,6 +591,7 @@ export default function Index() {
             <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{role ?? "agent"}</span>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             {[
+              { label: "Total Available", value: `${roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length} rooms` },
               { label: "Closed This Month", value: "6 deals" },
               { label: "Pending Claims", value: "3" },
               { label: "Next Payout", value: "15th" },
