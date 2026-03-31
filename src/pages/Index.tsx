@@ -92,6 +92,7 @@ const rankMedals = ["🥇", "🥈", "🥉"];
 
 export default function Index() {
   const { user, role, loading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [page, setPage] = useState("dashboard");
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
