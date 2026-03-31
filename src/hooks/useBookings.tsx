@@ -64,11 +64,21 @@ export function useUpdateBookingStatus() {
       status,
       reviewed_by,
       reject_reason,
+      room_id,
+      tenant_name,
+      tenant_gender,
+      tenant_race,
+      pax_staying,
     }: {
       id: string;
       status: "approved" | "rejected";
       reviewed_by: string;
       reject_reason?: string;
+      room_id?: string | null;
+      tenant_name?: string;
+      tenant_gender?: string;
+      tenant_race?: string;
+      pax_staying?: number;
     }) => {
       const { error } = await supabase
         .from("bookings")
@@ -80,10 +90,26 @@ export function useUpdateBookingStatus() {
         })
         .eq("id", id);
       if (error) throw error;
+
+      // On approve: update room status + tenant info
+      if (status === "approved" && room_id) {
+        const { error: roomErr } = await supabase
+          .from("rooms")
+          .update({
+            status: "Occupied",
+            tenant_gender: tenant_gender || "",
+            tenant_race: tenant_race || "",
+            pax_staying: pax_staying || 1,
+            occupied_pax: pax_staying || 1,
+          })
+          .eq("id", room_id);
+        if (roomErr) throw roomErr;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       qc.invalidateQueries({ queryKey: ["rooms"] });
+      qc.invalidateQueries({ queryKey: ["units"] });
     },
   });
 }
