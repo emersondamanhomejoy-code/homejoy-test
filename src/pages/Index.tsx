@@ -75,9 +75,10 @@ export default function Index() {
       const keyword = search.trim().toLowerCase();
       const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
       const matchesLocation = filters.location === "All" || room.location === filters.location;
+      const matchesBuilding = filters.building === "All" || room.building === filters.building;
       const matchesUnitType = filters.unitType === "All" || room.unit_type === filters.unitType;
       const matchesPrice = filters.price === "All" || (filters.price === "Below RM700" && room.rent < 700) || (filters.price === "RM700 - RM900" && room.rent >= 700 && room.rent <= 900) || (filters.price === "Above RM900" && room.rent > 900);
-      return matchesSearch && matchesLocation && matchesUnitType && matchesPrice;
+      return matchesSearch && matchesLocation && matchesBuilding && matchesUnitType && matchesPrice;
     });
   }, [search, filters, roomsData]);
 
