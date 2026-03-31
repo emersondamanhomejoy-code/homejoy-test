@@ -111,7 +111,7 @@ export default function AdminPage() {
   };
 
   const toggleRoomStatus = async (room: Room) => {
-    const newStatus = room.status === "Available" ? "Unavailable" : "Available";
+    const newStatus = room.status === "Available" ? "Tenanted" : "Available";
     try {
       await updateRoom.mutateAsync({ id: room.id, status: newStatus });
     } catch (e: any) {
