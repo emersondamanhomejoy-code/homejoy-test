@@ -41,7 +41,7 @@ export default function Index() {
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
   const [bookingSubmitted, setBookingSubmitted] = useState<{ room: Room; announcement: string } | null>(null);
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
+  const [filters, setFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
@@ -62,15 +62,23 @@ export default function Index() {
     return Array.from(locs).sort();
   }, [roomsData]);
 
+  const uniqueBuildings = useMemo(() => {
+    let filtered = roomsData;
+    if (filters.location !== "All") filtered = filtered.filter((r) => r.location === filters.location);
+    const buildings = new Set(filtered.map((r) => r.building).filter(Boolean));
+    return Array.from(buildings).sort();
+  }, [roomsData, filters.location]);
+
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
       if (room.status !== "Available") return false;
       const keyword = search.trim().toLowerCase();
       const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
       const matchesLocation = filters.location === "All" || room.location === filters.location;
+      const matchesBuilding = filters.building === "All" || room.building === filters.building;
       const matchesUnitType = filters.unitType === "All" || room.unit_type === filters.unitType;
       const matchesPrice = filters.price === "All" || (filters.price === "Below RM700" && room.rent < 700) || (filters.price === "RM700 - RM900" && room.rent >= 700 && room.rent <= 900) || (filters.price === "Above RM900" && room.rent > 900);
-      return matchesSearch && matchesLocation && matchesUnitType && matchesPrice;
+      return matchesSearch && matchesLocation && matchesBuilding && matchesUnitType && matchesPrice;
     });
   }, [search, filters, roomsData]);
 
@@ -609,12 +617,18 @@ export default function Index() {
                 <div className="text-xl font-semibold">Available Units</div>
                 <span className="text-sm text-muted-foreground">{availableRooms.length} rooms</span>
               </div>
-              <div className="grid md:grid-cols-4 gap-3">
+              <div className="grid md:grid-cols-5 gap-3">
                 <input className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-muted-foreground pl-1">Area</label>
-                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })}>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value, building: "All" })}>
                     <option>All</option>{uniqueLocations.map((loc) => <option key={loc}>{loc}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground pl-1">Property</label>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.building} onChange={(e) => setFilters({ ...filters, building: e.target.value })}>
+                    <option>All</option>{uniqueBuildings.map((b) => <option key={b}>{b}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
