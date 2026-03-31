@@ -53,6 +53,12 @@ export default function AdminPage() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
 
+  // Bookings state
+  const { data: allBookings = [] } = useBookings();
+  const updateBookingStatus = useUpdateBookingStatus();
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) navigate("/");
   }, [loading, user, role, navigate]);
