@@ -18,9 +18,15 @@ export interface Booking {
   company: string;
   position: string;
   monthly_salary: number;
+  occupation: string;
+  pax_staying: number;
+  access_card_count: number;
   emergency_name: string;
   emergency_phone: string;
   emergency_relationship: string;
+  emergency_contact_2: string;
+  parking: string;
+  car_plate: string;
   documents: string[];
   submitted_by: string | null;
   submitted_by_type: "agent" | "customer";
