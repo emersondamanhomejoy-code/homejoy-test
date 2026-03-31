@@ -509,15 +509,24 @@ export default function Index() {
               </div>
               <div className="grid md:grid-cols-4 gap-3">
                 <input className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })}>
-                  <option>All</option><option>Ara Damansara</option><option>Subang</option><option>PJ</option>
-                </select>
-                <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.price} onChange={(e) => setFilters({ ...filters, price: e.target.value })}>
-                  <option>All</option><option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
-                </select>
-                <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
-                  <option>All</option><option>Female Unit</option><option>Mix Unit</option>
-                </select>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground pl-1">Area</label>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })}>
+                    <option>All</option><option>Ara Damansara</option><option>Subang</option><option>Pantai</option><option>Damansara</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground pl-1">Price</label>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.price} onChange={(e) => setFilters({ ...filters, price: e.target.value })}>
+                    <option>All</option><option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground pl-1">Gender</label>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
+                    <option>All</option><option>Female Unit</option><option>Mix Unit</option>
+                  </select>
+                </div>
               </div>
               {roomsLoading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading rooms...</div>
