@@ -37,6 +37,8 @@ export default function Index() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
+  const { data: claimsData = [] } = useClaims();
+  const createClaim = useCreateClaim();
   const [page, setPage] = useState("dashboard");
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -50,6 +52,8 @@ export default function Index() {
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
+  const [claimForm, setClaimForm] = useState({ amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+  const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
 
   const PRESET_AREAS = [
