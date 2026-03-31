@@ -278,7 +278,7 @@ export default function AdminPage() {
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
-                          <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }}>
+                          <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; const bt = e.target.value; c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }; setRoomConfigs(c); }}>
                             <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
                           </select>
                         </div>
