@@ -90,13 +90,18 @@ export default function AdminPage() {
     }
   };
 
+  const openCreateRoom2 = () => {
+    setEditingUnit({ ...emptyUnit });
+    setRoomConfigs([...defaultRoomConfigs]);
+  };
+
   const saveUnit = async () => {
     if (!editingUnit) return;
     try {
       if (editingUnit.id) {
         await updateUnit.mutateAsync({ id: editingUnit.id, ...editingUnit });
       } else {
-        await createUnit.mutateAsync(editingUnit);
+        await createUnit.mutateAsync({ unit: editingUnit, roomConfigs });
       }
       setEditingUnit(null);
     } catch (e: any) {
