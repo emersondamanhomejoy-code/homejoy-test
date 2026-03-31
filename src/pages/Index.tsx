@@ -620,8 +620,11 @@ export default function Index() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{role ?? "agent"}</span>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <div className="bg-primary/10 rounded-lg px-5 py-4 text-center">
+              <div className="text-3xl font-extrabold text-primary">{roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length}</div>
+              <div className="text-xs font-semibold text-primary/70 uppercase tracking-wider mt-1">Available Rooms</div>
+            </div>
             {[
-              { label: "Total Available", value: `${roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length} rooms` },
               { label: "Closed This Month", value: "6 deals" },
               { label: "Pending Claims", value: "3" },
               { label: "Next Payout", value: "15th" },
