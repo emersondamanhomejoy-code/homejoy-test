@@ -94,7 +94,6 @@ export default function Index() {
     return "";
   };
 
-  const [submitting, setSubmitting] = useState(false);
 
   const submitBooking = async () => {
     const error = validateBooking();
