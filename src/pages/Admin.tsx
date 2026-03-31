@@ -625,19 +625,23 @@ export default function AdminPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {unit.rooms.map((room) => (
-                                <tr key={room.id} className="border-t hover:bg-secondary/30 transition-colors">
-                                  <td className="px-4 py-3 font-medium">{room.room}</td>
-                                  <td className="px-4 py-3 text-muted-foreground">{room.bed_type || "—"}</td>
+                              {unit.rooms.map((room) => {
+                                const isCP = room.room_type === "Car Park";
+                                return (
+                                <tr key={room.id} className={`border-t hover:bg-secondary/30 transition-colors ${isCP ? "bg-blue-500/5" : ""}`}>
+                                  <td className="px-4 py-3 font-medium">{isCP ? `🅿️ ${room.room}` : room.room}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.bed_type || "—") : (room.bed_type || "—")}</td>
                                   <td className="px-4 py-3">
+                                    {isCP ? "—" : (
                                     <select className="bg-secondary rounded px-2 py-1 text-xs font-medium" value={room.pax_staying || 0} onChange={async (e) => {
                                       try { await updateRoom.mutateAsync({ id: room.id, pax_staying: Number(e.target.value) }); } catch (err: any) { alert(err.message); }
                                     }}>
                                       {Array.from({ length: room.max_pax + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
                                     </select>
+                                    )}
                                   </td>
                                   <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
-                                  <td className="px-4 py-3 text-muted-foreground">{[room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—"}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.tenant_gender || "—") : ([room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—")}</td>
                                   <td className="px-4 py-3">
                                     <button onClick={() => toggleRoomStatus(room)} className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${room.status === "Available" ? "bg-accent/50 text-accent-foreground hover:bg-accent" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}>
                                       {room.status}
@@ -647,7 +651,8 @@ export default function AdminPage() {
                                     <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                                   </td>
                                 </tr>
-                              ))}
+                                );
+                              })}
                               {/* Balance pax summary */}
                               <tr className="border-t bg-secondary/30 font-semibold">
                                 <td className="px-4 py-2" colSpan={2}>Balance Pax</td>
