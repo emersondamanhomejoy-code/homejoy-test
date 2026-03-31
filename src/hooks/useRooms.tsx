@@ -37,12 +37,7 @@ export interface Room {
   unit_occupied_pax: number;
   housemates: string[];
   photos: string[];
-  access_info: {
-    condoEntry: string;
-    unitAccess: string;
-    visitorParking: string;
-    viewing: string;
-  };
+  access_info: string;
   move_in_cost: {
     advance: number;
     deposit: number;
