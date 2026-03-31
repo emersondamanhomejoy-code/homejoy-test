@@ -109,6 +109,8 @@ export type Database = {
       units: {
         Row: {
           access_card: string
+          access_card_deposit: number
+          access_card_source: string
           access_info: Json
           building: string
           created_at: string
@@ -123,6 +125,8 @@ export type Database = {
         }
         Insert: {
           access_card?: string
+          access_card_deposit?: number
+          access_card_source?: string
           access_info?: Json
           building: string
           created_at?: string
@@ -137,6 +141,8 @@ export type Database = {
         }
         Update: {
           access_card?: string
+          access_card_deposit?: number
+          access_card_source?: string
           access_info?: Json
           building?: string
           created_at?: string
