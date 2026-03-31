@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { lovable } from "@/integrations/lovable";
 
 interface Room {
   id: number;
