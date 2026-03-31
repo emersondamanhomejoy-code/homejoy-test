@@ -287,7 +287,7 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{units.length} units</span>
-              <button onClick={() => setEditingUnit({ ...emptyUnit })} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
+              <button onClick={openCreateRoom2} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
             </div>
             {unitsLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
