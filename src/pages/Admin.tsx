@@ -45,6 +45,7 @@ export default function AdminPage() {
   const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
 
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) navigate("/");
