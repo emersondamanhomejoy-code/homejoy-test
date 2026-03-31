@@ -246,68 +246,92 @@ export default function Index() {
 
   // ─── BOOKING FORM ───
   if (page === "booking" && selectedRoom) {
-    const availablePax = selectedRoom.max_pax - selectedRoom.occupied_pax;
-    const inputClass = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
-    const checkboxLabel = "rounded-lg border p-4 flex items-center gap-3 bg-card text-foreground cursor-pointer hover:bg-secondary transition-colors";
+    const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+    const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+    const f = bookingForm;
+    const set = (field: string, value: string) => setBookingForm({ ...f, [field]: value });
 
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-          <button onClick={() => setPage("detail")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to Room Detail
-          </button>
+          <button onClick={() => setPage("detail")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Room Detail</button>
           <div className="bg-card rounded-lg shadow-lg p-6 space-y-6">
-            <div>
-              <div className="text-2xl font-bold">Booking Form</div>
-              <div className="text-muted-foreground mt-1">{selectedRoom.building} {selectedRoom.unit} {selectedRoom.room}</div>
+            {/* Header */}
+            <div className="bg-primary/10 rounded-lg p-5 text-center space-y-1">
+              <div className="text-lg font-bold text-primary">Thanks for trusting us and welcome you to join us! 🥳🥳</div>
+              <div className="text-sm text-muted-foreground">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
+              <div className="text-sm font-semibold">Monthly Rent: RM{selectedRoom.rent}</div>
             </div>
-            <div className="rounded-lg bg-secondary p-4 text-sm text-muted-foreground space-y-1">
-              <div>Room Max Pax: {selectedRoom.max_pax}</div>
-              <div>Available Pax Left: {availablePax}</div>
+
+            {/* Tenant Details */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">👤 Tenant Details</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={f.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>NRIC/Passport No *</label><input className={ic} placeholder="NRIC/Passport No" value={f.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={f.email} onChange={e => set("email", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={f.phone} onChange={e => set("phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Gender *</label>
+                  <select className={ic} value={f.gender} onChange={e => set("gender", e.target.value)}>
+                    <option value="">Select Gender</option><option>Male</option><option>Female</option>
+                  </select>
+                </div>
+                <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Race</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={f.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months)</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>How many pax staying</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
+              </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <input className={inputClass} placeholder="Tenant name" value={bookingForm.tenantName} onChange={(e) => setBookingForm({ ...bookingForm, tenantName: e.target.value })} />
-              <input className={inputClass} placeholder="Phone number" value={bookingForm.phone} onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value })} />
-              <select className={inputClass} value={bookingForm.tenantCategory} onChange={(e) => setBookingForm({ ...bookingForm, tenantCategory: e.target.value })}>
-                <option>Working Adult</option>
-                <option>Student</option>
-              </select>
-              <select className={inputClass} value={bookingForm.pax} onChange={(e) => setBookingForm({ ...bookingForm, pax: e.target.value })}>
-                {Array.from({ length: availablePax }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
-              </select>
-              <select className={inputClass} value={bookingForm.gender} onChange={(e) => setBookingForm({ ...bookingForm, gender: e.target.value })}>
-                <option value="">Gender</option>
-                <option>Male</option>
-                <option>Female</option>
-              </select>
-              <input className={inputClass} placeholder="Race" value={bookingForm.race} onChange={(e) => setBookingForm({ ...bookingForm, race: e.target.value })} />
-              <input className={`${inputClass} md:col-span-2`} type="date" value={bookingForm.moveInDate} onChange={(e) => setBookingForm({ ...bookingForm, moveInDate: e.target.value })} />
+
+            {/* Emergency Contact */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-1"><label className={lbl}>Emergency Contact 1</label><input className={ic} placeholder="Name & Phone" value={f.emergencyContact1} onChange={e => set("emergencyContact1", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Emergency Contact 2</label><input className={ic} placeholder="Name & Phone" value={f.emergencyContact2} onChange={e => set("emergencyContact2", e.target.value)} /></div>
+              </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <label className={checkboxLabel}>
-                <input type="checkbox" checked={bookingForm.passportIcUploaded} onChange={(e) => setBookingForm({ ...bookingForm, passportIcUploaded: e.target.checked })} className="accent-primary w-4 h-4" />
-                <span>Passport / IC soft copy uploaded</span>
-              </label>
-              <label className={checkboxLabel}>
-                <input type="checkbox" checked={bookingForm.bankSlipUploaded} onChange={(e) => setBookingForm({ ...bookingForm, bankSlipUploaded: e.target.checked })} className="accent-primary w-4 h-4" />
-                <span>Bank slip uploaded</span>
-              </label>
-              {bookingForm.tenantCategory === "Student" && (
-                <>
-                  <label className={checkboxLabel}>
-                    <input type="checkbox" checked={bookingForm.studentIdUploaded} onChange={(e) => setBookingForm({ ...bookingForm, studentIdUploaded: e.target.checked })} className="accent-primary w-4 h-4" />
-                    <span>Student ID uploaded</span>
-                  </label>
-                  <label className={checkboxLabel}>
-                    <input type="checkbox" checked={bookingForm.offerLetterUploaded} onChange={(e) => setBookingForm({ ...bookingForm, offerLetterUploaded: e.target.checked })} className="accent-primary w-4 h-4" />
-                    <span>Offer letter uploaded</span>
-                  </label>
-                </>
-              )}
+
+            {/* Parking */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-1"><label className={lbl}>Parking</label>
+                  <select className={ic} value={f.parking} onChange={e => set("parking", e.target.value)}>
+                    <option>No</option><option>Yes</option>
+                  </select>
+                </div>
+                {f.parking === "Yes" && (
+                  <div className="space-y-1"><label className={lbl}>Car Plate</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
+                )}
+              </div>
             </div>
-            <div className="flex gap-3 justify-end">
+
+            {/* Move-in Cost */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">💰 Move-in Cost</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic} type="number" placeholder="0" value={f.advance} onChange={e => set("advance", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Rental Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.deposit} onChange={e => set("deposit", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={ic} type="number" placeholder="0" value={f.adminFee} onChange={e => set("adminFee", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
+              </div>
+              <div className="bg-secondary rounded-lg p-4 text-right">
+                <span className="text-sm text-muted-foreground">Total: </span>
+                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + (Number(f.deposit) || 0) + (Number(f.adminFee) || 0) + (Number(f.electricityReload) || 0)}</span>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <div className="flex gap-3 justify-end pt-2">
               <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-              <button onClick={submitBooking} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">Submit Booking</button>
+              <button onClick={submitBooking} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                {submitting ? "Submitting..." : "Submit Booking"}
+              </button>
             </div>
           </div>
         </div>
