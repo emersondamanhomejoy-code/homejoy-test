@@ -220,7 +220,11 @@ export default function AdminPage() {
               </select>
               <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
               <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
-              <input className={inputClass} placeholder="Access Card Price (RM)" value={u.access_card} onChange={e => updateField("access_card", e.target.value)} />
+              <select className={inputClass} value={u.access_card_source} onChange={e => updateField("access_card_source", e.target.value)}>
+                <option value="Provided by Us">Access Card: Provided by Us</option>
+                <option value="Management Office">Access Card: Management Office</option>
+              </select>
+              <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit} onChange={e => updateField("access_card_deposit", Number(e.target.value))} />
               <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
