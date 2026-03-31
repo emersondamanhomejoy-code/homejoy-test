@@ -250,17 +250,6 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-                {(() => {
-                  const totalRoomPax = roomConfigs.reduce((s, r) => s + r.max_pax, 0);
-                  const exceeded = totalRoomPax > u.unit_max_pax;
-                  return (
-                    <div className={`rounded-lg p-3 text-sm flex gap-4 ${exceeded ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground"}`}>
-                      <span>Unit Max Pax: <strong className="text-foreground">{u.unit_max_pax}</strong></span>
-                      <span>Total Room Max Pax: <strong className={exceeded ? "text-destructive" : "text-foreground"}>{totalRoomPax}</strong></span>
-                      {exceeded && <span className="font-semibold">⚠ Exceeds unit max!</span>}
-                    </div>
-                  );
-                })()}
                 <div className="space-y-3">
                   {roomConfigs.map((rc, i) => (
                     <div key={i} className="rounded-lg border bg-secondary/30 p-4">
