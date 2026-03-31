@@ -269,40 +269,69 @@ export default function AdminPage() {
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <textarea className={inputClass + " min-h-[80px]"} placeholder="Access info (e.g. condo entry, unit access, visitor parking, viewing instructions...)" value={u.access_info || ""} onChange={e => updateField("access_info", e.target.value)} />
             {/* Room configs - only for new units */}
-            {!u.id && (
+            {!u.id && (() => {
+              const regularRooms = roomConfigs.filter(rc => rc.room_type !== "Car Park");
+              const carParks = roomConfigs.filter(rc => rc.room_type === "Car Park");
+              const relabelRooms = (configs: RoomConfig[]) => {
+                const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                let roomIdx = 0, cpIdx = 0;
+                return configs.map(r => {
+                  if (r.room_type === "Car Park") {
+                    cpIdx++;
+                    return { ...r, room: cpIdx === 1 ? "Car Park" : `Car Park ${cpIdx}` };
+                  }
+                  const name = roomIdx < 26 ? `Room ${letters[roomIdx]}` : `Room ${roomIdx + 1}`;
+                  roomIdx++;
+                  return { ...r, room: name };
+                });
+              };
+              return (
               <>
                 <div className="flex items-center justify-between pt-2">
-                  <div className="text-lg font-semibold">Room Details ({roomConfigs.length} rooms)</div>
+                  <div className="text-lg font-semibold">Room Details ({regularRooms.length} rooms, {carParks.length} car parks)</div>
                   <div className="flex gap-2">
                     {roomConfigs.length > 1 && (
-                      <button type="button" onClick={() => setRoomConfigs(roomConfigs.slice(0, -1))} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
+                      <button type="button" onClick={() => setRoomConfigs(relabelRooms(roomConfigs.slice(0, -1)))} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
                         − Remove Last
                       </button>
                     )}
                     <button type="button" onClick={() => {
-                      const nextNum = roomConfigs.length + 1;
-                      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                      const name = nextNum <= 26 ? `Room ${letters[nextNum - 1]}` : `Room ${nextNum}`;
-                      setRoomConfigs([...roomConfigs, { room: name, bed_type: "", max_pax: 1, rent: 0 }]);
+                      setRoomConfigs(relabelRooms([...roomConfigs, { room: "", bed_type: "", max_pax: 1, rent: 0 }]));
                     }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                       + Add Room
+                    </button>
+                    <button type="button" onClick={() => {
+                      setRoomConfigs(relabelRooms([...roomConfigs, { room: "", bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }]));
+                    }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                      🅿️ + Add Car Park
                     </button>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {roomConfigs.map((rc, i) => (
-                    <div key={i} className="rounded-lg border bg-secondary/30 p-4">
+                  {roomConfigs.map((rc, i) => {
+                    const isCarPark = rc.room_type === "Car Park";
+                    return (
+                    <div key={i} className={`rounded-lg border p-4 ${isCarPark ? "bg-blue-500/5 border-blue-500/20" : "bg-secondary/30"}`}>
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm font-semibold">{rc.room}</div>
+                        <div className="text-sm font-semibold">{isCarPark ? `🅿️ ${rc.room}` : rc.room}</div>
                         {roomConfigs.length > 1 && (
                           <button type="button" onClick={() => {
-                            const c = roomConfigs.filter((_, idx) => idx !== i);
-                            // Re-label rooms
-                            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                            setRoomConfigs(c.map((r, idx) => ({ ...r, room: idx < 26 ? `Room ${letters[idx]}` : `Room ${idx + 1}` })));
+                            setRoomConfigs(relabelRooms(roomConfigs.filter((_, idx) => idx !== i)));
                           }} className="text-xs text-destructive hover:underline">Remove</button>
                         )}
                       </div>
+                      {isCarPark ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Parking Lot</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.parking_lot || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], parking_lot: e.target.value }; setRoomConfigs(c); }} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
+                          </div>
+                        </div>
+                      ) : (
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
@@ -319,11 +348,14 @@ export default function AdminPage() {
                           <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
                         </div>
                       </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
-            )}
+              );
+            })()}
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
               <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
