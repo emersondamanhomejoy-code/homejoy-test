@@ -162,7 +162,7 @@ export default function AdminPage() {
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground">Bed Type</label>
-                <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; updateField("bed_type", bt); updateField("max_pax", bedTypeMaxPax[bt] || 1); }}>
+                <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
                   <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
                 </select>
               </div>
