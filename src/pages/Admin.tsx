@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useRooms, useUpsertRoom, useDeleteRoom, Room } from "@/hooks/useRooms";
+import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, Unit, Room } from "@/hooks/useRooms";
 
 interface UserWithRoles {
   id: string;
@@ -11,20 +11,15 @@ interface UserWithRoles {
   roles: string[];
 }
 
-const emptyRoom = {
-  building: "", unit: "", room: "", location: "", rent: 0,
-  room_type: "Medium Room", unit_type: "Mix Unit", status: "Available",
-  available_date: "Available Now", max_pax: 1, occupied_pax: 0,
-  unit_max_pax: 6, unit_occupied_pax: 0,
-  housemates: [] as string[], photos: [] as string[],
+const emptyUnit = {
+  building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
   access_info: { condoEntry: "", unitAccess: "", visitorParking: "", viewing: "" },
-  move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
 };
 
 export default function AdminPage() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"users" | "rooms">("rooms");
+  const [tab, setTab] = useState<"users" | "units">("units");
 
   // Users state
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -32,23 +27,22 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
 
-  // Rooms state
-  const { data: rooms = [], isLoading: roomsLoading } = useRooms();
-  const upsertRoom = useUpsertRoom();
-  const deleteRoom = useDeleteRoom();
-  const [editingRoom, setEditingRoom] = useState<Partial<Room> | null>(null);
-  const [housemateInput, setHousemateInput] = useState("");
+  // Units state
+  const { data: units = [], isLoading: unitsLoading } = useUnits();
+  const createUnit = useCreateUnit();
+  const updateUnit = useUpdateUnit();
+  const deleteUnit = useDeleteUnit();
+  const updateRoom = useUpdateRoom();
+  const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
+  const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   useEffect(() => {
-    if (!loading && (!user || role !== "admin")) {
-      navigate("/");
-    }
+    if (!loading && (!user || role !== "admin")) navigate("/");
   }, [loading, user, role, navigate]);
 
   useEffect(() => {
-    if (user && role === "admin") {
-      fetchUsers();
-    }
+    if (user && role === "admin") fetchUsers();
   }, [user, role]);
 
   const fetchUsers = async () => {
@@ -86,38 +80,41 @@ export default function AdminPage() {
     }
   };
 
-  const openCreateRoom = () => {
-    setEditingRoom({ ...emptyRoom });
-    setHousemateInput("");
+  const saveUnit = async () => {
+    if (!editingUnit) return;
+    try {
+      if (editingUnit.id) {
+        await updateUnit.mutateAsync({ id: editingUnit.id, ...editingUnit });
+      } else {
+        await createUnit.mutateAsync(editingUnit);
+      }
+      setEditingUnit(null);
+    } catch (e: any) {
+      alert(e.message || "Failed to save unit");
+    }
   };
 
-  const openEditRoom = (room: Room) => {
-    setEditingRoom({ ...room });
-    setHousemateInput((room.housemates || []).join("\n"));
+  const handleDeleteUnit = async (id: string) => {
+    if (!confirm("Delete this unit and all its rooms?")) return;
+    try { await deleteUnit.mutateAsync(id); } catch (e: any) { alert(e.message); }
   };
 
   const saveRoom = async () => {
     if (!editingRoom) return;
-    const housemates = housemateInput.split("\n").map(s => s.trim()).filter(Boolean);
-    const total = (editingRoom.move_in_cost?.advance || 0) + (editingRoom.move_in_cost?.deposit || 0) + (editingRoom.move_in_cost?.accessCard || 0) + (editingRoom.move_in_cost?.moveInFee || 0);
     try {
-      await upsertRoom.mutateAsync({
-        ...editingRoom,
-        housemates,
-        move_in_cost: { ...editingRoom.move_in_cost!, total },
-      } as any);
+      await updateRoom.mutateAsync(editingRoom);
       setEditingRoom(null);
     } catch (e: any) {
       alert(e.message || "Failed to save room");
     }
   };
 
-  const handleDeleteRoom = async (id: string) => {
-    if (!confirm("Delete this room?")) return;
+  const toggleRoomStatus = async (room: Room) => {
+    const newStatus = room.status === "Available" ? "Unavailable" : "Available";
     try {
-      await deleteRoom.mutateAsync(id);
+      await updateRoom.mutateAsync({ id: room.id, status: newStatus });
     } catch (e: any) {
-      alert(e.message || "Failed to delete room");
+      alert(e.message);
     }
   };
 
@@ -131,60 +128,36 @@ export default function AdminPage() {
 
   const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
-  // ─── ROOM FORM ───
+  // ─── ROOM EDIT FORM ───
   if (editingRoom) {
     const r = editingRoom;
     const updateField = (field: string, value: any) => setEditingRoom({ ...r, [field]: value });
-    const updateAccess = (field: string, value: string) => setEditingRoom({ ...r, access_info: { ...r.access_info!, [field]: value } });
-    const updateCost = (field: string, value: number) => setEditingRoom({ ...r, move_in_cost: { ...r.move_in_cost!, [field]: value } });
+    const updateCost = (field: string, value: number) => setEditingRoom({ ...r, move_in_cost: { ...r.move_in_cost, [field]: value } });
 
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-          <button onClick={() => setEditingRoom(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to Admin
-          </button>
-          <div className="text-2xl font-extrabold">{r.id ? "Edit Room" : "Add Room"}</div>
+        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+          <button onClick={() => setEditingRoom(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
+          <div className="text-2xl font-extrabold">Edit {r.room}</div>
+          <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
-            <div className="text-lg font-semibold">Basic Info</div>
             <div className="grid md:grid-cols-2 gap-4">
-              <input className={inputClass} placeholder="Building name" value={r.building || ""} onChange={e => updateField("building", e.target.value)} />
-              <input className={inputClass} placeholder="Unit (e.g. A-17-8)" value={r.unit || ""} onChange={e => updateField("unit", e.target.value)} />
-              <input className={inputClass} placeholder="Room (e.g. Room B)" value={r.room || ""} onChange={e => updateField("room", e.target.value)} />
-              <input className={inputClass} placeholder="Location" value={r.location || ""} onChange={e => updateField("location", e.target.value)} />
-              <input className={inputClass} type="number" placeholder="Rent (RM)" value={r.rent || ""} onChange={e => updateField("rent", Number(e.target.value))} />
-              <select className={inputClass} value={r.room_type || "Medium Room"} onChange={e => updateField("room_type", e.target.value)}>
-                <option>Single Room</option><option>Medium Room</option><option>Master Room</option>
-              </select>
-              <select className={inputClass} value={r.unit_type || "Mix Unit"} onChange={e => updateField("unit_type", e.target.value)}>
-                <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
-              </select>
-              <select className={inputClass} value={r.status || "Available"} onChange={e => updateField("status", e.target.value)}>
-                <option>Available</option><option>Booked</option><option>Unavailable</option>
-              </select>
-              <input className={inputClass} placeholder="Available date" value={r.available_date || ""} onChange={e => updateField("available_date", e.target.value)} />
+              <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
+              <div><label className="text-xs text-muted-foreground">Room Type</label>
+                <select className={`${inputClass} w-full`} value={r.room_type} onChange={e => updateField("room_type", e.target.value)}>
+                  <option>Single Room</option><option>Medium Room</option><option>Master Room</option>
+                </select>
+              </div>
+              <div><label className="text-xs text-muted-foreground">Status</label>
+                <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
+                  <option>Available</option><option>Unavailable</option>
+                </select>
+              </div>
+              <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateField("available_date", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.max_pax} onChange={e => updateField("max_pax", Number(e.target.value))} /></div>
+              <div><label className="text-xs text-muted-foreground">Occupied Pax</label><input className={`${inputClass} w-full`} type="number" value={r.occupied_pax} onChange={e => updateField("occupied_pax", Number(e.target.value))} /></div>
             </div>
-
-            <div className="text-lg font-semibold pt-4">Occupancy</div>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div><label className="text-xs text-muted-foreground">Room Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.max_pax ?? 1} onChange={e => updateField("max_pax", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Room Occupied</label><input className={`${inputClass} w-full`} type="number" value={r.occupied_pax ?? 0} onChange={e => updateField("occupied_pax", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Unit Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.unit_max_pax ?? 6} onChange={e => updateField("unit_max_pax", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Unit Occupied</label><input className={`${inputClass} w-full`} type="number" value={r.unit_occupied_pax ?? 0} onChange={e => updateField("unit_occupied_pax", Number(e.target.value))} /></div>
-            </div>
-
-            <div className="text-lg font-semibold pt-4">Housemates</div>
-            <textarea className={`${inputClass} w-full h-28`} placeholder="One per line, e.g. Room A: 1 Female" value={housemateInput} onChange={e => setHousemateInput(e.target.value)} />
-
-            <div className="text-lg font-semibold pt-4">Access Info</div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <input className={inputClass} placeholder="Condo Entry" value={r.access_info?.condoEntry || ""} onChange={e => updateAccess("condoEntry", e.target.value)} />
-              <input className={inputClass} placeholder="Unit Access" value={r.access_info?.unitAccess || ""} onChange={e => updateAccess("unitAccess", e.target.value)} />
-              <input className={inputClass} placeholder="Visitor Parking" value={r.access_info?.visitorParking || ""} onChange={e => updateAccess("visitorParking", e.target.value)} />
-              <input className={inputClass} placeholder="Viewing" value={r.access_info?.viewing || ""} onChange={e => updateAccess("viewing", e.target.value)} />
-            </div>
-
-            <div className="text-lg font-semibold pt-4">Move-in Cost (RM)</div>
+            <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
             <div className="grid md:grid-cols-4 gap-4">
               <div><label className="text-xs text-muted-foreground">Advance</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.advance ?? 0} onChange={e => updateCost("advance", Number(e.target.value))} /></div>
               <div><label className="text-xs text-muted-foreground">Deposit</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.deposit ?? 0} onChange={e => updateCost("deposit", Number(e.target.value))} /></div>
@@ -192,11 +165,51 @@ export default function AdminPage() {
               <div><label className="text-xs text-muted-foreground">Move-in Fee</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.moveInFee ?? 0} onChange={e => updateCost("moveInFee", Number(e.target.value))} /></div>
             </div>
             <div className="text-sm text-muted-foreground">Total: RM{(r.move_in_cost?.advance || 0) + (r.move_in_cost?.deposit || 0) + (r.move_in_cost?.accessCard || 0) + (r.move_in_cost?.moveInFee || 0)}</div>
-
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingRoom(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-              <button onClick={saveRoom} disabled={upsertRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-                {upsertRoom.isPending ? "Saving..." : "Save Room"}
+              <button onClick={saveRoom} disabled={updateRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                {updateRoom.isPending ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── UNIT FORM ───
+  if (editingUnit) {
+    const u = editingUnit;
+    const updateField = (field: string, value: any) => setEditingUnit({ ...u, [field]: value });
+    const updateAccess = (field: string, value: string) => setEditingUnit({ ...u, access_info: { ...u.access_info, [field]: value } });
+
+    return (
+      <div className="min-h-screen bg-background p-6 text-foreground">
+        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+          <button onClick={() => setEditingUnit(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
+          <div className="text-2xl font-extrabold">{u.id ? "Edit Unit" : "Add Unit"}</div>
+          <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
+            <div className="grid md:grid-cols-2 gap-4">
+              <input className={inputClass} placeholder="Building name" value={u.building} onChange={e => updateField("building", e.target.value)} />
+              <input className={inputClass} placeholder="Unit (e.g. A-17-8)" value={u.unit} onChange={e => updateField("unit", e.target.value)} />
+              <input className={inputClass} placeholder="Location" value={u.location} onChange={e => updateField("location", e.target.value)} />
+              <select className={inputClass} value={u.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
+                <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
+              </select>
+              <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
+            </div>
+            <div className="text-lg font-semibold pt-2">Access Info</div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <input className={inputClass} placeholder="Condo Entry" value={u.access_info.condoEntry} onChange={e => updateAccess("condoEntry", e.target.value)} />
+              <input className={inputClass} placeholder="Unit Access" value={u.access_info.unitAccess} onChange={e => updateAccess("unitAccess", e.target.value)} />
+              <input className={inputClass} placeholder="Visitor Parking" value={u.access_info.visitorParking} onChange={e => updateAccess("visitorParking", e.target.value)} />
+              <input className={inputClass} placeholder="Viewing" value={u.access_info.viewing} onChange={e => updateAccess("viewing", e.target.value)} />
+            </div>
+            {!u.id && <div className="rounded-lg bg-secondary p-4 text-sm text-muted-foreground">5 rooms (Room A - E) will be created automatically.</div>}
+            <div className="flex gap-3 justify-end pt-4">
+              <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+              <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
               </button>
             </div>
           </div>
@@ -208,76 +221,86 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background p-6 text-foreground">
       <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-        <button onClick={() => navigate("/")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← Back to Dashboard
-        </button>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-bold text-muted-foreground tracking-widest uppercase">Homejoy</div>
-            <div className="text-3xl font-extrabold tracking-tight mt-1">Admin Panel</div>
-          </div>
+        <button onClick={() => navigate("/")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+        <div>
+          <div className="text-sm font-bold text-muted-foreground tracking-widest uppercase">Homejoy</div>
+          <div className="text-3xl font-extrabold tracking-tight mt-1">Admin Panel</div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2">
-          <button onClick={() => setTab("rooms")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "rooms" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>
-            Rooms
-          </button>
-          <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>
-            Users
-          </button>
+          <button onClick={() => setTab("units")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "units" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Units & Rooms</button>
+          <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Users</button>
         </div>
 
         {error && <div className="rounded-lg bg-destructive/10 text-destructive p-4 text-sm">{error}</div>}
 
-        {/* ROOMS TAB */}
-        {tab === "rooms" && (
+        {/* UNITS TAB */}
+        {tab === "units" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{rooms.length} rooms</span>
-              <button onClick={openCreateRoom} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
-                + Add Room
-              </button>
+              <span className="text-sm text-muted-foreground">{units.length} units</span>
+              <button onClick={() => setEditingUnit({ ...emptyUnit })} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
             </div>
-            {roomsLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading rooms...</div>
+            {unitsLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : (
-              <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-secondary">
-                      <th className="text-left px-5 py-3 font-semibold">Building / Unit</th>
-                      <th className="text-left px-5 py-3 font-semibold">Room</th>
-                      <th className="text-left px-5 py-3 font-semibold">Rent</th>
-                      <th className="text-left px-5 py-3 font-semibold">Status</th>
-                      <th className="text-right px-5 py-3 font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rooms.map((room) => (
-                      <tr key={room.id} className="border-b last:border-0 hover:bg-secondary/50 transition-colors">
-                        <td className="px-5 py-4 font-medium">{room.building} {room.unit}</td>
-                        <td className="px-5 py-4 text-muted-foreground">{room.room}</td>
-                        <td className="px-5 py-4">RM{room.rent}</td>
-                        <td className="px-5 py-4">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${room.status === "Available" ? "bg-green-500/10 text-green-600" : "bg-secondary text-secondary-foreground"}`}>
-                            {room.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex gap-2 justify-end">
-                            <button onClick={() => openEditRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                              Edit
-                            </button>
-                            <button onClick={() => handleDeleteRoom(room.id)} disabled={deleteRoom.isPending} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50">
-                              Delete
-                            </button>
+              <div className="space-y-3">
+                {units.map((unit) => {
+                  const isExpanded = expandedUnit === unit.id;
+                  const availableCount = unit.rooms?.filter(r => r.status === "Available").length ?? 0;
+                  const totalRooms = unit.rooms?.length ?? 0;
+                  return (
+                    <div key={unit.id} className="bg-card rounded-lg shadow-sm overflow-hidden">
+                      <div className="p-5 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}>
+                        <div>
+                          <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
+                          <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Max {unit.unit_max_pax} pax</div>
+                          <div className="flex gap-2 mt-2">
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500/10 text-green-600">{availableCount} available</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} occupied</span>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, access_info: unit.access_info }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
+                          <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
+                        </div>
+                      </div>
+                      {isExpanded && unit.rooms && (
+                        <div className="border-t">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-secondary/50">
+                                <th className="text-left px-5 py-2 font-medium">Room</th>
+                                <th className="text-left px-5 py-2 font-medium">Type</th>
+                                <th className="text-left px-5 py-2 font-medium">Rent</th>
+                                <th className="text-left px-5 py-2 font-medium">Status</th>
+                                <th className="text-right px-5 py-2 font-medium">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {unit.rooms.map((room) => (
+                                <tr key={room.id} className="border-t hover:bg-secondary/30 transition-colors">
+                                  <td className="px-5 py-3 font-medium">{room.room}</td>
+                                  <td className="px-5 py-3 text-muted-foreground">{room.room_type}</td>
+                                  <td className="px-5 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
+                                  <td className="px-5 py-3">
+                                    <button onClick={() => toggleRoomStatus(room)} className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${room.status === "Available" ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "bg-red-500/10 text-red-600 hover:bg-red-500/20"}`}>
+                                      {room.status}
+                                    </button>
+                                  </td>
+                                  <td className="px-5 py-3 text-right">
+                                    <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -305,20 +328,14 @@ export default function AdminPage() {
                       <td className="px-5 py-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td>
                       <td className="px-5 py-4">
                         <div className="flex gap-2">
-                          {u.roles.map((r) => (
-                            <span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>
-                          ))}
+                          {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
                           {u.roles.length === 0 && <span className="text-muted-foreground text-xs">No roles</span>}
                         </div>
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex gap-2 justify-end">
-                          <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
-                            {isAdmin ? "Remove Admin" : "Make Admin"}
-                          </button>
-                          <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
-                            {isAgent ? "Remove Agent" : "Make Agent"}
-                          </button>
+                          <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
+                          <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
                         </div>
                       </td>
                     </tr>
