@@ -248,7 +248,6 @@ export default function Index() {
                   <div className="h-48 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground font-medium col-span-2">No photos available</div>
                 )}
               </div>
-              </div>
               <div className="bg-secondary rounded-lg p-5">
                 <div className="text-lg font-semibold">Unit Occupancy</div>
                 <div className="mt-3 text-sm space-y-2 text-muted-foreground">
