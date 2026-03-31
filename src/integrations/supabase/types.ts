@@ -114,7 +114,7 @@ export type Database = {
           created_at: string
           id: string
           location: string
-          parking_rate: string
+          parking_lot: string
           passcode: string
           unit: string
           unit_max_pax: number
@@ -128,7 +128,7 @@ export type Database = {
           created_at?: string
           id?: string
           location: string
-          parking_rate?: string
+          parking_lot?: string
           passcode?: string
           unit: string
           unit_max_pax?: number
@@ -142,7 +142,7 @@ export type Database = {
           created_at?: string
           id?: string
           location?: string
-          parking_rate?: string
+          parking_lot?: string
           passcode?: string
           unit?: string
           unit_max_pax?: number
