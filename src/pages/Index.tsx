@@ -175,11 +175,8 @@ export default function Index() {
             <div className="space-y-5">
               <div className="bg-secondary rounded-lg p-5">
                 <div className="text-lg font-semibold">Access</div>
-                <div className="mt-3 text-sm space-y-2 text-muted-foreground">
-                  <div>Condo Entry: {selectedRoom.access_info.condoEntry}</div>
-                  <div>Unit Access: {selectedRoom.access_info.unitAccess}</div>
-                  <div>Visitor Parking: {selectedRoom.access_info.visitorParking}</div>
-                  <div>Viewing: {selectedRoom.access_info.viewing}</div>
+                <div className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {typeof selectedRoom.access_info === 'string' ? selectedRoom.access_info : "No access info"}
                 </div>
               </div>
               <div className="bg-secondary rounded-lg p-5">
