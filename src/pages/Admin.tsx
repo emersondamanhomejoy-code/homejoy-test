@@ -13,6 +13,7 @@ interface UserWithRoles {
 
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
+  passcode: "", access_card: "", parking_rate: "",
   access_info: { condoEntry: "", unitAccess: "", visitorParking: "", viewing: "" },
 };
 
