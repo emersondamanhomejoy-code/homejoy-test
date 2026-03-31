@@ -214,9 +214,9 @@ export default function AdminPage() {
                 <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
               </select>
               <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
-              <input className={inputClass} placeholder="Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
-              <input className={inputClass} placeholder="Access Card (e.g. 0.65 PKW)" value={u.access_card} onChange={e => updateField("access_card", e.target.value)} />
-              <input className={inputClass} placeholder="Parking Rate" value={u.parking_rate} onChange={e => updateField("parking_rate", e.target.value)} />
+              <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
+              <input className={inputClass} placeholder="Access Card Price (RM)" value={u.access_card} onChange={e => updateField("access_card", e.target.value)} />
+              <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <div className="grid md:grid-cols-2 gap-4">
