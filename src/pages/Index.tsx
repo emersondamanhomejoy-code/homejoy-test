@@ -45,6 +45,10 @@ export default function Index() {
   const [signingIn, setSigningIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
+  const [signatureLink, setSignatureLink] = useState<string | null>(null);
+  const [signatureToken, setSignatureToken] = useState<string | null>(null);
+  const [signatureSigned, setSignatureSigned] = useState(false);
+  const [checkingSignature, setCheckingSignature] = useState(false);
 
   const PRESET_AREAS = [
     "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
@@ -98,7 +102,12 @@ export default function Index() {
     `${room.building} ${room.unit} ${room.room} booking received\n${bookingForm.paxStaying} pax ${bookingForm.race} ${bookingForm.gender}`;
 
   const openRoom = (room: Room) => { setSelectedRoom(room); setPage("detail"); };
-  const openBooking = () => { setBookingForm(initialBookingForm); setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] }); setPage("booking"); };
+  const openBooking = () => {
+    setBookingForm(initialBookingForm);
+    setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
+    setSignatureLink(null); setSignatureToken(null); setSignatureSigned(false);
+    setPage("booking");
+  };
 
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
@@ -135,13 +144,49 @@ export default function Index() {
     return path;
   };
 
-  const submitBooking = async () => {
+  const generateSignatureLink = async () => {
     const error = validateBooking();
     if (error) { alert(error); return; }
     if (!selectedRoom || !user) return;
     setSubmitting(true);
     try {
-      // Upload files
+      const { data, error: err } = await supabase.from("booking_signatures").insert({
+        room_id: selectedRoom.id,
+        created_by: user.id,
+        tenant_name: bookingForm.tenantName,
+        booking_data: {
+          room: `${selectedRoom.building} ${selectedRoom.unit} ${selectedRoom.room}`,
+          rent: selectedRoom.rent,
+        },
+      }).select("token").single();
+      if (err) throw err;
+      const link = `${window.location.origin}/sign/${data.token}`;
+      setSignatureLink(link);
+      setSignatureToken(data.token);
+      setSignatureSigned(false);
+    } catch (e: any) {
+      alert(e.message || "Failed to generate signature link");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const checkSignatureStatus = async () => {
+    if (!signatureToken) return;
+    setCheckingSignature(true);
+    try {
+      const { data } = await supabase.from("booking_signatures").select("signed").eq("token", signatureToken).single();
+      if (data?.signed) setSignatureSigned(true);
+      else alert("Tenant has not signed yet. Please wait.");
+    } catch { alert("Failed to check signature status."); }
+    finally { setCheckingSignature(false); }
+  };
+
+  const submitBooking = async () => {
+    if (!signatureSigned) { alert("Tenant must sign before submitting."); return; }
+    if (!selectedRoom || !user) return;
+    setSubmitting(true);
+    try {
       const passportPaths = await Promise.all(uploadedFiles.passport.map(f => uploadFile(f, "passport")));
       const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
@@ -446,12 +491,47 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Submit */}
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-              <button onClick={submitBooking} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-                {submitting ? "Submitting..." : "Submit Booking"}
-              </button>
+            {/* Tenant Signature */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">✍️ Tenant Signature</div>
+              {!signatureLink ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground">Generate a signature link to send to the tenant. They must sign to acknowledge that the booking fee is non-refundable.</div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+                    <button onClick={generateSignatureLink} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {submitting ? "Generating..." : "Generate Signature Link"}
+                    </button>
+                  </div>
+                </div>
+              ) : !signatureSigned ? (
+                <div className="space-y-3">
+                  <div className="bg-secondary rounded-lg p-4 space-y-2">
+                    <div className="text-sm font-medium">Send this link to the tenant:</div>
+                    <div className="flex gap-2">
+                      <input className="flex-1 px-3 py-2 rounded-lg border bg-background text-foreground text-sm" readOnly value={signatureLink} />
+                      <button onClick={() => navigator.clipboard.writeText(signatureLink)} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-opacity border">Copy</button>
+                    </div>
+                  </div>
+                  <div className="bg-destructive/10 rounded-lg p-3 text-sm text-destructive">⏳ Waiting for tenant to sign...</div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+                    <button onClick={checkSignatureStatus} disabled={checkingSignature} className="px-5 py-3 rounded-lg bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {checkingSignature ? "Checking..." : "Check Signature Status"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-accent/20 rounded-lg p-3 text-sm text-accent-foreground font-medium">✅ Tenant has signed! You can now submit the booking.</div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+                    <button onClick={submitBooking} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {submitting ? "Submitting..." : "Submit Booking"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
