@@ -53,6 +53,10 @@ export interface Room {
     moveInFee: number;
     total: number;
   };
+  bed_type: string;
+  pax_staying: number;
+  tenant_gender: string;
+  tenant_race: string;
   created_at: string;
   updated_at: string;
 }
