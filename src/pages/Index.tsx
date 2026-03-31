@@ -491,12 +491,47 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Submit */}
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-              <button onClick={submitBooking} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-                {submitting ? "Submitting..." : "Submit Booking"}
-              </button>
+            {/* Tenant Signature */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">✍️ Tenant Signature</div>
+              {!signatureLink ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground">Generate a signature link to send to the tenant. They must sign to acknowledge that the booking fee is non-refundable.</div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+                    <button onClick={generateSignatureLink} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {submitting ? "Generating..." : "Generate Signature Link"}
+                    </button>
+                  </div>
+                </div>
+              ) : !signatureSigned ? (
+                <div className="space-y-3">
+                  <div className="bg-secondary rounded-lg p-4 space-y-2">
+                    <div className="text-sm font-medium">Send this link to the tenant:</div>
+                    <div className="flex gap-2">
+                      <input className="flex-1 px-3 py-2 rounded-lg border bg-background text-foreground text-sm" readOnly value={signatureLink} />
+                      <button onClick={() => navigator.clipboard.writeText(signatureLink)} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-opacity border">Copy</button>
+                    </div>
+                  </div>
+                  <div className="bg-destructive/10 rounded-lg p-3 text-sm text-destructive">⏳ Waiting for tenant to sign...</div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+                    <button onClick={checkSignatureStatus} disabled={checkingSignature} className="px-5 py-3 rounded-lg bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {checkingSignature ? "Checking..." : "Check Signature Status"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-accent/20 rounded-lg p-3 text-sm text-accent-foreground font-medium">✅ Tenant has signed! You can now submit the booking.</div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setPage("detail")} className="px-5 py-3 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+                    <button onClick={submitBooking} disabled={submitting} className="px-5 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {submitting ? "Submitting..." : "Submit Booking"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
