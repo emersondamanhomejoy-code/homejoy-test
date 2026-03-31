@@ -294,7 +294,7 @@ export default function AdminPage() {
             )}
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-              <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending || (!editingUnit?.id && roomConfigs.reduce((s, r) => s + r.max_pax, 0) > (editingUnit?.unit_max_pax || 0))} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
                 {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
               </button>
             </div>
