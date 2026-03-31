@@ -19,10 +19,13 @@ const rankingData = {
 };
 
 const initialBookingForm = {
-  tenantName: "", phone: "", tenantCategory: "Working Adult", pax: "1",
-  gender: "", race: "", moveInDate: "",
-  passportIcUploaded: false, bankSlipUploaded: false,
-  studentIdUploaded: false, offerLetterUploaded: false,
+  tenantName: "", phone: "", email: "", icPassport: "",
+  gender: "", race: "", nationality: "", moveInDate: "",
+  occupation: "", tenancyDuration: "12", monthlyRental: "",
+  paxStaying: "1", accessCardCount: "0",
+  emergencyContact1: "", emergencyContact2: "",
+  parking: "No", carPlate: "",
+  advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
 const rankMedals = ["🥇", "🥈", "🥉"];
