@@ -214,6 +214,65 @@ export type Database = {
           },
         ]
       }
+      claims: {
+        Row: {
+          account_holder: string
+          agent_id: string
+          amount: number
+          bank_account: string
+          bank_name: string
+          booking_id: string | null
+          created_at: string
+          description: string
+          id: string
+          reject_reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder?: string
+          agent_id: string
+          amount?: number
+          bank_account?: string
+          bank_name?: string
+          booking_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          reject_reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string
+          agent_id?: string
+          amount?: number
+          bank_account?: string
+          bank_name?: string
+          booking_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          reject_reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claims_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           access_info: Json

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable";
 import { useRooms, Room } from "@/hooks/useRooms";
+import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { supabase } from "@/integrations/supabase/client";
 
 const rankingData = {
@@ -36,6 +37,8 @@ export default function Index() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
+  const { data: claimsData = [] } = useClaims();
+  const createClaim = useCreateClaim();
   const [page, setPage] = useState("dashboard");
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -49,6 +52,8 @@ export default function Index() {
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
+  const [claimForm, setClaimForm] = useState({ amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+  const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
 
   const PRESET_AREAS = [
@@ -608,6 +613,106 @@ export default function Index() {
     );
   }
 
+  // ─── CLAIMS PAGE ───
+  if (page === "claims") {
+    const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+    const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+    const pendingClaims = claimsData.filter(c => c.status === "pending");
+    const approvedClaims = claimsData.filter(c => c.status === "approved");
+    const rejectedClaims = claimsData.filter(c => c.status === "rejected");
+    const totalPending = pendingClaims.reduce((s, c) => s + Number(c.amount), 0);
+    const totalApproved = approvedClaims.reduce((s, c) => s + Number(c.amount), 0);
+
+    const submitClaim = async () => {
+      if (!user) return;
+      if (!claimForm.amount || !claimForm.description) { alert("Please fill in amount and description."); return; }
+      try {
+        await createClaim.mutateAsync({
+          agent_id: user.id,
+          amount: Number(claimForm.amount),
+          description: claimForm.description,
+          bank_name: claimForm.bankName,
+          bank_account: claimForm.bankAccount,
+          account_holder: claimForm.accountHolder,
+        });
+        setClaimForm({ amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+        setClaimTab("pending");
+      } catch (e: any) {
+        alert(e.message || "Failed to submit claim");
+      }
+    };
+
+    const renderClaimList = (claims: Claim[]) => {
+      if (claims.length === 0) return <div className="text-center py-8 text-muted-foreground">No claims</div>;
+      return (
+        <div className="space-y-3">
+          {claims.map(c => (
+            <div key={c.id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-lg">RM{Number(c.amount).toLocaleString()}</div>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
+              </div>
+              <div className="text-sm text-muted-foreground">{c.description}</div>
+              {c.bank_name && <div className="text-xs text-muted-foreground">Bank: {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
+              {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
+              <div className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</div>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    return (
+      <div className="min-h-screen bg-background p-6 text-foreground">
+        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+          <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+          <div className="text-3xl font-extrabold tracking-tight">💰 Claims</div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-card rounded-lg shadow-sm p-5 text-center">
+              <div className="text-2xl font-extrabold text-yellow-600">RM{totalPending.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground mt-1">Pending</div>
+            </div>
+            <div className="bg-card rounded-lg shadow-sm p-5 text-center">
+              <div className="text-2xl font-extrabold text-green-600">RM{totalApproved.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground mt-1">Approved</div>
+            </div>
+            <div className="bg-card rounded-lg shadow-sm p-5 text-center">
+              <div className="text-2xl font-extrabold">{claimsData.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Total Claims</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {(["new", "pending", "approved", "rejected"] as const).map(t => (
+              <button key={t} onClick={() => setClaimTab(t)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${claimTab === t ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>
+                {t === "new" ? "+ New Claim" : `${t.charAt(0).toUpperCase() + t.slice(1)} (${t === "pending" ? pendingClaims.length : t === "approved" ? approvedClaims.length : rejectedClaims.length})`}
+              </button>
+            ))}
+          </div>
+          {claimTab === "new" && (
+            <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
+              <div className="text-lg font-bold">Submit New Claim</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-1"><label className={lbl}>Amount (RM) *</label><input className={ic} type="number" placeholder="e.g. 500" value={claimForm.amount} onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Description *</label><input className={ic} placeholder="e.g. Commission for Casa Tiara A-17-8" value={claimForm.description} onChange={e => setClaimForm({ ...claimForm, description: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Bank Name</label><input className={ic} placeholder="e.g. Maybank" value={claimForm.bankName} onChange={e => setClaimForm({ ...claimForm, bankName: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Account No</label><input className={ic} placeholder="Bank account number" value={claimForm.bankAccount} onChange={e => setClaimForm({ ...claimForm, bankAccount: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Account Holder</label><input className={ic} placeholder="Account holder name" value={claimForm.accountHolder} onChange={e => setClaimForm({ ...claimForm, accountHolder: e.target.value })} /></div>
+              </div>
+              <div className="flex justify-end">
+                <button onClick={submitClaim} disabled={createClaim.isPending} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                  {createClaim.isPending ? "Submitting..." : "Submit Claim"}
+                </button>
+              </div>
+            </div>
+          )}
+          {claimTab === "pending" && renderClaimList(pendingClaims)}
+          {claimTab === "approved" && renderClaimList(approvedClaims)}
+          {claimTab === "rejected" && renderClaimList(rejectedClaims)}
+        </div>
+      </div>
+    );
+  }
+
   // ─── DASHBOARD ───
   return (
     <div className="min-h-screen bg-background p-6 text-foreground">
@@ -620,8 +725,11 @@ export default function Index() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{role ?? "agent"}</span>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <div className="bg-primary/10 rounded-lg px-5 py-4 text-center">
+              <div className="text-3xl font-extrabold text-primary">{roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length}</div>
+              <div className="text-xs font-semibold text-primary/70 uppercase tracking-wider mt-1">Available Rooms</div>
+            </div>
             {[
-              { label: "Total Available", value: `${roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length} rooms` },
               { label: "Closed This Month", value: "6 deals" },
               { label: "Pending Claims", value: "3" },
               { label: "Next Payout", value: "15th" },
@@ -727,13 +835,15 @@ export default function Index() {
             </div>
 
             <div className="bg-card rounded-lg shadow-sm p-5">
-              <div className="text-xl font-semibold">Claim Summary</div>
+              <button onClick={() => setPage("claims")} className="w-full text-center">
+                <div className="text-4xl font-extrabold tracking-tight">💰 Claim</div>
+                <div className="text-sm text-muted-foreground mt-2">View & submit your commission claims</div>
+              </button>
               <div className="mt-4 space-y-3 text-sm">
                 {[
                   { label: "Pending Claim", value: "RM1,200" },
                   { label: "Approved Claim", value: "RM3,000" },
                   { label: "Next Payout", value: "15th" },
-                  { label: "CP58", value: "Available after year end" },
                 ].map((item) => (
                   <div key={item.label} className="rounded-lg bg-secondary p-4 flex justify-between">
                     <span className="text-muted-foreground">{item.label}</span>
