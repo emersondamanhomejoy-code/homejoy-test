@@ -158,6 +158,7 @@ export default function AdminPage() {
   // ─── ROOM EDIT FORM ───
   if (editingRoom) {
     const r = editingRoom;
+    const isCarPark = r.room_type === "Car Park";
     const updateField = (field: string, value: any) => setEditingRoom({ ...r, [field]: value });
     const updateCost = (field: string, value: number) => setEditingRoom({ ...r, move_in_cost: { ...r.move_in_cost, [field]: value } });
 
@@ -165,9 +166,21 @@ export default function AdminPage() {
       <div className="min-h-screen bg-background p-6 text-foreground">
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => setEditingRoom(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
-          <div className="text-2xl font-extrabold">Edit {r.room}</div>
+          <div className="text-2xl font-extrabold">Edit {isCarPark ? `🅿️ ${r.room}` : r.room}</div>
           <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
+            {isCarPark ? (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div><label className="text-xs text-muted-foreground">Parking Lot</label><input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)} /></div>
+                <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
+                <div><label className="text-xs text-muted-foreground">Status</label>
+                  <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
+                    <option>Available</option><option>Tenanted</option><option>Unavailable</option>
+                  </select>
+                </div>
+                <div><label className="text-xs text-muted-foreground">Tenant Info</label><input className={`${inputClass} w-full`} placeholder="e.g. tenant name / plate" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
+              </div>
+            ) : (
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground">Bed Type</label>
                 <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
@@ -186,6 +199,9 @@ export default function AdminPage() {
               <div><label className="text-xs text-muted-foreground">Tenant Gender</label><input className={`${inputClass} w-full`} placeholder="e.g. Chinese girl" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
               <div><label className="text-xs text-muted-foreground">Tenant Race</label><input className={`${inputClass} w-full`} placeholder="e.g. Indian, Malay" value={r.tenant_race || ""} onChange={e => updateField("tenant_race", e.target.value)} /></div>
             </div>
+            )}
+            {!isCarPark && (
+            <>
             <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
             <div className="grid md:grid-cols-4 gap-4">
               <div><label className="text-xs text-muted-foreground">Advance</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.advance ?? 0} onChange={e => updateCost("advance", Number(e.target.value))} /></div>
@@ -194,8 +210,12 @@ export default function AdminPage() {
               <div><label className="text-xs text-muted-foreground">Move-in Fee</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.moveInFee ?? 0} onChange={e => updateCost("moveInFee", Number(e.target.value))} /></div>
             </div>
             <div className="text-sm text-muted-foreground">Total: RM{(r.move_in_cost?.advance || 0) + (r.move_in_cost?.deposit || 0) + (r.move_in_cost?.accessCard || 0) + (r.move_in_cost?.moveInFee || 0)}</div>
+            </>
+            )}
 
             {/* Room Photos */}
+            {!isCarPark && (
+            <>
             <div className="text-lg font-semibold pt-2">Room Photos</div>
             <div className="grid grid-cols-3 gap-3">
               {(r.photos as string[] || []).map((url: string, i: number) => (
@@ -225,6 +245,8 @@ export default function AdminPage() {
                 }} />
               </label>
             </div>
+            </>
+            )}
 
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingRoom(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
