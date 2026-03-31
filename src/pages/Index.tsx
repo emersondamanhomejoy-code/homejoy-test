@@ -80,7 +80,7 @@ export default function Index() {
     `Hi, here is the move-in cost breakdown:\n\n${room.building} ${room.unit} ${room.room}\nMonthly Rent: RM${room.rent}\n• 1 Month Advance: RM${room.move_in_cost.advance}\n• Deposit: RM${room.move_in_cost.deposit}\n• Access Card: RM${room.move_in_cost.accessCard}\n• Move-in Fee: RM${room.move_in_cost.moveInFee}\n\nTotal: RM${room.move_in_cost.total}`;
 
   const bookingAnnouncement = (room: Room) =>
-    `${room.building} ${room.unit} ${room.room} booking received\n${bookingForm.pax} pax ${bookingForm.race} ${bookingForm.gender}`;
+    `${room.building} ${room.unit} ${room.room} booking received\n${bookingForm.paxStaying} pax ${bookingForm.race} ${bookingForm.gender}`;
 
   const openRoom = (room: Room) => { setSelectedRoom(room); setPage("detail"); };
   const openBooking = () => { setBookingForm(initialBookingForm); setPage("booking"); };
