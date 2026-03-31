@@ -240,9 +240,13 @@ export default function Index() {
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-3">
-                {selectedRoom.photos.map((label) => (
-                  <div key={label} className="h-48 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground font-medium">{label}</div>
-                ))}
+                {(selectedRoom.photos as string[] || []).length > 0 ? (
+                  (selectedRoom.photos as string[]).map((path: string, i: number) => (
+                    <img key={i} src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Room photo ${i + 1}`} className="h-48 w-full object-cover rounded-lg" />
+                  ))
+                ) : (
+                  <div className="h-48 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground font-medium col-span-2">No photos available</div>
+                )}
               </div>
               <div className="bg-secondary rounded-lg p-5">
                 <div className="text-lg font-semibold">Unit Occupancy</div>
