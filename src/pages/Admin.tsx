@@ -158,6 +158,7 @@ export default function AdminPage() {
   // ─── ROOM EDIT FORM ───
   if (editingRoom) {
     const r = editingRoom;
+    const isCarPark = r.room_type === "Car Park";
     const updateField = (field: string, value: any) => setEditingRoom({ ...r, [field]: value });
     const updateCost = (field: string, value: number) => setEditingRoom({ ...r, move_in_cost: { ...r.move_in_cost, [field]: value } });
 
@@ -165,9 +166,21 @@ export default function AdminPage() {
       <div className="min-h-screen bg-background p-6 text-foreground">
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => setEditingRoom(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
-          <div className="text-2xl font-extrabold">Edit {r.room}</div>
+          <div className="text-2xl font-extrabold">Edit {isCarPark ? `🅿️ ${r.room}` : r.room}</div>
           <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
+            {isCarPark ? (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div><label className="text-xs text-muted-foreground">Parking Lot</label><input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)} /></div>
+                <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
+                <div><label className="text-xs text-muted-foreground">Status</label>
+                  <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
+                    <option>Available</option><option>Tenanted</option><option>Unavailable</option>
+                  </select>
+                </div>
+                <div><label className="text-xs text-muted-foreground">Tenant Info</label><input className={`${inputClass} w-full`} placeholder="e.g. tenant name / plate" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
+              </div>
+            ) : (
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground">Bed Type</label>
                 <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
@@ -186,6 +199,9 @@ export default function AdminPage() {
               <div><label className="text-xs text-muted-foreground">Tenant Gender</label><input className={`${inputClass} w-full`} placeholder="e.g. Chinese girl" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
               <div><label className="text-xs text-muted-foreground">Tenant Race</label><input className={`${inputClass} w-full`} placeholder="e.g. Indian, Malay" value={r.tenant_race || ""} onChange={e => updateField("tenant_race", e.target.value)} /></div>
             </div>
+            )}
+            {!isCarPark && (
+            <>
             <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
             <div className="grid md:grid-cols-4 gap-4">
               <div><label className="text-xs text-muted-foreground">Advance</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.advance ?? 0} onChange={e => updateCost("advance", Number(e.target.value))} /></div>
@@ -194,8 +210,12 @@ export default function AdminPage() {
               <div><label className="text-xs text-muted-foreground">Move-in Fee</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.moveInFee ?? 0} onChange={e => updateCost("moveInFee", Number(e.target.value))} /></div>
             </div>
             <div className="text-sm text-muted-foreground">Total: RM{(r.move_in_cost?.advance || 0) + (r.move_in_cost?.deposit || 0) + (r.move_in_cost?.accessCard || 0) + (r.move_in_cost?.moveInFee || 0)}</div>
+            </>
+            )}
 
             {/* Room Photos */}
+            {!isCarPark && (
+            <>
             <div className="text-lg font-semibold pt-2">Room Photos</div>
             <div className="grid grid-cols-3 gap-3">
               {(r.photos as string[] || []).map((url: string, i: number) => (
@@ -225,6 +245,8 @@ export default function AdminPage() {
                 }} />
               </label>
             </div>
+            </>
+            )}
 
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingRoom(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
@@ -269,40 +291,69 @@ export default function AdminPage() {
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <textarea className={inputClass + " min-h-[80px]"} placeholder="Access info (e.g. condo entry, unit access, visitor parking, viewing instructions...)" value={u.access_info || ""} onChange={e => updateField("access_info", e.target.value)} />
             {/* Room configs - only for new units */}
-            {!u.id && (
+            {!u.id && (() => {
+              const regularRooms = roomConfigs.filter(rc => rc.room_type !== "Car Park");
+              const carParks = roomConfigs.filter(rc => rc.room_type === "Car Park");
+              const relabelRooms = (configs: RoomConfig[]) => {
+                const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                let roomIdx = 0, cpIdx = 0;
+                return configs.map(r => {
+                  if (r.room_type === "Car Park") {
+                    cpIdx++;
+                    return { ...r, room: cpIdx === 1 ? "Car Park" : `Car Park ${cpIdx}` };
+                  }
+                  const name = roomIdx < 26 ? `Room ${letters[roomIdx]}` : `Room ${roomIdx + 1}`;
+                  roomIdx++;
+                  return { ...r, room: name };
+                });
+              };
+              return (
               <>
                 <div className="flex items-center justify-between pt-2">
-                  <div className="text-lg font-semibold">Room Details ({roomConfigs.length} rooms)</div>
+                  <div className="text-lg font-semibold">Room Details ({regularRooms.length} rooms, {carParks.length} car parks)</div>
                   <div className="flex gap-2">
                     {roomConfigs.length > 1 && (
-                      <button type="button" onClick={() => setRoomConfigs(roomConfigs.slice(0, -1))} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
+                      <button type="button" onClick={() => setRoomConfigs(relabelRooms(roomConfigs.slice(0, -1)))} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
                         − Remove Last
                       </button>
                     )}
                     <button type="button" onClick={() => {
-                      const nextNum = roomConfigs.length + 1;
-                      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                      const name = nextNum <= 26 ? `Room ${letters[nextNum - 1]}` : `Room ${nextNum}`;
-                      setRoomConfigs([...roomConfigs, { room: name, bed_type: "", max_pax: 1, rent: 0 }]);
+                      setRoomConfigs(relabelRooms([...roomConfigs, { room: "", bed_type: "", max_pax: 1, rent: 0 }]));
                     }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                       + Add Room
+                    </button>
+                    <button type="button" onClick={() => {
+                      setRoomConfigs(relabelRooms([...roomConfigs, { room: "", bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }]));
+                    }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                      🅿️ + Add Car Park
                     </button>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {roomConfigs.map((rc, i) => (
-                    <div key={i} className="rounded-lg border bg-secondary/30 p-4">
+                  {roomConfigs.map((rc, i) => {
+                    const isCarPark = rc.room_type === "Car Park";
+                    return (
+                    <div key={i} className={`rounded-lg border p-4 ${isCarPark ? "bg-blue-500/5 border-blue-500/20" : "bg-secondary/30"}`}>
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm font-semibold">{rc.room}</div>
+                        <div className="text-sm font-semibold">{isCarPark ? `🅿️ ${rc.room}` : rc.room}</div>
                         {roomConfigs.length > 1 && (
                           <button type="button" onClick={() => {
-                            const c = roomConfigs.filter((_, idx) => idx !== i);
-                            // Re-label rooms
-                            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                            setRoomConfigs(c.map((r, idx) => ({ ...r, room: idx < 26 ? `Room ${letters[idx]}` : `Room ${idx + 1}` })));
+                            setRoomConfigs(relabelRooms(roomConfigs.filter((_, idx) => idx !== i)));
                           }} className="text-xs text-destructive hover:underline">Remove</button>
                         )}
                       </div>
+                      {isCarPark ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Parking Lot</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.parking_lot || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], parking_lot: e.target.value }; setRoomConfigs(c); }} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
+                          </div>
+                        </div>
+                      ) : (
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
@@ -319,11 +370,14 @@ export default function AdminPage() {
                           <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
                         </div>
                       </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
-            )}
+              );
+            })()}
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
               <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
@@ -358,8 +412,8 @@ export default function AdminPage() {
           const pendingBookings = allBookings.filter(b => b.status === "pending");
           const approvedBookings = allBookings.filter(b => b.status === "approved");
           const rejectedBookings = allBookings.filter(b => b.status === "rejected");
-          const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.length ?? 0), 0);
-          const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.status === "Available").length ?? 0), 0);
+          const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park").length ?? 0), 0);
+          const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park" && r.status === "Available").length ?? 0), 0);
           const occupiedRooms = totalRooms - availableRooms;
 
           const handleApprove = async (booking: Booking) => {
@@ -534,8 +588,10 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {units.map((unit) => {
                   const isExpanded = expandedUnit === unit.id;
-                  const availableCount = unit.rooms?.filter(r => r.status === "Available").length ?? 0;
-                  const totalRooms = unit.rooms?.length ?? 0;
+                  const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
+                  const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+                  const availableCount = regularRooms.filter(r => r.status === "Available").length;
+                  const availableCP = carParks.filter(r => r.status === "Available").length;
                   return (
                     <div key={unit.id} className="bg-card rounded-lg shadow-sm overflow-hidden">
                       <div className="p-5 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}>
@@ -543,8 +599,9 @@ export default function AdminPage() {
                           <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
                           <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Max {unit.unit_max_pax} pax</div>
                           <div className="flex gap-2 flex-wrap mt-2">
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} available</span>
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} tenanted</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} rooms avail</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{regularRooms.length - availableCount} tenanted</span>
+                            {carParks.length > 0 && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">🅿️ {availableCP}/{carParks.length} car parks</span>}
                             {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
                             {(unit as any).access_card_source && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {(unit as any).access_card_source} {(unit as any).access_card_deposit ? `RM${(unit as any).access_card_deposit}` : ""}</span>}
                             {unit.parking_lot && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_lot}</span>}
@@ -571,19 +628,23 @@ export default function AdminPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {unit.rooms.map((room) => (
-                                <tr key={room.id} className="border-t hover:bg-secondary/30 transition-colors">
-                                  <td className="px-4 py-3 font-medium">{room.room}</td>
-                                  <td className="px-4 py-3 text-muted-foreground">{room.bed_type || "—"}</td>
+                              {unit.rooms.map((room) => {
+                                const isCP = room.room_type === "Car Park";
+                                return (
+                                <tr key={room.id} className={`border-t hover:bg-secondary/30 transition-colors ${isCP ? "bg-blue-500/5" : ""}`}>
+                                  <td className="px-4 py-3 font-medium">{isCP ? `🅿️ ${room.room}` : room.room}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.bed_type || "—") : (room.bed_type || "—")}</td>
                                   <td className="px-4 py-3">
+                                    {isCP ? "—" : (
                                     <select className="bg-secondary rounded px-2 py-1 text-xs font-medium" value={room.pax_staying || 0} onChange={async (e) => {
                                       try { await updateRoom.mutateAsync({ id: room.id, pax_staying: Number(e.target.value) }); } catch (err: any) { alert(err.message); }
                                     }}>
                                       {Array.from({ length: room.max_pax + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
                                     </select>
+                                    )}
                                   </td>
                                   <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
-                                  <td className="px-4 py-3 text-muted-foreground">{[room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—"}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.tenant_gender || "—") : ([room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—")}</td>
                                   <td className="px-4 py-3">
                                     <button onClick={() => toggleRoomStatus(room)} className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${room.status === "Available" ? "bg-accent/50 text-accent-foreground hover:bg-accent" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}>
                                       {room.status}
@@ -593,11 +654,12 @@ export default function AdminPage() {
                                     <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                                   </td>
                                 </tr>
-                              ))}
+                                );
+                              })}
                               {/* Balance pax summary */}
                               <tr className="border-t bg-secondary/30 font-semibold">
                                 <td className="px-4 py-2" colSpan={2}>Balance Pax</td>
-                                <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
+                                <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.filter(r => r.room_type !== "Car Park").reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
                                 <td colSpan={4}></td>
                               </tr>
                             </tbody>
