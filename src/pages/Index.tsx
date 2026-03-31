@@ -617,12 +617,18 @@ export default function Index() {
                 <div className="text-xl font-semibold">Available Units</div>
                 <span className="text-sm text-muted-foreground">{availableRooms.length} rooms</span>
               </div>
-              <div className="grid md:grid-cols-4 gap-3">
+              <div className="grid md:grid-cols-5 gap-3">
                 <input className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-muted-foreground pl-1">Area</label>
-                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })}>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value, building: "All" })}>
                     <option>All</option>{uniqueLocations.map((loc) => <option key={loc}>{loc}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground pl-1">Property</label>
+                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.building} onChange={(e) => setFilters({ ...filters, building: e.target.value })}>
+                    <option>All</option>{uniqueBuildings.map((b) => <option key={b}>{b}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
