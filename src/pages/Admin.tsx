@@ -13,6 +13,7 @@ interface UserWithRoles {
 
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
+  passcode: "", access_card: "", parking_rate: "",
   access_info: { condoEntry: "", unitAccess: "", visitorParking: "", viewing: "" },
 };
 
@@ -110,7 +111,7 @@ export default function AdminPage() {
   };
 
   const toggleRoomStatus = async (room: Room) => {
-    const newStatus = room.status === "Available" ? "Unavailable" : "Available";
+    const newStatus = room.status === "Available" ? "Tenanted" : "Available";
     try {
       await updateRoom.mutateAsync({ id: room.id, status: newStatus });
     } catch (e: any) {
@@ -142,20 +143,22 @@ export default function AdminPage() {
           <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
             <div className="grid md:grid-cols-2 gap-4">
-              <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Room Type</label>
-                <select className={`${inputClass} w-full`} value={r.room_type} onChange={e => updateField("room_type", e.target.value)}>
-                  <option>Single Room</option><option>Medium Room</option><option>Master Room</option>
+              <div><label className="text-xs text-muted-foreground">Bed Type</label>
+                <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)}>
+                  <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
                 </select>
               </div>
+              <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
               <div><label className="text-xs text-muted-foreground">Status</label>
                 <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
-                  <option>Available</option><option>Unavailable</option>
+                  <option>Available</option><option>Tenanted</option><option>Unavailable</option>
                 </select>
               </div>
-              <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateField("available_date", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Pax Staying</label><input className={`${inputClass} w-full`} type="number" value={r.pax_staying ?? 0} onChange={e => updateField("pax_staying", Number(e.target.value))} /></div>
               <div><label className="text-xs text-muted-foreground">Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.max_pax} onChange={e => updateField("max_pax", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Occupied Pax</label><input className={`${inputClass} w-full`} type="number" value={r.occupied_pax} onChange={e => updateField("occupied_pax", Number(e.target.value))} /></div>
+              <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateField("available_date", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Tenant Gender</label><input className={`${inputClass} w-full`} placeholder="e.g. Chinese girl" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Tenant Race</label><input className={`${inputClass} w-full`} placeholder="e.g. Indian, Malay" value={r.tenant_race || ""} onChange={e => updateField("tenant_race", e.target.value)} /></div>
             </div>
             <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
             <div className="grid md:grid-cols-4 gap-4">
@@ -197,6 +200,9 @@ export default function AdminPage() {
                 <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
               </select>
               <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
+              <input className={inputClass} placeholder="Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
+              <input className={inputClass} placeholder="Access Card (e.g. 0.65 PKW)" value={u.access_card} onChange={e => updateField("access_card", e.target.value)} />
+              <input className={inputClass} placeholder="Parking Rate" value={u.parking_rate} onChange={e => updateField("parking_rate", e.target.value)} />
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <div className="grid md:grid-cols-2 gap-4">
@@ -255,13 +261,16 @@ export default function AdminPage() {
                         <div>
                           <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
                           <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Max {unit.unit_max_pax} pax</div>
-                          <div className="flex gap-2 mt-2">
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500/10 text-green-600">{availableCount} available</span>
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} occupied</span>
+                          <div className="flex gap-2 flex-wrap mt-2">
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} available</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} tenanted</span>
+                            {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
+                            {unit.access_card && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {unit.access_card}</span>}
+                            {unit.parking_rate && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_rate}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, access_info: unit.access_info }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_rate: unit.parking_rate || "", access_info: unit.access_info }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
                           <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
                         </div>
@@ -271,29 +280,39 @@ export default function AdminPage() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-secondary/50">
-                                <th className="text-left px-5 py-2 font-medium">Room</th>
-                                <th className="text-left px-5 py-2 font-medium">Type</th>
-                                <th className="text-left px-5 py-2 font-medium">Rent</th>
-                                <th className="text-left px-5 py-2 font-medium">Status</th>
-                                <th className="text-right px-5 py-2 font-medium">Actions</th>
+                                <th className="text-left px-4 py-2 font-medium">Room</th>
+                                <th className="text-left px-4 py-2 font-medium">Bed Type</th>
+                                <th className="text-left px-4 py-2 font-medium">Pax</th>
+                                <th className="text-left px-4 py-2 font-medium">Rent</th>
+                                <th className="text-left px-4 py-2 font-medium">Tenant</th>
+                                <th className="text-left px-4 py-2 font-medium">Status</th>
+                                <th className="text-right px-4 py-2 font-medium">Actions</th>
                               </tr>
                             </thead>
                             <tbody>
                               {unit.rooms.map((room) => (
                                 <tr key={room.id} className="border-t hover:bg-secondary/30 transition-colors">
-                                  <td className="px-5 py-3 font-medium">{room.room}</td>
-                                  <td className="px-5 py-3 text-muted-foreground">{room.room_type}</td>
-                                  <td className="px-5 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
-                                  <td className="px-5 py-3">
-                                    <button onClick={() => toggleRoomStatus(room)} className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${room.status === "Available" ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "bg-red-500/10 text-red-600 hover:bg-red-500/20"}`}>
+                                  <td className="px-4 py-3 font-medium">{room.room}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{room.bed_type || "—"}</td>
+                                  <td className="px-4 py-3">{room.pax_staying || 0}</td>
+                                  <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{[room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—"}</td>
+                                  <td className="px-4 py-3">
+                                    <button onClick={() => toggleRoomStatus(room)} className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${room.status === "Available" ? "bg-accent/50 text-accent-foreground hover:bg-accent" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}>
                                       {room.status}
                                     </button>
                                   </td>
-                                  <td className="px-5 py-3 text-right">
+                                  <td className="px-4 py-3 text-right">
                                     <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                                   </td>
                                 </tr>
                               ))}
+                              {/* Balance pax summary */}
+                              <tr className="border-t bg-secondary/30 font-semibold">
+                                <td className="px-4 py-2" colSpan={2}>Balance Pax</td>
+                                <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
+                                <td colSpan={4}></td>
+                              </tr>
                             </tbody>
                           </table>
                         </div>
