@@ -90,13 +90,34 @@ const initialBookingForm = {
 const rankMedals = ["🥇", "🥈", "🥉"];
 
 export default function Index() {
-  const [page, setPage] = useState("login");
+  const { user, role, loading, signOut } = useAuth();
+  const [page, setPage] = useState("dashboard");
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
   const [bookingSubmitted, setBookingSubmitted] = useState<{ room: Room; announcement: string } | null>(null);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
+  const [signingIn, setSigningIn] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setSigningIn(true);
+    try {
+      await lovable.auth.signInWithOAuth("google");
+    } catch (e) {
+      console.error("Login failed:", e);
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
