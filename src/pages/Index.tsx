@@ -23,8 +23,9 @@ const initialBookingForm = {
   gender: "", race: "", nationality: "", moveInDate: "",
   occupation: "", tenancyDuration: "12", monthlyRental: "",
   paxStaying: "1", accessCardCount: "0",
-  emergencyContact1: "", emergencyContact2: "",
-  parking: "No", carPlate: "",
+  emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
+  emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
+  parkingCount: "0", carPlate: "",
   advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
