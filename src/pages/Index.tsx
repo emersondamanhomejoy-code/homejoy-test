@@ -42,6 +42,7 @@ export default function Index() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
