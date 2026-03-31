@@ -161,7 +161,7 @@ export default function Index() {
         emergency_2_phone: bookingForm.emergency2Phone,
         emergency_2_relationship: bookingForm.emergency2Relationship,
         parking: bookingForm.parkingCount,
-        car_plate: bookingForm.carPlate,
+        car_plate: bookingForm.carPlates.slice(0, Number(bookingForm.parkingCount)).filter(p => p.trim()).join(", "),
         submitted_by: user.id,
         submitted_by_type: "agent",
         move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
