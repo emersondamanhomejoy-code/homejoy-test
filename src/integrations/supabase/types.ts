@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           access_info: Json
           available_date: string
+          bed_type: string
           building: string
           created_at: string
           housemates: Json
@@ -26,11 +27,14 @@ export type Database = {
           max_pax: number
           move_in_cost: Json
           occupied_pax: number
+          pax_staying: number
           photos: Json
           rent: number
           room: string
           room_type: string
           status: string
+          tenant_gender: string
+          tenant_race: string
           unit: string
           unit_id: string | null
           unit_max_pax: number
@@ -41,6 +45,7 @@ export type Database = {
         Insert: {
           access_info?: Json
           available_date?: string
+          bed_type?: string
           building: string
           created_at?: string
           housemates?: Json
@@ -49,11 +54,14 @@ export type Database = {
           max_pax?: number
           move_in_cost?: Json
           occupied_pax?: number
+          pax_staying?: number
           photos?: Json
           rent?: number
           room: string
           room_type?: string
           status?: string
+          tenant_gender?: string
+          tenant_race?: string
           unit: string
           unit_id?: string | null
           unit_max_pax?: number
@@ -64,6 +72,7 @@ export type Database = {
         Update: {
           access_info?: Json
           available_date?: string
+          bed_type?: string
           building?: string
           created_at?: string
           housemates?: Json
@@ -72,11 +81,14 @@ export type Database = {
           max_pax?: number
           move_in_cost?: Json
           occupied_pax?: number
+          pax_staying?: number
           photos?: Json
           rent?: number
           room?: string
           room_type?: string
           status?: string
+          tenant_gender?: string
+          tenant_race?: string
           unit?: string
           unit_id?: string | null
           unit_max_pax?: number
@@ -96,33 +108,42 @@ export type Database = {
       }
       units: {
         Row: {
+          access_card: string
           access_info: Json
           building: string
           created_at: string
           id: string
           location: string
+          parking_rate: string
+          passcode: string
           unit: string
           unit_max_pax: number
           unit_type: string
           updated_at: string
         }
         Insert: {
+          access_card?: string
           access_info?: Json
           building: string
           created_at?: string
           id?: string
           location: string
+          parking_rate?: string
+          passcode?: string
           unit: string
           unit_max_pax?: number
           unit_type?: string
           updated_at?: string
         }
         Update: {
+          access_card?: string
           access_info?: Json
           building?: string
           created_at?: string
           id?: string
           location?: string
+          parking_rate?: string
+          passcode?: string
           unit?: string
           unit_max_pax?: number
           unit_type?: string
