@@ -41,7 +41,7 @@ export default function Index() {
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
   const [bookingSubmitted, setBookingSubmitted] = useState<{ room: Room; announcement: string } | null>(null);
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
+  const [filters, setFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
