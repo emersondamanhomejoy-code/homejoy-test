@@ -32,6 +32,7 @@ export type Database = {
           room_type: string
           status: string
           unit: string
+          unit_id: string | null
           unit_max_pax: number
           unit_occupied_pax: number
           unit_type: string
@@ -54,6 +55,7 @@ export type Database = {
           room_type?: string
           status?: string
           unit: string
+          unit_id?: string | null
           unit_max_pax?: number
           unit_occupied_pax?: number
           unit_type?: string
@@ -76,8 +78,53 @@ export type Database = {
           room_type?: string
           status?: string
           unit?: string
+          unit_id?: string | null
           unit_max_pax?: number
           unit_occupied_pax?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      units: {
+        Row: {
+          access_info: Json
+          building: string
+          created_at: string
+          id: string
+          location: string
+          unit: string
+          unit_max_pax: number
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          access_info?: Json
+          building: string
+          created_at?: string
+          id?: string
+          location: string
+          unit: string
+          unit_max_pax?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Update: {
+          access_info?: Json
+          building?: string
+          created_at?: string
+          id?: string
+          location?: string
+          unit?: string
+          unit_max_pax?: number
           unit_type?: string
           updated_at?: string
         }
