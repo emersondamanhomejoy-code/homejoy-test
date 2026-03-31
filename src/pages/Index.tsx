@@ -26,6 +26,7 @@ const initialBookingForm = {
   emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
   parkingCount: "0", carPlates: [""] as string[],
+  selectedCarParks: [] as string[],
   advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
@@ -422,9 +423,38 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Parking */}
+            {/* Parking & Car Park */}
             <div className="space-y-4">
               <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
+              {(() => {
+                const availableCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === selectedRoom.building);
+                return availableCarParks.length > 0 ? (
+                  <div className="bg-accent/10 rounded-lg p-4 space-y-3">
+                    <div className="text-sm font-semibold">Available Car Parks at {selectedRoom.building}</div>
+                    <div className="space-y-2">
+                      {availableCarParks.map(cp => (
+                        <label key={cp.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={f.selectedCarParks?.includes(cp.id) || false}
+                            onChange={(e) => {
+                              const current = f.selectedCarParks || [];
+                              const updated = e.target.checked ? [...current, cp.id] : current.filter((id: string) => id !== cp.id);
+                              setBookingForm({ ...f, selectedCarParks: updated });
+                            }}
+                            className="w-4 h-4 rounded border-muted-foreground"
+                          />
+                          <div className="flex-1">
+                            <span className="font-medium">{cp.room}</span>
+                            {cp.bed_type && <span className="text-muted-foreground ml-2">Lot: {cp.bed_type}</span>}
+                          </div>
+                          <span className="font-semibold">RM{cp.rent}/mo</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>How many parking</label>
                   <select className={ic} value={f.parkingCount} onChange={e => {
@@ -591,6 +621,7 @@ export default function Index() {
             <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{role ?? "agent"}</span>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             {[
+              { label: "Total Available", value: `${roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length} rooms` },
               { label: "Closed This Month", value: "6 deals" },
               { label: "Pending Claims", value: "3" },
               { label: "Next Payout", value: "15th" },
