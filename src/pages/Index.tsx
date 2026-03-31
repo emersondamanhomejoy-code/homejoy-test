@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable";
 
@@ -91,6 +92,7 @@ const rankMedals = ["🥇", "🥈", "🥉"];
 
 export default function Index() {
   const { user, role, loading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [page, setPage] = useState("dashboard");
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -393,6 +395,11 @@ export default function Index() {
                 <span className="font-semibold text-foreground">{stat.value}</span>
               </div>
             ))}
+            {role === "admin" && (
+              <button onClick={() => navigate("/admin")} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-opacity">
+                Manage Users
+              </button>
+            )}
             <button onClick={signOut} className="px-4 py-2 rounded-lg border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
               Sign Out
             </button>
