@@ -44,6 +44,7 @@ export default function Index() {
   const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
