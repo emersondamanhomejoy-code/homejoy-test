@@ -143,20 +143,22 @@ export default function AdminPage() {
           <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
             <div className="grid md:grid-cols-2 gap-4">
-              <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Room Type</label>
-                <select className={`${inputClass} w-full`} value={r.room_type} onChange={e => updateField("room_type", e.target.value)}>
-                  <option>Single Room</option><option>Medium Room</option><option>Master Room</option>
+              <div><label className="text-xs text-muted-foreground">Bed Type</label>
+                <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)}>
+                  <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
                 </select>
               </div>
+              <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
               <div><label className="text-xs text-muted-foreground">Status</label>
                 <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
-                  <option>Available</option><option>Unavailable</option>
+                  <option>Available</option><option>Tenanted</option><option>Unavailable</option>
                 </select>
               </div>
-              <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateField("available_date", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Pax Staying</label><input className={`${inputClass} w-full`} type="number" value={r.pax_staying ?? 0} onChange={e => updateField("pax_staying", Number(e.target.value))} /></div>
               <div><label className="text-xs text-muted-foreground">Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.max_pax} onChange={e => updateField("max_pax", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Occupied Pax</label><input className={`${inputClass} w-full`} type="number" value={r.occupied_pax} onChange={e => updateField("occupied_pax", Number(e.target.value))} /></div>
+              <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateField("available_date", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Tenant Gender</label><input className={`${inputClass} w-full`} placeholder="e.g. Chinese girl" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">Tenant Race</label><input className={`${inputClass} w-full`} placeholder="e.g. Indian, Malay" value={r.tenant_race || ""} onChange={e => updateField("tenant_race", e.target.value)} /></div>
             </div>
             <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
             <div className="grid md:grid-cols-4 gap-4">
