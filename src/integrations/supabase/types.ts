@@ -16,10 +16,13 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          access_card_count: number
+          car_plate: string
           company: string
           contract_months: number
           created_at: string
           documents: Json
+          emergency_contact_2: string
           emergency_name: string
           emergency_phone: string
           emergency_relationship: string
@@ -27,6 +30,9 @@ export type Database = {
           monthly_salary: number
           move_in_cost: Json
           move_in_date: string
+          occupation: string
+          parking: string
+          pax_staying: number
           position: string
           reject_reason: string
           reviewed_at: string | null
@@ -46,10 +52,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_card_count?: number
+          car_plate?: string
           company?: string
           contract_months?: number
           created_at?: string
           documents?: Json
+          emergency_contact_2?: string
           emergency_name?: string
           emergency_phone?: string
           emergency_relationship?: string
@@ -57,6 +66,9 @@ export type Database = {
           monthly_salary?: number
           move_in_cost?: Json
           move_in_date: string
+          occupation?: string
+          parking?: string
+          pax_staying?: number
           position?: string
           reject_reason?: string
           reviewed_at?: string | null
@@ -76,10 +88,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_card_count?: number
+          car_plate?: string
           company?: string
           contract_months?: number
           created_at?: string
           documents?: Json
+          emergency_contact_2?: string
           emergency_name?: string
           emergency_phone?: string
           emergency_relationship?: string
@@ -87,6 +102,9 @@ export type Database = {
           monthly_salary?: number
           move_in_cost?: Json
           move_in_date?: string
+          occupation?: string
+          parking?: string
+          pax_staying?: number
           position?: string
           reject_reason?: string
           reviewed_at?: string | null
