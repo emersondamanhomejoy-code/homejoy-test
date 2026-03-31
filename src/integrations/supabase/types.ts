@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          company: string
+          contract_months: number
+          created_at: string
+          documents: Json
+          emergency_name: string
+          emergency_phone: string
+          emergency_relationship: string
+          id: string
+          monthly_salary: number
+          move_in_cost: Json
+          move_in_date: string
+          position: string
+          reject_reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          room_id: string | null
+          status: string
+          submitted_by: string | null
+          submitted_by_type: string
+          tenant_email: string
+          tenant_gender: string
+          tenant_ic_passport: string
+          tenant_name: string
+          tenant_nationality: string
+          tenant_phone: string
+          tenant_race: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company?: string
+          contract_months?: number
+          created_at?: string
+          documents?: Json
+          emergency_name?: string
+          emergency_phone?: string
+          emergency_relationship?: string
+          id?: string
+          monthly_salary?: number
+          move_in_cost?: Json
+          move_in_date: string
+          position?: string
+          reject_reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string | null
+          status?: string
+          submitted_by?: string | null
+          submitted_by_type?: string
+          tenant_email?: string
+          tenant_gender?: string
+          tenant_ic_passport?: string
+          tenant_name: string
+          tenant_nationality?: string
+          tenant_phone: string
+          tenant_race?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company?: string
+          contract_months?: number
+          created_at?: string
+          documents?: Json
+          emergency_name?: string
+          emergency_phone?: string
+          emergency_relationship?: string
+          id?: string
+          monthly_salary?: number
+          move_in_cost?: Json
+          move_in_date?: string
+          position?: string
+          reject_reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string | null
+          status?: string
+          submitted_by?: string | null
+          submitted_by_type?: string
+          tenant_email?: string
+          tenant_gender?: string
+          tenant_ic_passport?: string
+          tenant_name?: string
+          tenant_nationality?: string
+          tenant_phone?: string
+          tenant_race?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           access_info: Json

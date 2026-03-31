@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
+import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 
 interface UserWithRoles {
   id: string;
@@ -33,7 +34,7 @@ const emptyUnit = {
 export default function AdminPage() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"users" | "units">("units");
+  const [tab, setTab] = useState<"dashboard" | "users" | "units">("dashboard");
 
   // Users state
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -51,6 +52,12 @@ export default function AdminPage() {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
+
+  // Bookings state
+  const { data: allBookings = [] } = useBookings();
+  const updateBookingStatus = useUpdateBookingStatus();
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) navigate("/");
@@ -307,11 +314,163 @@ export default function AdminPage() {
         </div>
 
         <div className="flex gap-2">
+          <button onClick={() => setTab("dashboard")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "dashboard" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Dashboard</button>
           <button onClick={() => setTab("units")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "units" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Units & Rooms</button>
           <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Users</button>
         </div>
 
         {error && <div className="rounded-lg bg-destructive/10 text-destructive p-4 text-sm">{error}</div>}
+
+        {/* DASHBOARD TAB */}
+        {tab === "dashboard" && (() => {
+          const pendingBookings = allBookings.filter(b => b.status === "pending");
+          const approvedBookings = allBookings.filter(b => b.status === "approved");
+          const rejectedBookings = allBookings.filter(b => b.status === "rejected");
+          const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.length ?? 0), 0);
+          const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.status === "Available").length ?? 0), 0);
+          const occupiedRooms = totalRooms - availableRooms;
+
+          const handleApprove = async (booking: Booking) => {
+            if (!user) return;
+            try {
+              await updateBookingStatus.mutateAsync({ id: booking.id, status: "approved", reviewed_by: user.id });
+              setSelectedBooking(null);
+            } catch (e: any) { alert(e.message); }
+          };
+
+          const handleReject = async (booking: Booking) => {
+            if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
+            try {
+              await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+              setSelectedBooking(null);
+              setRejectReason("");
+            } catch (e: any) { alert(e.message); }
+          };
+
+          if (selectedBooking) {
+            const b = selectedBooking;
+            return (
+              <div className="space-y-4">
+                <button onClick={() => setSelectedBooking(null)} className="text-sm text-muted-foreground hover:text-foreground">← Back to Dashboard</button>
+                <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xl font-bold">{b.tenant_name}</div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${b.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : b.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{b.status.toUpperCase()}</span>
+                  </div>
+                  {b.room && <div className="text-sm text-muted-foreground">{b.room.building} · {b.room.unit} · {b.room.room}</div>}
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenant Info</div>
+                      <div className="text-sm space-y-1">
+                        <div>📞 {b.tenant_phone}</div>
+                        <div>✉️ {b.tenant_email || "—"}</div>
+                        <div>🪪 {b.tenant_ic_passport || "—"}</div>
+                        <div>👤 {b.tenant_gender || "—"} · {b.tenant_race || "—"} · {b.tenant_nationality || "—"}</div>
+                        <div>📅 Move-in: {b.move_in_date}</div>
+                        <div>📝 Contract: {b.contract_months} months</div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work Info</div>
+                      <div className="text-sm space-y-1">
+                        <div>🏢 {b.company || "—"}</div>
+                        <div>💼 {b.position || "—"}</div>
+                        <div>💰 RM{b.monthly_salary || "—"}</div>
+                      </div>
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact</div>
+                      <div className="text-sm space-y-1">
+                        <div>👤 {b.emergency_name || "—"}</div>
+                        <div>📞 {b.emergency_phone || "—"}</div>
+                        <div>🔗 {b.emergency_relationship || "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {b.status === "pending" && (
+                    <div className="flex flex-col gap-3 pt-4 border-t border-border">
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input className={inputClass + " flex-1"} placeholder="Reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+                        <button onClick={() => handleReject(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">❌ Reject</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {b.status === "rejected" && b.reject_reason && (
+                    <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                      <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-6">
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <div className="text-2xl font-bold">{totalRooms}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Total Rooms</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <div className="text-2xl font-bold text-green-600">{availableRooms}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Available</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <div className="text-2xl font-bold text-orange-500">{occupiedRooms}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Occupied</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <div className="text-2xl font-bold text-yellow-500">{pendingBookings.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Pending Bookings</div>
+                </div>
+              </div>
+
+              {/* Pending Bookings */}
+              <div>
+                <div className="text-lg font-bold mb-3">🔔 Pending Bookings</div>
+                {pendingBookings.length === 0 ? (
+                  <div className="bg-card rounded-lg p-6 text-center text-muted-foreground text-sm">No pending bookings</div>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingBookings.map(b => (
+                      <button key={b.id} onClick={() => setSelectedBooking(b)} className="w-full text-left bg-card rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">{b.tenant_name}</div>
+                          <div className="text-xs text-muted-foreground">{b.room?.building} · {b.room?.unit} · {b.room?.room} · Move-in: {b.move_in_date}</div>
+                        </div>
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-600">PENDING</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Approved / Rejected */}
+              {(approvedBookings.length > 0 || rejectedBookings.length > 0) && (
+                <div>
+                  <div className="text-lg font-bold mb-3">📋 Recent Bookings</div>
+                  <div className="space-y-2">
+                    {[...approvedBookings, ...rejectedBookings].slice(0, 10).map(b => (
+                      <button key={b.id} onClick={() => setSelectedBooking(b)} className="w-full text-left bg-card rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">{b.tenant_name}</div>
+                          <div className="text-xs text-muted-foreground">{b.room?.building} · {b.room?.unit} · {b.room?.room}</div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${b.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{b.status.toUpperCase()}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* UNITS TAB */}
         {tab === "units" && (
