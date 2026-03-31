@@ -2,71 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable";
-
-interface Room {
-  id: number;
-  building: string;
-  unit: string;
-  room: string;
-  location: string;
-  rent: number;
-  roomType: string;
-  unitType: string;
-  status: string;
-  availableDate: string;
-  maxPax: number;
-  occupiedPax: number;
-  unitMaxPax: number;
-  unitOccupiedPax: number;
-  housemates: string[];
-  photos: string[];
-  access: {
-    condoEntry: string;
-    unitAccess: string;
-    visitorParking: string;
-    viewing: string;
-  };
-  moveInCost: {
-    advance: number;
-    deposit: number;
-    accessCard: number;
-    moveInFee: number;
-    total: number;
-  };
-}
-
-const roomsData: Room[] = [
-  {
-    id: 1, building: "D'Aman Crimson", unit: "A-17-8", room: "Room B",
-    location: "Ara Damansara", rent: 850, roomType: "Medium Room", unitType: "Mix Unit",
-    status: "Available", availableDate: "Available Now", maxPax: 1, occupiedPax: 0,
-    unitMaxPax: 6, unitOccupiedPax: 4,
-    housemates: ["Room A: 1 Female", "Room C: 2 Male", "Room D: Vacant", "Room E: 1 Female"],
-    photos: ["Room Photo", "Unit Photo"],
-    access: { condoEntry: "Register at guardhouse", unitAccess: "Smart lock passcode from admin", visitorParking: "Visitor parking available", viewing: "Self check-in allowed" },
-    moveInCost: { advance: 850, deposit: 1275, accessCard: 100, moveInFee: 330, total: 2555 },
-  },
-  {
-    id: 2, building: "Casa Subang", unit: "B-18-3", room: "Room C",
-    location: "Subang", rent: 650, roomType: "Single Room", unitType: "Female Unit",
-    status: "Available", availableDate: "Available Now", maxPax: 2, occupiedPax: 0,
-    unitMaxPax: 6, unitOccupiedPax: 3,
-    housemates: ["Room A: 1 Female", "Room B: 1 Female", "Room D: 1 Female", "Room E: Vacant"],
-    photos: ["Room Photo", "Unit Photo"],
-    access: { condoEntry: "Register with guard", unitAccess: "Collect key from lock box", visitorParking: "Street parking nearby", viewing: "Contact admin before viewing" },
-    moveInCost: { advance: 650, deposit: 975, accessCard: 0, moveInFee: 330, total: 1955 },
-  },
-  {
-    id: 3, building: "Kelana Puteri", unit: "B-5-11", room: "Room D",
-    location: "PJ", rent: 750, roomType: "Medium Room", unitType: "Mix Unit",
-    status: "Available", availableDate: "1 Apr 2026", maxPax: 1, occupiedPax: 0,
-    unitMaxPax: 5, unitOccupiedPax: 3,
-    housemates: ["Room A: 1 Male", "Room B: 1 Female", "Room C: 1 Male", "Room E: Vacant"],
-    photos: ["Room Photo", "Unit Photo"],
-    access: { condoEntry: "Register IC at guardhouse", unitAccess: "Passcode provided after viewing confirmation", visitorParking: "Visitor parking RM2", viewing: "Meet admin at lobby" },
-    moveInCost: { advance: 750, deposit: 1125, accessCard: 100, moveInFee: 330, total: 2305 },
-  },
-];
+import { useRooms, Room } from "@/hooks/useRooms";
 
 const rankingData = {
   internal: [
