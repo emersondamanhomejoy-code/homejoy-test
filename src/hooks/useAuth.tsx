@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,38 +22,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const initialized = useRef(false);
 
   const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-    setRole((data?.role as AppRole) ?? "agent");
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      setRole((data?.role as AppRole) ?? "agent");
+    } catch {
+      setRole("agent");
+    }
   };
 
   useEffect(() => {
+    // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session?.user) {
-          await fetchRole(session.user.id);
+      async (_event, newSession) => {
+        setSession(newSession);
+        if (newSession?.user) {
+          await fetchRole(newSession.user.id);
         } else {
           setRole(null);
         }
-        setLoading(false);
+        if (!initialized.current) {
+          initialized.current = true;
+          setLoading(false);
+        }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        await fetchRole(session.user.id);
+    // Then check existing session
+    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
+      if (!initialized.current) {
+        setSession(existingSession);
+        if (existingSession?.user) {
+          await fetchRole(existingSession.user.id);
+        }
+        initialized.current = true;
+        setLoading(false);
       }
-      setLoading(false);
+    }).catch(() => {
+      if (!initialized.current) {
+        initialized.current = true;
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // Safety timeout — never stay loading forever
+    const timeout = setTimeout(() => {
+      if (!initialized.current) {
+        initialized.current = true;
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const signOut = async () => {
