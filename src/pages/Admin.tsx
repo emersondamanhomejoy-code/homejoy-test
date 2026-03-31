@@ -194,6 +194,38 @@ export default function AdminPage() {
               <div><label className="text-xs text-muted-foreground">Move-in Fee</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.moveInFee ?? 0} onChange={e => updateCost("moveInFee", Number(e.target.value))} /></div>
             </div>
             <div className="text-sm text-muted-foreground">Total: RM{(r.move_in_cost?.advance || 0) + (r.move_in_cost?.deposit || 0) + (r.move_in_cost?.accessCard || 0) + (r.move_in_cost?.moveInFee || 0)}</div>
+
+            {/* Room Photos */}
+            <div className="text-lg font-semibold pt-2">Room Photos</div>
+            <div className="grid grid-cols-3 gap-3">
+              {(r.photos as string[] || []).map((url: string, i: number) => (
+                <div key={i} className="relative group">
+                  <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${url}`} alt={`Photo ${i + 1}`} className="h-32 w-full object-cover rounded-lg" />
+                  <button onClick={() => updateField("photos", (r.photos as string[]).filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                </div>
+              ))}
+              <label className="h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                <span className="text-2xl text-muted-foreground">+</span>
+                <span className="text-xs text-muted-foreground mt-1">Add Photo</span>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  const newPaths: string[] = [];
+                  for (const file of files) {
+                    const ext = file.name.split('.').pop();
+                    const path = `${r.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                    const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                    if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                    newPaths.push(path);
+                  }
+                  if (newPaths.length > 0) {
+                    updateField("photos", [...(r.photos as string[] || []), ...newPaths]);
+                  }
+                  e.target.value = "";
+                }} />
+              </label>
+            </div>
+
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingRoom(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
               <button onClick={saveRoom} disabled={updateRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
