@@ -105,7 +105,10 @@ export default function Index() {
     if (!f.paxStaying) return "Please fill in Pax Staying.";
     if (!f.emergency1Name || !f.emergency1Phone || !f.emergency1Relationship) return "Please complete Emergency Contact 1.";
     if (!f.emergency2Name || !f.emergency2Phone || !f.emergency2Relationship) return "Please complete Emergency Contact 2.";
-    if (Number(f.parkingCount) > 0 && !f.carPlate) return "Please fill in Car Plate No.";
+    if (Number(f.parkingCount) > 0) {
+      const plates = f.carPlates.slice(0, Number(f.parkingCount));
+      if (plates.some(p => !p.trim())) return "Please fill in all Car Plate No.";
+    }
     if (uploadedFiles.passport.length === 0) return "Please upload Passport / IC.";
     if (uploadedFiles.offerLetter.length === 0) return "Please upload Offer Letter.";
     if (uploadedFiles.transferSlip.length === 0) return "Please upload Transfer Slip.";
