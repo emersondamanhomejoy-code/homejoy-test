@@ -84,6 +84,8 @@ export interface RoomConfig {
   bed_type: string;
   max_pax: number;
   rent: number;
+  room_type?: string;
+  parking_lot?: string;
 }
 
 export function useCreateUnit() {
