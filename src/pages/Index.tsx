@@ -45,6 +45,10 @@ export default function Index() {
   const [signingIn, setSigningIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
+  const [signatureLink, setSignatureLink] = useState<string | null>(null);
+  const [signatureToken, setSignatureToken] = useState<string | null>(null);
+  const [signatureSigned, setSignatureSigned] = useState(false);
+  const [checkingSignature, setCheckingSignature] = useState(false);
 
   const PRESET_AREAS = [
     "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
