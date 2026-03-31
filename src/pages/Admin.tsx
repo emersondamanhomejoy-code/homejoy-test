@@ -11,6 +11,10 @@ interface UserWithRoles {
   roles: string[];
 }
 
+const bedTypeMaxPax: Record<string, number> = {
+  MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
+};
+
 const defaultRoomConfigs: RoomConfig[] = [
   { room: "Room A", bed_type: "", max_pax: 1, rent: 0 },
   { room: "Room B", bed_type: "", max_pax: 1, rent: 0 },
