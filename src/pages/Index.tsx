@@ -46,6 +46,11 @@ export default function Index() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
+  const uniqueLocations = useMemo(() => {
+    const locs = new Set(roomsData.map((r) => r.location).filter(Boolean));
+    return Array.from(locs).sort();
+  }, [roomsData]);
+
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
       if (room.status !== "Available") return false;
