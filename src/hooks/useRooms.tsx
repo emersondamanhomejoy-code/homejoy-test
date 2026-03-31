@@ -8,6 +8,9 @@ export interface Unit {
   location: string;
   unit_type: string;
   unit_max_pax: number;
+  passcode: string;
+  access_card: string;
+  parking_rate: string;
   access_info: {
     condoEntry: string;
     unitAccess: string;
