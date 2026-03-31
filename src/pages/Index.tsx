@@ -100,6 +100,18 @@ export default function Index() {
   const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
 
+  const availableRooms = useMemo(() => {
+    return roomsData.filter((room) => {
+      if (room.status !== "Available") return false;
+      const keyword = search.trim().toLowerCase();
+      const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
+      const matchesLocation = filters.location === "All" || room.location === filters.location;
+      const matchesUnitType = filters.unitType === "All" || room.unitType === filters.unitType;
+      const matchesPrice = filters.price === "All" || (filters.price === "Below RM700" && room.rent < 700) || (filters.price === "RM700 - RM900" && room.rent >= 700 && room.rent <= 900) || (filters.price === "Above RM900" && room.rent > 900);
+      return matchesSearch && matchesLocation && matchesUnitType && matchesPrice;
+    });
+  }, [search, filters]);
+
   const handleGoogleLogin = async () => {
     setSigningIn(true);
     try {
@@ -118,18 +130,6 @@ export default function Index() {
       </div>
     );
   }
-
-  const availableRooms = useMemo(() => {
-    return roomsData.filter((room) => {
-      if (room.status !== "Available") return false;
-      const keyword = search.trim().toLowerCase();
-      const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
-      const matchesLocation = filters.location === "All" || room.location === filters.location;
-      const matchesUnitType = filters.unitType === "All" || room.unitType === filters.unitType;
-      const matchesPrice = filters.price === "All" || (filters.price === "Below RM700" && room.rent < 700) || (filters.price === "RM700 - RM900" && room.rent >= 700 && room.rent <= 900) || (filters.price === "Above RM900" && room.rent > 900);
-      return matchesSearch && matchesLocation && matchesUnitType && matchesPrice;
-    });
-  }, [search, filters]);
 
   const ranking = agentType === "Internal" ? rankingData.internal : rankingData.external;
 
