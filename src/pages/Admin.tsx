@@ -374,7 +374,13 @@ export default function AdminPage() {
                                 <tr key={room.id} className="border-t hover:bg-secondary/30 transition-colors">
                                   <td className="px-4 py-3 font-medium">{room.room}</td>
                                   <td className="px-4 py-3 text-muted-foreground">{room.bed_type || "—"}</td>
-                                  <td className="px-4 py-3">{room.pax_staying || 0}</td>
+                                  <td className="px-4 py-3">
+                                    <select className="bg-secondary rounded px-2 py-1 text-xs font-medium" value={room.pax_staying || 0} onChange={async (e) => {
+                                      try { await updateRoom.mutateAsync({ id: room.id, pax_staying: Number(e.target.value) }); } catch (err: any) { alert(err.message); }
+                                    }}>
+                                      {Array.from({ length: room.max_pax + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
+                                    </select>
+                                  </td>
                                   <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
                                   <td className="px-4 py-3 text-muted-foreground">{[room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—"}</td>
                                   <td className="px-4 py-3">
