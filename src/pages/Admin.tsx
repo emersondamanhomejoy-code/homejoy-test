@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, Unit, Room } from "@/hooks/useRooms";
+import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
 
 interface UserWithRoles {
   id: string;
@@ -10,6 +10,14 @@ interface UserWithRoles {
   created_at: string;
   roles: string[];
 }
+
+const defaultRoomConfigs: RoomConfig[] = [
+  { room: "Room A", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room B", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room C", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room D", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room E", bed_type: "", max_pax: 1, rent: 0 },
+];
 
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
@@ -37,6 +45,7 @@ export default function AdminPage() {
   const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
 
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) navigate("/");
@@ -81,13 +90,18 @@ export default function AdminPage() {
     }
   };
 
+  const openCreateRoom2 = () => {
+    setEditingUnit({ ...emptyUnit });
+    setRoomConfigs([...defaultRoomConfigs]);
+  };
+
   const saveUnit = async () => {
     if (!editingUnit) return;
     try {
       if (editingUnit.id) {
         await updateUnit.mutateAsync({ id: editingUnit.id, ...editingUnit });
       } else {
-        await createUnit.mutateAsync(editingUnit);
+        await createUnit.mutateAsync({ unit: editingUnit, roomConfigs });
       }
       setEditingUnit(null);
     } catch (e: any) {
@@ -211,7 +225,35 @@ export default function AdminPage() {
               <input className={inputClass} placeholder="Visitor Parking" value={u.access_info.visitorParking} onChange={e => updateAccess("visitorParking", e.target.value)} />
               <input className={inputClass} placeholder="Viewing" value={u.access_info.viewing} onChange={e => updateAccess("viewing", e.target.value)} />
             </div>
-            {!u.id && <div className="rounded-lg bg-secondary p-4 text-sm text-muted-foreground">5 rooms (Room A - E) will be created automatically.</div>}
+            {/* Room configs - only for new units */}
+            {!u.id && (
+              <>
+                <div className="text-lg font-semibold pt-2">Room Details</div>
+                <div className="space-y-3">
+                  {roomConfigs.map((rc, i) => (
+                    <div key={rc.room} className="rounded-lg border bg-secondary/30 p-4">
+                      <div className="text-sm font-semibold mb-3">{rc.room}</div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Bed Type</label>
+                          <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }}>
+                            <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Max Pax</label>
+                          <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], max_pax: Number(e.target.value) }; setRoomConfigs(c); }} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                          <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
               <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
@@ -245,7 +287,7 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{units.length} units</span>
-              <button onClick={() => setEditingUnit({ ...emptyUnit })} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
+              <button onClick={openCreateRoom2} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
             </div>
             {unitsLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
