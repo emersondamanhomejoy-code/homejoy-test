@@ -13,12 +13,7 @@ export interface Unit {
   access_card_source: string;
   access_card_deposit: number;
   parking_lot: string;
-  access_info: {
-    condoEntry: string;
-    unitAccess: string;
-    visitorParking: string;
-    viewing: string;
-  };
+  access_info: string;
   created_at: string;
   updated_at: string;
   rooms?: Room[];
@@ -42,12 +37,7 @@ export interface Room {
   unit_occupied_pax: number;
   housemates: string[];
   photos: string[];
-  access_info: {
-    condoEntry: string;
-    unitAccess: string;
-    visitorParking: string;
-    viewing: string;
-  };
+  access_info: string;
   move_in_cost: {
     advance: number;
     deposit: number;
