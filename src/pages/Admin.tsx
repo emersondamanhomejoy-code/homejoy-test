@@ -412,8 +412,8 @@ export default function AdminPage() {
           const pendingBookings = allBookings.filter(b => b.status === "pending");
           const approvedBookings = allBookings.filter(b => b.status === "approved");
           const rejectedBookings = allBookings.filter(b => b.status === "rejected");
-          const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.length ?? 0), 0);
-          const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.status === "Available").length ?? 0), 0);
+          const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park").length ?? 0), 0);
+          const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park" && r.status === "Available").length ?? 0), 0);
           const occupiedRooms = totalRooms - availableRooms;
 
           const handleApprove = async (booking: Booking) => {
