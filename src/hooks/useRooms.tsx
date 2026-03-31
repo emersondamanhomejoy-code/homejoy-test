@@ -1,8 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface Unit {
+  id: string;
+  building: string;
+  unit: string;
+  location: string;
+  unit_type: string;
+  unit_max_pax: number;
+  access_info: {
+    condoEntry: string;
+    unitAccess: string;
+    visitorParking: string;
+    viewing: string;
+  };
+  created_at: string;
+  updated_at: string;
+  rooms?: Room[];
+}
+
 export interface Room {
   id: string;
+  unit_id: string | null;
   building: string;
   unit: string;
   room: string;
@@ -35,6 +54,97 @@ export interface Room {
   updated_at: string;
 }
 
+// ─── Units ───
+
+export function useUnits() {
+  return useQuery({
+    queryKey: ["units"],
+    queryFn: async () => {
+      const { data: units, error: uErr } = await supabase
+        .from("units")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (uErr) throw uErr;
+
+      const { data: rooms, error: rErr } = await supabase
+        .from("rooms")
+        .select("*")
+        .order("room", { ascending: true });
+      if (rErr) throw rErr;
+
+      return (units as unknown as Unit[]).map((u) => ({
+        ...u,
+        rooms: (rooms as unknown as Room[]).filter((r) => r.unit_id === u.id),
+      }));
+    },
+  });
+}
+
+export function useCreateUnit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; access_info: any }) => {
+      // Create unit
+      const { data: newUnit, error: uErr } = await supabase
+        .from("units")
+        .insert(unit)
+        .select()
+        .single();
+      if (uErr) throw uErr;
+
+      // Auto-create 5 rooms (A-E)
+      const roomNames = ["Room A", "Room B", "Room C", "Room D", "Room E"];
+      const rooms = roomNames.map((name) => ({
+        unit_id: (newUnit as any).id,
+        building: unit.building,
+        unit: unit.unit,
+        room: name,
+        location: unit.location,
+        rent: 0,
+        room_type: "Medium Room",
+        unit_type: unit.unit_type,
+        status: "Available",
+        available_date: "Available Now",
+        max_pax: 1,
+        occupied_pax: 0,
+        unit_max_pax: unit.unit_max_pax,
+        unit_occupied_pax: 0,
+        housemates: [],
+        photos: [],
+        access_info: unit.access_info,
+        move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
+      }));
+      const { error: rErr } = await supabase.from("rooms").insert(rooms);
+      if (rErr) throw rErr;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["units"] }),
+  });
+}
+
+export function useUpdateUnit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...rest }: Partial<Unit> & { id: string }) => {
+      const { error } = await supabase.from("units").update(rest).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["units"] }),
+  });
+}
+
+export function useDeleteUnit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("units").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["units"] }),
+  });
+}
+
+// ─── Rooms ───
+
 export function useRooms() {
   return useQuery({
     queryKey: ["rooms"],
@@ -49,30 +159,17 @@ export function useRooms() {
   });
 }
 
-export function useUpsertRoom() {
+export function useUpdateRoom() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (room: Partial<Room> & { id?: string }) => {
-      const { id, created_at, updated_at, ...rest } = room as any;
-      if (id) {
-        const { error } = await supabase.from("rooms").update(rest).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("rooms").insert(rest);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
-  });
-}
-
-export function useDeleteRoom() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("rooms").delete().eq("id", id);
+    mutationFn: async ({ id, ...rest }: Partial<Room> & { id: string }) => {
+      const { created_at, updated_at, ...fields } = rest as any;
+      const { error } = await supabase.from("rooms").update(fields).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
   });
 }
