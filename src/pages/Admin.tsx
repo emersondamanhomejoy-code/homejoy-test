@@ -261,9 +261,12 @@ export default function AdminPage() {
                         <div>
                           <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
                           <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Max {unit.unit_max_pax} pax</div>
-                          <div className="flex gap-2 mt-2">
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500/10 text-green-600">{availableCount} available</span>
-                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} occupied</span>
+                          <div className="flex gap-2 flex-wrap mt-2">
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} available</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} tenanted</span>
+                            {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
+                            {unit.access_card && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {unit.access_card}</span>}
+                            {unit.parking_rate && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_rate}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
