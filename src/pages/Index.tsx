@@ -380,7 +380,9 @@ export default function Index() {
             <div className="text-sm font-bold text-muted-foreground tracking-widest uppercase">Homejoy</div>
             <div className="text-3xl font-extrabold tracking-tight mt-1">Agent Dashboard</div>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{role ?? "agent"}</span>
+            <span className="text-sm text-muted-foreground">{user?.email}</span>
             {[
               { label: "Closed This Month", value: "6 deals" },
               { label: "Pending Claims", value: "3" },
@@ -391,6 +393,9 @@ export default function Index() {
                 <span className="font-semibold text-foreground">{stat.value}</span>
               </div>
             ))}
+            <button onClick={signOut} className="px-4 py-2 rounded-lg border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+              Sign Out
+            </button>
           </div>
         </div>
 
