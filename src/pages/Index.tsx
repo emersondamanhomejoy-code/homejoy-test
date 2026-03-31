@@ -25,7 +25,7 @@ const initialBookingForm = {
   paxStaying: "1", accessCardCount: "0",
   emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
-  parkingCount: "0", carPlate: "",
+  parkingCount: "0", carPlates: [""] as string[],
   advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
@@ -105,7 +105,10 @@ export default function Index() {
     if (!f.paxStaying) return "Please fill in Pax Staying.";
     if (!f.emergency1Name || !f.emergency1Phone || !f.emergency1Relationship) return "Please complete Emergency Contact 1.";
     if (!f.emergency2Name || !f.emergency2Phone || !f.emergency2Relationship) return "Please complete Emergency Contact 2.";
-    if (Number(f.parkingCount) > 0 && !f.carPlate) return "Please fill in Car Plate No.";
+    if (Number(f.parkingCount) > 0) {
+      const plates = f.carPlates.slice(0, Number(f.parkingCount));
+      if (plates.some(p => !p.trim())) return "Please fill in all Car Plate No.";
+    }
     if (uploadedFiles.passport.length === 0) return "Please upload Passport / IC.";
     if (uploadedFiles.offerLetter.length === 0) return "Please upload Offer Letter.";
     if (uploadedFiles.transferSlip.length === 0) return "Please upload Transfer Slip.";
@@ -158,7 +161,7 @@ export default function Index() {
         emergency_2_phone: bookingForm.emergency2Phone,
         emergency_2_relationship: bookingForm.emergency2Relationship,
         parking: bookingForm.parkingCount,
-        car_plate: bookingForm.carPlate,
+        car_plate: bookingForm.carPlates.slice(0, Number(bookingForm.parkingCount)).filter(p => p.trim()).join(", "),
         submitted_by: user.id,
         submitted_by_type: "agent",
         move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
@@ -348,13 +351,24 @@ export default function Index() {
               <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>How many parking</label>
-                  <select className={ic} value={f.parkingCount} onChange={e => set("parkingCount", e.target.value)}>
+                  <select className={ic} value={f.parkingCount} onChange={e => {
+                    const count = Number(e.target.value);
+                    const plates = [...f.carPlates];
+                    while (plates.length < count) plates.push("");
+                    setBookingForm({ ...f, parkingCount: e.target.value, carPlates: plates });
+                  }}>
                     <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
                   </select>
                 </div>
-                {Number(f.parkingCount) > 0 && (
-                  <div className="space-y-1"><label className={lbl}>Car Plate *</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
-                )}
+                {Array.from({ length: Number(f.parkingCount) }, (_, i) => (
+                  <div key={i} className="space-y-1"><label className={lbl}>Car Plate {Number(f.parkingCount) > 1 ? i + 1 : ""} *</label>
+                    <input className={ic} placeholder={`Car Plate No ${Number(f.parkingCount) > 1 ? i + 1 : ""}`} value={f.carPlates[i] || ""} onChange={e => {
+                      const plates = [...f.carPlates];
+                      plates[i] = e.target.value;
+                      setBookingForm({ ...f, carPlates: plates });
+                    }} />
+                  </div>
+                ))}
               </div>
             </div>
 
