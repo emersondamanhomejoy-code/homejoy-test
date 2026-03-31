@@ -351,13 +351,24 @@ export default function Index() {
               <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>How many parking</label>
-                  <select className={ic} value={f.parkingCount} onChange={e => set("parkingCount", e.target.value)}>
+                  <select className={ic} value={f.parkingCount} onChange={e => {
+                    const count = Number(e.target.value);
+                    const plates = [...f.carPlates];
+                    while (plates.length < count) plates.push("");
+                    setBookingForm({ ...f, parkingCount: e.target.value, carPlates: plates });
+                  }}>
                     <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
                   </select>
                 </div>
-                {Number(f.parkingCount) > 0 && (
-                  <div className="space-y-1"><label className={lbl}>Car Plate *</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
-                )}
+                {Array.from({ length: Number(f.parkingCount) }, (_, i) => (
+                  <div key={i} className="space-y-1"><label className={lbl}>Car Plate {Number(f.parkingCount) > 1 ? i + 1 : ""} *</label>
+                    <input className={ic} placeholder={`Car Plate No ${Number(f.parkingCount) > 1 ? i + 1 : ""}`} value={f.carPlates[i] || ""} onChange={e => {
+                      const plates = [...f.carPlates];
+                      plates[i] = e.target.value;
+                      setBookingForm({ ...f, carPlates: plates });
+                    }} />
+                  </div>
+                ))}
               </div>
             </div>
 
