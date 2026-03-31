@@ -333,7 +333,16 @@ export default function AdminPage() {
           const handleApprove = async (booking: Booking) => {
             if (!user) return;
             try {
-              await updateBookingStatus.mutateAsync({ id: booking.id, status: "approved", reviewed_by: user.id });
+              await updateBookingStatus.mutateAsync({
+                id: booking.id,
+                status: "approved",
+                reviewed_by: user.id,
+                room_id: booking.room_id,
+                tenant_name: booking.tenant_name,
+                tenant_gender: booking.tenant_gender,
+                tenant_race: booking.tenant_race,
+                pax_staying: (booking as any).pax_staying || 1,
+              });
               setSelectedBooking(null);
             } catch (e: any) { alert(e.message); }
           };
