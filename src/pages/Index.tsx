@@ -730,13 +730,15 @@ export default function Index() {
             </div>
 
             <div className="bg-card rounded-lg shadow-sm p-5">
-              <div className="text-xl font-semibold">Claim Summary</div>
+              <button onClick={() => setPage("claims")} className="w-full text-center">
+                <div className="text-4xl font-extrabold tracking-tight">💰 Claim</div>
+                <div className="text-sm text-muted-foreground mt-2">View & submit your commission claims</div>
+              </button>
               <div className="mt-4 space-y-3 text-sm">
                 {[
                   { label: "Pending Claim", value: "RM1,200" },
                   { label: "Approved Claim", value: "RM3,000" },
                   { label: "Next Payout", value: "15th" },
-                  { label: "CP58", value: "Available after year end" },
                 ].map((item) => (
                   <div key={item.label} className="rounded-lg bg-secondary p-4 flex justify-between">
                     <span className="text-muted-foreground">{item.label}</span>
