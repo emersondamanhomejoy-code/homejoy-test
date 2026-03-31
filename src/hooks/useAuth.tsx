@@ -26,14 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchRole = async (userId: string) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId);
+      console.log("fetchRole result:", { data, error, userId });
       const roles = data?.map((r) => r.role as AppRole) ?? [];
-      // Prefer admin if user has it, otherwise agent
-      setRole(roles.includes("admin") ? "admin" : (roles[0] ?? "agent"));
-    } catch {
+      const resolvedRole = roles.includes("admin") ? "admin" : (roles[0] ?? "agent");
+      console.log("Resolved role:", resolvedRole, "from roles:", roles);
+      setRole(resolvedRole);
+    } catch (e) {
+      console.error("fetchRole error:", e);
       setRole("agent");
     }
   };
