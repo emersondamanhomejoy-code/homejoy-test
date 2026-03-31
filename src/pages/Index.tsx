@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable";
 import { useRooms, Room } from "@/hooks/useRooms";
+import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { supabase } from "@/integrations/supabase/client";
 
 const rankingData = {
