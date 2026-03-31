@@ -23,8 +23,9 @@ const initialBookingForm = {
   gender: "", race: "", nationality: "", moveInDate: "",
   occupation: "", tenancyDuration: "12", monthlyRental: "",
   paxStaying: "1", accessCardCount: "0",
-  emergencyContact1: "", emergencyContact2: "",
-  parking: "No", carPlate: "",
+  emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
+  emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
+  parkingCount: "0", carPlate: "",
   advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
@@ -43,6 +44,7 @@ export default function Index() {
   const [filters, setFilters] = useState({ location: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
@@ -84,16 +86,39 @@ export default function Index() {
     `${room.building} ${room.unit} ${room.room} booking received\n${bookingForm.paxStaying} pax ${bookingForm.race} ${bookingForm.gender}`;
 
   const openRoom = (room: Room) => { setSelectedRoom(room); setPage("detail"); };
-  const openBooking = () => { setBookingForm(initialBookingForm); setPage("booking"); };
+  const openBooking = () => { setBookingForm(initialBookingForm); setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] }); setPage("booking"); };
 
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
     if (selectedRoom.status !== "Available") return "This room is no longer available.";
-    if (!bookingForm.tenantName || !bookingForm.phone || !bookingForm.gender || !bookingForm.moveInDate) return "Please complete all required fields.";
-    if (!bookingForm.icPassport) return "Please fill in NRIC/Passport No.";
+    const f = bookingForm;
+    if (!f.tenantName) return "Please fill in Full Name.";
+    if (!f.icPassport) return "Please fill in NRIC/Passport No.";
+    if (!f.email) return "Please fill in Email.";
+    if (!f.phone) return "Please fill in Contact No.";
+    if (!f.gender) return "Please select Gender.";
+    if (!f.nationality) return "Please fill in Nationality.";
+    if (!f.race) return "Please fill in Race.";
+    if (!f.moveInDate) return "Please select Move-in Date.";
+    if (!f.occupation) return "Please fill in Occupation.";
+    if (!f.tenancyDuration) return "Please fill in Tenancy Duration.";
+    if (!f.paxStaying) return "Please fill in Pax Staying.";
+    if (!f.emergency1Name || !f.emergency1Phone || !f.emergency1Relationship) return "Please complete Emergency Contact 1.";
+    if (!f.emergency2Name || !f.emergency2Phone || !f.emergency2Relationship) return "Please complete Emergency Contact 2.";
+    if (Number(f.parkingCount) > 0 && !f.carPlate) return "Please fill in Car Plate No.";
+    if (uploadedFiles.passport.length === 0) return "Please upload Passport / IC.";
+    if (uploadedFiles.offerLetter.length === 0) return "Please upload Offer Letter.";
+    if (uploadedFiles.transferSlip.length === 0) return "Please upload Transfer Slip.";
     return "";
   };
 
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("booking-docs").upload(path, file);
+    if (error) throw error;
+    return path;
+  };
 
   const submitBooking = async () => {
     const error = validateBooking();
@@ -101,6 +126,11 @@ export default function Index() {
     if (!selectedRoom || !user) return;
     setSubmitting(true);
     try {
+      // Upload files
+      const passportPaths = await Promise.all(uploadedFiles.passport.map(f => uploadFile(f, "passport")));
+      const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
+      const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
+
       const advance = Number(bookingForm.advance) || 0;
       const deposit = Number(bookingForm.deposit) || 0;
       const adminFee = Number(bookingForm.adminFee) || 0;
@@ -121,14 +151,20 @@ export default function Index() {
         occupation: bookingForm.occupation,
         pax_staying: Number(bookingForm.paxStaying) || 1,
         access_card_count: Number(bookingForm.accessCardCount) || 0,
-        emergency_name: bookingForm.emergencyContact1,
-        emergency_phone: "",
-        emergency_contact_2: bookingForm.emergencyContact2,
-        parking: bookingForm.parking,
+        emergency_1_name: bookingForm.emergency1Name,
+        emergency_1_phone: bookingForm.emergency1Phone,
+        emergency_1_relationship: bookingForm.emergency1Relationship,
+        emergency_2_name: bookingForm.emergency2Name,
+        emergency_2_phone: bookingForm.emergency2Phone,
+        emergency_2_relationship: bookingForm.emergency2Relationship,
+        parking: bookingForm.parkingCount,
         car_plate: bookingForm.carPlate,
         submitted_by: user.id,
         submitted_by_type: "agent",
         move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
+        doc_passport: passportPaths,
+        doc_offer_letter: offerPaths,
+        doc_transfer_slip: slipPaths,
       });
       if (dbErr) throw dbErr;
       setBookingSubmitted({ room: selectedRoom, announcement: bookingAnnouncement(selectedRoom) });
@@ -269,30 +305,41 @@ export default function Index() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={f.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>NRIC/Passport No *</label><input className={ic} placeholder="NRIC/Passport No" value={f.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={f.email} onChange={e => set("email", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Email *</label><input className={ic} type="email" placeholder="Email" value={f.email} onChange={e => set("email", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={f.phone} onChange={e => set("phone", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Gender *</label>
                   <select className={ic} value={f.gender} onChange={e => set("gender", e.target.value)}>
                     <option value="">Select Gender</option><option>Male</option><option>Female</option>
                   </select>
                 </div>
-                <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Race</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Nationality *</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Race *</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={f.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months)</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Occupation *</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>How many pax staying</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>How many pax staying *</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
               </div>
             </div>
 
-            {/* Emergency Contact */}
+            {/* Emergency Contact 1 */}
             <div className="space-y-4">
-              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact</div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>Emergency Contact 1</label><input className={ic} placeholder="Name & Phone" value={f.emergencyContact1} onChange={e => set("emergencyContact1", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Emergency Contact 2</label><input className={ic} placeholder="Name & Phone" value={f.emergencyContact2} onChange={e => set("emergencyContact2", e.target.value)} /></div>
+              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact 1 *</div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-1"><label className={lbl}>Name *</label><input className={ic} placeholder="Name" value={f.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone *</label><input className={ic} placeholder="Phone" value={f.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship *</label><input className={ic} placeholder="e.g. Father, Mother" value={f.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
+              </div>
+            </div>
+
+            {/* Emergency Contact 2 */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact 2 *</div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-1"><label className={lbl}>Name *</label><input className={ic} placeholder="Name" value={f.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone *</label><input className={ic} placeholder="Phone" value={f.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship *</label><input className={ic} placeholder="e.g. Spouse, Sibling" value={f.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
               </div>
             </div>
 
@@ -300,14 +347,51 @@ export default function Index() {
             <div className="space-y-4">
               <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>Parking</label>
-                  <select className={ic} value={f.parking} onChange={e => set("parking", e.target.value)}>
-                    <option>No</option><option>Yes</option>
+                <div className="space-y-1"><label className={lbl}>How many parking</label>
+                  <select className={ic} value={f.parkingCount} onChange={e => set("parkingCount", e.target.value)}>
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
                   </select>
                 </div>
-                {f.parking === "Yes" && (
-                  <div className="space-y-1"><label className={lbl}>Car Plate</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
+                {Number(f.parkingCount) > 0 && (
+                  <div className="space-y-1"><label className={lbl}>Car Plate *</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
                 )}
+              </div>
+            </div>
+
+            {/* Document Uploads */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">📎 Documents</div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className={lbl}>Passport / IC *</label>
+                  <div className="flex items-center gap-3">
+                    <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                      Choose Files
+                      <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => { if (e.target.files) setUploadedFiles(prev => ({ ...prev, passport: [...prev.passport, ...Array.from(e.target.files!)] })); }} />
+                    </label>
+                    <span className="text-sm text-muted-foreground">{uploadedFiles.passport.length > 0 ? uploadedFiles.passport.map(f => f.name).join(", ") : "No file chosen"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className={lbl}>Offer Letter *</label>
+                  <div className="flex items-center gap-3">
+                    <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                      Choose Files
+                      <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => { if (e.target.files) setUploadedFiles(prev => ({ ...prev, offerLetter: [...prev.offerLetter, ...Array.from(e.target.files!)] })); }} />
+                    </label>
+                    <span className="text-sm text-muted-foreground">{uploadedFiles.offerLetter.length > 0 ? uploadedFiles.offerLetter.map(f => f.name).join(", ") : "No file chosen"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className={lbl}>Transfer Slip *</label>
+                  <div className="flex items-center gap-3">
+                    <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                      Choose Files
+                      <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => { if (e.target.files) setUploadedFiles(prev => ({ ...prev, transferSlip: [...prev.transferSlip, ...Array.from(e.target.files!)] })); }} />
+                    </label>
+                    <span className="text-sm text-muted-foreground">{uploadedFiles.transferSlip.length > 0 ? uploadedFiles.transferSlip.map(f => f.name).join(", ") : "No file chosen"}</span>
+                  </div>
+                </div>
               </div>
             </div>
 

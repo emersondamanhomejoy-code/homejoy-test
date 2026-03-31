@@ -21,7 +21,16 @@ export type Database = {
           company: string
           contract_months: number
           created_at: string
+          doc_offer_letter: Json
+          doc_passport: Json
+          doc_transfer_slip: Json
           documents: Json
+          emergency_1_name: string
+          emergency_1_phone: string
+          emergency_1_relationship: string
+          emergency_2_name: string
+          emergency_2_phone: string
+          emergency_2_relationship: string
           emergency_contact_2: string
           emergency_name: string
           emergency_phone: string
@@ -57,7 +66,16 @@ export type Database = {
           company?: string
           contract_months?: number
           created_at?: string
+          doc_offer_letter?: Json
+          doc_passport?: Json
+          doc_transfer_slip?: Json
           documents?: Json
+          emergency_1_name?: string
+          emergency_1_phone?: string
+          emergency_1_relationship?: string
+          emergency_2_name?: string
+          emergency_2_phone?: string
+          emergency_2_relationship?: string
           emergency_contact_2?: string
           emergency_name?: string
           emergency_phone?: string
@@ -93,7 +111,16 @@ export type Database = {
           company?: string
           contract_months?: number
           created_at?: string
+          doc_offer_letter?: Json
+          doc_passport?: Json
+          doc_transfer_slip?: Json
           documents?: Json
+          emergency_1_name?: string
+          emergency_1_phone?: string
+          emergency_1_relationship?: string
+          emergency_2_name?: string
+          emergency_2_phone?: string
+          emergency_2_relationship?: string
           emergency_contact_2?: string
           emergency_name?: string
           emergency_phone?: string
