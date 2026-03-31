@@ -144,13 +144,49 @@ export default function Index() {
     return path;
   };
 
-  const submitBooking = async () => {
+  const generateSignatureLink = async () => {
     const error = validateBooking();
     if (error) { alert(error); return; }
     if (!selectedRoom || !user) return;
     setSubmitting(true);
     try {
-      // Upload files
+      const { data, error: err } = await supabase.from("booking_signatures").insert({
+        room_id: selectedRoom.id,
+        created_by: user.id,
+        tenant_name: bookingForm.tenantName,
+        booking_data: {
+          room: `${selectedRoom.building} ${selectedRoom.unit} ${selectedRoom.room}`,
+          rent: selectedRoom.rent,
+        },
+      }).select("token").single();
+      if (err) throw err;
+      const link = `${window.location.origin}/sign/${data.token}`;
+      setSignatureLink(link);
+      setSignatureToken(data.token);
+      setSignatureSigned(false);
+    } catch (e: any) {
+      alert(e.message || "Failed to generate signature link");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const checkSignatureStatus = async () => {
+    if (!signatureToken) return;
+    setCheckingSignature(true);
+    try {
+      const { data } = await supabase.from("booking_signatures").select("signed").eq("token", signatureToken).single();
+      if (data?.signed) setSignatureSigned(true);
+      else alert("Tenant has not signed yet. Please wait.");
+    } catch { alert("Failed to check signature status."); }
+    finally { setCheckingSignature(false); }
+  };
+
+  const submitBooking = async () => {
+    if (!signatureSigned) { alert("Tenant must sign before submitting."); return; }
+    if (!selectedRoom || !user) return;
+    setSubmitting(true);
+    try {
       const passportPaths = await Promise.all(uploadedFiles.passport.map(f => uploadFile(f, "passport")));
       const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
