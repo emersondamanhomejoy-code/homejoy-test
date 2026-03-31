@@ -86,7 +86,7 @@ export default function Index() {
     `${room.building} ${room.unit} ${room.room} booking received\n${bookingForm.paxStaying} pax ${bookingForm.race} ${bookingForm.gender}`;
 
   const openRoom = (room: Room) => { setSelectedRoom(room); setPage("detail"); };
-  const openBooking = () => { setBookingForm(initialBookingForm); setPage("booking"); };
+  const openBooking = () => { setBookingForm(initialBookingForm); setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] }); setPage("booking"); };
 
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
