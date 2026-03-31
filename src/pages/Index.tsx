@@ -25,7 +25,7 @@ const initialBookingForm = {
   paxStaying: "1", accessCardCount: "0",
   emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
-  parkingCount: "0", carPlate: "",
+  parkingCount: "0", carPlates: [""] as string[],
   advance: "", deposit: "", adminFee: "", electricityReload: "",
 };
 
