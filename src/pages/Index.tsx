@@ -305,30 +305,41 @@ export default function Index() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={f.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>NRIC/Passport No *</label><input className={ic} placeholder="NRIC/Passport No" value={f.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={f.email} onChange={e => set("email", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Email *</label><input className={ic} type="email" placeholder="Email" value={f.email} onChange={e => set("email", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={f.phone} onChange={e => set("phone", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Gender *</label>
                   <select className={ic} value={f.gender} onChange={e => set("gender", e.target.value)}>
                     <option value="">Select Gender</option><option>Male</option><option>Female</option>
                   </select>
                 </div>
-                <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Race</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Nationality *</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Race *</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={f.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months)</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Occupation *</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>How many pax staying</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>How many pax staying *</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
               </div>
             </div>
 
-            {/* Emergency Contact */}
+            {/* Emergency Contact 1 */}
             <div className="space-y-4">
-              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact</div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>Emergency Contact 1</label><input className={ic} placeholder="Name & Phone" value={f.emergencyContact1} onChange={e => set("emergencyContact1", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Emergency Contact 2</label><input className={ic} placeholder="Name & Phone" value={f.emergencyContact2} onChange={e => set("emergencyContact2", e.target.value)} /></div>
+              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact 1 *</div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-1"><label className={lbl}>Name *</label><input className={ic} placeholder="Name" value={f.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone *</label><input className={ic} placeholder="Phone" value={f.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship *</label><input className={ic} placeholder="e.g. Father, Mother" value={f.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
+              </div>
+            </div>
+
+            {/* Emergency Contact 2 */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact 2 *</div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-1"><label className={lbl}>Name *</label><input className={ic} placeholder="Name" value={f.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone *</label><input className={ic} placeholder="Phone" value={f.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship *</label><input className={ic} placeholder="e.g. Spouse, Sibling" value={f.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
               </div>
             </div>
 
@@ -336,14 +347,51 @@ export default function Index() {
             <div className="space-y-4">
               <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>Parking</label>
-                  <select className={ic} value={f.parking} onChange={e => set("parking", e.target.value)}>
-                    <option>No</option><option>Yes</option>
+                <div className="space-y-1"><label className={lbl}>How many parking</label>
+                  <select className={ic} value={f.parkingCount} onChange={e => set("parkingCount", e.target.value)}>
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
                   </select>
                 </div>
-                {f.parking === "Yes" && (
-                  <div className="space-y-1"><label className={lbl}>Car Plate</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
+                {Number(f.parkingCount) > 0 && (
+                  <div className="space-y-1"><label className={lbl}>Car Plate *</label><input className={ic} placeholder="Car Plate No" value={f.carPlate} onChange={e => set("carPlate", e.target.value)} /></div>
                 )}
+              </div>
+            </div>
+
+            {/* Document Uploads */}
+            <div className="space-y-4">
+              <div className="text-lg font-bold flex items-center gap-2">📎 Documents</div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className={lbl}>Passport / IC *</label>
+                  <div className="flex items-center gap-3">
+                    <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                      Choose Files
+                      <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => { if (e.target.files) setUploadedFiles(prev => ({ ...prev, passport: [...prev.passport, ...Array.from(e.target.files!)] })); }} />
+                    </label>
+                    <span className="text-sm text-muted-foreground">{uploadedFiles.passport.length > 0 ? uploadedFiles.passport.map(f => f.name).join(", ") : "No file chosen"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className={lbl}>Offer Letter *</label>
+                  <div className="flex items-center gap-3">
+                    <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                      Choose Files
+                      <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => { if (e.target.files) setUploadedFiles(prev => ({ ...prev, offerLetter: [...prev.offerLetter, ...Array.from(e.target.files!)] })); }} />
+                    </label>
+                    <span className="text-sm text-muted-foreground">{uploadedFiles.offerLetter.length > 0 ? uploadedFiles.offerLetter.map(f => f.name).join(", ") : "No file chosen"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className={lbl}>Transfer Slip *</label>
+                  <div className="flex items-center gap-3">
+                    <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                      Choose Files
+                      <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => { if (e.target.files) setUploadedFiles(prev => ({ ...prev, transferSlip: [...prev.transferSlip, ...Array.from(e.target.files!)] })); }} />
+                    </label>
+                    <span className="text-sm text-muted-foreground">{uploadedFiles.transferSlip.length > 0 ? uploadedFiles.transferSlip.map(f => f.name).join(", ") : "No file chosen"}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
