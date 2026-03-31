@@ -203,7 +203,7 @@ export default function AdminPage() {
   if (editingUnit) {
     const u = editingUnit;
     const updateField = (field: string, value: any) => setEditingUnit({ ...u, [field]: value });
-    const updateAccess = (field: string, value: string) => setEditingUnit({ ...u, access_info: { ...u.access_info, [field]: value } });
+    
 
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
