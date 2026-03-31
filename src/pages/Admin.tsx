@@ -11,6 +11,14 @@ interface UserWithRoles {
   roles: string[];
 }
 
+const defaultRoomConfigs: RoomConfig[] = [
+  { room: "Room A", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room B", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room C", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room D", bed_type: "", max_pax: 1, rent: 0 },
+  { room: "Room E", bed_type: "", max_pax: 1, rent: 0 },
+];
+
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
   passcode: "", access_card: "", parking_rate: "",
