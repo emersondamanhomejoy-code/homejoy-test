@@ -491,7 +491,7 @@ export default function Index() {
             ))}
             {role === "admin" && (
               <button onClick={() => navigate("/admin")} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-opacity">
-                Manage Users
+                Admin Panel
               </button>
             )}
             <button onClick={signOut} className="px-4 py-2 rounded-lg border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
