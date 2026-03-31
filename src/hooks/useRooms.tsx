@@ -10,7 +10,7 @@ export interface Unit {
   unit_max_pax: number;
   passcode: string;
   access_card: string;
-  parking_rate: string;
+  parking_lot: string;
   access_info: {
     condoEntry: string;
     unitAccess: string;
@@ -98,7 +98,7 @@ export function useCreateUnit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
-      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_rate?: string; access_info: any };
+      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_lot?: string; access_info: any };
       roomConfigs: RoomConfig[];
     }) => {
       const { unit, roomConfigs } = payload;

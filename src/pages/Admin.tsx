@@ -21,7 +21,7 @@ const defaultRoomConfigs: RoomConfig[] = [
 
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
-  passcode: "", access_card: "", parking_rate: "",
+  passcode: "", access_card: "", parking_lot: "",
   access_info: { condoEntry: "", unitAccess: "", visitorParking: "", viewing: "" },
 };
 
@@ -214,9 +214,9 @@ export default function AdminPage() {
                 <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
               </select>
               <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
-              <input className={inputClass} placeholder="Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
-              <input className={inputClass} placeholder="Access Card (e.g. 0.65 PKW)" value={u.access_card} onChange={e => updateField("access_card", e.target.value)} />
-              <input className={inputClass} placeholder="Parking Rate" value={u.parking_rate} onChange={e => updateField("parking_rate", e.target.value)} />
+              <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
+              <input className={inputClass} placeholder="Access Card Price (RM)" value={u.access_card} onChange={e => updateField("access_card", e.target.value)} />
+              <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <div className="grid md:grid-cols-2 gap-4">
@@ -228,11 +228,42 @@ export default function AdminPage() {
             {/* Room configs - only for new units */}
             {!u.id && (
               <>
-                <div className="text-lg font-semibold pt-2">Room Details</div>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-lg font-semibold">Room Details ({roomConfigs.length} rooms)</div>
+                  <div className="flex gap-2">
+                    {roomConfigs.length > 1 && (
+                      <button type="button" onClick={() => setRoomConfigs(roomConfigs.slice(0, -1))} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
+                        − Remove Last
+                      </button>
+                    )}
+                    <button type="button" onClick={() => {
+                      const nextNum = roomConfigs.length + 1;
+                      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                      const name = nextNum <= 26 ? `Room ${letters[nextNum - 1]}` : `Room ${nextNum}`;
+                      setRoomConfigs([...roomConfigs, { room: name, bed_type: "", max_pax: 1, rent: 0 }]);
+                    }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                      + Add Room
+                    </button>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground flex gap-4">
+                  <span>Unit Max Pax: <strong className="text-foreground">{u.unit_max_pax}</strong></span>
+                  <span>Total Room Max Pax: <strong className="text-foreground">{roomConfigs.reduce((s, r) => s + r.max_pax, 0)}</strong></span>
+                </div>
                 <div className="space-y-3">
                   {roomConfigs.map((rc, i) => (
-                    <div key={rc.room} className="rounded-lg border bg-secondary/30 p-4">
-                      <div className="text-sm font-semibold mb-3">{rc.room}</div>
+                    <div key={i} className="rounded-lg border bg-secondary/30 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm font-semibold">{rc.room}</div>
+                        {roomConfigs.length > 1 && (
+                          <button type="button" onClick={() => {
+                            const c = roomConfigs.filter((_, idx) => idx !== i);
+                            // Re-label rooms
+                            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                            setRoomConfigs(c.map((r, idx) => ({ ...r, room: idx < 26 ? `Room ${letters[idx]}` : `Room ${idx + 1}` })));
+                          }} className="text-xs text-destructive hover:underline">Remove</button>
+                        )}
+                      </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
@@ -308,11 +339,11 @@ export default function AdminPage() {
                             <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{totalRooms - availableCount} tenanted</span>
                             {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
                             {unit.access_card && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {unit.access_card}</span>}
-                            {unit.parking_rate && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_rate}</span>}
+                            {unit.parking_lot && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_lot}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_rate: unit.parking_rate || "", access_info: unit.access_info }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_info: unit.access_info }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
                           <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
                         </div>
