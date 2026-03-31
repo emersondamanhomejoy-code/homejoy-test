@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      rooms: {
+        Row: {
+          access_info: Json
+          available_date: string
+          building: string
+          created_at: string
+          housemates: Json
+          id: string
+          location: string
+          max_pax: number
+          move_in_cost: Json
+          occupied_pax: number
+          photos: Json
+          rent: number
+          room: string
+          room_type: string
+          status: string
+          unit: string
+          unit_max_pax: number
+          unit_occupied_pax: number
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          access_info?: Json
+          available_date?: string
+          building: string
+          created_at?: string
+          housemates?: Json
+          id?: string
+          location: string
+          max_pax?: number
+          move_in_cost?: Json
+          occupied_pax?: number
+          photos?: Json
+          rent?: number
+          room: string
+          room_type?: string
+          status?: string
+          unit: string
+          unit_max_pax?: number
+          unit_occupied_pax?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Update: {
+          access_info?: Json
+          available_date?: string
+          building?: string
+          created_at?: string
+          housemates?: Json
+          id?: string
+          location?: string
+          max_pax?: number
+          move_in_cost?: Json
+          occupied_pax?: number
+          photos?: Json
+          rent?: number
+          room?: string
+          room_type?: string
+          status?: string
+          unit?: string
+          unit_max_pax?: number
+          unit_occupied_pax?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
