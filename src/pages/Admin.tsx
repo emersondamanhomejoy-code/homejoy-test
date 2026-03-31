@@ -246,10 +246,17 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-                <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground flex gap-4">
-                  <span>Unit Max Pax: <strong className="text-foreground">{u.unit_max_pax}</strong></span>
-                  <span>Total Room Max Pax: <strong className="text-foreground">{roomConfigs.reduce((s, r) => s + r.max_pax, 0)}</strong></span>
-                </div>
+                {(() => {
+                  const totalRoomPax = roomConfigs.reduce((s, r) => s + r.max_pax, 0);
+                  const exceeded = totalRoomPax > u.unit_max_pax;
+                  return (
+                    <div className={`rounded-lg p-3 text-sm flex gap-4 ${exceeded ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground"}`}>
+                      <span>Unit Max Pax: <strong className="text-foreground">{u.unit_max_pax}</strong></span>
+                      <span>Total Room Max Pax: <strong className={exceeded ? "text-destructive" : "text-foreground"}>{totalRoomPax}</strong></span>
+                      {exceeded && <span className="font-semibold">⚠ Exceeds unit max!</span>}
+                    </div>
+                  );
+                })()}
                 <div className="space-y-3">
                   {roomConfigs.map((rc, i) => (
                     <div key={i} className="rounded-lg border bg-secondary/30 p-4">
@@ -287,7 +294,7 @@ export default function AdminPage() {
             )}
             <div className="flex gap-3 justify-end pt-4">
               <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-              <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending || (!editingUnit?.id && roomConfigs.reduce((s, r) => s + r.max_pax, 0) > (editingUnit?.unit_max_pax || 0))} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
                 {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
               </button>
             </div>
@@ -367,7 +374,13 @@ export default function AdminPage() {
                                 <tr key={room.id} className="border-t hover:bg-secondary/30 transition-colors">
                                   <td className="px-4 py-3 font-medium">{room.room}</td>
                                   <td className="px-4 py-3 text-muted-foreground">{room.bed_type || "—"}</td>
-                                  <td className="px-4 py-3">{room.pax_staying || 0}</td>
+                                  <td className="px-4 py-3">
+                                    <select className="bg-secondary rounded px-2 py-1 text-xs font-medium" value={room.pax_staying || 0} onChange={async (e) => {
+                                      try { await updateRoom.mutateAsync({ id: room.id, pax_staying: Number(e.target.value) }); } catch (err: any) { alert(err.message); }
+                                    }}>
+                                      {Array.from({ length: room.max_pax + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
+                                    </select>
+                                  </td>
                                   <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
                                   <td className="px-4 py-3 text-muted-foreground">{[room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—"}</td>
                                   <td className="px-4 py-3">
