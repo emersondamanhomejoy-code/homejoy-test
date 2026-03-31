@@ -46,8 +46,15 @@ export default function Index() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
+  const PRESET_AREAS = [
+    "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
+    "Damansara", "Desa Park City", "Eco Cheras", "KL", "KLCC", "Kuala Lumpur",
+    "Kuchai Lama", "Old Klang Road", "Pantai", "PJ", "Seri Kembangan",
+    "Setapak", "Sri Petaling", "Subang", "Subang Jaya", "USJ",
+  ];
+
   const uniqueLocations = useMemo(() => {
-    const locs = new Set(roomsData.map((r) => r.location).filter(Boolean));
+    const locs = new Set([...PRESET_AREAS, ...roomsData.map((r) => r.location).filter(Boolean)]);
     return Array.from(locs).sort();
   }, [roomsData]);
 
