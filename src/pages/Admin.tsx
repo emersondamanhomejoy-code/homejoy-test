@@ -228,12 +228,7 @@ export default function AdminPage() {
               <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <input className={inputClass} placeholder="Condo Entry" value={u.access_info.condoEntry} onChange={e => updateAccess("condoEntry", e.target.value)} />
-              <input className={inputClass} placeholder="Unit Access" value={u.access_info.unitAccess} onChange={e => updateAccess("unitAccess", e.target.value)} />
-              <input className={inputClass} placeholder="Visitor Parking" value={u.access_info.visitorParking} onChange={e => updateAccess("visitorParking", e.target.value)} />
-              <input className={inputClass} placeholder="Viewing" value={u.access_info.viewing} onChange={e => updateAccess("viewing", e.target.value)} />
-            </div>
+            <textarea className={inputClass + " min-h-[80px]"} placeholder="Access info (e.g. condo entry, unit access, visitor parking, viewing instructions...)" value={u.access_info || ""} onChange={e => updateField("access_info", e.target.value)} />
             {/* Room configs - only for new units */}
             {!u.id && (
               <>
