@@ -74,25 +74,29 @@ export default function Index() {
   // Calculate commission based on per-agent config and monthly deals
   const calculateCommission = (booking: Booking) => {
     const rent = booking.monthly_salary || 0;
+    const duration = booking.contract_months || 12;
+    const durationMultiplier = duration / 12;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthlyDeals = agentBookings.filter(b => b.submitted_by === user?.id && new Date(b.created_at) >= monthStart).length;
     const config = agentCommissionConfig;
 
+    let base = 0;
     if (agentCommissionType === "external") {
       const pct = config?.percentage ?? 100;
-      return Math.round(rent * pct / 100);
+      base = Math.round(rent * pct / 100);
     } else if (agentCommissionType === "internal_full") {
       const tiers = config?.tiers || [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }];
       const tier = tiers.find((t: any) => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
       const pct = tier?.percentage ?? 70;
-      return Math.round(rent * pct / 100);
+      base = Math.round(rent * pct / 100);
     } else {
       // internal_basic
       const tiers = config?.tiers || [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }];
       const tier = tiers.find((t: any) => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
-      return tier?.amount ?? 200;
+      base = tier?.amount ?? 200;
     }
+    return Math.round(base * durationMultiplier);
   };
 
   const commissionLabel = (() => {
@@ -474,7 +478,13 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Race *</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={f.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Occupation *</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label>
+                  <select className={ic} value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                      <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 6 ? " (half year)" : ""}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many pax staying *</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
