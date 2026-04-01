@@ -721,7 +721,10 @@ export default function AdminPage() {
                                     </button>
                                   </td>
                                   <td className="px-4 py-3 text-right">
-                                    <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                                    <div className="flex gap-1 justify-end">
+                                      <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                                      {isCP && <button onClick={async () => { if (confirm("Delete this car park?")) { try { await deleteRoom.mutateAsync(room.id); } catch (e: any) { alert(e.message); } } }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>}
+                                    </div>
                                   </td>
                                 </tr>
                                 );
