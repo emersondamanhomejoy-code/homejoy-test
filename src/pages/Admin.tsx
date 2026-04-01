@@ -6,7 +6,25 @@ import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, u
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 
-interface CommissionTier {
+function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.storage.from("booking-docs").createSignedUrl(path, 3600).then(({ data }) => {
+      if (data?.signedUrl) setUrl(data.signedUrl);
+    });
+  }, [path]);
+  if (!url) return <span className="text-xs text-muted-foreground">Loading...</span>;
+  return isImage ? (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+      <img src={url} alt={label} className="h-28 w-auto rounded-lg border object-cover hover:opacity-80 transition-opacity" />
+    </a>
+  ) : (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs hover:opacity-80 transition-opacity">
+      📎 {label}
+    </a>
+  );
+}
+
   min: number;
   max: number | null;
   amount?: number;
