@@ -53,7 +53,7 @@ export default function Index() {
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
-  const [claimForm, setClaimForm] = useState({ amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+  const [claimForm, setClaimForm] = useState({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
   const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
 
