@@ -389,8 +389,8 @@ export default function Index() {
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
         <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-          <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to Dashboard
+          <button onClick={() => selectedBuilding ? setPage("building") : setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back
           </button>
           <div className="bg-card rounded-lg shadow-lg p-6 grid lg:grid-cols-[1.2fr_0.8fr] gap-6">
             <div className="space-y-6">
