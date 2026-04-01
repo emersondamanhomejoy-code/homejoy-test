@@ -35,7 +35,7 @@ const emptyUnit = {
 export default function AdminPage() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"dashboard" | "users" | "units">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "users" | "units" | "claims">("dashboard");
 
   // Users state
   const [users, setUsers] = useState<UserWithRoles[]>([]);
