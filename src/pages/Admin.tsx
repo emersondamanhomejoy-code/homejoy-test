@@ -349,7 +349,12 @@ export default function AdminPage() {
                 <option value="Management Office">Access Card: Management Office</option>
               </select>
               <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit} onChange={e => updateField("access_card_deposit", Number(e.target.value))} />
-              <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
+              <input className={inputClass} placeholder="Deposit (e.g. 1.5 month)" value={u.deposit || ""} onChange={e => updateField("deposit", e.target.value)} />
+              <select className={inputClass} value={u.meter_type || "Postpaid"} onChange={e => updateField("meter_type", e.target.value)}>
+                <option value="Postpaid">Meter: Postpaid</option>
+                <option value="Prepaid">Meter: Prepaid</option>
+              </select>
+              <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM per kWh)" value={u.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
                 <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
