@@ -6,13 +6,32 @@ import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, U
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 
+interface CommissionTier {
+  min: number;
+  max: number | null;
+  amount?: number;
+  percentage?: number;
+}
+
+interface CommissionConfig {
+  percentage?: number;
+  tiers?: CommissionTier[];
+}
+
 interface UserWithRoles {
   id: string;
   email: string;
   created_at: string;
   roles: string[];
   commission_type: string;
+  commission_config: CommissionConfig | null;
 }
+
+const defaultConfigs: Record<string, CommissionConfig> = {
+  external: { percentage: 100 },
+  internal_basic: { tiers: [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }] },
+  internal_full: { tiers: [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }] },
+};
 
 const bedTypeMaxPax: Record<string, number> = {
   MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
@@ -43,6 +62,8 @@ export default function AdminPage() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [editingCommission, setEditingCommission] = useState<string | null>(null);
+  const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
 
   // Units state
   const { data: units = [], isLoading: unitsLoading } = useUnits();
@@ -772,68 +793,143 @@ export default function AdminPage() {
         })()}
 
         {tab === "users" && (
-          <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-secondary">
-                  <th className="text-left px-5 py-3 font-semibold">Email</th>
-                  <th className="text-left px-5 py-3 font-semibold">Joined</th>
-                  <th className="text-left px-5 py-3 font-semibold">Roles</th>
-                  <th className="text-left px-5 py-3 font-semibold">Commission Tier</th>
-                  <th className="text-right px-5 py-3 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => {
-                  const isAdmin = u.roles.includes("admin");
-                  const isAgent = u.roles.includes("agent");
-                  return (
-                    <tr key={u.id} className="border-b last:border-0 hover:bg-secondary/50 transition-colors">
-                      <td className="px-5 py-4 font-medium">{u.email}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-4">
-                        <div className="flex gap-2">
-                          {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
-                          {u.roles.length === 0 && <span className="text-muted-foreground text-xs">No roles</span>}
+          <div className="space-y-4">
+            {users.map((u) => {
+              const isAdmin = u.roles.includes("admin");
+              const isAgent = u.roles.includes("agent");
+              const isEditing = editingCommission === u.id;
+              const config = u.commission_config || defaultConfigs[u.commission_type] || defaultConfigs.internal_basic;
+
+              const commSummary = () => {
+                const ct = u.commission_type;
+                if (ct === "external") return `External — ${config.percentage ?? 100}% of rent`;
+                if (ct === "internal_full") {
+                  const tiers = config.tiers || [];
+                  return `Internal Full — ${tiers.map(t => `${t.min}-${t.max ?? "∞"} deals: ${t.percentage}%`).join(", ")}`;
+                }
+                const tiers = config.tiers || [];
+                return `Internal Basic — ${tiers.map(t => `${t.min}-${t.max ?? "∞"} deals: RM${t.amount}`).join(", ")}`;
+              };
+
+              return (
+                <div key={u.id} className="bg-card rounded-lg shadow-sm p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold">{u.email}</div>
+                      <div className="text-xs text-muted-foreground">Joined {new Date(u.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
+                      <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
+                      <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
+                    </div>
+                  </div>
+
+                  {isAgent && !isEditing && (
+                    <div className="flex items-center justify-between bg-secondary rounded-lg px-4 py-3">
+                      <div className="text-sm">{commSummary()}</div>
+                      <button onClick={() => {
+                        setEditingCommission(u.id);
+                        setCommissionDraft({ type: u.commission_type, config: { ...config, tiers: config.tiers ? config.tiers.map(t => ({ ...t })) : undefined } });
+                      }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit Commission</button>
+                    </div>
+                  )}
+
+                  {isAgent && isEditing && (
+                    <div className="bg-secondary rounded-lg p-4 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">Type</label>
+                        <select className={`${inputClass}`} value={commissionDraft.type} onChange={e => {
+                          const newType = e.target.value;
+                          setCommissionDraft({ type: newType, config: { ...defaultConfigs[newType] } });
+                        }}>
+                          <option value="external">External</option>
+                          <option value="internal_basic">Internal Basic</option>
+                          <option value="internal_full">Internal Full</option>
+                        </select>
+                      </div>
+
+                      {commissionDraft.type === "external" && (
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-muted-foreground">Commission %</label>
+                          <input className={`${inputClass} w-24`} type="number" value={commissionDraft.config.percentage ?? 100} onChange={e => setCommissionDraft({ ...commissionDraft, config: { percentage: Number(e.target.value) } })} />
+                          <span className="text-xs text-muted-foreground">% of monthly rent</span>
                         </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        {isAgent && (
-                          <select
-                            className="px-3 py-1.5 rounded-lg border bg-secondary text-secondary-foreground text-xs font-medium"
-                            value={u.commission_type || "internal_basic"}
-                            onChange={async (e) => {
-                              const newType = e.target.value;
-                              try {
-                                const { error } = await supabase
-                                  .from("user_roles")
-                                  .update({ commission_type: newType })
-                                  .eq("user_id", u.id)
-                                  .eq("role", "agent");
-                                if (error) throw error;
-                                await fetchUsers();
-                              } catch (err: any) {
-                                alert(err.message || "Failed to update commission type");
-                              }
-                            }}
-                          >
-                            <option value="external">External (100%)</option>
-                            <option value="internal_basic">Internal Basic (RM200-400)</option>
-                            <option value="internal_full">Internal Full (65-75%)</option>
-                          </select>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex gap-2 justify-end">
-                          <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
-                          <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
+                      )}
+
+                      {(commissionDraft.type === "internal_basic" || commissionDraft.type === "internal_full") && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-semibold text-muted-foreground uppercase">Tiers (by deals per month)</div>
+                          {(commissionDraft.config.tiers || []).map((tier, i) => (
+                            <div key={i} className="flex items-center gap-2 flex-wrap">
+                              <input className={`${inputClass} w-20`} type="number" placeholder="From" value={tier.min} onChange={e => {
+                                const tiers = [...(commissionDraft.config.tiers || [])];
+                                tiers[i] = { ...tiers[i], min: Number(e.target.value) };
+                                setCommissionDraft({ ...commissionDraft, config: { tiers } });
+                              }} />
+                              <span className="text-xs text-muted-foreground">to</span>
+                              <input className={`${inputClass} w-20`} type="number" placeholder="∞" value={tier.max ?? ""} onChange={e => {
+                                const tiers = [...(commissionDraft.config.tiers || [])];
+                                tiers[i] = { ...tiers[i], max: e.target.value ? Number(e.target.value) : null };
+                                setCommissionDraft({ ...commissionDraft, config: { tiers } });
+                              }} />
+                              <span className="text-xs text-muted-foreground">deals →</span>
+                              {commissionDraft.type === "internal_basic" ? (
+                                <>
+                                  <span className="text-xs text-muted-foreground">RM</span>
+                                  <input className={`${inputClass} w-24`} type="number" value={tier.amount ?? 0} onChange={e => {
+                                    const tiers = [...(commissionDraft.config.tiers || [])];
+                                    tiers[i] = { ...tiers[i], amount: Number(e.target.value) };
+                                    setCommissionDraft({ ...commissionDraft, config: { tiers } });
+                                  }} />
+                                </>
+                              ) : (
+                                <>
+                                  <input className={`${inputClass} w-20`} type="number" value={tier.percentage ?? 0} onChange={e => {
+                                    const tiers = [...(commissionDraft.config.tiers || [])];
+                                    tiers[i] = { ...tiers[i], percentage: Number(e.target.value) };
+                                    setCommissionDraft({ ...commissionDraft, config: { tiers } });
+                                  }} />
+                                  <span className="text-xs text-muted-foreground">%</span>
+                                </>
+                              )}
+                              <button onClick={() => {
+                                const tiers = (commissionDraft.config.tiers || []).filter((_, idx) => idx !== i);
+                                setCommissionDraft({ ...commissionDraft, config: { tiers } });
+                              }} className="px-2 py-1 rounded text-xs text-destructive hover:bg-destructive/10">✕</button>
+                            </div>
+                          ))}
+                          <button onClick={() => {
+                            const tiers = [...(commissionDraft.config.tiers || [])];
+                            const lastMax = tiers.length > 0 ? (tiers[tiers.length - 1].max ?? 0) + 1 : 1;
+                            tiers.push({ min: lastMax, max: null, ...(commissionDraft.type === "internal_basic" ? { amount: 0 } : { percentage: 0 }) });
+                            setCommissionDraft({ ...commissionDraft, config: { tiers } });
+                          }} className="text-xs text-primary hover:underline">+ Add Tier</button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      )}
+
+                      <div className="flex gap-2 justify-end pt-2">
+                        <button onClick={() => setEditingCommission(null)} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-background transition-colors">Cancel</button>
+                        <button onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from("user_roles")
+                              .update({ commission_type: commissionDraft.type, commission_config: commissionDraft.config as any })
+                              .eq("user_id", u.id)
+                              .eq("role", "agent");
+                            if (error) throw error;
+                            setEditingCommission(null);
+                            await fetchUsers();
+                          } catch (err: any) {
+                            alert(err.message || "Failed to save");
+                          }
+                        }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">Save</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -58,34 +58,52 @@ export default function Index() {
   const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
+  const [agentCommissionConfig, setAgentCommissionConfig] = useState<any>(null);
 
-  // Fetch agent's commission type
+  // Fetch agent's commission type & config
   useEffect(() => {
     if (!user) return;
-    supabase.from("user_roles").select("commission_type").eq("user_id", user.id).eq("role", "agent").single()
-      .then(({ data }) => { if (data?.commission_type) setAgentCommissionType(data.commission_type); });
+    supabase.from("user_roles").select("commission_type, commission_config").eq("user_id", user.id).eq("role", "agent").single()
+      .then(({ data }) => {
+        if (data?.commission_type) setAgentCommissionType(data.commission_type);
+        if (data?.commission_config) setAgentCommissionConfig(data.commission_config);
+      });
   }, [user]);
 
-  // Calculate commission based on tier and monthly deals
+  // Calculate commission based on per-agent config and monthly deals
   const calculateCommission = (booking: Booking) => {
     const rent = booking.monthly_salary || 0;
-    // Count approved bookings this month by this agent
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthlyDeals = agentBookings.filter(b => b.submitted_by === user?.id && new Date(b.created_at) >= monthStart).length;
+    const config = agentCommissionConfig;
 
     if (agentCommissionType === "external") {
-      return rent; // 100%
+      const pct = config?.percentage ?? 100;
+      return Math.round(rent * pct / 100);
     } else if (agentCommissionType === "internal_full") {
-      const pct = monthlyDeals <= 5 ? 0.65 : monthlyDeals <= 10 ? 0.70 : 0.75;
-      return Math.round(rent * pct);
+      const tiers = config?.tiers || [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }];
+      const tier = tiers.find((t: any) => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
+      const pct = tier?.percentage ?? 70;
+      return Math.round(rent * pct / 100);
     } else {
       // internal_basic
-      return monthlyDeals <= 5 ? 200 : monthlyDeals <= 10 ? 300 : 400;
+      const tiers = config?.tiers || [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }];
+      const tier = tiers.find((t: any) => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
+      return tier?.amount ?? 200;
     }
   };
 
-  const commissionLabel = agentCommissionType === "external" ? "External (100%)" : agentCommissionType === "internal_full" ? "Internal Full (65-75%)" : "Internal Basic (RM200-400)";
+  const commissionLabel = (() => {
+    const config = agentCommissionConfig;
+    if (agentCommissionType === "external") return `External (${config?.percentage ?? 100}%)`;
+    if (agentCommissionType === "internal_full") {
+      const tiers = config?.tiers || [];
+      return `Internal Full — ${tiers.map((t: any) => `${t.percentage}%`).join("/")}`;
+    }
+    const tiers = config?.tiers || [];
+    return `Internal Basic — ${tiers.map((t: any) => `RM${t.amount}`).join("/")}`;
+  })();
 
   const PRESET_AREAS = [
     "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
