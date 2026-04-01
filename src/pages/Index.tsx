@@ -105,6 +105,8 @@ export default function Index() {
     return `Internal Basic — ${tiers.map((t: any) => `RM${t.amount}`).join("/")}`;
   })();
 
+  const isExternalAgent = agentCommissionType === "external";
+
   const PRESET_AREAS = [
     "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
     "Damansara", "Desa Park City", "Eco Cheras", "KL", "KLCC", "Kuala Lumpur",
