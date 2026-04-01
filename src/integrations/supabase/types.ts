@@ -418,6 +418,7 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          commission_config: Json
           commission_type: string
           created_at: string
           id: string
@@ -425,6 +426,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          commission_config?: Json
           commission_type?: string
           created_at?: string
           id?: string
@@ -432,6 +434,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          commission_config?: Json
           commission_type?: string
           created_at?: string
           id?: string

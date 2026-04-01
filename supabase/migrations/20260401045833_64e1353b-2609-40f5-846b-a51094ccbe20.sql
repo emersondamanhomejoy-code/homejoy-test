@@ -1,0 +1,1 @@
+ALTER TABLE public.user_roles ADD COLUMN commission_config jsonb NOT NULL DEFAULT '{"tiers":[{"min":1,"max":5,"amount":200},{"min":6,"max":10,"amount":300},{"min":11,"max":null,"amount":400}]}'::jsonb;
