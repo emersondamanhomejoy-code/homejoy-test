@@ -739,13 +739,20 @@ export default function Index() {
               {/* Booking selector */}
               <div className="space-y-1">
                 <label className={lbl}>Select Booking (Approved) *</label>
+                <div className="text-xs text-muted-foreground mb-1">Your commission tier: <span className="font-semibold">{commissionLabel}</span></div>
                 {availableBookings.length === 0 ? (
                   <div className="text-sm text-muted-foreground bg-secondary rounded-lg p-4">No approved bookings available for claim. Claims can only be submitted for approved bookings that haven't been claimed yet.</div>
                 ) : (
                   <select className={ic + " w-full"} value={claimForm.bookingId} onChange={e => {
                     const bid = e.target.value;
                     const booking = availableBookings.find(b => b.id === bid);
-                    setClaimForm({ ...claimForm, bookingId: bid, description: booking ? `Commission - ${booking.room?.building || ""} ${booking.room?.unit || ""} ${booking.room?.room || ""} (${booking.tenant_name})` : claimForm.description });
+                    const commAmount = booking ? calculateCommission(booking) : 0;
+                    setClaimForm({
+                      ...claimForm,
+                      bookingId: bid,
+                      amount: commAmount ? String(commAmount) : "",
+                      description: booking ? `Commission - ${booking.room?.building || ""} ${booking.room?.unit || ""} ${booking.room?.room || ""} (${booking.tenant_name})` : claimForm.description,
+                    });
                   }}>
                     <option value="">— Select a booking —</option>
                     {availableBookings.map(b => (
