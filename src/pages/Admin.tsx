@@ -342,7 +342,7 @@ export default function AdminPage() {
               <select className={inputClass} value={u.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
                 <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
               </select>
-              <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
+              <input className={inputClass} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
               <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
               <select className={inputClass} value={u.access_card_source} onChange={e => updateField("access_card_source", e.target.value)}>
                 <option value="Provided by Us">Access Card: Provided by Us</option>
