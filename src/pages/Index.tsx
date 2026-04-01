@@ -29,7 +29,7 @@ const initialBookingForm = {
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
   parkingCount: "0", carPlates: [""] as string[],
   selectedCarParks: [] as string[],
-  advance: "", deposit: "", adminFee: "", electricityReload: "",
+  advance: "", deposit: "", adminFee: "", electricityReload: "", accessCardDeposit: "",
 };
 
 const rankMedals = ["🥇", "🥈", "🥉"];
@@ -264,6 +264,7 @@ export default function Index() {
       const deposit = Number(bookingForm.deposit) || 0;
       const adminFee = Number(bookingForm.adminFee) || 0;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
+      const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
       const { error: dbErr } = await supabase.from("bookings").insert({
         room_id: selectedRoom.id,
         unit_id: selectedRoom.unit_id,
@@ -290,7 +291,7 @@ export default function Index() {
         car_plate: bookingForm.carPlates.slice(0, Number(bookingForm.parkingCount)).filter(p => p.trim()).join(", "),
         submitted_by: user.id,
         submitted_by_type: "agent",
-        move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
+        move_in_cost: { advance, deposit, adminFee, electricityReload, accessCardDeposit, total: advance + deposit + adminFee + electricityReload + accessCardDeposit },
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
@@ -590,10 +591,11 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Rental Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.deposit} onChange={e => set("deposit", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={ic} type="number" placeholder="0" value={f.adminFee} onChange={e => set("adminFee", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
               </div>
               <div className="bg-secondary rounded-lg p-4 text-right">
                 <span className="text-sm text-muted-foreground">Total: </span>
-                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + (Number(f.deposit) || 0) + (Number(f.adminFee) || 0) + (Number(f.electricityReload) || 0)}</span>
+                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + (Number(f.deposit) || 0) + (Number(f.adminFee) || 0) + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
               </div>
             </div>
 
