@@ -94,7 +94,7 @@ export function useCreateUnit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
-      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_lot?: string; access_info: any };
+      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_lot?: string; access_info: any; internal_only?: boolean };
       roomConfigs: RoomConfig[];
     }) => {
       const { unit, roomConfigs } = payload;
