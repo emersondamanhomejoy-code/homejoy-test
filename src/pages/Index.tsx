@@ -627,22 +627,28 @@ export default function Index() {
 
     const submitClaim = async () => {
       if (!user) return;
+      if (!claimForm.bookingId) { alert("Please select a booking."); return; }
       if (!claimForm.amount || !claimForm.description) { alert("Please fill in amount and description."); return; }
       try {
         await createClaim.mutateAsync({
           agent_id: user.id,
+          booking_id: claimForm.bookingId,
           amount: Number(claimForm.amount),
           description: claimForm.description,
           bank_name: claimForm.bankName,
           bank_account: claimForm.bankAccount,
           account_holder: claimForm.accountHolder,
         });
-        setClaimForm({ amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+        setClaimForm({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
         setClaimTab("pending");
       } catch (e: any) {
         alert(e.message || "Failed to submit claim");
       }
     };
+
+    // Filter approved bookings submitted by this agent that don't already have a claim
+    const claimedBookingIds = new Set(claimsData.map(c => c.booking_id).filter(Boolean));
+    const availableBookings = agentBookings.filter(b => b.submitted_by === user?.id && !claimedBookingIds.has(b.id));
 
     const renderClaimList = (claims: Claim[]) => {
       if (claims.length === 0) return <div className="text-center py-8 text-muted-foreground">No claims</div>;
