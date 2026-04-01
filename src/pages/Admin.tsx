@@ -70,6 +70,8 @@ export default function AdminPage() {
   const createUnit = useCreateUnit();
   const updateUnit = useUpdateUnit();
   const deleteUnit = useDeleteUnit();
+  const createRoom = useCreateRoom();
+  const deleteRoom = useDeleteRoom();
   const updateRoom = useUpdateRoom();
   const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
