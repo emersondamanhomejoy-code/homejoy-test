@@ -11,6 +11,7 @@ interface UserWithRoles {
   email: string;
   created_at: string;
   roles: string[];
+  commission_type: string;
 }
 
 const bedTypeMaxPax: Record<string, number> = {
