@@ -42,6 +42,7 @@ export default function Index() {
   const { data: agentBookings = [] } = useBookings("approved");
   const createClaim = useCreateClaim();
   const [page, setPage] = useState("dashboard");
+  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
@@ -146,6 +147,42 @@ export default function Index() {
       return matchesSearch && matchesLocation && matchesBuilding && matchesUnitType && matchesPrice;
     });
   }, [search, filters, roomsData]);
+
+  // Group available rooms by building
+  const buildingSummary = useMemo(() => {
+    const allAvailable = roomsData.filter(r => {
+      if (r.room_type === "Car Park") return false;
+      if (r.status !== "Available") return false;
+      if (isExternalAgent && r.internal_only) return false;
+      return true;
+    });
+    const map = new Map<string, { building: string; location: string; count: number; minRent: number; maxRent: number; carParks: number; unitTypes: Set<string> }>();
+    for (const room of allAvailable) {
+      const existing = map.get(room.building);
+      if (existing) {
+        existing.count++;
+        existing.minRent = Math.min(existing.minRent, room.rent);
+        existing.maxRent = Math.max(existing.maxRent, room.rent);
+        existing.unitTypes.add(room.unit_type);
+      } else {
+        map.set(room.building, {
+          building: room.building,
+          location: room.location,
+          count: 1,
+          minRent: room.rent,
+          maxRent: room.rent,
+          carParks: 0,
+          unitTypes: new Set([room.unit_type]),
+        });
+      }
+    }
+    for (const r of roomsData) {
+      if (r.room_type === "Car Park" && r.status === "Available" && map.has(r.building)) {
+        map.get(r.building)!.carParks++;
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [roomsData, isExternalAgent]);
 
   const handleGoogleLogin = async () => {
     setSigningIn(true);
@@ -352,8 +389,8 @@ export default function Index() {
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
         <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-          <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to Dashboard
+          <button onClick={() => selectedBuilding ? setPage("building") : setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back
           </button>
           <div className="bg-card rounded-lg shadow-lg p-6 grid lg:grid-cols-[1.2fr_0.8fr] gap-6">
             <div className="space-y-6">
@@ -867,6 +904,104 @@ export default function Index() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthlyDeals = agentBookings.filter(b => b.submitted_by === user?.id && new Date(b.created_at) >= monthStart).length;
 
+
+  // ─── BUILDING DETAIL PAGE ───
+  if (page === "building" && selectedBuilding) {
+    const buildingRooms = availableRooms.filter(r => r.building === selectedBuilding);
+    const buildingCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === selectedBuilding).length;
+
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        {/* Top Bar */}
+        <div className="bg-card border-b sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-xl font-extrabold tracking-tight text-primary">HOMEJOY</div>
+              <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">{role ?? "agent"}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground hidden md:inline">{user?.email}</span>
+              {role === "admin" && (
+                <button onClick={() => navigate("/admin")} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
+                  Admin Panel
+                </button>
+              )}
+              <button onClick={signOut} className="px-3 py-1.5 rounded-lg border text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
+          <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back to Dashboard
+          </button>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold">{selectedBuilding}</div>
+              <div className="text-sm text-muted-foreground mt-0.5">{buildingRooms.length} available room{buildingRooms.length !== 1 ? "s" : ""}{buildingCarParks > 0 ? ` · 🅿️ ${buildingCarParks} car park${buildingCarParks > 1 ? "s" : ""}` : ""}</div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-card rounded-xl border p-4">
+            <div className="grid md:grid-cols-4 gap-3">
+              <input className="px-3 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Price</label>
+                <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.price} onChange={(e) => setFilters({ ...filters, price: e.target.value })}>
+                  <option>All</option><option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Gender</label>
+                <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
+                  <option>All</option><option>Female Unit</option><option>Mix Unit</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Room Cards */}
+          {buildingRooms.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border">No rooms match your filters</div>
+          ) : (
+            <div className="space-y-3">
+              {buildingRooms.map((room) => (
+                <div key={room.id} className="bg-card rounded-xl border p-5 hover:shadow-md transition-all hover:border-primary/30 group">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{room.unit}</span>
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">{room.room} — <span className="font-bold text-primary text-lg">RM{room.rent}</span><span className="text-xs text-muted-foreground">/mo</span></div>
+                      <div className="flex gap-1.5 flex-wrap mt-2.5">
+                        <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
+                        <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
+                        <span className="px-2.5 py-1 rounded-md bg-accent/20 text-accent-foreground text-xs font-medium">{room.available_date}</span>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground flex gap-3">
+                        <span>Max: {room.unit_max_pax}</span>
+                        <span>Occupied: {room.unit_occupied_pax}</span>
+                        <span className="font-semibold text-foreground">Balance: {room.unit_max_pax - room.unit_occupied_pax}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <button onClick={() => openRoom(room)} className="px-4 py-2 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">Details</button>
+                      <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top Bar */}
@@ -916,85 +1051,55 @@ export default function Index() {
           <div className="text-sm"><span className="text-muted-foreground">Your commission tier:</span> <span className="font-semibold">{commissionLabel}</span></div>
         </div>
 
-
         {/* Main Content */}
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-          {/* Room Listings */}
+          {/* Building Cards */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="text-xl font-bold">Available Units</div>
-              <span className="text-sm text-muted-foreground">{availableRooms.length} rooms</span>
+              <div className="text-xl font-bold">Properties</div>
+              <span className="text-sm text-muted-foreground">{buildingSummary.reduce((s, b) => s + b.count, 0)} rooms in {buildingSummary.length} properties</span>
             </div>
 
-            {/* Filters */}
-            <div className="bg-card rounded-xl border p-4">
-              <div className="grid md:grid-cols-5 gap-3">
-                <input className="px-3 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Area</label>
-                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value, building: "All" })}>
-                    <option>All</option>{uniqueLocations.map((loc) => <option key={loc}>{loc}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Property</label>
-                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.building} onChange={(e) => setFilters({ ...filters, building: e.target.value })}>
-                    <option>All</option>{uniqueBuildings.map((b) => <option key={b}>{b}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Price</label>
-                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.price} onChange={(e) => setFilters({ ...filters, price: e.target.value })}>
-                    <option>All</option><option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Gender</label>
-                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
-                    <option>All</option><option>Female Unit</option><option>Mix Unit</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+            {/* Search */}
+            <input className="w-full px-3 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" placeholder="Search property..." value={search} onChange={(e) => setSearch(e.target.value)} />
 
-            {/* Room Cards */}
             {roomsLoading ? (
-              <div className="text-center py-12 text-muted-foreground">Loading rooms...</div>
-            ) : availableRooms.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border">No rooms match your filters</div>
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
             ) : (
-              <div className="space-y-3">
-                {availableRooms.map((room) => {
-                  const buildingCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === room.building).length;
-                  return (
-                    <div key={room.id} className="bg-card rounded-xl border p-5 hover:shadow-md transition-all hover:border-primary/30 group">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <div className="text-lg font-bold">{room.building}</div>
-                            <span className="text-sm text-muted-foreground">{room.unit}</span>
-                          </div>
-                          <div className="text-muted-foreground mt-0.5">{room.room} — <span className="font-bold text-primary text-lg">RM{room.rent}</span><span className="text-xs text-muted-foreground">/mo</span></div>
-                          <div className="flex gap-1.5 flex-wrap mt-2.5">
-                            <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
-                            <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
-                            <span className="px-2.5 py-1 rounded-md bg-accent/20 text-accent-foreground text-xs font-medium">{room.available_date}</span>
-                            {buildingCarParks > 0 && <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">🅿️ {buildingCarParks} car park{buildingCarParks > 1 ? "s" : ""}</span>}
-                          </div>
-                          <div className="mt-2 text-xs text-muted-foreground flex gap-3">
-                            <span>Max: {room.unit_max_pax}</span>
-                            <span>Occupied: {room.unit_occupied_pax}</span>
-                            <span className="font-semibold text-foreground">Balance: {room.unit_max_pax - room.unit_occupied_pax}</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 shrink-0">
-                          <button onClick={() => openRoom(room)} className="px-4 py-2 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">Details</button>
-                          <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book</button>
-                        </div>
-                      </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                {buildingSummary
+                  .filter(b => {
+                    const kw = search.trim().toLowerCase();
+                    return kw === "" || b.building.toLowerCase().includes(kw) || b.location.toLowerCase().includes(kw);
+                  })
+                  .map(b => (
+                  <button
+                    key={b.building}
+                    onClick={() => {
+                      setSelectedBuilding(b.building);
+                      setSearch("");
+                      setFilters({ location: "All", building: "All", price: "All", unitType: "All", roomType: "All" });
+                      setPage("building");
+                    }}
+                    className="bg-card rounded-xl border p-5 text-left hover:shadow-md transition-all hover:border-primary/30 group"
+                  >
+                    <div className="text-lg font-bold group-hover:text-primary transition-colors">{b.building}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{b.location}</div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <span className="text-2xl font-extrabold text-primary">{b.count}</span>
+                      <span className="text-sm text-muted-foreground">room{b.count !== 1 ? "s" : ""} available</span>
                     </div>
-                  );
-                })}
+                    <div className="flex flex-wrap gap-1.5 mt-2.5">
+                      <span className="px-2 py-0.5 rounded-md bg-secondary text-xs font-medium">
+                        RM{b.minRent}{b.minRent !== b.maxRent ? ` - RM${b.maxRent}` : ""}/mo
+                      </span>
+                      {b.carParks > 0 && <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">🅿️ {b.carParks}</span>}
+                      {Array.from(b.unitTypes).map((ut: string) => (
+                        <span key={ut} className="px-2 py-0.5 rounded-md bg-secondary text-xs font-medium">{ut}</span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
