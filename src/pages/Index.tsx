@@ -176,7 +176,7 @@ export default function Index() {
 
   const openRoom = (room: Room) => { setSelectedRoom(room); setPage("detail"); };
   const openBooking = () => {
-    setBookingForm({ ...initialBookingForm, monthlyRental: String(selectedRoom!.rent) });
+    setBookingForm(initialBookingForm);
     setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
     setSignatureLink(null); setSignatureToken(null); setSignatureSigned(false);
     setPage("booking");
@@ -479,19 +479,13 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={f.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Occupation *</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label>
-                  <select className={ic} value={f.tenancyDuration} onChange={e => {
-                    const dur = Number(e.target.value);
-                    const surcharge = dur <= 2 ? 100 : dur <= 6 ? 50 : 0;
-                    set("tenancyDuration", e.target.value);
-                    setBookingForm(prev => ({ ...prev, tenancyDuration: e.target.value, monthlyRental: String(selectedRoom.rent + surcharge) }));
-                  }}>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
-                      const sc = m <= 2 ? 100 : m <= 6 ? 50 : 0;
-                      return <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 6 ? " (half year)" : ""}{sc > 0 ? ` (+RM${sc})` : ""}</option>;
-                    })}
+                  <select className={ic} value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                      <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 6 ? " (half year)" : ""}</option>
+                    ))}
                   </select>
                 </div>
-                <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} readOnly /></div>
+                <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many pax staying *</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
               </div>
@@ -922,15 +916,6 @@ export default function Index() {
           <div className="text-sm"><span className="text-muted-foreground">Your commission tier:</span> <span className="font-semibold">{commissionLabel}</span></div>
         </div>
 
-        {/* Pricing Rules */}
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <div className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">📋 Tenancy Duration Pricing</div>
-          <div className="text-xs text-amber-700 dark:text-amber-300 space-y-0.5">
-            <div>• 12 months (1 year) — <span className="font-semibold">Base price</span></div>
-            <div>• 6 months (half year) — <span className="font-semibold">+RM50/month</span></div>
-            <div>• 2 months or less — <span className="font-semibold">+RM100/month</span></div>
-          </div>
-        </div>
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
