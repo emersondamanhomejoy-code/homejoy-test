@@ -29,7 +29,7 @@ const initialBookingForm = {
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
   parkingCount: "0", carPlates: [""] as string[],
   selectedCarParks: [] as string[],
-  advance: "", deposit: "", adminFee: "", electricityReload: "",
+  advance: "", deposit: "", adminFee: "", electricityReload: "", accessCardDeposit: "",
 };
 
 const rankMedals = ["🥇", "🥈", "🥉"];
