@@ -6,13 +6,32 @@ import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, U
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 
+interface CommissionTier {
+  min: number;
+  max: number | null;
+  amount?: number;
+  percentage?: number;
+}
+
+interface CommissionConfig {
+  percentage?: number;
+  tiers?: CommissionTier[];
+}
+
 interface UserWithRoles {
   id: string;
   email: string;
   created_at: string;
   roles: string[];
   commission_type: string;
+  commission_config: CommissionConfig | null;
 }
+
+const defaultConfigs: Record<string, CommissionConfig> = {
+  external: { percentage: 100 },
+  internal_basic: { tiers: [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }] },
+  internal_full: { tiers: [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }] },
+};
 
 const bedTypeMaxPax: Record<string, number> = {
   MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
