@@ -552,17 +552,8 @@ export default function AdminPage() {
                         {files && files.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {files.map((path: string, i: number) => {
-                              const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/authenticated/booking-docs/${path}`;
                               const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
-                              return isImage ? (
-                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
-                                  <img src={url} alt={`${label} ${i + 1}`} className="h-28 w-auto rounded-lg border object-cover hover:opacity-80 transition-opacity" />
-                                </a>
-                              ) : (
-                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs hover:opacity-80 transition-opacity">
-                                  📎 File {i + 1}
-                                </a>
-                              );
+                              return <DocFileLink key={i} path={path} isImage={isImage} label={`File ${i + 1}`} />;
                             })}
                           </div>
                         ) : (
