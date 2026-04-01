@@ -825,8 +825,8 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Account Holder</label><input className={ic} placeholder="Account holder name" value={claimForm.accountHolder} onChange={e => setClaimForm({ ...claimForm, accountHolder: e.target.value })} /></div>
               </div>
               <div className="flex justify-end">
-                <button onClick={submitClaim} disabled={createClaim.isPending || !claimForm.bookingId} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {createClaim.isPending ? "Submitting..." : "Submit Claim"}
+                <button onClick={submitClaim} disabled={createClaim.isPending || selectedClaimBookings.length === 0} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                  {createClaim.isPending ? "Submitting..." : `Submit Claim (${selectedClaimBookings.length} booking${selectedClaimBookings.length > 1 ? "s" : ""})`}
                 </button>
               </div>
             </div>
