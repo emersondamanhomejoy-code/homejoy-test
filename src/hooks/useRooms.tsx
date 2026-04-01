@@ -196,3 +196,31 @@ export function useUpdateRoom() {
     },
   });
 }
+
+export function useCreateRoom() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (room: Record<string, any>) => {
+      const { error } = await supabase.from("rooms").insert(room as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
+  });
+}
+
+export function useDeleteRoom() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("rooms").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
+  });
+}

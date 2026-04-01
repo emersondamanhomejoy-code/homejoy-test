@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
+import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 
@@ -70,6 +70,8 @@ export default function AdminPage() {
   const createUnit = useCreateUnit();
   const updateUnit = useUpdateUnit();
   const deleteUnit = useDeleteUnit();
+  const createRoom = useCreateRoom();
+  const deleteRoom = useDeleteRoom();
   const updateRoom = useUpdateRoom();
   const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
@@ -719,7 +721,10 @@ export default function AdminPage() {
                                     </button>
                                   </td>
                                   <td className="px-4 py-3 text-right">
-                                    <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                                    <div className="flex gap-1 justify-end">
+                                      <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                                      {isCP && <button onClick={async () => { if (confirm("Delete this car park?")) { try { await deleteRoom.mutateAsync(room.id); } catch (e: any) { alert(e.message); } } }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>}
+                                    </div>
                                   </td>
                                 </tr>
                                 );
@@ -728,7 +733,40 @@ export default function AdminPage() {
                               <tr className="border-t bg-secondary/30 font-semibold">
                                 <td className="px-4 py-2" colSpan={2}>Balance Pax</td>
                                 <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.filter(r => r.room_type !== "Car Park").reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
-                                <td colSpan={4}></td>
+                                <td colSpan={4} className="px-4 py-2 text-right">
+                                  <button onClick={async () => {
+                                    const cpCount = (unit.rooms?.filter(r => r.room_type === "Car Park").length ?? 0) + 1;
+                                    try {
+                                      await createRoom.mutateAsync({
+                                        unit_id: unit.id,
+                                        building: unit.building,
+                                        unit: unit.unit,
+                                        room: cpCount === 1 ? "Car Park" : `Car Park ${cpCount}`,
+                                        location: unit.location,
+                                        rent: 0,
+                                        bed_type: "",
+                                        room_type: "Car Park",
+                                        unit_type: unit.unit_type,
+                                        status: "Available",
+                                        available_date: "Available Now",
+                                        max_pax: 0,
+                                        occupied_pax: 0,
+                                        pax_staying: 0,
+                                        unit_max_pax: unit.unit_max_pax,
+                                        unit_occupied_pax: 0,
+                                        housemates: [],
+                                        photos: [],
+                                        access_info: unit.access_info,
+                                        move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
+                                        tenant_gender: "",
+                                        tenant_race: "",
+                                        internal_only: (unit as any).internal_only || false,
+                                      });
+                                    } catch (e: any) { alert(e.message); }
+                                  }} disabled={createRoom.isPending} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                                    🅿️ + Add Car Park
+                                  </button>
+                                </td>
                               </tr>
                             </tbody>
                           </table>
