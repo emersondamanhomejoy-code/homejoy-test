@@ -55,6 +55,7 @@ export default function Index() {
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
   const [claimForm, setClaimForm] = useState({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+  const [selectedClaimBookings, setSelectedClaimBookings] = useState<string[]>([]);
   const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
@@ -686,12 +687,12 @@ export default function Index() {
 
     const submitClaim = async () => {
       if (!user) return;
-      if (!claimForm.bookingId) { alert("Please select a booking."); return; }
+      if (selectedClaimBookings.length === 0) { alert("Please select at least one booking."); return; }
       if (!claimForm.amount || !claimForm.description) { alert("Please fill in amount and description."); return; }
       try {
         await createClaim.mutateAsync({
           agent_id: user.id,
-          booking_id: claimForm.bookingId,
+          booking_id: selectedClaimBookings.length === 1 ? selectedClaimBookings[0] : null,
           amount: Number(claimForm.amount),
           description: claimForm.description,
           bank_name: claimForm.bankName,
@@ -699,6 +700,7 @@ export default function Index() {
           account_holder: claimForm.accountHolder,
         });
         setClaimForm({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+        setSelectedClaimBookings([]);
         setClaimTab("pending");
       } catch (e: any) {
         alert(e.message || "Failed to submit claim");
@@ -768,29 +770,51 @@ export default function Index() {
               <div className="text-lg font-bold">Submit New Claim</div>
               {/* Booking selector */}
               <div className="space-y-1">
-                <label className={lbl}>Select Booking (Approved) *</label>
+                <label className={lbl}>Select Bookings (Approved) *</label>
                 <div className="text-xs text-muted-foreground mb-1">Your commission tier: <span className="font-semibold">{commissionLabel}</span></div>
                 {availableBookings.length === 0 ? (
                   <div className="text-sm text-muted-foreground bg-secondary rounded-lg p-4">No approved bookings available for claim. Claims can only be submitted for approved bookings that haven't been claimed yet.</div>
                 ) : (
-                  <select className={ic + " w-full"} value={claimForm.bookingId} onChange={e => {
-                    const bid = e.target.value;
-                    const booking = availableBookings.find(b => b.id === bid);
-                    const commAmount = booking ? calculateCommission(booking) : 0;
-                    setClaimForm({
-                      ...claimForm,
-                      bookingId: bid,
-                      amount: commAmount ? String(commAmount) : "",
-                      description: booking ? `Commission - ${booking.room?.building || ""} ${booking.room?.unit || ""} ${booking.room?.room || ""} (${booking.tenant_name})` : claimForm.description,
-                    });
-                  }}>
-                    <option value="">— Select a booking —</option>
-                    {availableBookings.map(b => (
-                      <option key={b.id} value={b.id}>
-                        {b.room?.building} {b.room?.unit} {b.room?.room} — {b.tenant_name} ({new Date(b.move_in_date).toLocaleDateString()})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3 bg-secondary/30">
+                    {availableBookings.length > 1 && (
+                      <label className="flex items-center gap-2 pb-2 border-b border-border text-sm cursor-pointer">
+                        <input type="checkbox" checked={selectedClaimBookings.length === availableBookings.length} onChange={e => {
+                          if (e.target.checked) {
+                            const allIds = availableBookings.map(b => b.id);
+                            setSelectedClaimBookings(allIds);
+                            const totalAmount = availableBookings.reduce((s, b) => s + calculateCommission(b), 0);
+                            const desc = availableBookings.map(b => `${b.room?.building || ""} ${b.room?.unit || ""} ${b.room?.room || ""} (${b.tenant_name})`).join(", ");
+                            setClaimForm({ ...claimForm, amount: String(totalAmount), description: `Commission - ${desc}` });
+                          } else {
+                            setSelectedClaimBookings([]);
+                            setClaimForm({ ...claimForm, amount: "", description: "" });
+                          }
+                        }} className="w-4 h-4 rounded" />
+                        <span className="font-medium">Select All ({availableBookings.length})</span>
+                      </label>
+                    )}
+                    {availableBookings.map(b => {
+                      const isChecked = selectedClaimBookings.includes(b.id);
+                      return (
+                        <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-secondary/50 rounded p-1 transition-colors">
+                          <input type="checkbox" checked={isChecked} onChange={() => {
+                            const next = isChecked ? selectedClaimBookings.filter(id => id !== b.id) : [...selectedClaimBookings, b.id];
+                            setSelectedClaimBookings(next);
+                            const selectedBookings = availableBookings.filter(ab => next.includes(ab.id));
+                            const totalAmount = selectedBookings.reduce((s, sb) => s + calculateCommission(sb), 0);
+                            const desc = selectedBookings.map(sb => `${sb.room?.building || ""} ${sb.room?.unit || ""} ${sb.room?.room || ""} (${sb.tenant_name})`).join(", ");
+                            setClaimForm({ ...claimForm, amount: totalAmount ? String(totalAmount) : "", description: selectedBookings.length ? `Commission - ${desc}` : "" });
+                          }} className="w-4 h-4 rounded" />
+                          <span>{b.room?.building} {b.room?.unit} {b.room?.room} — {b.tenant_name} ({new Date(b.move_in_date).toLocaleDateString()}) · <span className="font-semibold text-primary">RM{calculateCommission(b)}</span></span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedClaimBookings.length > 0 && (
+                  <div className="text-sm font-medium text-primary mt-1">
+                    {selectedClaimBookings.length} booking(s) selected · Total: RM{claimForm.amount}
+                  </div>
                 )}
               </div>
               <div className="grid md:grid-cols-2 gap-4">
@@ -801,8 +825,8 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Account Holder</label><input className={ic} placeholder="Account holder name" value={claimForm.accountHolder} onChange={e => setClaimForm({ ...claimForm, accountHolder: e.target.value })} /></div>
               </div>
               <div className="flex justify-end">
-                <button onClick={submitClaim} disabled={createClaim.isPending || !claimForm.bookingId} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {createClaim.isPending ? "Submitting..." : "Submit Claim"}
+                <button onClick={submitClaim} disabled={createClaim.isPending || selectedClaimBookings.length === 0} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                  {createClaim.isPending ? "Submitting..." : `Submit Claim (${selectedClaimBookings.length} booking${selectedClaimBookings.length > 1 ? "s" : ""})`}
                 </button>
               </div>
             </div>
