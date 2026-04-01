@@ -42,6 +42,7 @@ export default function Index() {
   const { data: agentBookings = [] } = useBookings("approved");
   const createClaim = useCreateClaim();
   const [page, setPage] = useState("dashboard");
+  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
