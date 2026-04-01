@@ -829,18 +829,6 @@ export default function Index() {
                 <div className="text-4xl font-extrabold tracking-tight">💰 Claim</div>
                 <div className="text-sm text-muted-foreground mt-2">View & submit your commission claims</div>
               </button>
-              <div className="mt-4 space-y-3 text-sm">
-                {[
-                  { label: "Pending Claim", value: "RM1,200" },
-                  { label: "Approved Claim", value: "RM3,000" },
-                  { label: "Next Payout", value: "15th" },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-lg bg-secondary p-4 flex justify-between">
-                    <span className="text-muted-foreground">{item.label}</span>
-                    <span className="font-semibold text-foreground">{item.value}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
