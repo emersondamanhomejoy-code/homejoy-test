@@ -681,7 +681,84 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* USERS TAB */}
+        {/* CLAIMS TAB */}
+        {tab === "claims" && (() => {
+          const pendingClaims = allClaims.filter(c => c.status === "pending");
+          const processedClaims = allClaims.filter(c => c.status !== "pending");
+
+          const handleApproveClaim = async (claim: Claim) => {
+            if (!user) return;
+            try {
+              await updateClaimStatus.mutateAsync({ id: claim.id, status: "approved", reviewed_by: user.id });
+            } catch (e: any) { alert(e.message); }
+          };
+
+          const handleRejectClaim = async (claim: Claim) => {
+            if (!user || !claimRejectReason.trim()) { alert("Please enter a reject reason"); return; }
+            try {
+              await updateClaimStatus.mutateAsync({ id: claim.id, status: "rejected", reviewed_by: user.id, reject_reason: claimRejectReason });
+              setClaimRejectReason("");
+            } catch (e: any) { alert(e.message); }
+          };
+
+          const renderClaimCard = (c: Claim, showActions: boolean) => (
+            <div key={c.id} className="bg-card rounded-lg shadow-sm p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-lg">RM{Number(c.amount).toLocaleString()}</div>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
+              </div>
+              <div className="text-sm text-muted-foreground">{c.description}</div>
+              {c.bank_name && <div className="text-xs text-muted-foreground">🏦 {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
+              <div className="text-xs text-muted-foreground">Agent: {c.agent_id.slice(0, 8)}... · {new Date(c.created_at).toLocaleDateString()}</div>
+              {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
+              {showActions && c.status === "pending" && (
+                <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                  <button onClick={() => handleApproveClaim(c)} disabled={updateClaimStatus.isPending} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
+                  <div className="flex gap-2">
+                    <input className="flex-1 px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground text-sm placeholder:text-muted-foreground" placeholder="Reject reason..." value={claimRejectReason} onChange={e => setClaimRejectReason(e.target.value)} />
+                    <button onClick={() => handleRejectClaim(c)} disabled={updateClaimStatus.isPending} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">❌ Reject</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
+          return (
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-card rounded-lg p-4 shadow-sm text-center">
+                  <div className="text-2xl font-bold text-yellow-500">{pendingClaims.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Pending</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm text-center">
+                  <div className="text-2xl font-bold text-green-600">RM{allClaims.filter(c => c.status === "approved").reduce((s, c) => s + Number(c.amount), 0).toLocaleString()}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Total Approved</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm text-center">
+                  <div className="text-2xl font-bold">{allClaims.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Total Claims</div>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-lg font-bold mb-3">🔔 Pending Claims</div>
+                {pendingClaims.length === 0 ? (
+                  <div className="bg-card rounded-lg p-6 text-center text-muted-foreground text-sm">No pending claims</div>
+                ) : (
+                  <div className="space-y-3">{pendingClaims.map(c => renderClaimCard(c, true))}</div>
+                )}
+              </div>
+
+              {processedClaims.length > 0 && (
+                <div>
+                  <div className="text-lg font-bold mb-3">📋 Processed Claims</div>
+                  <div className="space-y-3">{processedClaims.slice(0, 20).map(c => renderClaimCard(c, false))}</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {tab === "users" && (
           <div className="bg-card rounded-lg shadow-sm overflow-hidden">
             <table className="w-full text-sm">
