@@ -284,7 +284,11 @@ export default function AdminPage() {
               {(r.photos as string[] || []).map((url: string, i: number) => (
                 <div key={i} className="relative group">
                   <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${url}`} alt={`Photo ${i + 1}`} className="h-32 w-full object-cover rounded-lg" />
-                  <button onClick={() => updateField("photos", (r.photos as string[]).filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                  <button onClick={async () => {
+                    const newPhotos = (r.photos as string[]).filter((_, idx) => idx !== i);
+                    updateField("photos", newPhotos);
+                    try { await updateRoom.mutateAsync({ id: r.id, photos: newPhotos } as any); } catch (err: any) { alert(err.message); }
+                  }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                 </div>
               ))}
               <label className="h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
