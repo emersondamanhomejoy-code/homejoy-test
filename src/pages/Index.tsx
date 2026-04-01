@@ -654,18 +654,26 @@ export default function Index() {
       if (claims.length === 0) return <div className="text-center py-8 text-muted-foreground">No claims</div>;
       return (
         <div className="space-y-3">
-          {claims.map(c => (
-            <div key={c.id} className="rounded-lg border bg-card p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-lg">RM{Number(c.amount).toLocaleString()}</div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
+          {claims.map(c => {
+            const linkedBooking = agentBookings.find(b => b.id === c.booking_id);
+            return (
+              <div key={c.id} className="rounded-lg border bg-card p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-lg">RM{Number(c.amount).toLocaleString()}</div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
+                </div>
+                {linkedBooking && (
+                  <div className="text-xs bg-secondary rounded-lg px-3 py-2 text-muted-foreground">
+                    📋 {linkedBooking.room?.building} {linkedBooking.room?.unit} {linkedBooking.room?.room} — {linkedBooking.tenant_name}
+                  </div>
+                )}
+                <div className="text-sm text-muted-foreground">{c.description}</div>
+                {c.bank_name && <div className="text-xs text-muted-foreground">Bank: {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
+                {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
+                <div className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</div>
               </div>
-              <div className="text-sm text-muted-foreground">{c.description}</div>
-              {c.bank_name && <div className="text-xs text-muted-foreground">Bank: {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
-              {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
-              <div className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     };
