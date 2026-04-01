@@ -476,6 +476,7 @@ export default function AdminPage() {
                 tenant_gender: booking.tenant_gender,
                 tenant_race: booking.tenant_race,
                 pax_staying: (booking as any).pax_staying || 1,
+                carParkIds: ((booking as any).documents as any)?.carParkIds || [],
               });
               setSelectedBooking(null);
             } catch (e: any) { alert(e.message); }
@@ -484,7 +485,7 @@ export default function AdminPage() {
           const handleReject = async (booking: Booking) => {
             if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
             try {
-              await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+              await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
               setSelectedBooking(null);
               setRejectReason("");
             } catch (e: any) { alert(e.message); }

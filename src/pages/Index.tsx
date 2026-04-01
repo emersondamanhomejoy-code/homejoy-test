@@ -293,8 +293,16 @@ export default function Index() {
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
+        documents: { carParkIds: bookingForm.selectedCarParks || [] },
       });
       if (dbErr) throw dbErr;
+
+      // Mark selected car parks as Reserved immediately
+      if (bookingForm.selectedCarParks && bookingForm.selectedCarParks.length > 0) {
+        for (const cpId of bookingForm.selectedCarParks) {
+          await supabase.from("rooms").update({ status: "Reserved" } as any).eq("id", cpId);
+        }
+      }
       setBookingSubmitted({ room: selectedRoom, announcement: bookingAnnouncement(selectedRoom) });
       setPage("booking-success");
     } catch (e: any) {
@@ -808,121 +816,163 @@ export default function Index() {
   }
 
   // ─── DASHBOARD ───
+  const availableCarParksCount = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available").length;
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthlyDeals = agentBookings.filter(b => b.submitted_by === user?.id && new Date(b.created_at) >= monthStart).length;
+
   return (
-    <div className="min-h-screen bg-background p-6 text-foreground">
-      <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="text-sm font-bold text-muted-foreground tracking-widest uppercase">Homejoy</div>
-            <div className="text-3xl font-extrabold tracking-tight mt-1">Agent Dashboard</div>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top Bar */}
+      <div className="bg-card border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-xl font-extrabold tracking-tight text-primary">HOMEJOY</div>
+            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">{role ?? "agent"}</span>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{role ?? "agent"}</span>
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
-            <div className="bg-primary/10 rounded-lg px-5 py-4 text-center">
-              <div className="text-3xl font-extrabold text-primary">{roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length}</div>
-              <div className="text-xs font-semibold text-primary/70 uppercase tracking-wider mt-1">Available Rooms</div>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground hidden md:inline">{user?.email}</span>
             {role === "admin" && (
-              <button onClick={() => navigate("/admin")} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-opacity">
+              <button onClick={() => navigate("/admin")} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
                 Admin Panel
               </button>
             )}
-            <button onClick={signOut} className="px-4 py-2 rounded-lg border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+            <button onClick={signOut} className="px-3 py-1.5 rounded-lg border text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
               Sign Out
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="grid lg:grid-cols-[1.35fr_0.65fr] gap-6">
-          <div className="space-y-6">
-            <div className="bg-card rounded-lg shadow-sm p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xl font-semibold">Available Units</div>
-                <span className="text-sm text-muted-foreground">{availableRooms.length} rooms</span>
-              </div>
+      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-card rounded-xl shadow-sm p-5 border">
+            <div className="text-3xl font-extrabold text-primary">{roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length}</div>
+            <div className="text-xs font-medium text-muted-foreground mt-1">Available Rooms</div>
+          </div>
+          <div className="bg-card rounded-xl shadow-sm p-5 border">
+            <div className="text-3xl font-extrabold text-accent">{availableCarParksCount}</div>
+            <div className="text-xs font-medium text-muted-foreground mt-1">Available Car Parks</div>
+          </div>
+          <div className="bg-card rounded-xl shadow-sm p-5 border">
+            <div className="text-3xl font-extrabold">{monthlyDeals}</div>
+            <div className="text-xs font-medium text-muted-foreground mt-1">My Deals (This Month)</div>
+          </div>
+          <button onClick={() => setPage("claims")} className="bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-sm p-5 text-left hover:shadow-md transition-shadow">
+            <div className="text-3xl font-extrabold text-primary-foreground">💰</div>
+            <div className="text-xs font-medium text-primary-foreground/80 mt-1">View Claims</div>
+          </button>
+        </div>
+
+        {/* Commission Info */}
+        <div className="bg-card rounded-xl shadow-sm p-4 border flex items-center justify-between">
+          <div className="text-sm"><span className="text-muted-foreground">Your commission tier:</span> <span className="font-semibold">{commissionLabel}</span></div>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+          {/* Room Listings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-xl font-bold">Available Units</div>
+              <span className="text-sm text-muted-foreground">{availableRooms.length} rooms</span>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-card rounded-xl border p-4">
               <div className="grid md:grid-cols-5 gap-3">
-                <input className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <input className="px-3 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-muted-foreground pl-1">Area</label>
-                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value, building: "All" })}>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Area</label>
+                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value, building: "All" })}>
                     <option>All</option>{uniqueLocations.map((loc) => <option key={loc}>{loc}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-muted-foreground pl-1">Property</label>
-                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.building} onChange={(e) => setFilters({ ...filters, building: e.target.value })}>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Property</label>
+                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.building} onChange={(e) => setFilters({ ...filters, building: e.target.value })}>
                     <option>All</option>{uniqueBuildings.map((b) => <option key={b}>{b}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-muted-foreground pl-1">Price</label>
-                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.price} onChange={(e) => setFilters({ ...filters, price: e.target.value })}>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Price</label>
+                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.price} onChange={(e) => setFilters({ ...filters, price: e.target.value })}>
                     <option>All</option><option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-muted-foreground pl-1">Gender</label>
-                  <select className="px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Gender</label>
+                  <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
                     <option>All</option><option>Female Unit</option><option>Mix Unit</option>
                   </select>
                 </div>
               </div>
-              {roomsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading rooms...</div>
-              ) : (
-                <div className="space-y-3">
-                  {availableRooms.map((room) => (
-                    <div key={room.id} className="rounded-lg border p-5 grid md:grid-cols-[1fr_auto] gap-4 items-center hover:shadow-md transition-shadow">
-                      <div>
-                        <div className="text-lg font-semibold">{room.building} {room.unit}</div>
-                        <div className="text-muted-foreground mt-1">{room.room} — <span className="font-semibold text-foreground">RM{room.rent}</span>/mo</div>
-                        <div className="flex gap-2 flex-wrap mt-2">
-                          <span className="px-3 py-1 rounded-md bg-secondary text-sm font-medium">{room.room_type}</span>
-                          <span className="px-3 py-1 rounded-md bg-secondary text-sm font-medium">{room.unit_type}</span>
-                          <span className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-sm font-medium">{room.available_date}</span>
+            </div>
+
+            {/* Room Cards */}
+            {roomsLoading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading rooms...</div>
+            ) : availableRooms.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border">No rooms match your filters</div>
+            ) : (
+              <div className="space-y-3">
+                {availableRooms.map((room) => {
+                  const buildingCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === room.building).length;
+                  return (
+                    <div key={room.id} className="bg-card rounded-xl border p-5 hover:shadow-md transition-all hover:border-primary/30 group">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="text-lg font-bold">{room.building}</div>
+                            <span className="text-sm text-muted-foreground">{room.unit}</span>
+                          </div>
+                          <div className="text-muted-foreground mt-0.5">{room.room} — <span className="font-bold text-primary text-lg">RM{room.rent}</span><span className="text-xs text-muted-foreground">/mo</span></div>
+                          <div className="flex gap-1.5 flex-wrap mt-2.5">
+                            <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
+                            <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
+                            <span className="px-2.5 py-1 rounded-md bg-accent/20 text-accent-foreground text-xs font-medium">{room.available_date}</span>
+                            {buildingCarParks > 0 && <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">🅿️ {buildingCarParks} car park{buildingCarParks > 1 ? "s" : ""}</span>}
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground flex gap-3">
+                            <span>Max: {room.unit_max_pax}</span>
+                            <span>Occupied: {room.unit_occupied_pax}</span>
+                            <span className="font-semibold text-foreground">Balance: {room.unit_max_pax - room.unit_occupied_pax}</span>
+                          </div>
                         </div>
-                        <div className="mt-3 text-sm text-muted-foreground flex gap-4">
-                          <span>Max: {room.unit_max_pax}</span>
-                          <span>Occupied: {room.unit_occupied_pax}</span>
-                          <span>Balance: {room.unit_max_pax - room.unit_occupied_pax}</span>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <button onClick={() => openRoom(room)} className="px-4 py-2 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">Details</button>
+                          <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book</button>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2 min-w-[140px]">
-                        <button onClick={() => openRoom(room)} className="px-4 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">View Details</button>
-                        <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book Now</button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-card rounded-lg shadow-sm p-5">
-              <div className="text-xl font-semibold">Top Agent Ranking</div>
-              <div className="text-sm text-muted-foreground mt-1">Showing {agentType.toLowerCase()} agents</div>
-              <div className="mt-4 space-y-3">
+          {/* Sidebar */}
+          <div className="space-y-4">
+            <div className="bg-card rounded-xl shadow-sm border p-5">
+              <div className="text-sm font-bold mb-3">🏆 Top Agents</div>
+              <div className="flex gap-1 mb-3">
+                <button onClick={() => setAgentType("Internal")} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${agentType === "Internal" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>Internal</button>
+                <button onClick={() => setAgentType("External")} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${agentType === "External" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>External</button>
+              </div>
+              <div className="space-y-2">
                 {ranking.map((item, i) => (
-                  <div key={item.rank} className="rounded-lg bg-secondary p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{rankMedals[i]}</span>
+                  <div key={item.rank} className="rounded-lg bg-secondary/60 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg">{rankMedals[i]}</span>
                       <div>
-                        <div className="font-semibold">{item.name}</div>
-                        <div className="text-sm text-muted-foreground">{item.deals} deals</div>
+                        <div className="font-semibold text-sm">{item.name}</div>
+                        <div className="text-xs text-muted-foreground">{item.deals} deals</div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="bg-card rounded-lg shadow-sm p-5">
-              <button onClick={() => setPage("claims")} className="w-full text-center">
-                <div className="text-4xl font-extrabold tracking-tight">💰 Claim</div>
-                <div className="text-sm text-muted-foreground mt-2">View & submit your commission claims</div>
-              </button>
             </div>
           </div>
         </div>
