@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     // Fetch all roles
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
-      .select("user_id, role, commission_type");
+      .select("user_id, role, commission_type, commission_config");
     if (rolesError) throw rolesError;
 
     // Merge
