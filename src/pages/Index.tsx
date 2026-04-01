@@ -916,6 +916,16 @@ export default function Index() {
           <div className="text-sm"><span className="text-muted-foreground">Your commission tier:</span> <span className="font-semibold">{commissionLabel}</span></div>
         </div>
 
+        {/* Pricing Rules */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">📋 Tenancy Duration Pricing</div>
+          <div className="text-xs text-amber-700 dark:text-amber-300 space-y-0.5">
+            <div>• 12 months (1 year) — <span className="font-semibold">Base price</span></div>
+            <div>• 6 months (half year) — <span className="font-semibold">+RM50/month</span></div>
+            <div>• 2 months or less — <span className="font-semibold">+RM100/month</span></div>
+          </div>
+        </div>
+
         {/* Main Content */}
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
           {/* Room Listings */}
