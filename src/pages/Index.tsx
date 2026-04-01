@@ -264,6 +264,7 @@ export default function Index() {
       const deposit = Number(bookingForm.deposit) || 0;
       const adminFee = Number(bookingForm.adminFee) || 0;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
+      const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
       const { error: dbErr } = await supabase.from("bookings").insert({
         room_id: selectedRoom.id,
         unit_id: selectedRoom.unit_id,
