@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN internal_only boolean NOT NULL DEFAULT false;

@@ -374,6 +374,7 @@ export type Database = {
           building: string
           created_at: string
           id: string
+          internal_only: boolean
           location: string
           parking_lot: string
           passcode: string
@@ -390,6 +391,7 @@ export type Database = {
           building: string
           created_at?: string
           id?: string
+          internal_only?: boolean
           location: string
           parking_lot?: string
           passcode?: string
@@ -406,6 +408,7 @@ export type Database = {
           building?: string
           created_at?: string
           id?: string
+          internal_only?: boolean
           location?: string
           parking_lot?: string
           passcode?: string
