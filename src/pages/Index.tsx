@@ -55,6 +55,7 @@ export default function Index() {
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
   const [claimForm, setClaimForm] = useState({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+  const [selectedClaimBookings, setSelectedClaimBookings] = useState<string[]>([]);
   const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
