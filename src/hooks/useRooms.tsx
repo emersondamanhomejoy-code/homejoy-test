@@ -50,6 +50,7 @@ export interface Room {
   pax_staying: number;
   tenant_gender: string;
   tenant_race: string;
+  internal_only: boolean;
   created_at: string;
   updated_at: string;
 }
