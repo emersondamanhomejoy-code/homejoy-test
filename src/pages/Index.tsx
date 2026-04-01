@@ -428,7 +428,7 @@ export default function Index() {
                   Copy for Tenant
                 </button>
               </div>
-              <button onClick={openBooking} className="w-full px-4 py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity">
+              <button onClick={openBooking} className="w-full px-4 py-4 rounded-lg bg-cyan-500 text-white font-semibold text-base hover:bg-cyan-600 transition-colors">
                 Book Now
               </button>
             </div>
