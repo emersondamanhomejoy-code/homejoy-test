@@ -376,9 +376,12 @@ export type Database = {
           access_info: Json
           building: string
           created_at: string
+          deposit: string
           id: string
           internal_only: boolean
           location: string
+          meter_rate: number
+          meter_type: string
           parking_lot: string
           passcode: string
           unit: string
@@ -393,9 +396,12 @@ export type Database = {
           access_info?: Json
           building: string
           created_at?: string
+          deposit?: string
           id?: string
           internal_only?: boolean
           location: string
+          meter_rate?: number
+          meter_type?: string
           parking_lot?: string
           passcode?: string
           unit: string
@@ -410,9 +416,12 @@ export type Database = {
           access_info?: Json
           building?: string
           created_at?: string
+          deposit?: string
           id?: string
           internal_only?: boolean
           location?: string
+          meter_rate?: number
+          meter_type?: string
           parking_lot?: string
           passcode?: string
           unit?: string

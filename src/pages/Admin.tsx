@@ -69,6 +69,7 @@ const emptyUnit = {
   passcode: "", access_card: "", parking_lot: "",
   access_card_source: "Provided by Us", access_card_deposit: 0,
   access_info: "", internal_only: false,
+  deposit: "", meter_type: "Postpaid", meter_rate: 0,
 };
 
 export default function AdminPage() {
@@ -341,14 +342,19 @@ export default function AdminPage() {
               <select className={inputClass} value={u.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
                 <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
               </select>
-              <input className={inputClass} type="number" placeholder="Max Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
+              <input className={inputClass} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
               <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
               <select className={inputClass} value={u.access_card_source} onChange={e => updateField("access_card_source", e.target.value)}>
                 <option value="Provided by Us">Access Card: Provided by Us</option>
                 <option value="Management Office">Access Card: Management Office</option>
               </select>
               <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit} onChange={e => updateField("access_card_deposit", Number(e.target.value))} />
-              <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
+              <input className={inputClass} placeholder="Deposit (e.g. 1.5 month)" value={u.deposit || ""} onChange={e => updateField("deposit", e.target.value)} />
+              <select className={inputClass} value={u.meter_type || "Postpaid"} onChange={e => updateField("meter_type", e.target.value)}>
+                <option value="Postpaid">Meter: Postpaid</option>
+                <option value="Prepaid">Meter: Prepaid</option>
+              </select>
+              <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM per kWh)" value={u.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
                 <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
@@ -722,19 +728,20 @@ export default function AdminPage() {
                       <div className="p-5 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}>
                         <div>
                           <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
-                          <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Max {unit.unit_max_pax} pax</div>
+                          <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Maximum {unit.unit_max_pax} Pax</div>
                           <div className="flex gap-2 flex-wrap mt-2">
                             <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} rooms avail</span>
                             <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{regularRooms.length - availableCount} tenanted</span>
                             {carParks.length > 0 && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">🅿️ {availableCP}/{carParks.length} car parks</span>}
                             {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
                             {(unit as any).access_card_source && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {(unit as any).access_card_source} {(unit as any).access_card_deposit ? `RM${(unit as any).access_card_deposit}` : ""}</span>}
-                            {unit.parking_lot && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_lot}</span>}
+                            {(unit as any).deposit && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit: {(unit as any).deposit}</span>}
+                            {(unit as any).meter_type && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">⚡ {(unit as any).meter_type} {(unit as any).meter_rate ? `RM${(unit as any).meter_rate}/kWh` : ""}</span>}
                             {(unit as any).internal_only && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary">🔒 Internal Only</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "", internal_only: (unit as any).internal_only || false }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "", internal_only: (unit as any).internal_only || false, deposit: (unit as any).deposit || "", meter_type: (unit as any).meter_type || "Postpaid", meter_rate: (unit as any).meter_rate || 0 }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
                           <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
                         </div>
