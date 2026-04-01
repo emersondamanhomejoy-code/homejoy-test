@@ -57,6 +57,35 @@ export default function Index() {
   const [claimForm, setClaimForm] = useState({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
   const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
+  const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
+
+  // Fetch agent's commission type
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("commission_type").eq("user_id", user.id).eq("role", "agent").single()
+      .then(({ data }) => { if (data?.commission_type) setAgentCommissionType(data.commission_type); });
+  }, [user]);
+
+  // Calculate commission based on tier and monthly deals
+  const calculateCommission = (booking: Booking) => {
+    const rent = booking.monthly_salary || 0;
+    // Count approved bookings this month by this agent
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyDeals = agentBookings.filter(b => b.submitted_by === user?.id && new Date(b.created_at) >= monthStart).length;
+
+    if (agentCommissionType === "external") {
+      return rent; // 100%
+    } else if (agentCommissionType === "internal_full") {
+      const pct = monthlyDeals <= 5 ? 0.65 : monthlyDeals <= 10 ? 0.70 : 0.75;
+      return Math.round(rent * pct);
+    } else {
+      // internal_basic
+      return monthlyDeals <= 5 ? 200 : monthlyDeals <= 10 ? 300 : 400;
+    }
+  };
+
+  const commissionLabel = agentCommissionType === "external" ? "External (100%)" : agentCommissionType === "internal_full" ? "Internal Full (65-75%)" : "Internal Basic (RM200-400)";
 
   const PRESET_AREAS = [
     "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
