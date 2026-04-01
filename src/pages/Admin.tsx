@@ -49,7 +49,7 @@ const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
   passcode: "", access_card: "", parking_lot: "",
   access_card_source: "Provided by Us", access_card_deposit: 0,
-  access_info: "",
+  access_info: "", internal_only: false,
 };
 
 export default function AdminPage() {
