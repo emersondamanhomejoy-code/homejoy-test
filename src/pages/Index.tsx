@@ -478,7 +478,13 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Race *</label><input className={ic} placeholder="Race" value={f.race} onChange={e => set("race", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={f.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Occupation *</label><input className={ic} placeholder="Occupation" value={f.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label><input className={ic} type="number" placeholder="12" value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Tenancy Duration (months) *</label>
+                  <select className={ic} value={f.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                      <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 6 ? " (half year)" : ""}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many pax staying *</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
