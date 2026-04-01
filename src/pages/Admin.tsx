@@ -768,6 +768,7 @@ export default function AdminPage() {
               )}
             </div>
           );
+        })()}
 
         {tab === "users" && (
           <div className="bg-card rounded-lg shadow-sm overflow-hidden">
