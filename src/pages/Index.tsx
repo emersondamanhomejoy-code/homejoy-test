@@ -105,6 +105,8 @@ export default function Index() {
     return `Internal Basic — ${tiers.map((t: any) => `RM${t.amount}`).join("/")}`;
   })();
 
+  const isExternalAgent = agentCommissionType === "external";
+
   const PRESET_AREAS = [
     "Ara Damansara", "Bandar Saujana Putra", "Bangsar", "Bukit Jalil", "Cheras",
     "Damansara", "Desa Park City", "Eco Cheras", "KL", "KLCC", "Kuala Lumpur",
@@ -128,6 +130,8 @@ export default function Index() {
     return roomsData.filter((room) => {
       if (room.room_type === "Car Park") return false;
       if (room.status !== "Available") return false;
+      // External agents cannot see internal-only rooms
+      if (isExternalAgent && room.internal_only) return false;
       const keyword = search.trim().toLowerCase();
       const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
       const matchesLocation = filters.location === "All" || room.location === filters.location;

@@ -282,6 +282,7 @@ export type Database = {
           created_at: string
           housemates: Json
           id: string
+          internal_only: boolean
           location: string
           max_pax: number
           move_in_cost: Json
@@ -309,6 +310,7 @@ export type Database = {
           created_at?: string
           housemates?: Json
           id?: string
+          internal_only?: boolean
           location: string
           max_pax?: number
           move_in_cost?: Json
@@ -336,6 +338,7 @@ export type Database = {
           created_at?: string
           housemates?: Json
           id?: string
+          internal_only?: boolean
           location?: string
           max_pax?: number
           move_in_cost?: Json
@@ -374,6 +377,7 @@ export type Database = {
           building: string
           created_at: string
           id: string
+          internal_only: boolean
           location: string
           parking_lot: string
           passcode: string
@@ -390,6 +394,7 @@ export type Database = {
           building: string
           created_at?: string
           id?: string
+          internal_only?: boolean
           location: string
           parking_lot?: string
           passcode?: string
@@ -406,6 +411,7 @@ export type Database = {
           building?: string
           created_at?: string
           id?: string
+          internal_only?: boolean
           location?: string
           parking_lot?: string
           passcode?: string

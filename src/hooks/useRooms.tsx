@@ -14,6 +14,7 @@ export interface Unit {
   access_card_deposit: number;
   parking_lot: string;
   access_info: string;
+  internal_only: boolean;
   created_at: string;
   updated_at: string;
   rooms?: Room[];
@@ -49,6 +50,7 @@ export interface Room {
   pax_staying: number;
   tenant_gender: string;
   tenant_race: string;
+  internal_only: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -92,7 +94,7 @@ export function useCreateUnit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
-      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_lot?: string; access_info: any };
+      unit: { building: string; unit: string; location: string; unit_type: string; unit_max_pax: number; passcode?: string; access_card?: string; parking_lot?: string; access_info: any; internal_only?: boolean };
       roomConfigs: RoomConfig[];
     }) => {
       const { unit, roomConfigs } = payload;
@@ -126,6 +128,7 @@ export function useCreateUnit() {
         move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
         tenant_gender: "",
         tenant_race: "",
+        internal_only: unit.internal_only || false,
       }));
       const { error: rErr } = await supabase.from("rooms").insert(rooms);
       if (rErr) throw rErr;
@@ -140,8 +143,15 @@ export function useUpdateUnit() {
     mutationFn: async ({ id, ...rest }: Partial<Unit> & { id: string }) => {
       const { error } = await supabase.from("units").update(rest).eq("id", id);
       if (error) throw error;
+      // Sync internal_only to rooms
+      if (rest.internal_only !== undefined) {
+        await supabase.from("rooms").update({ internal_only: rest.internal_only } as any).eq("unit_id", id);
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["units"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
   });
 }
 

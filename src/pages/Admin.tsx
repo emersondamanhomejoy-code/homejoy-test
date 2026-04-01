@@ -49,7 +49,7 @@ const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
   passcode: "", access_card: "", parking_lot: "",
   access_card_source: "Provided by Us", access_card_deposit: 0,
-  access_info: "",
+  access_info: "", internal_only: false,
 };
 
 export default function AdminPage() {
@@ -75,6 +75,7 @@ export default function AdminPage() {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
+  const [unitFilters, setUnitFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All" });
 
   // Bookings state
   const { data: allBookings = [] } = useBookings();
@@ -315,6 +316,10 @@ export default function AdminPage() {
               </select>
               <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit} onChange={e => updateField("access_card_deposit", Number(e.target.value))} />
               <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
+                <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
+              </label>
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <textarea className={inputClass + " min-h-[80px]"} placeholder="Access info (e.g. condo entry, unit access, visitor parking, viewing instructions...)" value={u.access_info || ""} onChange={e => updateField("access_info", e.target.value)} />
@@ -605,17 +610,50 @@ export default function AdminPage() {
         })()}
 
         {/* UNITS TAB */}
-        {tab === "units" && (
+        {tab === "units" && (() => {
+          const allLocations = Array.from(new Set(units.map(u => u.location).filter(Boolean))).sort();
+          const allBuildings = Array.from(new Set(units.filter(u => unitFilters.location === "All" || u.location === unitFilters.location).map(u => u.building).filter(Boolean))).sort();
+          const filteredUnits = units.filter(unit => {
+            if (unitFilters.location !== "All" && unit.location !== unitFilters.location) return false;
+            if (unitFilters.building !== "All" && unit.building !== unitFilters.building) return false;
+            if (unitFilters.unitType !== "All" && unit.unit_type !== unitFilters.unitType) return false;
+            if (unitFilters.price !== "All") {
+              const minRent = Math.min(...(unit.rooms?.filter(r => r.room_type !== "Car Park").map(r => r.rent) ?? [0]));
+              if (unitFilters.price === "Below RM700" && minRent >= 700) return false;
+              if (unitFilters.price === "RM700 - RM900" && (minRent < 700 || minRent > 900)) return false;
+              if (unitFilters.price === "Above RM900" && minRent <= 900) return false;
+            }
+            return true;
+          });
+          return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{units.length} units</span>
+              <span className="text-sm text-muted-foreground">{filteredUnits.length} of {units.length} units</span>
               <button onClick={openCreateRoom2} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <select className={inputClass} value={unitFilters.location} onChange={e => setUnitFilters({ ...unitFilters, location: e.target.value, building: "All" })}>
+                <option value="All">All Areas</option>
+                {allLocations.map(l => <option key={l}>{l}</option>)}
+              </select>
+              <select className={inputClass} value={unitFilters.building} onChange={e => setUnitFilters({ ...unitFilters, building: e.target.value })}>
+                <option value="All">All Properties</option>
+                {allBuildings.map(b => <option key={b}>{b}</option>)}
+              </select>
+              <select className={inputClass} value={unitFilters.price} onChange={e => setUnitFilters({ ...unitFilters, price: e.target.value })}>
+                <option value="All">All Prices</option>
+                <option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
+              </select>
+              <select className={inputClass} value={unitFilters.unitType} onChange={e => setUnitFilters({ ...unitFilters, unitType: e.target.value })}>
+                <option value="All">All Gender</option>
+                <option>Female Unit</option><option>Mix Unit</option><option>Male Unit</option>
+              </select>
             </div>
             {unitsLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : (
               <div className="space-y-3">
-                {units.map((unit) => {
+                {filteredUnits.map((unit) => {
                   const isExpanded = expandedUnit === unit.id;
                   const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
                   const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
@@ -634,10 +672,11 @@ export default function AdminPage() {
                             {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
                             {(unit as any).access_card_source && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {(unit as any).access_card_source} {(unit as any).access_card_deposit ? `RM${(unit as any).access_card_deposit}` : ""}</span>}
                             {unit.parking_lot && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {unit.parking_lot}</span>}
+                            {(unit as any).internal_only && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary">🔒 Internal Only</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "" }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "", internal_only: (unit as any).internal_only || false }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
                           <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
                         </div>
@@ -701,7 +740,8 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* CLAIMS TAB */}
         {tab === "claims" && (() => {
