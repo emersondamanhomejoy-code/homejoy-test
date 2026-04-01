@@ -291,7 +291,7 @@ export default function Index() {
         car_plate: bookingForm.carPlates.slice(0, Number(bookingForm.parkingCount)).filter(p => p.trim()).join(", "),
         submitted_by: user.id,
         submitted_by_type: "agent",
-        move_in_cost: { advance, deposit, adminFee, electricityReload, total: advance + deposit + adminFee + electricityReload },
+        move_in_cost: { advance, deposit, adminFee, electricityReload, accessCardDeposit, total: advance + deposit + adminFee + electricityReload + accessCardDeposit },
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
