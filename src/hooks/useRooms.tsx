@@ -143,8 +143,15 @@ export function useUpdateUnit() {
     mutationFn: async ({ id, ...rest }: Partial<Unit> & { id: string }) => {
       const { error } = await supabase.from("units").update(rest).eq("id", id);
       if (error) throw error;
+      // Sync internal_only to rooms
+      if (rest.internal_only !== undefined) {
+        await supabase.from("rooms").update({ internal_only: rest.internal_only } as any).eq("unit_id", id);
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["units"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
   });
 }
 
