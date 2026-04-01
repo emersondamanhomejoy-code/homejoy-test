@@ -779,6 +779,7 @@ export default function AdminPage() {
                   <th className="text-left px-5 py-3 font-semibold">Email</th>
                   <th className="text-left px-5 py-3 font-semibold">Joined</th>
                   <th className="text-left px-5 py-3 font-semibold">Roles</th>
+                  <th className="text-left px-5 py-3 font-semibold">Commission Tier</th>
                   <th className="text-right px-5 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -795,6 +796,32 @@ export default function AdminPage() {
                           {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
                           {u.roles.length === 0 && <span className="text-muted-foreground text-xs">No roles</span>}
                         </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {isAgent && (
+                          <select
+                            className="px-3 py-1.5 rounded-lg border bg-secondary text-secondary-foreground text-xs font-medium"
+                            value={u.commission_type || "internal_basic"}
+                            onChange={async (e) => {
+                              const newType = e.target.value;
+                              try {
+                                const { error } = await supabase
+                                  .from("user_roles")
+                                  .update({ commission_type: newType })
+                                  .eq("user_id", u.id)
+                                  .eq("role", "agent");
+                                if (error) throw error;
+                                await fetchUsers();
+                              } catch (err: any) {
+                                alert(err.message || "Failed to update commission type");
+                              }
+                            }}
+                          >
+                            <option value="external">External (100%)</option>
+                            <option value="internal_basic">Internal Basic (RM200-400)</option>
+                            <option value="internal_full">Internal Full (65-75%)</option>
+                          </select>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex gap-2 justify-end">
