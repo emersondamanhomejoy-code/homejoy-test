@@ -62,6 +62,8 @@ export default function AdminPage() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [editingCommission, setEditingCommission] = useState<string | null>(null);
+  const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
 
   // Units state
   const { data: units = [], isLoading: unitsLoading } = useUnits();
