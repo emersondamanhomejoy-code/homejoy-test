@@ -201,7 +201,7 @@ export function useCreateRoom() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (room: Record<string, any>) => {
-      const { error } = await supabase.from("rooms").insert(room);
+      const { error } = await supabase.from("rooms").insert(room as any);
       if (error) throw error;
     },
     onSuccess: () => {
