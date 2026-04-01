@@ -595,7 +595,7 @@ export default function Index() {
               </div>
               <div className="bg-secondary rounded-lg p-4 text-right">
                 <span className="text-sm text-muted-foreground">Total: </span>
-                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + (Number(f.deposit) || 0) + (Number(f.adminFee) || 0) + (Number(f.electricityReload) || 0)}</span>
+                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + (Number(f.deposit) || 0) + (Number(f.adminFee) || 0) + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
               </div>
             </div>
 
