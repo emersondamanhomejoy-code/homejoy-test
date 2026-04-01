@@ -739,7 +739,8 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* CLAIMS TAB */}
         {tab === "claims" && (() => {
