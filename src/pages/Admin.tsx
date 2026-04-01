@@ -75,6 +75,7 @@ export default function AdminPage() {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
+  const [unitFilters, setUnitFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All" });
 
   // Bookings state
   const { data: allBookings = [] } = useBookings();
