@@ -293,8 +293,16 @@ export default function Index() {
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
+        documents: { carParkIds: bookingForm.selectedCarParks || [] },
       });
       if (dbErr) throw dbErr;
+
+      // Mark selected car parks as Reserved immediately
+      if (bookingForm.selectedCarParks && bookingForm.selectedCarParks.length > 0) {
+        for (const cpId of bookingForm.selectedCarParks) {
+          await supabase.from("rooms").update({ status: "Reserved" } as any).eq("id", cpId);
+        }
+      }
       setBookingSubmitted({ room: selectedRoom, announcement: bookingAnnouncement(selectedRoom) });
       setPage("booking-success");
     } catch (e: any) {
