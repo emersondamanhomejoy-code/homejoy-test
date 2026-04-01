@@ -302,7 +302,9 @@ export default function AdminPage() {
                     newPaths.push(path);
                   }
                   if (newPaths.length > 0) {
-                    updateField("photos", [...(r.photos as string[] || []), ...newPaths]);
+                    const updatedPhotos = [...(r.photos as string[] || []), ...newPaths];
+                    updateField("photos", updatedPhotos);
+                    try { await updateRoom.mutateAsync({ id: r.id, photos: updatedPhotos } as any); } catch (err: any) { alert(err.message); }
                   }
                   e.target.value = "";
                 }} />
