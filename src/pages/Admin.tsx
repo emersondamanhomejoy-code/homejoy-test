@@ -408,6 +408,7 @@ export default function AdminPage() {
         <div className="flex gap-2">
           <button onClick={() => setTab("dashboard")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "dashboard" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Dashboard</button>
           <button onClick={() => setTab("units")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "units" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Units & Rooms</button>
+          <button onClick={() => setTab("claims")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "claims" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Claims {allClaims.filter(c => c.status === "pending").length > 0 ? `(${allClaims.filter(c => c.status === "pending").length})` : ""}</button>
           <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Users</button>
         </div>
 
