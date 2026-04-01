@@ -701,27 +701,38 @@ export default function AdminPage() {
             } catch (e: any) { alert(e.message); }
           };
 
-          const renderClaimCard = (c: Claim, showActions: boolean) => (
-            <div key={c.id} className="bg-card rounded-lg shadow-sm p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-lg">RM{Number(c.amount).toLocaleString()}</div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
-              </div>
-              <div className="text-sm text-muted-foreground">{c.description}</div>
-              {c.bank_name && <div className="text-xs text-muted-foreground">🏦 {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
-              <div className="text-xs text-muted-foreground">Agent: {c.agent_id.slice(0, 8)}... · {new Date(c.created_at).toLocaleDateString()}</div>
-              {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
-              {showActions && c.status === "pending" && (
-                <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                  <button onClick={() => handleApproveClaim(c)} disabled={updateClaimStatus.isPending} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
-                  <div className="flex gap-2">
-                    <input className="flex-1 px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground text-sm placeholder:text-muted-foreground" placeholder="Reject reason..." value={claimRejectReason} onChange={e => setClaimRejectReason(e.target.value)} />
-                    <button onClick={() => handleRejectClaim(c)} disabled={updateClaimStatus.isPending} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">❌ Reject</button>
-                  </div>
+          const renderClaimCard = (c: Claim, showActions: boolean) => {
+            const linkedBooking = allBookings.find(b => b.id === c.booking_id);
+            return (
+              <div key={c.id} className="bg-card rounded-lg shadow-sm p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-lg">RM{Number(c.amount).toLocaleString()}</div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
                 </div>
-              )}
-            </div>
-          );
+                {linkedBooking && (
+                  <div className="bg-secondary rounded-lg p-3 text-sm space-y-1">
+                    <div className="font-semibold">📋 Booking: {linkedBooking.room?.building} {linkedBooking.room?.unit} {linkedBooking.room?.room}</div>
+                    <div className="text-muted-foreground">Tenant: {linkedBooking.tenant_name} · {linkedBooking.tenant_phone}</div>
+                    <div className="text-muted-foreground">Move-in: {new Date(linkedBooking.move_in_date).toLocaleDateString()} · {linkedBooking.contract_months} months</div>
+                  </div>
+                )}
+                {!linkedBooking && c.booking_id && <div className="text-xs text-muted-foreground">Booking ID: {c.booking_id.slice(0, 8)}...</div>}
+                <div className="text-sm text-muted-foreground">{c.description}</div>
+                {c.bank_name && <div className="text-xs text-muted-foreground">🏦 {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
+                <div className="text-xs text-muted-foreground">Agent: {c.agent_id.slice(0, 8)}... · {new Date(c.created_at).toLocaleDateString()}</div>
+                {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
+                {showActions && c.status === "pending" && (
+                  <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                    <button onClick={() => handleApproveClaim(c)} disabled={updateClaimStatus.isPending} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
+                    <div className="flex gap-2">
+                      <input className="flex-1 px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground text-sm placeholder:text-muted-foreground" placeholder="Reject reason..." value={claimRejectReason} onChange={e => setClaimRejectReason(e.target.value)} />
+                      <button onClick={() => handleRejectClaim(c)} disabled={updateClaimStatus.isPending} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">❌ Reject</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          };
 
           return (
             <div className="space-y-6">
