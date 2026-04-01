@@ -148,6 +148,42 @@ export default function Index() {
     });
   }, [search, filters, roomsData]);
 
+  // Group available rooms by building
+  const buildingSummary = useMemo(() => {
+    const allAvailable = roomsData.filter(r => {
+      if (r.room_type === "Car Park") return false;
+      if (r.status !== "Available") return false;
+      if (isExternalAgent && r.internal_only) return false;
+      return true;
+    });
+    const map = new Map<string, { building: string; location: string; count: number; minRent: number; maxRent: number; carParks: number; unitTypes: Set<string> }>();
+    for (const room of allAvailable) {
+      const existing = map.get(room.building);
+      if (existing) {
+        existing.count++;
+        existing.minRent = Math.min(existing.minRent, room.rent);
+        existing.maxRent = Math.max(existing.maxRent, room.rent);
+        existing.unitTypes.add(room.unit_type);
+      } else {
+        map.set(room.building, {
+          building: room.building,
+          location: room.location,
+          count: 1,
+          minRent: room.rent,
+          maxRent: room.rent,
+          carParks: 0,
+          unitTypes: new Set([room.unit_type]),
+        });
+      }
+    }
+    for (const r of roomsData) {
+      if (r.room_type === "Car Park" && r.status === "Available" && map.has(r.building)) {
+        map.get(r.building)!.carParks++;
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [roomsData, isExternalAgent]);
+
   const handleGoogleLogin = async () => {
     setSigningIn(true);
     try {
