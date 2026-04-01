@@ -539,6 +539,39 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                  {/* Uploaded Documents */}
+                  <div className="space-y-3 pt-2">
+                    <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Documents</div>
+                    {[
+                      { label: "🪪 Passport / IC", files: (b as any).doc_passport as string[] | undefined },
+                      { label: "📄 Offer Letter", files: (b as any).doc_offer_letter as string[] | undefined },
+                      { label: "🧾 Transfer Slip", files: (b as any).doc_transfer_slip as string[] | undefined },
+                    ].map(({ label, files }) => (
+                      <div key={label}>
+                        <div className="text-sm font-medium mb-1">{label}</div>
+                        {files && files.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {files.map((path: string, i: number) => {
+                              const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/authenticated/booking-docs/${path}`;
+                              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
+                              return isImage ? (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img src={url} alt={`${label} ${i + 1}`} className="h-28 w-auto rounded-lg border object-cover hover:opacity-80 transition-opacity" />
+                                </a>
+                              ) : (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs hover:opacity-80 transition-opacity">
+                                  📎 File {i + 1}
+                                </a>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">No files uploaded</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
                   {b.status === "pending" && (
                     <div className="flex flex-col gap-3 pt-4 border-t border-border">
                       <div className="flex gap-2">

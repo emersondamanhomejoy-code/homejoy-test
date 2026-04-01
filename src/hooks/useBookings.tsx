@@ -27,7 +27,10 @@ export interface Booking {
   emergency_contact_2: string;
   parking: string;
   car_plate: string;
-  documents: string[];
+  documents: Record<string, any>;
+  doc_passport: string[];
+  doc_offer_letter: string[];
+  doc_transfer_slip: string[];
   submitted_by: string | null;
   submitted_by_type: "agent" | "customer";
   reviewed_by: string | null;
