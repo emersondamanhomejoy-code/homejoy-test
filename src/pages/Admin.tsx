@@ -610,17 +610,50 @@ export default function AdminPage() {
         })()}
 
         {/* UNITS TAB */}
-        {tab === "units" && (
+        {tab === "units" && (() => {
+          const allLocations = Array.from(new Set(units.map(u => u.location).filter(Boolean))).sort();
+          const allBuildings = Array.from(new Set(units.filter(u => unitFilters.location === "All" || u.location === unitFilters.location).map(u => u.building).filter(Boolean))).sort();
+          const filteredUnits = units.filter(unit => {
+            if (unitFilters.location !== "All" && unit.location !== unitFilters.location) return false;
+            if (unitFilters.building !== "All" && unit.building !== unitFilters.building) return false;
+            if (unitFilters.unitType !== "All" && unit.unit_type !== unitFilters.unitType) return false;
+            if (unitFilters.price !== "All") {
+              const minRent = Math.min(...(unit.rooms?.filter(r => r.room_type !== "Car Park").map(r => r.rent) ?? [0]));
+              if (unitFilters.price === "Below RM700" && minRent >= 700) return false;
+              if (unitFilters.price === "RM700 - RM900" && (minRent < 700 || minRent > 900)) return false;
+              if (unitFilters.price === "Above RM900" && minRent <= 900) return false;
+            }
+            return true;
+          });
+          return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{units.length} units</span>
+              <span className="text-sm text-muted-foreground">{filteredUnits.length} of {units.length} units</span>
               <button onClick={openCreateRoom2} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <select className={inputClass} value={unitFilters.location} onChange={e => setUnitFilters({ ...unitFilters, location: e.target.value, building: "All" })}>
+                <option value="All">All Areas</option>
+                {allLocations.map(l => <option key={l}>{l}</option>)}
+              </select>
+              <select className={inputClass} value={unitFilters.building} onChange={e => setUnitFilters({ ...unitFilters, building: e.target.value })}>
+                <option value="All">All Properties</option>
+                {allBuildings.map(b => <option key={b}>{b}</option>)}
+              </select>
+              <select className={inputClass} value={unitFilters.price} onChange={e => setUnitFilters({ ...unitFilters, price: e.target.value })}>
+                <option value="All">All Prices</option>
+                <option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
+              </select>
+              <select className={inputClass} value={unitFilters.unitType} onChange={e => setUnitFilters({ ...unitFilters, unitType: e.target.value })}>
+                <option value="All">All Gender</option>
+                <option>Female Unit</option><option>Mix Unit</option><option>Male Unit</option>
+              </select>
             </div>
             {unitsLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : (
               <div className="space-y-3">
-                {units.map((unit) => {
+                {filteredUnits.map((unit) => {
                   const isExpanded = expandedUnit === unit.id;
                   const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
                   const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
