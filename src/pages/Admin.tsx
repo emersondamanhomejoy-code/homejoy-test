@@ -60,6 +60,11 @@ export default function AdminPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Claims state
+  const { data: allClaims = [] } = useClaims();
+  const updateClaimStatus = useUpdateClaimStatus();
+  const [claimRejectReason, setClaimRejectReason] = useState("");
+
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) navigate("/");
   }, [loading, user, role, navigate]);
