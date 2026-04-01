@@ -1,0 +1,1 @@
+ALTER TABLE public.user_roles ADD COLUMN commission_type text NOT NULL DEFAULT 'internal_basic';

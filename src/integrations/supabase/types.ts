@@ -418,18 +418,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          commission_type: string
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          commission_type?: string
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          commission_type?: string
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
