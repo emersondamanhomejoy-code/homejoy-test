@@ -200,7 +200,12 @@ export default function AdminPage() {
           <div className="text-2xl font-extrabold">Edit {isCarPark ? `🅿️ ${r.room}` : r.room}</div>
           <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
           <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
-            {isCarPark ? (
+            {isCarPark ? (() => {
+              const sameBuildingTenants = units
+                .filter(u => u.building === r.building)
+                .flatMap(u => (u.rooms || []).filter(rm => rm.room_type !== "Car Park" && rm.status === "Tenanted" && rm.tenant_gender))
+                .map(rm => `${rm.unit} ${rm.room} — ${rm.tenant_gender}`);
+              return (
               <div className="grid md:grid-cols-2 gap-4">
                 <div><label className="text-xs text-muted-foreground">Parking Lot</label><input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)} /></div>
                 <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
@@ -209,9 +214,16 @@ export default function AdminPage() {
                     <option>Available</option><option>Tenanted</option><option>Unavailable</option>
                   </select>
                 </div>
-                <div><label className="text-xs text-muted-foreground">Tenant Info</label><input className={`${inputClass} w-full`} placeholder="e.g. tenant name / plate" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
+                <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Rented to (Tenant from same building)</label>
+                  <select className={`${inputClass} w-full`} value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)}>
+                    <option value="">— None —</option>
+                    {sameBuildingTenants.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <input className={`${inputClass} w-full mt-2`} placeholder="Or type manually (e.g. name / plate)" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} />
+                </div>
               </div>
-            ) : (
+              );
+            })() : (
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground">Bed Type</label>
                 <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
