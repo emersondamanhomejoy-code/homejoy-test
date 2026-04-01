@@ -6,6 +6,25 @@ import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, u
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 
+function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.storage.from("booking-docs").createSignedUrl(path, 3600).then(({ data }) => {
+      if (data?.signedUrl) setUrl(data.signedUrl);
+    });
+  }, [path]);
+  if (!url) return <span className="text-xs text-muted-foreground">Loading...</span>;
+  return isImage ? (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+      <img src={url} alt={label} className="h-28 w-auto rounded-lg border object-cover hover:opacity-80 transition-opacity" />
+    </a>
+  ) : (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs hover:opacity-80 transition-opacity">
+      📎 {label}
+    </a>
+  );
+}
+
 interface CommissionTier {
   min: number;
   max: number | null;
@@ -307,7 +326,7 @@ export default function AdminPage() {
   if (editingUnit) {
     const u = editingUnit;
     const updateField = (field: string, value: any) => setEditingUnit({ ...u, [field]: value });
-    
+
 
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
@@ -537,6 +556,30 @@ export default function AdminPage() {
                         <div>🔗 {(b as any).emergency_2_relationship || "—"}</div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Uploaded Documents */}
+                  <div className="space-y-3 pt-2">
+                    <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Documents</div>
+                    {[
+                      { label: "🪪 Passport / IC", files: (b as any).doc_passport as string[] | undefined },
+                      { label: "📄 Offer Letter", files: (b as any).doc_offer_letter as string[] | undefined },
+                      { label: "🧾 Transfer Slip", files: (b as any).doc_transfer_slip as string[] | undefined },
+                    ].map(({ label, files }) => (
+                      <div key={label}>
+                        <div className="text-sm font-medium mb-1">{label}</div>
+                        {files && files.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {files.map((path: string, i: number) => {
+                              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
+                              return <DocFileLink key={i} path={path} isImage={isImage} label={`File ${i + 1}`} />;
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">No files uploaded</div>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
                   {b.status === "pending" && (
