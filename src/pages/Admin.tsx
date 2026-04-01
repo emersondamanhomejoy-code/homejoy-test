@@ -703,7 +703,7 @@ export default function AdminPage() {
                                 return (
                                 <tr key={room.id} className={`border-t hover:bg-secondary/30 transition-colors ${isCP ? "bg-blue-500/5" : ""}`}>
                                   <td className="px-4 py-3 font-medium">{isCP ? `🅿️ ${room.room}` : room.room}</td>
-                                  <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.bed_type || "—") : (room.bed_type || "—")}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.bed_type ? `Lot: ${room.bed_type}` : "—") : (room.bed_type || "—")}</td>
                                   <td className="px-4 py-3">
                                     {isCP ? "—" : (
                                     <select className="bg-secondary rounded px-2 py-1 text-xs font-medium" value={room.pax_staying || 0} onChange={async (e) => {
