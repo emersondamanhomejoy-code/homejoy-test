@@ -375,6 +375,7 @@ export type Database = {
           access_card_source: string
           access_info: Json
           building: string
+          common_photos: Json
           created_at: string
           deposit: string
           id: string
@@ -395,6 +396,7 @@ export type Database = {
           access_card_source?: string
           access_info?: Json
           building: string
+          common_photos?: Json
           created_at?: string
           deposit?: string
           id?: string
@@ -415,6 +417,7 @@ export type Database = {
           access_card_source?: string
           access_info?: Json
           building?: string
+          common_photos?: Json
           created_at?: string
           deposit?: string
           id?: string

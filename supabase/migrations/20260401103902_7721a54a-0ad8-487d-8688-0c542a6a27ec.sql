@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN common_photos jsonb NOT NULL DEFAULT '[]'::jsonb;
