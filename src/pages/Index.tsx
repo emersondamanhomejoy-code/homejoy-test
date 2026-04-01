@@ -699,6 +699,26 @@ export default function Index() {
           {claimTab === "new" && (
             <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
               <div className="text-lg font-bold">Submit New Claim</div>
+              {/* Booking selector */}
+              <div className="space-y-1">
+                <label className={lbl}>Select Booking (Approved) *</label>
+                {availableBookings.length === 0 ? (
+                  <div className="text-sm text-muted-foreground bg-secondary rounded-lg p-4">No approved bookings available for claim. Claims can only be submitted for approved bookings that haven't been claimed yet.</div>
+                ) : (
+                  <select className={ic + " w-full"} value={claimForm.bookingId} onChange={e => {
+                    const bid = e.target.value;
+                    const booking = availableBookings.find(b => b.id === bid);
+                    setClaimForm({ ...claimForm, bookingId: bid, description: booking ? `Commission - ${booking.room?.building || ""} ${booking.room?.unit || ""} ${booking.room?.room || ""} (${booking.tenant_name})` : claimForm.description });
+                  }}>
+                    <option value="">— Select a booking —</option>
+                    {availableBookings.map(b => (
+                      <option key={b.id} value={b.id}>
+                        {b.room?.building} {b.room?.unit} {b.room?.room} — {b.tenant_name} ({new Date(b.move_in_date).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>Amount (RM) *</label><input className={ic} type="number" placeholder="e.g. 500" value={claimForm.amount} onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })} /></div>
                 <div className="space-y-1"><label className={lbl}>Description *</label><input className={ic} placeholder="e.g. Commission for Casa Tiara A-17-8" value={claimForm.description} onChange={e => setClaimForm({ ...claimForm, description: e.target.value })} /></div>
@@ -707,7 +727,7 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Account Holder</label><input className={ic} placeholder="Account holder name" value={claimForm.accountHolder} onChange={e => setClaimForm({ ...claimForm, accountHolder: e.target.value })} /></div>
               </div>
               <div className="flex justify-end">
-                <button onClick={submitClaim} disabled={createClaim.isPending} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                <button onClick={submitClaim} disabled={createClaim.isPending || !claimForm.bookingId} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
                   {createClaim.isPending ? "Submitting..." : "Submit Claim"}
                 </button>
               </div>
