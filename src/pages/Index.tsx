@@ -729,16 +729,6 @@ export default function Index() {
               <div className="text-3xl font-extrabold text-primary">{roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available").length}</div>
               <div className="text-xs font-semibold text-primary/70 uppercase tracking-wider mt-1">Available Rooms</div>
             </div>
-            {[
-              { label: "Closed This Month", value: "6 deals" },
-              { label: "Pending Claims", value: "3" },
-              { label: "Next Payout", value: "15th" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-card rounded-lg shadow-sm px-4 py-3 text-sm">
-                <span className="text-muted-foreground">{stat.label}: </span>
-                <span className="font-semibold text-foreground">{stat.value}</span>
-              </div>
-            ))}
             {role === "admin" && (
               <button onClick={() => navigate("/admin")} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-opacity">
                 Admin Panel
