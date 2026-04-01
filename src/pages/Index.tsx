@@ -176,7 +176,7 @@ export default function Index() {
 
   const openRoom = (room: Room) => { setSelectedRoom(room); setPage("detail"); };
   const openBooking = () => {
-    setBookingForm({ ...initialBookingForm, monthlyRental: String(selectedRoom!.rent) });
+    setBookingForm(initialBookingForm);
     setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
     setSignatureLink(null); setSignatureToken(null); setSignatureSigned(false);
     setPage("booking");
