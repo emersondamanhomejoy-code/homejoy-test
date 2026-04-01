@@ -687,12 +687,12 @@ export default function Index() {
 
     const submitClaim = async () => {
       if (!user) return;
-      if (!claimForm.bookingId) { alert("Please select a booking."); return; }
+      if (selectedClaimBookings.length === 0) { alert("Please select at least one booking."); return; }
       if (!claimForm.amount || !claimForm.description) { alert("Please fill in amount and description."); return; }
       try {
         await createClaim.mutateAsync({
           agent_id: user.id,
-          booking_id: claimForm.bookingId,
+          booking_id: selectedClaimBookings.length === 1 ? selectedClaimBookings[0] : null,
           amount: Number(claimForm.amount),
           description: claimForm.description,
           bank_name: claimForm.bankName,
@@ -700,6 +700,7 @@ export default function Index() {
           account_holder: claimForm.accountHolder,
         });
         setClaimForm({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
+        setSelectedClaimBookings([]);
         setClaimTab("pending");
       } catch (e: any) {
         alert(e.message || "Failed to submit claim");
