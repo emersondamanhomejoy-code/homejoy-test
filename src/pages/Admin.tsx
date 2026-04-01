@@ -914,7 +914,7 @@ export default function AdminPage() {
                           try {
                             const { error } = await supabase
                               .from("user_roles")
-                              .update({ commission_type: commissionDraft.type, commission_config: commissionDraft.config })
+                              .update({ commission_type: commissionDraft.type, commission_config: commissionDraft.config as any })
                               .eq("user_id", u.id)
                               .eq("role", "agent");
                             if (error) throw error;
