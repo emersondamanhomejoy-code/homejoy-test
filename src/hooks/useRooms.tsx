@@ -14,6 +14,7 @@ export interface Unit {
   access_card_deposit: number;
   parking_lot: string;
   access_info: string;
+  internal_only: boolean;
   created_at: string;
   updated_at: string;
   rooms?: Room[];
