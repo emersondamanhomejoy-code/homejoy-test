@@ -315,6 +315,10 @@ export default function AdminPage() {
               </select>
               <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit} onChange={e => updateField("access_card_deposit", Number(e.target.value))} />
               <input className={inputClass} placeholder="Parking Lot" value={u.parking_lot} onChange={e => updateField("parking_lot", e.target.value)} />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
+                <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
+              </label>
             </div>
             <div className="text-lg font-semibold pt-2">Access Info</div>
             <textarea className={inputClass + " min-h-[80px]"} placeholder="Access info (e.g. condo entry, unit access, visitor parking, viewing instructions...)" value={u.access_info || ""} onChange={e => updateField("access_info", e.target.value)} />
