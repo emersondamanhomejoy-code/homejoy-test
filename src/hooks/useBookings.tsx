@@ -69,6 +69,7 @@ export function useUpdateBookingStatus() {
       tenant_gender,
       tenant_race,
       pax_staying,
+      carParkIds,
     }: {
       id: string;
       status: "approved" | "rejected";
@@ -79,6 +80,7 @@ export function useUpdateBookingStatus() {
       tenant_gender?: string;
       tenant_race?: string;
       pax_staying?: number;
+      carParkIds?: string[];
     }) => {
       const { error } = await supabase
         .from("bookings")
@@ -104,6 +106,23 @@ export function useUpdateBookingStatus() {
           })
           .eq("id", room_id);
         if (roomErr) throw roomErr;
+
+        // Mark selected car parks as Tenanted
+        if (carParkIds && carParkIds.length > 0) {
+          for (const cpId of carParkIds) {
+            await supabase.from("rooms").update({
+              status: "Tenanted",
+              tenant_gender: `${tenant_name || ""} (${tenant_gender || ""})`,
+            }).eq("id", cpId);
+          }
+        }
+      }
+
+      // On reject: release reserved car parks
+      if (status === "rejected" && carParkIds && carParkIds.length > 0) {
+        for (const cpId of carParkIds) {
+          await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", cpId);
+        }
       }
     },
     onSuccess: () => {
