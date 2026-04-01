@@ -485,7 +485,7 @@ export default function AdminPage() {
           const handleReject = async (booking: Booking) => {
             if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
             try {
-              await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+              await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
               setSelectedBooking(null);
               setRejectReason("");
             } catch (e: any) { alert(e.message); }
