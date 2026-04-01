@@ -128,6 +128,7 @@ export function useCreateUnit() {
         move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
         tenant_gender: "",
         tenant_race: "",
+        internal_only: unit.internal_only || false,
       }));
       const { error: rErr } = await supabase.from("rooms").insert(rooms);
       if (rErr) throw rErr;
