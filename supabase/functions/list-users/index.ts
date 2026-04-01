@@ -59,16 +59,20 @@ Deno.serve(async (req) => {
     // Fetch all roles
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
-      .select("user_id, role");
+      .select("user_id, role, commission_type");
     if (rolesError) throw rolesError;
 
     // Merge
-    const result = users.map((u) => ({
-      id: u.id,
-      email: u.email,
-      created_at: u.created_at,
-      roles: roles?.filter((r) => r.user_id === u.id).map((r) => r.role) ?? [],
-    }));
+    const result = users.map((u) => {
+      const userRoles = roles?.filter((r) => r.user_id === u.id) ?? [];
+      return {
+        id: u.id,
+        email: u.email,
+        created_at: u.created_at,
+        roles: userRoles.map((r) => r.role),
+        commission_type: userRoles.find((r) => r.role === "agent")?.commission_type || "internal_basic",
+      };
+    });
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
