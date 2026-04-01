@@ -25,6 +25,7 @@ function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean;
   );
 }
 
+interface CommissionTier {
   min: number;
   max: number | null;
   amount?: number;
