@@ -748,6 +748,44 @@ export default function AdminPage() {
                       </div>
                       {isExpanded && unit.rooms && (
                         <div className="border-t">
+                          {/* Common Area Photos */}
+                          <div className="p-4 border-b bg-secondary/20">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="text-sm font-semibold">🏠 Common Area Photos</div>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              {((unit as any).common_photos as string[] || []).map((path: string, i: number) => (
+                                <div key={i} className="relative group">
+                                  <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-24 w-24 object-cover rounded-lg" />
+                                  <button onClick={async () => {
+                                    const newPhotos = ((unit as any).common_photos as string[]).filter((_: string, idx: number) => idx !== i);
+                                    try { await updateUnit.mutateAsync({ id: unit.id, common_photos: newPhotos } as any); } catch (e: any) { alert(e.message); }
+                                  }} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                </div>
+                              ))}
+                              <label className="h-24 w-24 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                                <span className="text-xl text-muted-foreground">+</span>
+                                <span className="text-[10px] text-muted-foreground">Add</span>
+                                <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (!files.length) return;
+                                  const newPaths: string[] = [];
+                                  for (const file of files) {
+                                    const ext = file.name.split('.').pop();
+                                    const path = `common/${unit.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                                    const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                                    if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                                    newPaths.push(path);
+                                  }
+                                  if (newPaths.length > 0) {
+                                    const existing = ((unit as any).common_photos as string[] || []);
+                                    try { await updateUnit.mutateAsync({ id: unit.id, common_photos: [...existing, ...newPaths] } as any); } catch (e: any) { alert(e.message); }
+                                  }
+                                  e.target.value = "";
+                                }} />
+                              </label>
+                            </div>
+                          </div>
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-secondary/50">

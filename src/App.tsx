@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index.tsx";
 import Admin from "./pages/Admin.tsx";
 import Sign from "./pages/Sign.tsx";
+import RoomPhotos from "./pages/RoomPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/sign/:token" element={<Sign />} />
+          <Route path="/photos/:roomId" element={<RoomPhotos />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

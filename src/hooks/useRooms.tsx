@@ -15,6 +15,7 @@ export interface Unit {
   parking_lot: string;
   access_info: string;
   internal_only: boolean;
+  common_photos: string[];
   created_at: string;
   updated_at: string;
   rooms?: Room[];
