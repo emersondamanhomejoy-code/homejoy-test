@@ -628,11 +628,15 @@ export default function AdminPage() {
                 </div>
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold text-green-600">{availableRooms}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Available</div>
+                  <div className="text-xs text-muted-foreground mt-1">Available Rooms</div>
                 </div>
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold text-orange-500">{occupiedRooms}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Occupied</div>
+                  <div className="text-xs text-muted-foreground mt-1">Occupied Rooms</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <div className="text-2xl font-bold text-blue-500">{availableCarParks} / {totalCarParks}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Available Car Parks</div>
                 </div>
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold text-yellow-500">{pendingBookings.length}</div>
