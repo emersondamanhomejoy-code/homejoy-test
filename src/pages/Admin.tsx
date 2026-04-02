@@ -494,6 +494,8 @@ export default function AdminPage() {
           const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park").length ?? 0), 0);
           const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park" && r.status === "Available").length ?? 0), 0);
           const occupiedRooms = totalRooms - availableRooms;
+          const totalCarParks = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type === "Car Park").length ?? 0), 0);
+          const availableCarParks = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type === "Car Park" && r.status === "Available").length ?? 0), 0);
 
           const handleApprove = async (booking: Booking) => {
             if (!user) return;
@@ -619,18 +621,22 @@ export default function AdminPage() {
           return (
             <div className="space-y-6">
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold">{totalRooms}</div>
                   <div className="text-xs text-muted-foreground mt-1">Total Rooms</div>
                 </div>
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold text-green-600">{availableRooms}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Available</div>
+                  <div className="text-xs text-muted-foreground mt-1">Available Rooms</div>
                 </div>
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold text-orange-500">{occupiedRooms}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Occupied</div>
+                  <div className="text-xs text-muted-foreground mt-1">Occupied Rooms</div>
+                </div>
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <div className="text-2xl font-bold text-blue-500">{availableCarParks} / {totalCarParks}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Available Car Parks</div>
                 </div>
                 <div className="bg-card rounded-lg p-4 shadow-sm">
                   <div className="text-2xl font-bold text-yellow-500">{pendingBookings.length}</div>
