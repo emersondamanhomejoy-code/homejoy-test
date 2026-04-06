@@ -52,7 +52,73 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch all auth users
+    // Handle POST - create new user
+    if (req.method === "POST") {
+      const body = await req.json();
+      const { email, name, phone, address } = body;
+
+      if (!email) {
+        return new Response(JSON.stringify({ error: "Email is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Create auth user (Google OAuth will link when they sign in)
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { full_name: name || "" },
+      });
+
+      if (createError) {
+        return new Response(JSON.stringify({ error: createError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Update profile with additional info
+      if (newUser.user) {
+        await supabase.from("profiles").upsert({
+          user_id: newUser.user.id,
+          email: email,
+          name: name || "",
+          phone: phone || "",
+          address: address || "",
+        }, { onConflict: "user_id" });
+      }
+
+      return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Handle PUT - update profile
+    if (req.method === "PUT") {
+      const body = await req.json();
+      const { user_id, name, phone, address } = body;
+
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await supabase.from("profiles").upsert({
+        user_id,
+        name: name || "",
+        phone: phone || "",
+        address: address || "",
+      }, { onConflict: "user_id" });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // GET - Fetch all auth users
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
     if (listError) throw listError;
 
@@ -62,10 +128,17 @@ Deno.serve(async (req) => {
       .select("user_id, role, commission_type, commission_config");
     if (rolesError) throw rolesError;
 
+    // Fetch all profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("user_id, name, phone, address");
+    if (profilesError) throw profilesError;
+
     // Merge
     const result = users.map((u) => {
       const userRoles = roles?.filter((r) => r.user_id === u.id) ?? [];
       const agentRole = userRoles.find((r) => r.role === "agent");
+      const profile = profiles?.find((p) => p.user_id === u.id);
       return {
         id: u.id,
         email: u.email,
@@ -73,6 +146,9 @@ Deno.serve(async (req) => {
         roles: userRoles.map((r) => r.role),
         commission_type: agentRole?.commission_type || "internal_basic",
         commission_config: agentRole?.commission_config || null,
+        name: profile?.name || "",
+        phone: profile?.phone || "",
+        address: profile?.address || "",
       };
     });
 
