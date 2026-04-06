@@ -647,17 +647,28 @@ export default function Index() {
             {/* Move-in Cost */}
             <div className="space-y-4">
               <div className="text-lg font-bold flex items-center gap-2">💰 Move-in Cost</div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic} type="number" placeholder="0" value={f.advance} onChange={e => set("advance", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Rental Deposit (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={Math.round((Number(f.advance) || 0) * 1.5)} /></div>
-                <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={330} /></div>
-                <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
-              </div>
-              <div className="bg-secondary rounded-lg p-4 text-right">
-                <span className="text-sm text-muted-foreground">Total: </span>
-                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + Math.round((Number(f.advance) || 0) * 1.5) + 330 + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
-              </div>
+              {(() => {
+                const unitCfg = unitsData.find(u => u.id === selectedRoom?.unit_id);
+                const depMul = unitCfg?.deposit_multiplier ?? 1.5;
+                const uAdminFee = unitCfg?.admin_fee ?? 330;
+                const adv = Number(f.advance) || 0;
+                const dep = Math.round(adv * depMul);
+                return (
+                  <>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic} type="number" placeholder="0" value={f.advance} onChange={e => set("advance", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Rental Deposit (RM) — ×{depMul}</label><input className={`${ic} bg-muted`} type="number" readOnly value={dep} /></div>
+                      <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={uAdminFee} /></div>
+                      <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
+                    </div>
+                    <div className="bg-secondary rounded-lg p-4 text-right">
+                      <span className="text-sm text-muted-foreground">Total: </span>
+                      <span className="text-lg font-bold">RM{adv + dep + uAdminFee + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Tenant Signature */}
