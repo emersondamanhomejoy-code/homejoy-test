@@ -44,6 +44,9 @@ interface UserWithRoles {
   roles: string[];
   commission_type: string;
   commission_config: CommissionConfig | null;
+  name: string;
+  phone: string;
+  address: string;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
@@ -85,6 +88,11 @@ export default function AdminPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [editingCommission, setEditingCommission] = useState<string | null>(null);
   const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
+  const [showCreateAgent, setShowCreateAgent] = useState(false);
+  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "" });
+  const [creatingAgent, setCreatingAgent] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<string | null>(null);
+  const [profileDraft, setProfileDraft] = useState({ name: "", phone: "", address: "" });
 
   // Units state
   const { data: units = [], isLoading: unitsLoading } = useUnits();
@@ -151,6 +159,43 @@ export default function AdminPage() {
       alert(e.message || "Failed to update role");
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const createAgent = async () => {
+    if (!newAgent.email.trim()) { alert("Email is required"); return; }
+    setCreatingAgent(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("list-users", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: newAgent,
+      });
+      if (res.error) throw res.error;
+      setNewAgent({ email: "", name: "", phone: "", address: "" });
+      setShowCreateAgent(false);
+      await fetchUsers();
+    } catch (e: any) {
+      alert(e.message || "Failed to create agent");
+    } finally {
+      setCreatingAgent(false);
+    }
+  };
+
+  const saveProfile = async (userId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("list-users", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { user_id: userId, ...profileDraft },
+      });
+      if (res.error) throw res.error;
+      setEditingProfile(null);
+      await fetchUsers();
+    } catch (e: any) {
+      alert(e.message || "Failed to save profile");
     }
   };
 
@@ -989,6 +1034,27 @@ export default function AdminPage() {
 
         {tab === "users" && (
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{users.length} users</span>
+              <button onClick={() => setShowCreateAgent(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Agent</button>
+            </div>
+
+            {showCreateAgent && (
+              <div className="bg-card rounded-lg shadow-sm p-6 space-y-4">
+                <div className="text-lg font-bold">Create New Agent</div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div><label className="text-xs text-muted-foreground">Email (Google account) *</label><input className={`${inputClass} w-full`} placeholder="agent@gmail.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} placeholder="e.g. 012-3456789" value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Creating..." : "Create Agent"}</button>
+                </div>
+              </div>
+            )}
+
             {users.map((u) => {
               const isAdmin = u.roles.includes("admin");
               const isAgent = u.roles.includes("agent");
@@ -1010,15 +1076,34 @@ export default function AdminPage() {
                 <div key={u.id} className="bg-card rounded-lg shadow-sm p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-semibold">{u.email}</div>
-                      <div className="text-xs text-muted-foreground">Joined {new Date(u.created_at).toLocaleDateString()}</div>
+                      <div className="font-semibold">{u.name || u.email}</div>
+                      {u.name && <div className="text-xs text-muted-foreground">{u.email}</div>}
+                      <div className="text-xs text-muted-foreground">
+                        {u.phone && `📞 ${u.phone} · `}Joined {new Date(u.created_at).toLocaleDateString()}
+                      </div>
+                      {u.address && <div className="text-xs text-muted-foreground">📍 {u.address}</div>}
                     </div>
                     <div className="flex items-center gap-2">
                       {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
+                      <button onClick={() => { setEditingProfile(u.id); setProfileDraft({ name: u.name, phone: u.phone, address: u.address }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Edit Info</button>
                       <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
                       <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
                     </div>
                   </div>
+
+                  {editingProfile === u.id && (
+                    <div className="bg-secondary rounded-lg p-4 space-y-3">
+                      <div className="grid md:grid-cols-3 gap-3">
+                        <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} value={profileDraft.name} onChange={e => setProfileDraft({ ...profileDraft, name: e.target.value })} /></div>
+                        <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} value={profileDraft.phone} onChange={e => setProfileDraft({ ...profileDraft, phone: e.target.value })} /></div>
+                        <div><label className="text-xs text-muted-foreground">Address</label><input className={`${inputClass} w-full`} value={profileDraft.address} onChange={e => setProfileDraft({ ...profileDraft, address: e.target.value })} /></div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setEditingProfile(null)} className="px-3 py-1.5 rounded-lg border text-foreground text-xs hover:bg-background transition-colors">Cancel</button>
+                        <button onClick={() => saveProfile(u.id)} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">Save</button>
+                      </div>
+                    </div>
+                  )}
 
                   {isAgent && !isEditing && (
                     <div className="flex items-center justify-between bg-secondary rounded-lg px-4 py-3">
