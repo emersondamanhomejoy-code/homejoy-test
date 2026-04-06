@@ -70,6 +70,7 @@ const emptyUnit = {
   access_card_source: "Provided by Us", access_card_deposit: 0,
   access_info: "", internal_only: false,
   deposit: "", meter_type: "Postpaid", meter_rate: 0,
+  deposit_multiplier: 1.5, admin_fee: 330,
 };
 
 export default function AdminPage() {
