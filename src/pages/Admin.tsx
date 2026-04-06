@@ -362,6 +362,8 @@ export default function AdminPage() {
                 <option value="Prepaid">Meter: Prepaid</option>
               </select>
               <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM per kWh)" value={u.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
+              <input className={inputClass} type="number" step="0.1" placeholder="Deposit Multiplier (e.g. 1.5)" value={u.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
+              <input className={inputClass} type="number" placeholder="Admin Fee (RM)" value={u.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
                 <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
