@@ -1034,6 +1034,27 @@ export default function AdminPage() {
 
         {tab === "users" && (
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{users.length} users</span>
+              <button onClick={() => setShowCreateAgent(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Agent</button>
+            </div>
+
+            {showCreateAgent && (
+              <div className="bg-card rounded-lg shadow-sm p-6 space-y-4">
+                <div className="text-lg font-bold">Create New Agent</div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div><label className="text-xs text-muted-foreground">Email (Google account) *</label><input className={`${inputClass} w-full`} placeholder="agent@gmail.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} placeholder="e.g. 012-3456789" value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Creating..." : "Create Agent"}</button>
+                </div>
+              </div>
+            )}
+
             {users.map((u) => {
               const isAdmin = u.roles.includes("admin");
               const isAgent = u.roles.includes("agent");
