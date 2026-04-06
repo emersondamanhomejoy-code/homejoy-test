@@ -44,6 +44,9 @@ interface UserWithRoles {
   roles: string[];
   commission_type: string;
   commission_config: CommissionConfig | null;
+  name: string;
+  phone: string;
+  address: string;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
