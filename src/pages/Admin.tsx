@@ -1103,9 +1103,7 @@ export default function AdminPage() {
                         <button onClick={() => saveProfile(u.id)} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">Save</button>
                       </div>
                     </div>
-                  )
-                    </div>
-                  </div>
+                  }
 
                   {isAgent && !isEditing && (
                     <div className="flex items-center justify-between bg-secondary rounded-lg px-4 py-3">
