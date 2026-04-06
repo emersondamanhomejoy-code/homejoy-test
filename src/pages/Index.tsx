@@ -302,8 +302,8 @@ export default function Index() {
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
 
       const advance = Number(bookingForm.advance) || 0;
-      const deposit = Number(bookingForm.deposit) || 0;
-      const adminFee = Number(bookingForm.adminFee) || 0;
+      const deposit = Math.round(advance * 1.5);
+      const adminFee = 330;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
       const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
       const { error: dbErr } = await supabase.from("bookings").insert({
@@ -645,14 +645,14 @@ export default function Index() {
               <div className="text-lg font-bold flex items-center gap-2">💰 Move-in Cost</div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic} type="number" placeholder="0" value={f.advance} onChange={e => set("advance", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Rental Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.deposit} onChange={e => set("deposit", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={ic} type="number" placeholder="0" value={f.adminFee} onChange={e => set("adminFee", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Rental Deposit (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={Math.round((Number(f.advance) || 0) * 1.5)} /></div>
+                <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={330} /></div>
                 <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
               </div>
               <div className="bg-secondary rounded-lg p-4 text-right">
                 <span className="text-sm text-muted-foreground">Total: </span>
-                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + (Number(f.deposit) || 0) + (Number(f.adminFee) || 0) + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
+                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + Math.round((Number(f.advance) || 0) * 1.5) + 330 + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
               </div>
             </div>
 
