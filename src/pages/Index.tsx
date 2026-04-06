@@ -38,6 +38,7 @@ export default function Index() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
+  const { data: unitsData = [] } = useUnits();
   const { data: claimsData = [] } = useClaims();
   const { data: agentBookings = [] } = useBookings("approved");
   const createClaim = useCreateClaim();
