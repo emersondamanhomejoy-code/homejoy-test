@@ -374,10 +374,12 @@ export type Database = {
           access_card_deposit: number
           access_card_source: string
           access_info: Json
+          admin_fee: number
           building: string
           common_photos: Json
           created_at: string
           deposit: string
+          deposit_multiplier: number
           id: string
           internal_only: boolean
           location: string
@@ -395,10 +397,12 @@ export type Database = {
           access_card_deposit?: number
           access_card_source?: string
           access_info?: Json
+          admin_fee?: number
           building: string
           common_photos?: Json
           created_at?: string
           deposit?: string
+          deposit_multiplier?: number
           id?: string
           internal_only?: boolean
           location: string
@@ -416,10 +420,12 @@ export type Database = {
           access_card_deposit?: number
           access_card_source?: string
           access_info?: Json
+          admin_fee?: number
           building?: string
           common_photos?: Json
           created_at?: string
           deposit?: string
+          deposit_multiplier?: number
           id?: string
           internal_only?: boolean
           location?: string

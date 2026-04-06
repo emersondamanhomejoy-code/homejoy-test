@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable";
-import { useRooms, Room } from "@/hooks/useRooms";
+import { useRooms, useUnits, Room } from "@/hooks/useRooms";
 import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { useBookings, Booking } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,7 @@ export default function Index() {
   const { user, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
+  const { data: unitsData = [] } = useUnits();
   const { data: claimsData = [] } = useClaims();
   const { data: agentBookings = [] } = useBookings("approved");
   const createClaim = useCreateClaim();
@@ -301,9 +302,12 @@ export default function Index() {
       const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
 
+      const unitConfig = unitsData.find(u => u.id === selectedRoom.unit_id);
+      const depositMultiplier = unitConfig?.deposit_multiplier ?? 1.5;
+      const unitAdminFee = unitConfig?.admin_fee ?? 330;
       const advance = Number(bookingForm.advance) || 0;
-      const deposit = Math.round(advance * 1.5);
-      const adminFee = 330;
+      const deposit = Math.round(advance * depositMultiplier);
+      const adminFee = unitAdminFee;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
       const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
       const { error: dbErr } = await supabase.from("bookings").insert({
@@ -643,17 +647,28 @@ export default function Index() {
             {/* Move-in Cost */}
             <div className="space-y-4">
               <div className="text-lg font-bold flex items-center gap-2">💰 Move-in Cost</div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic} type="number" placeholder="0" value={f.advance} onChange={e => set("advance", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Rental Deposit (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={Math.round((Number(f.advance) || 0) * 1.5)} /></div>
-                <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={330} /></div>
-                <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
-              </div>
-              <div className="bg-secondary rounded-lg p-4 text-right">
-                <span className="text-sm text-muted-foreground">Total: </span>
-                <span className="text-lg font-bold">RM{(Number(f.advance) || 0) + Math.round((Number(f.advance) || 0) * 1.5) + 330 + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
-              </div>
+              {(() => {
+                const unitCfg = unitsData.find(u => u.id === selectedRoom?.unit_id);
+                const depMul = unitCfg?.deposit_multiplier ?? 1.5;
+                const uAdminFee = unitCfg?.admin_fee ?? 330;
+                const adv = Number(f.advance) || 0;
+                const dep = Math.round(adv * depMul);
+                return (
+                  <>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic} type="number" placeholder="0" value={f.advance} onChange={e => set("advance", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Rental Deposit (RM) — ×{depMul}</label><input className={`${ic} bg-muted`} type="number" readOnly value={dep} /></div>
+                      <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={uAdminFee} /></div>
+                      <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
+                    </div>
+                    <div className="bg-secondary rounded-lg p-4 text-right">
+                      <span className="text-sm text-muted-foreground">Total: </span>
+                      <span className="text-lg font-bold">RM{adv + dep + uAdminFee + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Tenant Signature */}

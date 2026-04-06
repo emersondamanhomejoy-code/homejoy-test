@@ -16,6 +16,8 @@ export interface Unit {
   access_info: string;
   internal_only: boolean;
   common_photos: string[];
+  deposit_multiplier: number;
+  admin_fee: number;
   created_at: string;
   updated_at: string;
   rooms?: Room[];

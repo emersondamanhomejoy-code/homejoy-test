@@ -70,6 +70,7 @@ const emptyUnit = {
   access_card_source: "Provided by Us", access_card_deposit: 0,
   access_info: "", internal_only: false,
   deposit: "", meter_type: "Postpaid", meter_rate: 0,
+  deposit_multiplier: 1.5, admin_fee: 330,
 };
 
 export default function AdminPage() {
@@ -361,6 +362,8 @@ export default function AdminPage() {
                 <option value="Prepaid">Meter: Prepaid</option>
               </select>
               <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM per kWh)" value={u.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
+              <input className={inputClass} type="number" step="0.1" placeholder="Deposit Multiplier (e.g. 1.5)" value={u.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
+              <input className={inputClass} type="number" placeholder="Admin Fee (RM)" value={u.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
                 <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
@@ -749,11 +752,12 @@ export default function AdminPage() {
                             {(unit as any).access_card_source && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {(unit as any).access_card_source} {(unit as any).access_card_deposit ? `RM${(unit as any).access_card_deposit}` : ""}</span>}
                             {(unit as any).deposit && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit: {(unit as any).deposit}</span>}
                             {(unit as any).meter_type && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">⚡ {(unit as any).meter_type} {(unit as any).meter_rate ? `RM${(unit as any).meter_rate}/kWh` : ""}</span>}
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit ×{(unit as any).deposit_multiplier ?? 1.5} | Admin Fee RM{(unit as any).admin_fee ?? 330}</span>
                             {(unit as any).internal_only && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary">🔒 Internal Only</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "", internal_only: (unit as any).internal_only || false, deposit: (unit as any).deposit || "", meter_type: (unit as any).meter_type || "Postpaid", meter_rate: (unit as any).meter_rate || 0 }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "", internal_only: (unit as any).internal_only || false, deposit: (unit as any).deposit || "", meter_type: (unit as any).meter_type || "Postpaid", meter_rate: (unit as any).meter_rate || 0, deposit_multiplier: (unit as any).deposit_multiplier ?? 1.5, admin_fee: (unit as any).admin_fee ?? 330 }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
                           <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
                         </div>
