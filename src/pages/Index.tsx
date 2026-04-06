@@ -302,9 +302,12 @@ export default function Index() {
       const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
 
+      const unitConfig = unitsData.find(u => u.id === selectedRoom.unit_id);
+      const depositMultiplier = unitConfig?.deposit_multiplier ?? 1.5;
+      const unitAdminFee = unitConfig?.admin_fee ?? 330;
       const advance = Number(bookingForm.advance) || 0;
-      const deposit = Math.round(advance * 1.5);
-      const adminFee = 330;
+      const deposit = Math.round(advance * depositMultiplier);
+      const adminFee = unitAdminFee;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
       const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
       const { error: dbErr } = await supabase.from("bookings").insert({
