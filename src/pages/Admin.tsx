@@ -1076,13 +1076,34 @@ export default function AdminPage() {
                 <div key={u.id} className="bg-card rounded-lg shadow-sm p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-semibold">{u.email}</div>
-                      <div className="text-xs text-muted-foreground">Joined {new Date(u.created_at).toLocaleDateString()}</div>
+                      <div className="font-semibold">{u.name || u.email}</div>
+                      {u.name && <div className="text-xs text-muted-foreground">{u.email}</div>}
+                      <div className="text-xs text-muted-foreground">
+                        {u.phone && `📞 ${u.phone} · `}Joined {new Date(u.created_at).toLocaleDateString()}
+                      </div>
+                      {u.address && <div className="text-xs text-muted-foreground">📍 {u.address}</div>}
                     </div>
                     <div className="flex items-center gap-2">
                       {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
+                      <button onClick={() => { setEditingProfile(u.id); setProfileDraft({ name: u.name, phone: u.phone, address: u.address }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Edit Info</button>
                       <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
                       <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
+                    </div>
+                  </div>
+
+                  {editingProfile === u.id && (
+                    <div className="bg-secondary rounded-lg p-4 space-y-3">
+                      <div className="grid md:grid-cols-3 gap-3">
+                        <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} value={profileDraft.name} onChange={e => setProfileDraft({ ...profileDraft, name: e.target.value })} /></div>
+                        <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} value={profileDraft.phone} onChange={e => setProfileDraft({ ...profileDraft, phone: e.target.value })} /></div>
+                        <div><label className="text-xs text-muted-foreground">Address</label><input className={`${inputClass} w-full`} value={profileDraft.address} onChange={e => setProfileDraft({ ...profileDraft, address: e.target.value })} /></div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setEditingProfile(null)} className="px-3 py-1.5 rounded-lg border text-foreground text-xs hover:bg-background transition-colors">Cancel</button>
+                        <button onClick={() => saveProfile(u.id)} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">Save</button>
+                      </div>
+                    </div>
+                  )
                     </div>
                   </div>
 
