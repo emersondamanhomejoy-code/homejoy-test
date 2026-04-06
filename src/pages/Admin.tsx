@@ -168,9 +168,8 @@ export default function AdminPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("list-users", {
-        method: "POST",
         headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: newAgent,
+        body: { action: "create", ...newAgent },
       });
       if (res.error) throw res.error;
       setNewAgent({ email: "", name: "", phone: "", address: "" });
@@ -187,9 +186,8 @@ export default function AdminPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("list-users", {
-        method: "PUT",
         headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: { user_id: userId, ...profileDraft },
+        body: { action: "update_profile", user_id: userId, ...profileDraft },
       });
       if (res.error) throw res.error;
       setEditingProfile(null);

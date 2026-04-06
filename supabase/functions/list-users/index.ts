@@ -52,21 +52,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle POST - create new user
-    if (req.method === "POST") {
-      const body = await req.json();
+    // Parse body - supabase.functions.invoke always uses POST
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
+    const action = body.action || "list";
+
+    // CREATE USER
+    if (action === "create") {
       const { email, name, phone, address } = body;
 
-      if (!email) {
-        return new Response(JSON.stringify({ error: "Email is required" }), {
+      if (!email || typeof email !== "string" || !email.includes("@")) {
+        return new Response(JSON.stringify({ error: "Valid email is required" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Create auth user (Google OAuth will link when they sign in)
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email,
+        email: email.trim(),
         email_confirm: true,
         user_metadata: { full_name: name || "" },
       });
@@ -78,11 +86,10 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Update profile with additional info
       if (newUser.user) {
         await supabase.from("profiles").upsert({
           user_id: newUser.user.id,
-          email: email,
+          email: email.trim(),
           name: name || "",
           phone: phone || "",
           address: address || "",
@@ -94,9 +101,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle PUT - update profile
-    if (req.method === "PUT") {
-      const body = await req.json();
+    // UPDATE PROFILE
+    if (action === "update_profile") {
       const { user_id, name, phone, address } = body;
 
       if (!user_id) {
@@ -118,23 +124,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET - Fetch all auth users
+    // LIST USERS (default)
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
     if (listError) throw listError;
 
-    // Fetch all roles
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select("user_id, role, commission_type, commission_config");
     if (rolesError) throw rolesError;
 
-    // Fetch all profiles
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("user_id, name, phone, address");
     if (profilesError) throw profilesError;
 
-    // Merge
     const result = users.map((u) => {
       const userRoles = roles?.filter((r) => r.user_id === u.id) ?? [];
       const agentRole = userRoles.find((r) => r.role === "agent");
