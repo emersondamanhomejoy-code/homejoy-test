@@ -302,8 +302,8 @@ export default function Index() {
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
 
       const advance = Number(bookingForm.advance) || 0;
-      const deposit = Number(bookingForm.deposit) || 0;
-      const adminFee = Number(bookingForm.adminFee) || 0;
+      const deposit = Math.round(advance * 1.5);
+      const adminFee = 330;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
       const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
       const { error: dbErr } = await supabase.from("bookings").insert({
