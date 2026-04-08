@@ -220,6 +220,23 @@ export default function Index() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) { setForgotMsg("Please enter your email"); return; }
+    setForgotSending(true);
+    setForgotMsg("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setForgotMsg("✅ Reset link sent! Check your email.");
+    } catch (e: any) {
+      setForgotMsg(e.message || "Failed to send reset email");
+    } finally {
+      setForgotSending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
