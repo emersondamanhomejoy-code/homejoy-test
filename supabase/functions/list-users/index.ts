@@ -117,18 +117,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // SET PASSWORD (for existing users)
-    if (action === "set_password") {
-      const { user_id, password } = body;
-      if (!user_id || !password || password.length < 6) {
-        return new Response(JSON.stringify({ error: "user_id and password (min 6 chars) required" }), {
+    // RESEND INVITE
+    if (action === "resend_invite") {
+      const { email } = body;
+      if (!email) {
+        return new Response(JSON.stringify({ error: "email is required" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const { error: updateError } = await supabase.auth.admin.updateUserById(user_id, { password });
-      if (updateError) {
-        return new Response(JSON.stringify({ error: updateError.message }), {
+      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email.trim());
+      if (inviteError) {
+        return new Response(JSON.stringify({ error: inviteError.message }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
