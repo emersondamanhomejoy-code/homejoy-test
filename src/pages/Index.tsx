@@ -383,7 +383,22 @@ export default function Index() {
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
-        documents: { carParkIds: bookingForm.selectedCarParks || [], carPhotos: carPhotoPaths, parkingType },
+        documents: {
+          carParkIds: bookingForm.selectedCarParks || [],
+          carPhotos: carPhotoPaths,
+          parkingType,
+          ...(bookingForm.gender === "Couple" ? {
+            tenant2: {
+              name: bookingForm.tenant2Name,
+              phone: bookingForm.tenant2Phone,
+              email: bookingForm.tenant2Email,
+              icPassport: bookingForm.tenant2IcPassport,
+              race: bookingForm.tenant2Race,
+              nationality: bookingForm.tenant2Nationality,
+              occupation: bookingForm.tenant2Occupation,
+            },
+          } : {}),
+        },
       });
       if (dbErr) throw dbErr;
 
