@@ -208,6 +208,23 @@ export default function AdminPage() {
     }
   };
 
+  const fetchActivityLogs = async () => {
+    setActivityLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("activity_logs" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setActivityLogs(data || []);
+    } catch (e: any) {
+      console.error("Failed to fetch activity logs:", e);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
   const openCreateRoom2 = () => {
     setEditingUnit({ ...emptyUnit });
     setRoomConfigs([...defaultRoomConfigs]);
