@@ -451,6 +451,7 @@ export type Database = {
           location: string
           meter_rate: number
           meter_type: string
+          parking_card_deposit: number
           parking_lot: string
           parking_type: string
           passcode: string
@@ -475,6 +476,7 @@ export type Database = {
           location: string
           meter_rate?: number
           meter_type?: string
+          parking_card_deposit?: number
           parking_lot?: string
           parking_type?: string
           passcode?: string
@@ -499,6 +501,7 @@ export type Database = {
           location?: string
           meter_rate?: number
           meter_type?: string
+          parking_card_deposit?: number
           parking_lot?: string
           parking_type?: string
           passcode?: string

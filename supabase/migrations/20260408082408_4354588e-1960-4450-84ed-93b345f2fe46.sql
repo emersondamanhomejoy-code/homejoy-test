@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN parking_card_deposit numeric NOT NULL DEFAULT 0;
