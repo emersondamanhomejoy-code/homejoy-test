@@ -909,6 +909,7 @@ export default function AdminPage() {
                               >
                                 📋 Copy Link
                               </button>
+                            </div>
                             <div className="flex flex-wrap gap-3">
                               {((unit as any).common_photos as string[] || []).map((path: string, i: number) => (
                                 <div key={i} className="relative group">
