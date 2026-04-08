@@ -1245,7 +1245,7 @@ export default function AdminPage() {
                 {!linkedBooking && c.booking_id && <div className="text-xs text-muted-foreground">Booking ID: {c.booking_id.slice(0, 8)}...</div>}
                 <div className="text-sm text-muted-foreground">{c.description}</div>
                 {c.bank_name && <div className="text-xs text-muted-foreground">🏦 {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
-                <div className="text-xs text-muted-foreground">Agent: {c.agent_id.slice(0, 8)}... · {new Date(c.created_at).toLocaleDateString()}</div>
+                <div className="text-xs text-muted-foreground">Agent: {(() => { const a = users.find(u => u.id === c.agent_id); return a ? (a.name || a.email) : c.agent_id.slice(0, 8) + "..."; })()} · {new Date(c.created_at).toLocaleDateString()}</div>
                 {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
                 {showActions && c.status === "pending" && (
                   <div className="flex flex-col gap-2 pt-2 border-t border-border">
