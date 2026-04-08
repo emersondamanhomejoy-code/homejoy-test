@@ -130,6 +130,150 @@ export default function AdminPage() {
   const updateClaimStatus = useUpdateClaimStatus();
   const [claimRejectReason, setClaimRejectReason] = useState("");
 
+  // Commission report state
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth());
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const [showReport, setShowReport] = useState(false);
+  const [generatingClaims, setGeneratingClaims] = useState(false);
+
+  interface CommissionLine {
+    agentId: string;
+    agentEmail: string;
+    agentName: string;
+    bookings: Booking[];
+    commissionPerBooking: number[];
+    totalCommission: number;
+    commissionType: string;
+    bankName: string;
+    bankAccount: string;
+    accountHolder: string;
+  }
+
+  const calculateAgentCommission = (booking: Booking, agentConfig: { commission_type: string; commission_config: CommissionConfig | null }, monthlyDeals: number): number => {
+    const rent = (booking as any).monthly_salary || (booking.room as any)?.rent || 0;
+    const duration = booking.contract_months || 12;
+    const durationMultiplier = duration / 12;
+    const config = agentConfig.commission_config;
+
+    let base = 0;
+    if (agentConfig.commission_type === "external") {
+      const pct = config?.percentage ?? 100;
+      base = Math.round(Number(rent) * pct / 100);
+    } else if (agentConfig.commission_type === "internal_full") {
+      const tiers = config?.tiers || [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }];
+      const tier = tiers.find(t => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
+      const pct = tier?.percentage ?? 70;
+      base = Math.round(Number(rent) * pct / 100);
+    } else {
+      const tiers = config?.tiers || [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }];
+      const tier = tiers.find(t => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
+      base = tier?.amount ?? 200;
+    }
+    return Math.round(base * durationMultiplier);
+  };
+
+  const generateReport = (): CommissionLine[] => {
+    const monthStart = new Date(reportYear, reportMonth, 1);
+    const monthEnd = new Date(reportYear, reportMonth + 1, 0, 23, 59, 59);
+
+    // Get approved bookings in the selected month
+    const monthBookings = allBookings.filter(b =>
+      b.status === "approved" &&
+      new Date(b.reviewed_at || b.created_at) >= monthStart &&
+      new Date(b.reviewed_at || b.created_at) <= monthEnd
+    );
+
+    // Group by agent
+    const agentGroups: Record<string, Booking[]> = {};
+    for (const b of monthBookings) {
+      const agentId = b.submitted_by || "";
+      if (!agentId) continue;
+      if (!agentGroups[agentId]) agentGroups[agentId] = [];
+      agentGroups[agentId].push(b);
+    }
+
+    // Build report lines
+    const lines: CommissionLine[] = [];
+    for (const [agentId, bookings] of Object.entries(agentGroups)) {
+      const agentUser = users.find(u => u.id === agentId);
+      const agentConfig = {
+        commission_type: agentUser?.commission_type || "internal_basic",
+        commission_config: agentUser?.commission_config || defaultConfigs.internal_basic,
+      };
+      const monthlyDeals = bookings.length;
+      const commissionPerBooking = bookings.map(b => calculateAgentCommission(b, agentConfig, monthlyDeals));
+      const totalCommission = commissionPerBooking.reduce((s, c) => s + c, 0);
+
+      // Check if claims already exist for these bookings
+      const existingClaimBookingIds = new Set(allClaims.map(c => c.booking_id).filter(Boolean));
+      const hasExistingClaims = bookings.some(b => existingClaimBookingIds.has(b.id));
+
+      lines.push({
+        agentId,
+        agentEmail: agentUser?.email || agentId.slice(0, 8),
+        agentName: agentUser?.name || agentUser?.email || agentId.slice(0, 8),
+        bookings,
+        commissionPerBooking,
+        totalCommission,
+        commissionType: agentConfig.commission_type,
+        bankName: "",
+        bankAccount: "",
+        accountHolder: "",
+      });
+    }
+
+    return lines.sort((a, b) => b.totalCommission - a.totalCommission);
+  };
+
+  const generateClaimsForReport = async (lines: CommissionLine[]) => {
+    if (!user) return;
+    setGeneratingClaims(true);
+    try {
+      const existingClaimBookingIds = new Set(allClaims.map(c => c.booking_id).filter(Boolean));
+      let created = 0;
+      for (const line of lines) {
+        // Skip bookings that already have claims
+        const newBookings = line.bookings.filter(b => !existingClaimBookingIds.has(b.id));
+        if (newBookings.length === 0) continue;
+
+        const newCommissions = newBookings.map((b, i) => {
+          const idx = line.bookings.indexOf(b);
+          return line.commissionPerBooking[idx];
+        });
+        const totalAmount = newCommissions.reduce((s, c) => s + c, 0);
+        const desc = newBookings.map(b => `${b.room?.building || ""} ${b.room?.unit || ""} ${b.room?.room || ""} (${b.tenant_name})`).join(", ");
+
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        await supabase.from("claims").insert({
+          agent_id: line.agentId,
+          booking_id: newBookings.length === 1 ? newBookings[0].id : null,
+          amount: totalAmount,
+          description: `Commission ${monthNames[reportMonth]} ${reportYear} — ${desc}`,
+          bank_name: "",
+          bank_account: "",
+          account_holder: "",
+        });
+        created++;
+      }
+
+      await logActivity("generate_commission_report", "claims", "", {
+        month: reportMonth + 1,
+        year: reportYear,
+        agents: lines.length,
+        claims_created: created,
+      });
+
+      alert(`✅ ${created} commission claim(s) generated!`);
+      // Refresh claims
+      window.location.reload();
+    } catch (e: any) {
+      alert(e.message || "Failed to generate claims");
+    } finally {
+      setGeneratingClaims(false);
+    }
+  };
+
   useEffect(() => {
     if (!loading && (!user || !canAccessAdmin)) navigate("/");
   }, [loading, user, role, navigate]);
@@ -1101,7 +1245,7 @@ export default function AdminPage() {
                 {!linkedBooking && c.booking_id && <div className="text-xs text-muted-foreground">Booking ID: {c.booking_id.slice(0, 8)}...</div>}
                 <div className="text-sm text-muted-foreground">{c.description}</div>
                 {c.bank_name && <div className="text-xs text-muted-foreground">🏦 {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
-                <div className="text-xs text-muted-foreground">Agent: {c.agent_id.slice(0, 8)}... · {new Date(c.created_at).toLocaleDateString()}</div>
+                <div className="text-xs text-muted-foreground">Agent: {(() => { const a = users.find(u => u.id === c.agent_id); return a ? (a.name || a.email) : c.agent_id.slice(0, 8) + "..."; })()} · {new Date(c.created_at).toLocaleDateString()}</div>
                 {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
                 {showActions && c.status === "pending" && (
                   <div className="flex flex-col gap-2 pt-2 border-t border-border">
@@ -1115,6 +1259,11 @@ export default function AdminPage() {
               </div>
             );
           };
+
+          const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          const reportLines = showReport ? generateReport() : [];
+          const existingClaimBookingIds = new Set(allClaims.map(c => c.booking_id).filter(Boolean));
+          const hasUnclaimedBookings = reportLines.some(line => line.bookings.some(b => !existingClaimBookingIds.has(b.id)));
 
           return (
             <div className="space-y-6">
@@ -1131,6 +1280,103 @@ export default function AdminPage() {
                   <div className="text-2xl font-bold">{allClaims.length}</div>
                   <div className="text-xs text-muted-foreground mt-1">Total Claims</div>
                 </div>
+              </div>
+
+              {/* Commission Report Generator */}
+              <div className="bg-card rounded-lg shadow-sm p-5 space-y-4 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="text-lg font-bold">📊 Commission Report Generator</div>
+                  <div className="text-xs text-muted-foreground">Payout period: 15th – 30th each month</div>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <select className="px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground text-sm" value={reportMonth} onChange={e => { setReportMonth(Number(e.target.value)); setShowReport(false); }}>
+                    {monthNames.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                  </select>
+                  <select className="px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground text-sm" value={reportYear} onChange={e => { setReportYear(Number(e.target.value)); setShowReport(false); }}>
+                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <button onClick={() => setShowReport(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
+                    📊 Generate Report
+                  </button>
+                </div>
+
+                {showReport && (
+                  <div className="space-y-4">
+                    {reportLines.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground text-sm">No approved bookings found for {monthNames[reportMonth]} {reportYear}</div>
+                    ) : (
+                      <>
+                        <div className="bg-secondary/50 rounded-lg p-4">
+                          <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                              <div className="text-xl font-bold">{reportLines.length}</div>
+                              <div className="text-xs text-muted-foreground">Agents</div>
+                            </div>
+                            <div>
+                              <div className="text-xl font-bold">{reportLines.reduce((s, l) => s + l.bookings.length, 0)}</div>
+                              <div className="text-xs text-muted-foreground">Bookings</div>
+                            </div>
+                            <div>
+                              <div className="text-xl font-bold text-primary">RM{reportLines.reduce((s, l) => s + l.totalCommission, 0).toLocaleString()}</div>
+                              <div className="text-xs text-muted-foreground">Total Commission</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {reportLines.map(line => {
+                          const unclaimedCount = line.bookings.filter(b => !existingClaimBookingIds.has(b.id)).length;
+                          return (
+                            <div key={line.agentId} className="bg-secondary/30 rounded-lg p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-semibold">{line.agentName}</div>
+                                  <div className="text-xs text-muted-foreground">{line.agentEmail} · {line.commissionType.replace("_", " ")}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-primary">RM{line.totalCommission.toLocaleString()}</div>
+                                  <div className="text-xs text-muted-foreground">{line.bookings.length} booking(s)</div>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                {line.bookings.map((b, i) => {
+                                  const alreadyClaimed = existingClaimBookingIds.has(b.id);
+                                  return (
+                                    <div key={b.id} className="flex items-center justify-between text-sm bg-background/50 rounded px-3 py-2">
+                                      <div>
+                                        <span className="font-medium">{b.room?.building} {b.room?.unit} {b.room?.room}</span>
+                                        <span className="text-muted-foreground"> — {b.tenant_name} · {b.contract_months}mo</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold">RM{line.commissionPerBooking[i]?.toLocaleString()}</span>
+                                        {alreadyClaimed && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/20 text-green-600">CLAIMED</span>}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {unclaimedCount === 0 && (
+                                <div className="text-xs text-green-600 font-medium">✅ All bookings already claimed</div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {hasUnclaimedBookings && (
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Generate commission claims for ${monthNames[reportMonth]} ${reportYear}? This will create pending claims for all unclaimed bookings.`)) return;
+                              generateClaimsForReport(reportLines);
+                            }}
+                            disabled={generatingClaims}
+                            className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                          >
+                            {generatingClaims ? "Generating..." : `💰 Generate Claims for ${monthNames[reportMonth]} ${reportYear}`}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
