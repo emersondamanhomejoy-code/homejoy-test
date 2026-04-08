@@ -983,6 +983,7 @@ export default function AdminPage() {
             if (!user) return;
             try {
               await updateClaimStatus.mutateAsync({ id: claim.id, status: "approved", reviewed_by: user.id });
+              logActivity("approve_claim", "claim", claim.id, { amount: claim.amount });
             } catch (e: any) { alert(e.message); }
           };
 
@@ -990,6 +991,7 @@ export default function AdminPage() {
             if (!user || !claimRejectReason.trim()) { alert("Please enter a reject reason"); return; }
             try {
               await updateClaimStatus.mutateAsync({ id: claim.id, status: "rejected", reviewed_by: user.id, reject_reason: claimRejectReason });
+              logActivity("reject_claim", "claim", claim.id, { amount: claim.amount, reason: claimRejectReason });
               setClaimRejectReason("");
             } catch (e: any) { alert(e.message); }
           };
