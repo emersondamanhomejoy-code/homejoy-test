@@ -41,6 +41,7 @@ export default function Index() {
   const { data: unitsData = [] } = useUnits();
   const { data: claimsData = [] } = useClaims();
   const { data: agentBookings = [] } = useBookings("approved");
+  const { data: allBookings = [] } = useBookings();
   const createClaim = useCreateClaim();
   const [page, setPage] = useState("dashboard");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
