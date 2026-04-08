@@ -176,6 +176,7 @@ export default function AdminPage() {
 
   const createAgent = async () => {
     if (!newAgent.email.trim()) { alert("Email is required"); return; }
+    if (!newAgent.password || newAgent.password.length < 6) { alert("Password must be at least 6 characters"); return; }
     setCreatingAgent(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
