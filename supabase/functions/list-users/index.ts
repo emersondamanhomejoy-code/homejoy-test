@@ -37,16 +37,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
+    // Check admin/boss/manager role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
+      .in("role", ["admin", "boss", "manager"]);
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Forbidden: Admin only" }), {
+    if (!roleData || roleData.length === 0) {
+      return new Response(JSON.stringify({ error: "Forbidden: Admin/Boss/Manager only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

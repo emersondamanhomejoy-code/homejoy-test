@@ -936,7 +936,7 @@ export default function Index() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground hidden md:inline">{user?.email}</span>
-              {role === "admin" && (
+              {(role === "admin" || role === "boss" || role === "manager") && (
                 <button onClick={() => navigate("/admin")} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
                   Admin Panel
                 </button>
@@ -1028,7 +1028,7 @@ export default function Index() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden md:inline">{user?.email}</span>
-            {role === "admin" && (
+            {(role === "admin" || role === "boss" || role === "manager") && (
               <button onClick={() => navigate("/admin")} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
                 Admin Panel
               </button>

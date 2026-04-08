@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
+import { logActivity } from "@/hooks/useActivityLog";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -79,7 +80,17 @@ const emptyUnit = {
 export default function AdminPage() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"dashboard" | "users" | "units" | "claims">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "users" | "units" | "claims" | "activity">("dashboard");
+  const canAccessAdmin = role === "boss" || role === "manager" || role === "admin";
+  const canViewActivityLog = role === "boss" || role === "manager";
+  const canCreateManager = role === "boss";
+  const canCreateAdmin = role === "boss" || role === "manager";
+  // Boss & manager can create any lower role; admin can only create agent
+  const canCreateRoles = role === "boss" ? ["manager", "admin", "agent"] : role === "manager" ? ["admin", "agent"] : ["agent"];
+
+  // Activity log state
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // Users state
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -120,11 +131,11 @@ export default function AdminPage() {
   const [claimRejectReason, setClaimRejectReason] = useState("");
 
   useEffect(() => {
-    if (!loading && (!user || role !== "admin")) navigate("/");
+    if (!loading && (!user || !canAccessAdmin)) navigate("/");
   }, [loading, user, role, navigate]);
 
   useEffect(() => {
-    if (user && role === "admin") fetchUsers();
+    if (user && canAccessAdmin) fetchUsers();
   }, [user, role]);
 
   const fetchUsers = async () => {
@@ -144,7 +155,7 @@ export default function AdminPage() {
     }
   };
 
-  const toggleRole = async (userId: string, targetRole: "admin" | "agent", hasRole: boolean) => {
+  const toggleRole = async (userId: string, targetRole: "admin" | "agent" | "boss" | "manager", hasRole: boolean) => {
     setUpdating(userId + targetRole);
     try {
       if (hasRole) {
@@ -154,6 +165,7 @@ export default function AdminPage() {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: targetRole });
         if (error) throw error;
       }
+      logActivity(hasRole ? "remove_role" : "add_role", "user", userId, { role: targetRole });
       await fetchUsers();
     } catch (e: any) {
       alert(e.message || "Failed to update role");
@@ -172,6 +184,7 @@ export default function AdminPage() {
         body: { action: "create", ...newAgent },
       });
       if (res.error) throw res.error;
+      logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
       setNewAgent({ email: "", name: "", phone: "", address: "" });
       setShowCreateAgent(false);
       await fetchUsers();
@@ -197,6 +210,23 @@ export default function AdminPage() {
     }
   };
 
+  const fetchActivityLogs = async () => {
+    setActivityLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("activity_logs" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setActivityLogs(data || []);
+    } catch (e: any) {
+      console.error("Failed to fetch activity logs:", e);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
   const openCreateRoom2 = () => {
     setEditingUnit({ ...emptyUnit });
     setRoomConfigs([...defaultRoomConfigs]);
@@ -207,8 +237,10 @@ export default function AdminPage() {
     try {
       if (editingUnit.id) {
         await updateUnit.mutateAsync({ id: editingUnit.id, ...editingUnit });
+        logActivity("update_unit", "unit", editingUnit.id, { building: editingUnit.building, unit: editingUnit.unit });
       } else {
         await createUnit.mutateAsync({ unit: editingUnit, roomConfigs });
+        logActivity("create_unit", "unit", "", { building: editingUnit.building, unit: editingUnit.unit });
       }
       setEditingUnit(null);
     } catch (e: any) {
@@ -218,7 +250,10 @@ export default function AdminPage() {
 
   const handleDeleteUnit = async (id: string) => {
     if (!confirm("Delete this unit and all its rooms?")) return;
-    try { await deleteUnit.mutateAsync(id); } catch (e: any) { alert(e.message); }
+    try {
+      await deleteUnit.mutateAsync(id);
+      logActivity("delete_unit", "unit", id, {});
+    } catch (e: any) { alert(e.message); }
   };
 
   const saveRoom = async () => {
@@ -528,6 +563,7 @@ export default function AdminPage() {
           <button onClick={() => setTab("units")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "units" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Units & Rooms</button>
           <button onClick={() => setTab("claims")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "claims" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Claims {allClaims.filter(c => c.status === "pending").length > 0 ? `(${allClaims.filter(c => c.status === "pending").length})` : ""}</button>
           <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Users</button>
+          {canViewActivityLog && <button onClick={() => { setTab("activity"); fetchActivityLogs(); }} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "activity" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Activity Log</button>}
         </div>
 
         {error && <div className="rounded-lg bg-destructive/10 text-destructive p-4 text-sm">{error}</div>}
@@ -557,6 +593,7 @@ export default function AdminPage() {
                 pax_staying: (booking as any).pax_staying || 1,
                 carParkIds: ((booking as any).documents as any)?.carParkIds || [],
               });
+              logActivity("approve_booking", "booking", booking.id, { tenant: booking.tenant_name });
               setSelectedBooking(null);
             } catch (e: any) { alert(e.message); }
           };
@@ -565,6 +602,7 @@ export default function AdminPage() {
             if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
             try {
               await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
+              logActivity("reject_booking", "booking", booking.id, { tenant: booking.tenant_name, reason: rejectReason });
               setSelectedBooking(null);
               setRejectReason("");
             } catch (e: any) { alert(e.message); }
@@ -950,6 +988,7 @@ export default function AdminPage() {
             if (!user) return;
             try {
               await updateClaimStatus.mutateAsync({ id: claim.id, status: "approved", reviewed_by: user.id });
+              logActivity("approve_claim", "claim", claim.id, { amount: claim.amount });
             } catch (e: any) { alert(e.message); }
           };
 
@@ -957,6 +996,7 @@ export default function AdminPage() {
             if (!user || !claimRejectReason.trim()) { alert("Please enter a reject reason"); return; }
             try {
               await updateClaimStatus.mutateAsync({ id: claim.id, status: "rejected", reviewed_by: user.id, reject_reason: claimRejectReason });
+              logActivity("reject_claim", "claim", claim.id, { amount: claim.amount, reason: claimRejectReason });
               setClaimRejectReason("");
             } catch (e: any) { alert(e.message); }
           };
@@ -1034,12 +1074,12 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{users.length} users</span>
-              <button onClick={() => setShowCreateAgent(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Agent</button>
+              <button onClick={() => setShowCreateAgent(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add User</button>
             </div>
 
             {showCreateAgent && (
               <div className="bg-card rounded-lg shadow-sm p-6 space-y-4">
-                <div className="text-lg font-bold">Create New Agent</div>
+                <div className="text-lg font-bold">Create New User</div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><label className="text-xs text-muted-foreground">Email (Google account) *</label><input className={`${inputClass} w-full`} placeholder="agent@gmail.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
@@ -1081,11 +1121,15 @@ export default function AdminPage() {
                       </div>
                       {u.address && <div className="text-xs text-muted-foreground">📍 {u.address}</div>}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {u.roles.map((r) => (<span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "boss" ? "bg-amber-500/20 text-amber-600" : r === "manager" ? "bg-purple-500/20 text-purple-600" : r === "admin" ? "bg-blue-500/20 text-blue-600" : "bg-secondary text-secondary-foreground"}`}>{r}</span>))}
                       <button onClick={() => { setEditingProfile(u.id); setProfileDraft({ name: u.name, phone: u.phone, address: u.address }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Edit Info</button>
-                      <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
-                      <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
+                      {canCreateRoles.includes("admin") && (
+                        <button onClick={() => toggleRole(u.id, "admin" as any, u.roles.includes("admin"))} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("admin") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("admin") ? "Remove Admin" : "Make Admin"}</button>
+                      )}
+                      {canCreateManager && (
+                        <button onClick={() => toggleRole(u.id, "manager" as any, u.roles.includes("manager"))} disabled={updating === u.id + "manager" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("manager") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("manager") ? "Remove Manager" : "Make Manager"}</button>
+                      )}
                     </div>
                   </div>
 
@@ -1208,6 +1252,51 @@ export default function AdminPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {tab === "activity" && canViewActivityLog && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{activityLogs.length} recent activities</span>
+              <button onClick={fetchActivityLogs} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-colors">🔄 Refresh</button>
+            </div>
+            {activityLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : activityLogs.length === 0 ? (
+              <div className="bg-card rounded-lg p-6 text-center text-muted-foreground text-sm">No activity logs yet</div>
+            ) : (
+              <div className="space-y-2">
+                {activityLogs.map((log: any) => (
+                  <div key={log.id} className="bg-card rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{log.actor_email || log.actor_id?.slice(0, 8)}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          log.action.includes("create") ? "bg-green-500/20 text-green-600" :
+                          log.action.includes("delete") ? "bg-destructive/20 text-destructive" :
+                          log.action.includes("approve") ? "bg-green-500/20 text-green-600" :
+                          log.action.includes("reject") ? "bg-destructive/20 text-destructive" :
+                          log.action.includes("role") ? "bg-purple-500/20 text-purple-600" :
+                          "bg-secondary text-secondary-foreground"
+                        }`}>{log.action}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString()}</span>
+                    </div>
+                    {log.entity_type && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {log.entity_type}{log.entity_id ? ` · ${log.entity_id.slice(0, 8)}...` : ""}
+                      </div>
+                    )}
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-1 bg-secondary rounded px-2 py-1">
+                        {Object.entries(log.details).map(([k, v]) => `${k}: ${v}`).join(" · ")}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
