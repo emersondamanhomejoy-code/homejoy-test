@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          actor_email: string
+          actor_id: string
+          created_at: string
+          details: Json
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string
+          actor_id: string
+          created_at?: string
+          details?: Json
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       booking_signatures: {
         Row: {
           booking_data: Json
