@@ -899,7 +899,16 @@ export default function AdminPage() {
                           <div className="p-4 border-b bg-secondary/20">
                             <div className="flex items-center justify-between mb-3">
                               <div className="text-sm font-semibold">🏠 Common Area Photos</div>
-                            </div>
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/common/${unit.id}`;
+                                  navigator.clipboard.writeText(url);
+                                  alert("Common area link copied!");
+                                }}
+                                className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                              >
+                                📋 Copy Link
+                              </button>
                             <div className="flex flex-wrap gap-3">
                               {((unit as any).common_photos as string[] || []).map((path: string, i: number) => (
                                 <div key={i} className="relative group">
