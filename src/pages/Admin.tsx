@@ -250,7 +250,10 @@ export default function AdminPage() {
 
   const handleDeleteUnit = async (id: string) => {
     if (!confirm("Delete this unit and all its rooms?")) return;
-    try { await deleteUnit.mutateAsync(id); } catch (e: any) { alert(e.message); }
+    try {
+      await deleteUnit.mutateAsync(id);
+      logActivity("delete_unit", "unit", id, {});
+    } catch (e: any) { alert(e.message); }
   };
 
   const saveRoom = async () => {
