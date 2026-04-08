@@ -25,6 +25,8 @@ const initialBookingForm = {
   gender: "", race: "", nationality: "", moveInDate: "",
   occupation: "", tenancyDuration: "12", monthlyRental: "",
   paxStaying: "1", accessCardCount: "0",
+  tenant2Name: "", tenant2Phone: "", tenant2Email: "", tenant2IcPassport: "",
+  tenant2Race: "", tenant2Nationality: "", tenant2Occupation: "",
   emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
   parkingCount: "0", carPlates: [""] as string[],
