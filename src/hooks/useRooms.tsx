@@ -91,6 +91,11 @@ export interface RoomConfig {
   rent: number;
   room_type?: string;
   parking_lot?: string;
+  status?: string;
+  tenant_name?: string;
+  tenant_gender?: string;
+  tenant_race?: string;
+  pax_staying?: number;
 }
 
 export function useCreateUnit() {
@@ -118,19 +123,19 @@ export function useCreateUnit() {
         bed_type: rc.room_type === "Car Park" ? "" : (rc.bed_type || ""),
         room_type: rc.room_type === "Car Park" ? "Car Park" : (rc.bed_type || "Medium Room"),
         unit_type: unit.unit_type,
-        status: "Available",
+        status: rc.status || "Available",
         available_date: "Available Now",
         max_pax: rc.room_type === "Car Park" ? 0 : rc.max_pax,
-        occupied_pax: 0,
-        pax_staying: 0,
+        occupied_pax: rc.status === "Occupied" ? (rc.pax_staying || 1) : 0,
+        pax_staying: rc.status === "Occupied" ? (rc.pax_staying || 1) : 0,
         unit_max_pax: unit.unit_max_pax,
         unit_occupied_pax: 0,
         housemates: [],
         photos: [],
         access_info: unit.access_info,
         move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
-        tenant_gender: "",
-        tenant_race: "",
+        tenant_gender: rc.status === "Occupied" ? (rc.tenant_gender || "") : "",
+        tenant_race: rc.status === "Occupied" ? (rc.tenant_race || "") : "",
         internal_only: unit.internal_only || false,
       }));
       const { error: rErr } = await supabase.from("rooms").insert(rooms);
