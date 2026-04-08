@@ -323,11 +323,13 @@ export default function Index() {
       const unitConfig = unitsData.find(u => u.id === selectedRoom.unit_id);
       const depositMultiplier = unitConfig?.deposit_multiplier ?? 1.5;
       const unitAdminFee = unitConfig?.admin_fee ?? 330;
+      const perCardCost = unitConfig?.access_card_deposit ?? 0;
+      const cardCount = Number(bookingForm.accessCardCount) || 0;
       const advance = Number(bookingForm.advance) || 0;
       const deposit = Math.round(advance * depositMultiplier);
       const adminFee = unitAdminFee;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
-      const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
+      const accessCardDeposit = cardCount * perCardCost;
       const { error: dbErr } = await supabase.from("bookings").insert({
         room_id: selectedRoom.id,
         unit_id: selectedRoom.unit_id,
@@ -713,6 +715,10 @@ export default function Index() {
                 const unitCfg = unitsData.find(u => u.id === selectedRoom?.unit_id);
                 const depMul = unitCfg?.deposit_multiplier ?? 1.5;
                 const uAdminFee = unitCfg?.admin_fee ?? 330;
+                const perCardCost = unitCfg?.access_card_deposit ?? 0;
+                const cardSource = unitCfg?.access_card_source ?? "Provided by Us";
+                const cardCount = Number(f.accessCardCount) || 0;
+                const autoAccessCardDeposit = cardCount * perCardCost;
                 const adv = Number(f.advance) || 0;
                 const dep = Math.round(adv * depMul);
                 return (
@@ -722,11 +728,11 @@ export default function Index() {
                       <div className="space-y-1"><label className={lbl}>Rental Deposit (RM) — ×{depMul}</label><input className={`${ic} bg-muted`} type="number" readOnly value={dep} /></div>
                       <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={uAdminFee} /></div>
                       <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
-                      <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM)</label><input className={ic} type="number" placeholder="0" value={f.accessCardDeposit} onChange={e => set("accessCardDeposit", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM) — {cardCount} card × RM{perCardCost} ({cardSource})</label><input className={`${ic} bg-muted`} type="number" readOnly value={autoAccessCardDeposit} /></div>
                     </div>
                     <div className="bg-secondary rounded-lg p-4 text-right">
                       <span className="text-sm text-muted-foreground">Total: </span>
-                      <span className="text-lg font-bold">RM{adv + dep + uAdminFee + (Number(f.electricityReload) || 0) + (Number(f.accessCardDeposit) || 0)}</span>
+                      <span className="text-lg font-bold">RM{adv + dep + uAdminFee + (Number(f.electricityReload) || 0) + autoAccessCardDeposit}</span>
                     </div>
                   </>
                 );
