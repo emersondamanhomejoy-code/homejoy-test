@@ -100,7 +100,7 @@ export default function AdminPage() {
   const [editingCommission, setEditingCommission] = useState<string | null>(null);
   const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
   const [showCreateAgent, setShowCreateAgent] = useState(false);
-  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "" });
+  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "", password: "" });
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState({ name: "", phone: "", address: "" });
@@ -176,6 +176,7 @@ export default function AdminPage() {
 
   const createAgent = async () => {
     if (!newAgent.email.trim()) { alert("Email is required"); return; }
+    if (!newAgent.password || newAgent.password.length < 6) { alert("Password must be at least 6 characters"); return; }
     setCreatingAgent(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -185,7 +186,7 @@ export default function AdminPage() {
       });
       if (res.error) throw res.error;
       logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
-      setNewAgent({ email: "", name: "", phone: "", address: "" });
+      setNewAgent({ email: "", name: "", phone: "", address: "", password: "" });
       setShowCreateAgent(false);
       await fetchUsers();
     } catch (e: any) {
@@ -1081,13 +1082,14 @@ export default function AdminPage() {
               <div className="bg-card rounded-lg shadow-sm p-6 space-y-4">
                 <div className="text-lg font-bold">Create New User</div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div><label className="text-xs text-muted-foreground">Email (Google account) *</label><input className={`${inputClass} w-full`} placeholder="agent@gmail.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Email *</label><input className={`${inputClass} w-full`} placeholder="agent@email.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Password *</label><input className={`${inputClass} w-full`} type="password" placeholder="Min 6 characters" value={newAgent.password} onChange={e => setNewAgent({ ...newAgent, password: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} placeholder="e.g. 012-3456789" value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
+                  <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "", password: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
                   <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Creating..." : "Create Agent"}</button>
                 </div>
               </div>
@@ -1124,6 +1126,20 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {u.roles.map((r) => (<span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "boss" ? "bg-amber-500/20 text-amber-600" : r === "manager" ? "bg-purple-500/20 text-purple-600" : r === "admin" ? "bg-blue-500/20 text-blue-600" : "bg-secondary text-secondary-foreground"}`}>{r}</span>))}
                       <button onClick={() => { setEditingProfile(u.id); setProfileDraft({ name: u.name, phone: u.phone, address: u.address }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Edit Info</button>
+                      <button onClick={async () => {
+                        const pw = prompt("Enter new password (min 6 chars):");
+                        if (!pw || pw.length < 6) { alert("Password must be at least 6 characters"); return; }
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const res = await supabase.functions.invoke("list-users", {
+                            headers: { Authorization: `Bearer ${session?.access_token}` },
+                            body: { action: "set_password", user_id: u.id, password: pw },
+                          });
+                          if (res.error) throw res.error;
+                          alert("Password updated successfully");
+                          logActivity("set_password", "user", u.id, { email: u.email });
+                        } catch (e: any) { alert(e.message || "Failed to set password"); }
+                      }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Set Password</button>
                       {canCreateRoles.includes("admin") && (
                         <button onClick={() => toggleRole(u.id, "admin" as any, u.roles.includes("admin"))} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("admin") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("admin") ? "Remove Admin" : "Make Admin"}</button>
                       )}

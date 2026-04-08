@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     // CREATE USER
     if (action === "create") {
-      const { email, name, phone, address } = body;
+      const { email, name, phone, address, password } = body;
 
       if (!email || typeof email !== "string" || !email.includes("@")) {
         return new Response(JSON.stringify({ error: "Valid email is required" }), {
@@ -72,8 +72,16 @@ Deno.serve(async (req) => {
         });
       }
 
+      if (!password || password.length < 6) {
+        return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email.trim(),
+        password: password,
         email_confirm: true,
         user_metadata: { full_name: name || "" },
       });
@@ -96,6 +104,27 @@ Deno.serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // SET PASSWORD (for existing users)
+    if (action === "set_password") {
+      const { user_id, password } = body;
+      if (!user_id || !password || password.length < 6) {
+        return new Response(JSON.stringify({ error: "user_id and password (min 6 chars) required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: updateError } = await supabase.auth.admin.updateUserById(user_id, { password });
+      if (updateError) {
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
