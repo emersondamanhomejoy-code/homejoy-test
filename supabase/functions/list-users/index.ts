@@ -128,7 +128,10 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email.trim());
+      const siteUrl2 = Deno.env.get("SITE_URL") || req.headers.get("origin") || "https://homejoyagent.lovable.app";
+      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email.trim(), {
+        redirectTo: `${siteUrl2}/set-password`,
+      });
       if (inviteError) {
         return new Response(JSON.stringify({ error: inviteError.message }), {
           status: 400,
