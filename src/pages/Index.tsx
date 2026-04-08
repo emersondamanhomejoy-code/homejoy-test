@@ -1034,7 +1034,7 @@ export default function Index() {
                       <div className="flex gap-1.5 flex-wrap mt-2.5">
                         <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
                         <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
-                        <span className="px-2.5 py-1 rounded-md bg-accent/20 text-accent-foreground text-xs font-medium">{room.available_date}</span>
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${room.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent/20 text-accent-foreground"}`}>{room.status === "Available Soon" ? `🕐 Available ${room.available_date}` : room.available_date}</span>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground flex gap-3">
                         <span>Max: {room.unit_max_pax}</span>
