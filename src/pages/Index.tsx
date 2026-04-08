@@ -249,7 +249,7 @@ export default function Index() {
     if (!f.email) return "Please fill in Email.";
     if (!f.phone) return "Please fill in Contact No.";
     if (!f.gender) return "Please select Gender.";
-    if (f.gender === "Couple") {
+    if (f.gender === "Couple" || f.gender === "2 Pax") {
       if (!f.tenant2Name) return "Please fill in Second Tenant Full Name.";
       if (!f.tenant2IcPassport) return "Please fill in Second Tenant NRIC/Passport No.";
       if (!f.tenant2Phone) return "Please fill in Second Tenant Contact No.";
@@ -387,7 +387,7 @@ export default function Index() {
           carParkIds: bookingForm.selectedCarParks || [],
           carPhotos: carPhotoPaths,
           parkingType,
-          ...(bookingForm.gender === "Couple" ? {
+          ...(bookingForm.gender === "Couple" || bookingForm.gender === "2 Pax" ? {
             tenant2: {
               name: bookingForm.tenant2Name,
               phone: bookingForm.tenant2Phone,
@@ -634,7 +634,7 @@ export default function Index() {
               </div>
 
               {/* Couple — Second Tenant Details */}
-              {f.gender === "Couple" && (
+              {f.gender === "Couple" || f.gender === "2 Pax" && (
                 <div className="mt-4 p-4 border border-dashed border-primary/30 rounded-lg space-y-4">
                   <div className="text-base font-bold flex items-center gap-2">👥 Second Tenant Details</div>
                   <div className="grid md:grid-cols-2 gap-4">
