@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index.tsx";
 import Admin from "./pages/Admin.tsx";
 import Sign from "./pages/Sign.tsx";
+import SetPassword from "./pages/SetPassword.tsx";
 import RoomPhotos from "./pages/RoomPhotos.tsx";
 import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/set-password" element={<SetPassword />} />
           <Route path="/sign/:token" element={<Sign />} />
           <Route path="/photos/:roomId" element={<RoomPhotos />} />
           <Route path="/common/:unitId" element={<CommonPhotos />} />
