@@ -1098,6 +1098,89 @@ export default function Index() {
           </button>
         </div>
 
+        {/* Boss/Manager Dashboard */}
+        {(role === "boss" || role === "manager") && (() => {
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          const monthlyApproved = allBookings.filter(b => b.status === "approved" && new Date(b.created_at) >= monthStart);
+          const monthlyPending = allBookings.filter(b => b.status === "pending" && new Date(b.created_at) >= monthStart);
+          const monthlyRejected = allBookings.filter(b => b.status === "rejected" && new Date(b.created_at) >= monthStart);
+
+          // Internal vs External occupancy from rooms
+          const occupiedRooms = roomsData.filter(r => r.room_type !== "Car Park" && (r.status === "Occupied" || r.status === "Tenanted"));
+          const internalOccupied = occupiedRooms.filter(r => r.internal_only).length;
+          const externalOccupied = occupiedRooms.filter(r => !r.internal_only).length;
+
+          // Admin fee: sum from units that have approved bookings this month
+          const approvedUnitIds = new Set(monthlyApproved.map(b => b.unit_id).filter(Boolean));
+          const monthlyAdminFee = unitsData
+            .filter(u => approvedUnitIds.has(u.id))
+            .reduce((sum, u) => sum + (u.admin_fee || 0), 0);
+          // Also count total admin fee from booking count * average
+          const totalAdminFee = monthlyApproved.length > 0
+            ? monthlyApproved.reduce((sum, b) => {
+                const unit = unitsData.find(u => u.id === b.unit_id);
+                return sum + (unit?.admin_fee || 330);
+              }, 0)
+            : 0;
+
+          const totalRooms = roomsData.filter(r => r.room_type !== "Car Park").length;
+          const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms.length / totalRooms) * 100) : 0;
+
+          const monthName = now.toLocaleString("en", { month: "long", year: "numeric" });
+
+          return (
+            <div className="bg-card rounded-xl border shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="text-lg font-bold">📊 Monthly Overview — {monthName}</div>
+              </div>
+
+              {/* Booking Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-lg bg-accent/10 p-4 text-center">
+                  <div className="text-2xl font-extrabold text-accent-foreground">{monthlyApproved.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Approved Bookings</div>
+                </div>
+                <div className="rounded-lg bg-secondary p-4 text-center">
+                  <div className="text-2xl font-extrabold text-secondary-foreground">{monthlyPending.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Pending Bookings</div>
+                </div>
+                <div className="rounded-lg bg-destructive/10 p-4 text-center">
+                  <div className="text-2xl font-extrabold text-destructive">{monthlyRejected.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Rejected</div>
+                </div>
+                <div className="rounded-lg bg-primary/10 p-4 text-center">
+                  <div className="text-2xl font-extrabold text-primary">{monthlyApproved.length + monthlyPending.length + monthlyRejected.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Total Submissions</div>
+                </div>
+              </div>
+
+              {/* Occupancy */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-lg border p-4">
+                  <div className="text-2xl font-extrabold">{occupiedRooms.length}<span className="text-sm font-normal text-muted-foreground">/{totalRooms}</span></div>
+                  <div className="text-xs text-muted-foreground mt-1">Occupied Rooms ({occupancyRate}%)</div>
+                  <div className="mt-2 h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${occupancyRate}%` }} />
+                  </div>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <div className="text-2xl font-extrabold text-primary">{internalOccupied}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Internal Occupied</div>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <div className="text-2xl font-extrabold">{externalOccupied}</div>
+                  <div className="text-xs text-muted-foreground mt-1">External Occupied</div>
+                </div>
+                <div className="rounded-lg border p-4 bg-accent/5">
+                  <div className="text-2xl font-extrabold text-accent-foreground">RM {totalAdminFee.toLocaleString()}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Admin Fee (This Month)</div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Commission Info */}
         <div className="bg-card rounded-xl shadow-sm p-4 border flex items-center justify-between">
           <div className="text-sm"><span className="text-muted-foreground">Your commission tier:</span> <span className="font-semibold">{commissionLabel}</span></div>
