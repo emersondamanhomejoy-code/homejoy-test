@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     // INVITE USER (sends setup email, no password needed)
     if (action === "create") {
-      const { email, name, phone, address } = body;
+      const { email, name, phone, address, role: newRole, commission_type, commission_config } = body;
 
       if (!email || typeof email !== "string" || !email.includes("@")) {
         return new Response(JSON.stringify({ error: "Valid email is required" }), {
@@ -71,6 +71,9 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const validRoles = ["admin", "agent", "boss", "manager"];
+      const assignRole = validRoles.includes(newRole) ? newRole : "agent";
 
       const { data: newUser, error: createError } = await supabase.auth.admin.inviteUserByEmail(
         email.trim(),
@@ -87,6 +90,7 @@ Deno.serve(async (req) => {
       }
 
       if (newUser.user) {
+        // Upsert profile
         await supabase.from("profiles").upsert({
           user_id: newUser.user.id,
           email: email.trim(),
@@ -94,6 +98,19 @@ Deno.serve(async (req) => {
           phone: phone || "",
           address: address || "",
         }, { onConflict: "user_id" });
+
+        // Delete the default "agent" role from trigger, then insert the chosen role
+        if (assignRole !== "agent") {
+          await supabase.from("user_roles").delete().eq("user_id", newUser.user.id).eq("role", "agent");
+        }
+        // Upsert role with commission
+        await supabase.from("user_roles").upsert({
+          user_id: newUser.user.id,
+          role: assignRole,
+          commission_type: commission_type || "internal_basic",
+          commission_config: commission_config || null,
+        }, { onConflict: "user_id,role" });
+      }
       }
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
