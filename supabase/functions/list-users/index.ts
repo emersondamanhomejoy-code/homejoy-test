@@ -61,9 +61,9 @@ Deno.serve(async (req) => {
 
     const action = body.action || "list";
 
-    // CREATE USER
+    // INVITE USER (sends setup email, no password needed)
     if (action === "create") {
-      const { email, name, phone, address, password } = body;
+      const { email, name, phone, address } = body;
 
       if (!email || typeof email !== "string" || !email.includes("@")) {
         return new Response(JSON.stringify({ error: "Valid email is required" }), {
@@ -72,19 +72,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (!password || password.length < 6) {
-        return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: email.trim(),
-        password: password,
-        email_confirm: true,
-        user_metadata: { full_name: name || "" },
-      });
+      const { data: newUser, error: createError } = await supabase.auth.admin.inviteUserByEmail(
+        email.trim(),
+        {
+          data: { full_name: name || "" },
+        }
+      );
 
       if (createError) {
         return new Response(JSON.stringify({ error: createError.message }), {

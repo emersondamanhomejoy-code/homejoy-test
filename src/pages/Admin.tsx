@@ -100,7 +100,7 @@ export default function AdminPage() {
   const [editingCommission, setEditingCommission] = useState<string | null>(null);
   const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
   const [showCreateAgent, setShowCreateAgent] = useState(false);
-  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "", password: "" });
+  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "" });
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState({ name: "", phone: "", address: "" });
@@ -176,7 +176,6 @@ export default function AdminPage() {
 
   const createAgent = async () => {
     if (!newAgent.email.trim()) { alert("Email is required"); return; }
-    if (!newAgent.password || newAgent.password.length < 6) { alert("Password must be at least 6 characters"); return; }
     setCreatingAgent(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -185,12 +184,15 @@ export default function AdminPage() {
         body: { action: "create", ...newAgent },
       });
       if (res.error) throw res.error;
+      const resData = res.data;
+      if (resData?.error) throw new Error(resData.error);
       logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
-      setNewAgent({ email: "", name: "", phone: "", address: "", password: "" });
+      setNewAgent({ email: "", name: "", phone: "", address: "" });
       setShowCreateAgent(false);
+      alert("Invite sent! The user will receive an email to set up their password.");
       await fetchUsers();
     } catch (e: any) {
-      alert(e.message || "Failed to create agent");
+      alert(e.message || "Failed to invite user");
     } finally {
       setCreatingAgent(false);
     }
