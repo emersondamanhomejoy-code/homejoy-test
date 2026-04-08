@@ -75,10 +75,12 @@ Deno.serve(async (req) => {
       const validRoles = ["admin", "agent", "boss", "manager"];
       const assignRole = validRoles.includes(newRole) ? newRole : "agent";
 
+      const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || "https://homejoyagent.lovable.app";
       const { data: newUser, error: createError } = await supabase.auth.admin.inviteUserByEmail(
         email.trim(),
         {
           data: { full_name: name || "" },
+          redirectTo: `${siteUrl}/set-password`,
         }
       );
 
