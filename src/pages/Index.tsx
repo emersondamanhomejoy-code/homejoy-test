@@ -320,7 +320,19 @@ export default function Index() {
       const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
 
+      // Upload ANPR car photos if applicable
+      const carPhotoPaths: Record<string, string> = {};
       const unitConfig = unitsData.find(u => u.id === selectedRoom.unit_id);
+      const parkingType = (unitConfig as any)?.parking_type || "None";
+      if (parkingType === "ANPR" && Number(bookingForm.parkingCount) > 0) {
+        for (let i = 0; i < Number(bookingForm.parkingCount); i++) {
+          const frontFile = (uploadedFiles as any)[`carFront_${i}`];
+          const backFile = (uploadedFiles as any)[`carBack_${i}`];
+          if (frontFile) carPhotoPaths[`car_${i}_front`] = await uploadFile(frontFile, "car-photo");
+          if (backFile) carPhotoPaths[`car_${i}_back`] = await uploadFile(backFile, "car-photo");
+        }
+      }
+
       const depositMultiplier = unitConfig?.deposit_multiplier ?? 1.5;
       const unitAdminFee = unitConfig?.admin_fee ?? 330;
       const perCardCost = unitConfig?.access_card_deposit ?? 0;
@@ -360,7 +372,7 @@ export default function Index() {
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
-        documents: { carParkIds: bookingForm.selectedCarParks || [] },
+        documents: { carParkIds: bookingForm.selectedCarParks || [], carPhotos: carPhotoPaths, parkingType },
       });
       if (dbErr) throw dbErr;
 
