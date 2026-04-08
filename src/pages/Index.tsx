@@ -614,7 +614,7 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={f.phone} onChange={e => set("phone", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Gender *</label>
                   <select className={ic} value={f.gender} onChange={e => set("gender", e.target.value)}>
-                    <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
+                    <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option><option>2 Pax</option>
                   </select>
                 </div>
                 <div className="space-y-1"><label className={lbl}>Nationality *</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
