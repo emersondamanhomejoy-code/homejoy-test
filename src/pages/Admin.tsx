@@ -611,6 +611,9 @@ export default function AdminPage() {
                 <option value="Sticker">Parking: Sticker</option>
                 <option value="Access Card">Parking: Access Card</option>
               </select>
+              {(u as any).parking_type === "Access Card" && (
+                <input className={inputClass} type="number" placeholder="Parking Card Deposit (RM)" value={(u as any).parking_card_deposit || ""} onChange={e => updateField("parking_card_deposit", Number(e.target.value))} />
+              )}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
                 <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
