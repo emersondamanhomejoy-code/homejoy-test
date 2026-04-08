@@ -1292,6 +1292,7 @@ export default function Index() {
                       <span className="px-2 py-0.5 rounded-md bg-secondary text-xs font-medium">
                         RM{b.minRent}{b.minRent !== b.maxRent ? ` - RM${b.maxRent}` : ""}/mo
                       </span>
+                      {b.soonCount > 0 && <span className="px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs font-medium">🕐 {b.soonCount} coming soon</span>}
                       {b.carParks > 0 && <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">🅿️ {b.carParks}</span>}
                       {Array.from(b.unitTypes).map((ut: string) => (
                         <span key={ut} className="px-2 py-0.5 rounded-md bg-secondary text-xs font-medium">{ut}</span>
