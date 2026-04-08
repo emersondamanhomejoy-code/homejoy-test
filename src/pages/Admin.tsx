@@ -1569,6 +1569,24 @@ export default function AdminPage() {
                       {canCreateManager && (
                         <button onClick={() => toggleRole(u.id, "manager" as any, u.roles.includes("manager"))} disabled={updating === u.id + "manager" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("manager") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("manager") ? "Remove Manager" : "Make Manager"}</button>
                       )}
+                      {u.id !== user?.id && (
+                        <button onClick={async () => {
+                          if (!confirm(`Are you sure you want to DELETE user ${u.email}? This cannot be undone.`)) return;
+                          try {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const res = await supabase.functions.invoke("list-users", {
+                              headers: { Authorization: `Bearer ${session?.access_token}` },
+                              body: { action: "delete_user", user_id: u.id },
+                            });
+                            if (res.error) throw res.error;
+                            const resData = res.data;
+                            if (resData?.error) throw new Error(resData.error);
+                            alert("User deleted successfully");
+                            logActivity("delete_user", "user", u.id, { email: u.email });
+                            await fetchUsers();
+                          } catch (e: any) { alert(e.message || "Failed to delete user"); }
+                        }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
+                      )}
                     </div>
                   </div>
 
