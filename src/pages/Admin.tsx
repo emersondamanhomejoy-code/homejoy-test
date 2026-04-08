@@ -100,7 +100,7 @@ export default function AdminPage() {
   const [editingCommission, setEditingCommission] = useState<string | null>(null);
   const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
   const [showCreateAgent, setShowCreateAgent] = useState(false);
-  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "" });
+  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "", role: "agent" as string, commission_type: "internal_basic" as string, commission_config: defaultConfigs.internal_basic as CommissionConfig });
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState({ name: "", phone: "", address: "" });
@@ -187,7 +187,7 @@ export default function AdminPage() {
       const resData = res.data;
       if (resData?.error) throw new Error(resData.error);
       logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
-      setNewAgent({ email: "", name: "", phone: "", address: "" });
+      setNewAgent({ email: "", name: "", phone: "", address: "", role: "agent", commission_type: "internal_basic", commission_config: defaultConfigs.internal_basic });
       setShowCreateAgent(false);
       alert("Invite sent! The user will receive an email to set up their password.");
       await fetchUsers();
@@ -1082,15 +1082,35 @@ export default function AdminPage() {
 
             {showCreateAgent && (
               <div className="bg-card rounded-lg shadow-sm p-6 space-y-4">
-                <div className="text-lg font-bold">Create New User</div>
+                <div className="text-lg font-bold">Invite New User</div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><label className="text-xs text-muted-foreground">Email *</label><input className={`${inputClass} w-full`} placeholder="agent@email.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} placeholder="e.g. 012-3456789" value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Role *</label>
+                    <select className={`${inputClass} w-full`} value={newAgent.role} onChange={e => setNewAgent({ ...newAgent, role: e.target.value })}>
+                      {canCreateRoles.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                    </select>
+                  </div>
+                  {newAgent.role === "agent" && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">Commission Type</label>
+                      <select className={`${inputClass} w-full`} value={newAgent.commission_type} onChange={e => {
+                        const ct = e.target.value;
+                        setNewAgent({ ...newAgent, commission_type: ct, commission_config: defaultConfigs[ct] || defaultConfigs.internal_basic });
+                      }}>
+                        <option value="internal_basic">Internal Basic (RM tiers)</option>
+                        <option value="internal_full">Internal Full (% tiers)</option>
+                        <option value="external">External (%)</option>
+                      </select>
+                    </div>
+                  )}
                   <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
                 </div>
+                <p className="text-xs text-muted-foreground">User will receive an email to set up their own password.</p>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "", role: "agent", commission_type: "internal_basic", commission_config: defaultConfigs.internal_basic }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
                   <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Sending Invite..." : "Send Invite"}</button>
                 </div>
               </div>
