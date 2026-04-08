@@ -142,7 +142,7 @@ export default function Index() {
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
       if (room.room_type === "Car Park") return false;
-      if (room.status !== "Available") return false;
+      if (room.status !== "Available" && room.status !== "Available Soon") return false;
       // External agents cannot see internal-only rooms
       if (isExternalAgent && room.internal_only) return false;
       const keyword = search.trim().toLowerCase();
@@ -159,7 +159,7 @@ export default function Index() {
   const buildingSummary = useMemo(() => {
     const allAvailable = roomsData.filter(r => {
       if (r.room_type === "Car Park") return false;
-      if (r.status !== "Available") return false;
+      if (r.status !== "Available" && r.status !== "Available Soon") return false;
       if (isExternalAgent && r.internal_only) return false;
       return true;
     });
