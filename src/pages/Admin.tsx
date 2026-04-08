@@ -100,7 +100,7 @@ export default function AdminPage() {
   const [editingCommission, setEditingCommission] = useState<string | null>(null);
   const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
   const [showCreateAgent, setShowCreateAgent] = useState(false);
-  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "", password: "" });
+  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "" });
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState({ name: "", phone: "", address: "" });
@@ -176,7 +176,6 @@ export default function AdminPage() {
 
   const createAgent = async () => {
     if (!newAgent.email.trim()) { alert("Email is required"); return; }
-    if (!newAgent.password || newAgent.password.length < 6) { alert("Password must be at least 6 characters"); return; }
     setCreatingAgent(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -185,12 +184,15 @@ export default function AdminPage() {
         body: { action: "create", ...newAgent },
       });
       if (res.error) throw res.error;
+      const resData = res.data;
+      if (resData?.error) throw new Error(resData.error);
       logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
-      setNewAgent({ email: "", name: "", phone: "", address: "", password: "" });
+      setNewAgent({ email: "", name: "", phone: "", address: "" });
       setShowCreateAgent(false);
+      alert("Invite sent! The user will receive an email to set up their password.");
       await fetchUsers();
     } catch (e: any) {
-      alert(e.message || "Failed to create agent");
+      alert(e.message || "Failed to invite user");
     } finally {
       setCreatingAgent(false);
     }
@@ -1083,14 +1085,13 @@ export default function AdminPage() {
                 <div className="text-lg font-bold">Create New User</div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><label className="text-xs text-muted-foreground">Email *</label><input className={`${inputClass} w-full`} placeholder="agent@email.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Password *</label><input className={`${inputClass} w-full`} type="password" placeholder="Min 6 characters" value={newAgent.password} onChange={e => setNewAgent({ ...newAgent, password: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Phone</label><input className={`${inputClass} w-full`} placeholder="e.g. 012-3456789" value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
                   <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "", password: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
-                  <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Creating..." : "Create Agent"}</button>
+                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Sending Invite..." : "Send Invite"}</button>
                 </div>
               </div>
             )}
