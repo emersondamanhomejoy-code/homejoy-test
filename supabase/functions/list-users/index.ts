@@ -240,6 +240,7 @@ Deno.serve(async (req) => {
         id: u.id,
         email: u.email,
         created_at: u.created_at,
+        confirmed: !!u.email_confirmed_at,
         roles: userRoles.map((r) => r.role),
         commission_type: agentRole?.commission_type || "internal_basic",
         commission_config: agentRole?.commission_config || null,
