@@ -111,7 +111,6 @@ Deno.serve(async (req) => {
           commission_config: commission_config || null,
         }, { onConflict: "user_id,role" });
       }
-      }
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
