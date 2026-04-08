@@ -163,11 +163,13 @@ export default function Index() {
       if (isExternalAgent && r.internal_only) return false;
       return true;
     });
-    const map = new Map<string, { building: string; location: string; count: number; minRent: number; maxRent: number; carParks: number; unitTypes: Set<string> }>();
+    const map = new Map<string, { building: string; location: string; count: number; soonCount: number; minRent: number; maxRent: number; carParks: number; unitTypes: Set<string> }>();
     for (const room of allAvailable) {
       const existing = map.get(room.building);
+      const isSoon = room.status === "Available Soon";
       if (existing) {
         existing.count++;
+        if (isSoon) existing.soonCount++;
         existing.minRent = Math.min(existing.minRent, room.rent);
         existing.maxRent = Math.max(existing.maxRent, room.rent);
         existing.unitTypes.add(room.unit_type);
@@ -176,6 +178,7 @@ export default function Index() {
           building: room.building,
           location: room.location,
           count: 1,
+          soonCount: isSoon ? 1 : 0,
           minRent: room.rent,
           maxRent: room.rent,
           carParks: 0,
