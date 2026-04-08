@@ -964,9 +964,31 @@ export default function AdminPage() {
                                   <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
                                   <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.tenant_gender || "—") : ([room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—")}</td>
                                   <td className="px-4 py-3">
-                                    <button onClick={() => toggleRoomStatus(room)} className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${room.status === "Available" ? "bg-accent/50 text-accent-foreground hover:bg-accent" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}>
-                                      {room.status}
-                                    </button>
+                                    <div className="flex flex-col gap-1">
+                                      <select
+                                        className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${
+                                          room.status === "Available" ? "bg-accent/50 text-accent-foreground" :
+                                          room.status === "Available Soon" ? "bg-primary/20 text-primary" :
+                                          "bg-destructive/10 text-destructive"
+                                        }`}
+                                        value={room.status}
+                                        onChange={e => changeRoomStatus(room, e.target.value)}
+                                      >
+                                        <option value="Available">Available</option>
+                                        <option value="Occupied">Occupied</option>
+                                        <option value="Tenanted">Tenanted</option>
+                                        <option value="Reserved">Reserved</option>
+                                        <option value="Available Soon">Available Soon</option>
+                                      </select>
+                                      {room.status === "Available Soon" && (
+                                        <input
+                                          type="date"
+                                          className="px-1.5 py-0.5 rounded border bg-secondary text-xs"
+                                          value={room.available_date !== "Available Now" ? room.available_date : ""}
+                                          onChange={e => changeRoomAvailableDate(room, e.target.value)}
+                                        />
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="px-4 py-3 text-right">
                                     <div className="flex gap-1 justify-end">
