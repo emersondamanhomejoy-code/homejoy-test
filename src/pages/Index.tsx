@@ -594,7 +594,7 @@ export default function Index() {
                 <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={f.phone} onChange={e => set("phone", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>Gender *</label>
                   <select className={ic} value={f.gender} onChange={e => set("gender", e.target.value)}>
-                    <option value="">Select Gender</option><option>Male</option><option>Female</option>
+                    <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
                   </select>
                 </div>
                 <div className="space-y-1"><label className={lbl}>Nationality *</label><input className={ic} placeholder="Nationality" value={f.nationality} onChange={e => set("nationality", e.target.value)} /></div>
@@ -608,10 +608,26 @@ export default function Index() {
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => set("monthlyRental", e.target.value)} /></div>
+                <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic} type="number" placeholder={String(selectedRoom.rent)} value={f.monthlyRental} onChange={e => { set("monthlyRental", e.target.value); set("advance", e.target.value); }} /></div>
                 <div className="space-y-1"><label className={lbl}>How many pax staying *</label><input className={ic} type="number" placeholder="1" value={f.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
                 <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic} type="number" placeholder="0" value={f.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
               </div>
+
+              {/* Couple — Second Tenant Details */}
+              {f.gender === "Couple" && (
+                <div className="mt-4 p-4 border border-dashed border-primary/30 rounded-lg space-y-4">
+                  <div className="text-base font-bold flex items-center gap-2">👥 Second Tenant Details</div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={f.tenant2Name} onChange={e => set("tenant2Name", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>NRIC/Passport No *</label><input className={ic} placeholder="NRIC/Passport No" value={f.tenant2IcPassport} onChange={e => set("tenant2IcPassport", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={f.tenant2Email} onChange={e => set("tenant2Email", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={f.tenant2Phone} onChange={e => set("tenant2Phone", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={f.tenant2Nationality} onChange={e => set("tenant2Nationality", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Race</label><input className={ic} placeholder="Race" value={f.tenant2Race} onChange={e => set("tenant2Race", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={f.tenant2Occupation} onChange={e => set("tenant2Occupation", e.target.value)} /></div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Emergency Contact 1 */}
