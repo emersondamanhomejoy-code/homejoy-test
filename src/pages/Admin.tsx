@@ -516,7 +516,7 @@ export default function AdminPage() {
                           </div>
                         </div>
                       ) : (
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
                           <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => { const c = [...roomConfigs]; const bt = e.target.value; c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }; setRoomConfigs(c); }}>
@@ -531,7 +531,38 @@ export default function AdminPage() {
                           <label className="text-xs text-muted-foreground">Rent (RM)</label>
                           <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
                         </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Status</label>
+                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], status: e.target.value }; setRoomConfigs(c); }}>
+                            <option value="Available">Available</option>
+                            <option value="Occupied">Occupied</option>
+                          </select>
+                        </div>
                       </div>
+                      {rc.status === "Occupied" && (
+                        <div className="grid grid-cols-4 gap-3 mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Tenant Name</label>
+                            <input className={`${inputClass} w-full`} placeholder="Name" value={rc.tenant_name || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_name: e.target.value }; setRoomConfigs(c); }} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Gender</label>
+                            <select className={`${inputClass} w-full`} value={rc.tenant_gender || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_gender: e.target.value }; setRoomConfigs(c); }}>
+                              <option value="">—</option><option>Male</option><option>Female</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Race</label>
+                            <select className={`${inputClass} w-full`} value={rc.tenant_race || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_race: e.target.value }; setRoomConfigs(c); }}>
+                              <option value="">—</option><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Pax Staying</label>
+                            <input className={`${inputClass} w-full`} type="number" min={1} value={rc.pax_staying || 1} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], pax_staying: Number(e.target.value) }; setRoomConfigs(c); }} />
+                          </div>
+                        </div>
+                      )}
                       )}
                     </div>
                     );
