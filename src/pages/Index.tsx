@@ -1101,22 +1101,33 @@ export default function Index() {
         {/* Boss/Manager Dashboard */}
         {(role === "boss" || role === "manager") && (() => {
           const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          const monthlyApproved = allBookings.filter(b => b.status === "approved" && new Date(b.created_at) >= monthStart);
-          const monthlyPending = allBookings.filter(b => b.status === "pending" && new Date(b.created_at) >= monthStart);
-          const monthlyRejected = allBookings.filter(b => b.status === "rejected" && new Date(b.created_at) >= monthStart);
+          const currentYear = now.getFullYear();
+
+          // Filter bookings by selected period
+          let periodStart: Date;
+          let periodEnd: Date;
+          let periodLabel: string;
+
+          if (overviewPeriod === "yearly") {
+            periodStart = new Date(overviewYear, 0, 1);
+            periodEnd = new Date(overviewYear + 1, 0, 1);
+            periodLabel = `Yearly — ${overviewYear}`;
+          } else {
+            const m = parseInt(overviewPeriod);
+            periodStart = new Date(overviewYear, m, 1);
+            periodEnd = new Date(overviewYear, m + 1, 1);
+            periodLabel = new Date(overviewYear, m).toLocaleString("en", { month: "long", year: "numeric" });
+          }
+
+          const monthlyApproved = allBookings.filter(b => b.status === "approved" && new Date(b.created_at) >= periodStart && new Date(b.created_at) < periodEnd);
+          const monthlyPending = allBookings.filter(b => b.status === "pending" && new Date(b.created_at) >= periodStart && new Date(b.created_at) < periodEnd);
+          const monthlyRejected = allBookings.filter(b => b.status === "rejected" && new Date(b.created_at) >= periodStart && new Date(b.created_at) < periodEnd);
 
           // Internal vs External occupancy from rooms
           const occupiedRooms = roomsData.filter(r => r.room_type !== "Car Park" && (r.status === "Occupied" || r.status === "Tenanted"));
           const internalOccupied = occupiedRooms.filter(r => r.internal_only).length;
           const externalOccupied = occupiedRooms.filter(r => !r.internal_only).length;
 
-          // Admin fee: sum from units that have approved bookings this month
-          const approvedUnitIds = new Set(monthlyApproved.map(b => b.unit_id).filter(Boolean));
-          const monthlyAdminFee = unitsData
-            .filter(u => approvedUnitIds.has(u.id))
-            .reduce((sum, u) => sum + (u.admin_fee || 0), 0);
-          // Also count total admin fee from booking count * average
           const totalAdminFee = monthlyApproved.length > 0
             ? monthlyApproved.reduce((sum, b) => {
                 const unit = unitsData.find(u => u.id === b.unit_id);
@@ -1127,12 +1138,50 @@ export default function Index() {
           const totalRooms = roomsData.filter(r => r.room_type !== "Car Park").length;
           const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms.length / totalRooms) * 100) : 0;
 
-          const monthName = now.toLocaleString("en", { month: "long", year: "numeric" });
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
           return (
             <div className="bg-card rounded-xl border shadow-sm p-6 space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-bold">📊 Monthly Overview — {monthName}</div>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="text-lg font-bold">📊 Overview — {periodLabel}</div>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="px-2 py-1 rounded-md border bg-background text-foreground text-sm"
+                    value={overviewYear}
+                    onChange={e => setOverviewYear(Number(e.target.value))}
+                  >
+                    {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Period selector */}
+              <div className="flex flex-wrap gap-1.5">
+                {months.map((m, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setOverviewPeriod(String(i))}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      overviewPeriod === String(i)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setOverviewPeriod("yearly")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    overviewPeriod === "yearly"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  Yearly
+                </button>
               </div>
 
               {/* Booking Stats */}
@@ -1174,7 +1223,7 @@ export default function Index() {
                 </div>
                 <div className="rounded-lg border p-4 bg-accent/5">
                   <div className="text-2xl font-extrabold text-accent-foreground">RM {totalAdminFee.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Admin Fee (This Month)</div>
+                  <div className="text-xs text-muted-foreground mt-1">Admin Fee</div>
                 </div>
               </div>
             </div>
