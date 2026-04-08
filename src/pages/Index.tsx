@@ -775,8 +775,13 @@ export default function Index() {
                 const cardSource = unitCfg?.access_card_source ?? "Provided by Us";
                 const cardCount = Number(f.accessCardCount) || 0;
                 const autoAccessCardDeposit = cardCount * perCardCost;
+                const parkingType = (unitCfg as any)?.parking_type || "None";
+                const parkingCardCost = (unitCfg as any)?.parking_card_deposit || 0;
+                const parkingCount = Number(f.parkingCount) || 0;
+                const parkingCardDeposit = parkingType === "Access Card" ? parkingCount * parkingCardCost : 0;
                 const adv = Number(f.advance) || 0;
                 const dep = Math.round(adv * depMul);
+                const total = adv + dep + uAdminFee + (Number(f.electricityReload) || 0) + autoAccessCardDeposit + parkingCardDeposit;
                 return (
                   <>
                     <div className="grid md:grid-cols-2 gap-4">
@@ -785,10 +790,13 @@ export default function Index() {
                       <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} bg-muted`} type="number" readOnly value={uAdminFee} /></div>
                       <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic} type="number" placeholder="0" value={f.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
                       <div className="space-y-1"><label className={lbl}>Access Card Deposit (RM) — {cardCount} card × RM{perCardCost} ({cardSource})</label><input className={`${ic} bg-muted`} type="number" readOnly value={autoAccessCardDeposit} /></div>
+                      {parkingType === "Access Card" && parkingCount > 0 && (
+                        <div className="space-y-1"><label className={lbl}>Parking Card Deposit (RM) — {parkingCount} × RM{parkingCardCost}</label><input className={`${ic} bg-muted`} type="number" readOnly value={parkingCardDeposit} /></div>
+                      )}
                     </div>
                     <div className="bg-secondary rounded-lg p-4 text-right">
                       <span className="text-sm text-muted-foreground">Total: </span>
-                      <span className="text-lg font-bold">RM{adv + dep + uAdminFee + (Number(f.electricityReload) || 0) + autoAccessCardDeposit}</span>
+                      <span className="text-lg font-bold">RM{total}</span>
                     </div>
                   </>
                 );
