@@ -1126,6 +1126,20 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {u.roles.map((r) => (<span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "boss" ? "bg-amber-500/20 text-amber-600" : r === "manager" ? "bg-purple-500/20 text-purple-600" : r === "admin" ? "bg-blue-500/20 text-blue-600" : "bg-secondary text-secondary-foreground"}`}>{r}</span>))}
                       <button onClick={() => { setEditingProfile(u.id); setProfileDraft({ name: u.name, phone: u.phone, address: u.address }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Edit Info</button>
+                      <button onClick={async () => {
+                        const pw = prompt("Enter new password (min 6 chars):");
+                        if (!pw || pw.length < 6) { alert("Password must be at least 6 characters"); return; }
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const res = await supabase.functions.invoke("list-users", {
+                            headers: { Authorization: `Bearer ${session?.access_token}` },
+                            body: { action: "set_password", user_id: u.id, password: pw },
+                          });
+                          if (res.error) throw res.error;
+                          alert("Password updated successfully");
+                          logActivity("set_password", "user", u.id, { email: u.email });
+                        } catch (e: any) { alert(e.message || "Failed to set password"); }
+                      }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Set Password</button>
                       {canCreateRoles.includes("admin") && (
                         <button onClick={() => toggleRole(u.id, "admin" as any, u.roles.includes("admin"))} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("admin") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("admin") ? "Remove Admin" : "Make Admin"}</button>
                       )}
