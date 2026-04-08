@@ -249,6 +249,11 @@ export default function Index() {
     if (!f.email) return "Please fill in Email.";
     if (!f.phone) return "Please fill in Contact No.";
     if (!f.gender) return "Please select Gender.";
+    if (f.gender === "Couple") {
+      if (!f.tenant2Name) return "Please fill in Second Tenant Full Name.";
+      if (!f.tenant2IcPassport) return "Please fill in Second Tenant NRIC/Passport No.";
+      if (!f.tenant2Phone) return "Please fill in Second Tenant Contact No.";
+    }
     if (!f.nationality) return "Please fill in Nationality.";
     if (!f.race) return "Please fill in Race.";
     if (!f.moveInDate) return "Please select Move-in Date.";
