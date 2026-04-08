@@ -184,6 +184,7 @@ export default function AdminPage() {
         body: { action: "create", ...newAgent },
       });
       if (res.error) throw res.error;
+      logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
       setNewAgent({ email: "", name: "", phone: "", address: "" });
       setShowCreateAgent(false);
       await fetchUsers();
