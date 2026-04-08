@@ -323,11 +323,13 @@ export default function Index() {
       const unitConfig = unitsData.find(u => u.id === selectedRoom.unit_id);
       const depositMultiplier = unitConfig?.deposit_multiplier ?? 1.5;
       const unitAdminFee = unitConfig?.admin_fee ?? 330;
+      const perCardCost = unitConfig?.access_card_deposit ?? 0;
+      const cardCount = Number(bookingForm.accessCardCount) || 0;
       const advance = Number(bookingForm.advance) || 0;
       const deposit = Math.round(advance * depositMultiplier);
       const adminFee = unitAdminFee;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
-      const accessCardDeposit = Number(bookingForm.accessCardDeposit) || 0;
+      const accessCardDeposit = cardCount * perCardCost;
       const { error: dbErr } = await supabase.from("bookings").insert({
         room_id: selectedRoom.id,
         unit_id: selectedRoom.unit_id,
