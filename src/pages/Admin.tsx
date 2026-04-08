@@ -155,7 +155,7 @@ export default function AdminPage() {
     }
   };
 
-  const toggleRole = async (userId: string, targetRole: "admin" | "agent", hasRole: boolean) => {
+  const toggleRole = async (userId: string, targetRole: string, hasRole: boolean) => {
     setUpdating(userId + targetRole);
     try {
       if (hasRole) {
