@@ -130,7 +130,7 @@ export function useCreateUnit() {
         pax_staying: rc.status === "Occupied" ? (rc.pax_staying || 1) : 0,
         unit_max_pax: unit.unit_max_pax,
         unit_occupied_pax: 0,
-        housemates: [],
+        housemates: rc.status === "Occupied" && rc.tenant_name ? [rc.tenant_name] : [],
         photos: [],
         access_info: unit.access_info,
         move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
