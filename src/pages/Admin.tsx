@@ -130,6 +130,150 @@ export default function AdminPage() {
   const updateClaimStatus = useUpdateClaimStatus();
   const [claimRejectReason, setClaimRejectReason] = useState("");
 
+  // Commission report state
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth());
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const [showReport, setShowReport] = useState(false);
+  const [generatingClaims, setGeneratingClaims] = useState(false);
+
+  interface CommissionLine {
+    agentId: string;
+    agentEmail: string;
+    agentName: string;
+    bookings: Booking[];
+    commissionPerBooking: number[];
+    totalCommission: number;
+    commissionType: string;
+    bankName: string;
+    bankAccount: string;
+    accountHolder: string;
+  }
+
+  const calculateAgentCommission = (booking: Booking, agentConfig: { commission_type: string; commission_config: CommissionConfig | null }, monthlyDeals: number): number => {
+    const rent = (booking as any).monthly_salary || (booking.room as any)?.rent || 0;
+    const duration = booking.contract_months || 12;
+    const durationMultiplier = duration / 12;
+    const config = agentConfig.commission_config;
+
+    let base = 0;
+    if (agentConfig.commission_type === "external") {
+      const pct = config?.percentage ?? 100;
+      base = Math.round(Number(rent) * pct / 100);
+    } else if (agentConfig.commission_type === "internal_full") {
+      const tiers = config?.tiers || [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }];
+      const tier = tiers.find(t => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
+      const pct = tier?.percentage ?? 70;
+      base = Math.round(Number(rent) * pct / 100);
+    } else {
+      const tiers = config?.tiers || [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }];
+      const tier = tiers.find(t => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
+      base = tier?.amount ?? 200;
+    }
+    return Math.round(base * durationMultiplier);
+  };
+
+  const generateReport = (): CommissionLine[] => {
+    const monthStart = new Date(reportYear, reportMonth, 1);
+    const monthEnd = new Date(reportYear, reportMonth + 1, 0, 23, 59, 59);
+
+    // Get approved bookings in the selected month
+    const monthBookings = allBookings.filter(b =>
+      b.status === "approved" &&
+      new Date(b.reviewed_at || b.created_at) >= monthStart &&
+      new Date(b.reviewed_at || b.created_at) <= monthEnd
+    );
+
+    // Group by agent
+    const agentGroups: Record<string, Booking[]> = {};
+    for (const b of monthBookings) {
+      const agentId = b.submitted_by || "";
+      if (!agentId) continue;
+      if (!agentGroups[agentId]) agentGroups[agentId] = [];
+      agentGroups[agentId].push(b);
+    }
+
+    // Build report lines
+    const lines: CommissionLine[] = [];
+    for (const [agentId, bookings] of Object.entries(agentGroups)) {
+      const agentUser = users.find(u => u.id === agentId);
+      const agentConfig = {
+        commission_type: agentUser?.commission_type || "internal_basic",
+        commission_config: agentUser?.commission_config || defaultConfigs.internal_basic,
+      };
+      const monthlyDeals = bookings.length;
+      const commissionPerBooking = bookings.map(b => calculateAgentCommission(b, agentConfig, monthlyDeals));
+      const totalCommission = commissionPerBooking.reduce((s, c) => s + c, 0);
+
+      // Check if claims already exist for these bookings
+      const existingClaimBookingIds = new Set(allClaims.map(c => c.booking_id).filter(Boolean));
+      const hasExistingClaims = bookings.some(b => existingClaimBookingIds.has(b.id));
+
+      lines.push({
+        agentId,
+        agentEmail: agentUser?.email || agentId.slice(0, 8),
+        agentName: agentUser?.name || agentUser?.email || agentId.slice(0, 8),
+        bookings,
+        commissionPerBooking,
+        totalCommission,
+        commissionType: agentConfig.commission_type,
+        bankName: "",
+        bankAccount: "",
+        accountHolder: "",
+      });
+    }
+
+    return lines.sort((a, b) => b.totalCommission - a.totalCommission);
+  };
+
+  const generateClaimsForReport = async (lines: CommissionLine[]) => {
+    if (!user) return;
+    setGeneratingClaims(true);
+    try {
+      const existingClaimBookingIds = new Set(allClaims.map(c => c.booking_id).filter(Boolean));
+      let created = 0;
+      for (const line of lines) {
+        // Skip bookings that already have claims
+        const newBookings = line.bookings.filter(b => !existingClaimBookingIds.has(b.id));
+        if (newBookings.length === 0) continue;
+
+        const newCommissions = newBookings.map((b, i) => {
+          const idx = line.bookings.indexOf(b);
+          return line.commissionPerBooking[idx];
+        });
+        const totalAmount = newCommissions.reduce((s, c) => s + c, 0);
+        const desc = newBookings.map(b => `${b.room?.building || ""} ${b.room?.unit || ""} ${b.room?.room || ""} (${b.tenant_name})`).join(", ");
+
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        await supabase.from("claims").insert({
+          agent_id: line.agentId,
+          booking_id: newBookings.length === 1 ? newBookings[0].id : null,
+          amount: totalAmount,
+          description: `Commission ${monthNames[reportMonth]} ${reportYear} — ${desc}`,
+          bank_name: "",
+          bank_account: "",
+          account_holder: "",
+        });
+        created++;
+      }
+
+      await logActivity("generate_commission_report", "claims", "", {
+        month: reportMonth + 1,
+        year: reportYear,
+        agents: lines.length,
+        claims_created: created,
+      });
+
+      alert(`✅ ${created} commission claim(s) generated!`);
+      // Refresh claims
+      window.location.reload();
+    } catch (e: any) {
+      alert(e.message || "Failed to generate claims");
+    } finally {
+      setGeneratingClaims(false);
+    }
+  };
+
   useEffect(() => {
     if (!loading && (!user || !canAccessAdmin)) navigate("/");
   }, [loading, user, role, navigate]);
