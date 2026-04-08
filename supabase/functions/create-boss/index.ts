@@ -11,36 +11,20 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const { email, password } = await req.json();
+  // Set password for existing user
+  const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
+    "858ac80c-e0e6-41dd-9dfc-fba64e1320a6",
+    { password: "homejoy12345" }
+  );
 
-  // Create user
-  const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-
-  if (createError) {
-    return new Response(JSON.stringify({ error: createError.message }), {
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  // Update role to boss
-  const { error: roleError } = await supabaseAdmin
-    .from("user_roles")
-    .update({ role: "boss" })
-    .eq("user_id", user.user.id);
-
-  if (roleError) {
-    return new Response(JSON.stringify({ error: roleError.message }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response(JSON.stringify({ success: true, user_id: user.user.id }), {
+  return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
