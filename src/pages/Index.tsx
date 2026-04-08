@@ -448,16 +448,30 @@ export default function Index() {
                   <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.unit_type}</span>
                   <span className={`px-3 py-1 rounded-md text-sm font-medium ${selectedRoom.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"}`}>{selectedRoom.status === "Available Soon" ? `🕐 Available ${selectedRoom.available_date}` : selectedRoom.available_date}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/photos/${selectedRoom.id}`;
-                    navigator.clipboard.writeText(url);
-                    alert("Photo link copied!");
-                  }}
-                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-                >
-                  📋 Copy Photo Link
-                </button>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/photos/${selectedRoom.id}`;
+                      navigator.clipboard.writeText(url);
+                      alert("Photo link copied!");
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                  >
+                    📋 Copy Photo Link
+                  </button>
+                  {selectedRoom.unit_id && (
+                    <button
+                      onClick={() => {
+                        const url = `${window.location.origin}/common/${selectedRoom.unit_id}`;
+                        navigator.clipboard.writeText(url);
+                        alert("Common area link copied!");
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      🏠 Copy Common Area Link
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid md:grid-cols-2 gap-3">
                 {(selectedRoom.photos as string[] || []).length > 0 ? (

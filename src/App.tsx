@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Admin from "./pages/Admin.tsx";
 import Sign from "./pages/Sign.tsx";
 import RoomPhotos from "./pages/RoomPhotos.tsx";
+import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/sign/:token" element={<Sign />} />
           <Route path="/photos/:roomId" element={<RoomPhotos />} />
+          <Route path="/common/:unitId" element={<CommonPhotos />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
