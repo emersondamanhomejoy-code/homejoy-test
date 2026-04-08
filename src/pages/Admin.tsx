@@ -75,6 +75,7 @@ const emptyUnit = {
   access_info: "", internal_only: false,
   deposit: "", meter_type: "Postpaid", meter_rate: 0,
   deposit_multiplier: 1.5, admin_fee: 330,
+  parking_type: "None",
 };
 
 export default function AdminPage() {
@@ -603,6 +604,13 @@ export default function AdminPage() {
               <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM per kWh)" value={u.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
               <input className={inputClass} type="number" step="0.1" placeholder="Deposit Multiplier (e.g. 1.5)" value={u.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
               <input className={inputClass} type="number" placeholder="Admin Fee (RM)" value={u.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
+              <select className={inputClass} value={(u as any).parking_type || "None"} onChange={e => updateField("parking_type", e.target.value)}>
+                <option value="None">Parking: None</option>
+                <option value="ANPR">Parking: ANPR</option>
+                <option value="RFID">Parking: RFID</option>
+                <option value="Sticker">Parking: Sticker</option>
+                <option value="Access Card">Parking: Access Card</option>
+              </select>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={u.internal_only || false} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
                 <span className="text-sm font-medium">Internal Only (hidden from external agents)</span>
