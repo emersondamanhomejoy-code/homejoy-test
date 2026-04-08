@@ -269,10 +269,24 @@ export default function AdminPage() {
     }
   };
 
-  const toggleRoomStatus = async (room: Room) => {
-    const newStatus = room.status === "Available" ? "Tenanted" : "Available";
+  const changeRoomStatus = async (room: Room, newStatus: string) => {
     try {
-      await updateRoom.mutateAsync({ id: room.id, status: newStatus });
+      const updates: any = { id: room.id, status: newStatus };
+      if (newStatus === "Available") {
+        updates.available_date = "Available Now";
+      }
+      if (newStatus !== "Available Soon") {
+        // clear available_date unless it's Available Soon
+      }
+      await updateRoom.mutateAsync(updates);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const changeRoomAvailableDate = async (room: Room, date: string) => {
+    try {
+      await updateRoom.mutateAsync({ id: room.id, available_date: date });
     } catch (e: any) {
       alert(e.message);
     }
