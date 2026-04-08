@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Admin from "./pages/Admin.tsx";
 import Sign from "./pages/Sign.tsx";
 import SetPassword from "./pages/SetPassword.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import RoomPhotos from "./pages/RoomPhotos.tsx";
 import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/set-password" element={<SetPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sign/:token" element={<Sign />} />
           <Route path="/photos/:roomId" element={<RoomPhotos />} />
           <Route path="/common/:unitId" element={<CommonPhotos />} />

@@ -164,6 +164,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // DELETE USER
+    if (action === "delete_user") {
+      const { user_id } = body;
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Prevent deleting yourself
+      if (user_id === user.id) {
+        return new Response(JSON.stringify({ error: "Cannot delete yourself" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Delete from user_roles and profiles first (cascade should handle, but be safe)
+      await supabase.from("user_roles").delete().eq("user_id", user_id);
+      await supabase.from("profiles").delete().eq("user_id", user_id);
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(user_id);
+      if (deleteError) {
+        return new Response(JSON.stringify({ error: deleteError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // UPDATE PROFILE
     if (action === "update_profile") {
       const { user_id, name, phone, address } = body;

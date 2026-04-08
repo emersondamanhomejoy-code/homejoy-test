@@ -57,6 +57,10 @@ export default function Index() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
@@ -213,6 +217,23 @@ export default function Index() {
       setLoginError(e.message || "Login failed");
     } finally {
       setSigningIn(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) { setForgotMsg("Please enter your email"); return; }
+    setForgotSending(true);
+    setForgotMsg("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setForgotMsg("✅ Reset link sent! Check your email.");
+    } catch (e: any) {
+      setForgotMsg(e.message || "Failed to send reset email");
+    } finally {
+      setForgotSending(false);
     }
   };
 
@@ -463,7 +484,33 @@ export default function Index() {
               >
                 {signingIn ? "Signing in..." : "Sign In"}
               </button>
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(true); setForgotEmail(loginEmail); setForgotMsg(""); }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Forgot Password?
+              </button>
             </div>
+
+            {showForgotPassword && (
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="text-sm font-medium text-foreground">Reset Password</div>
+                <input
+                  type="email"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  placeholder="your@email.com"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleForgotPassword()}
+                />
+                {forgotMsg && <div className={`text-sm rounded-lg px-3 py-2 ${forgotMsg.startsWith("✅") ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"}`}>{forgotMsg}</div>}
+                <div className="flex gap-2">
+                  <button onClick={() => setShowForgotPassword(false)} className="flex-1 px-3 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={handleForgotPassword} disabled={forgotSending} className="flex-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{forgotSending ? "Sending..." : "Send Reset Link"}</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
