@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN parking_type text NOT NULL DEFAULT 'None';

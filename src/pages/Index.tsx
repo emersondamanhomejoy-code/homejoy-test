@@ -320,7 +320,19 @@ export default function Index() {
       const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
       const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
 
+      // Upload ANPR car photos if applicable
+      const carPhotoPaths: Record<string, string> = {};
       const unitConfig = unitsData.find(u => u.id === selectedRoom.unit_id);
+      const parkingType = (unitConfig as any)?.parking_type || "None";
+      if (parkingType === "ANPR" && Number(bookingForm.parkingCount) > 0) {
+        for (let i = 0; i < Number(bookingForm.parkingCount); i++) {
+          const frontFile = (uploadedFiles as any)[`carFront_${i}`];
+          const backFile = (uploadedFiles as any)[`carBack_${i}`];
+          if (frontFile) carPhotoPaths[`car_${i}_front`] = await uploadFile(frontFile, "car-photo");
+          if (backFile) carPhotoPaths[`car_${i}_back`] = await uploadFile(backFile, "car-photo");
+        }
+      }
+
       const depositMultiplier = unitConfig?.deposit_multiplier ?? 1.5;
       const unitAdminFee = unitConfig?.admin_fee ?? 330;
       const perCardCost = unitConfig?.access_card_deposit ?? 0;
@@ -360,7 +372,7 @@ export default function Index() {
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
-        documents: { carParkIds: bookingForm.selectedCarParks || [] },
+        documents: { carParkIds: bookingForm.selectedCarParks || [], carPhotos: carPhotoPaths, parkingType },
       });
       if (dbErr) throw dbErr;
 
@@ -620,33 +632,45 @@ export default function Index() {
             <div className="space-y-4">
               <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
               {(() => {
+                const unitCfg = unitsData.find(u => u.id === selectedRoom?.unit_id);
+                const parkingType = (unitCfg as any)?.parking_type || "None";
                 const availableCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === selectedRoom.building);
-                return availableCarParks.length > 0 ? (
-                  <div className="bg-accent/10 rounded-lg p-4 space-y-3">
-                    <div className="text-sm font-semibold">Available Car Parks at {selectedRoom.building}</div>
-                    <div className="space-y-2">
-                      {availableCarParks.map(cp => (
-                        <label key={cp.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={f.selectedCarParks?.includes(cp.id) || false}
-                            onChange={(e) => {
-                              const current = f.selectedCarParks || [];
-                              const updated = e.target.checked ? [...current, cp.id] : current.filter((id: string) => id !== cp.id);
-                              setBookingForm({ ...f, selectedCarParks: updated });
-                            }}
-                            className="w-4 h-4 rounded border-muted-foreground"
-                          />
-                          <div className="flex-1">
-                            <span className="font-medium">{cp.room}</span>
-                            {cp.bed_type && <span className="text-muted-foreground ml-2">Lot: {cp.bed_type}</span>}
-                          </div>
-                          <span className="font-semibold">RM{cp.rent}/mo</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ) : null;
+                return (
+                  <>
+                    {parkingType !== "None" && (
+                      <div className="bg-accent/10 rounded-lg p-3">
+                        <span className="text-sm font-medium">🅿️ Parking Registration: <strong>{parkingType}</strong></span>
+                        {parkingType === "ANPR" && <span className="text-xs text-muted-foreground ml-2">(Car front & back photos required)</span>}
+                      </div>
+                    )}
+                    {availableCarParks.length > 0 && (
+                      <div className="bg-accent/10 rounded-lg p-4 space-y-3">
+                        <div className="text-sm font-semibold">Available Car Parks at {selectedRoom.building}</div>
+                        <div className="space-y-2">
+                          {availableCarParks.map(cp => (
+                            <label key={cp.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={f.selectedCarParks?.includes(cp.id) || false}
+                                onChange={(e) => {
+                                  const current = f.selectedCarParks || [];
+                                  const updated = e.target.checked ? [...current, cp.id] : current.filter((id: string) => id !== cp.id);
+                                  setBookingForm({ ...f, selectedCarParks: updated });
+                                }}
+                                className="w-4 h-4 rounded border-muted-foreground"
+                              />
+                              <div className="flex-1">
+                                <span className="font-medium">{cp.room}</span>
+                                {cp.bed_type && <span className="text-muted-foreground ml-2">Lot: {cp.bed_type}</span>}
+                              </div>
+                              <span className="font-semibold">RM{cp.rent}/mo</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
               })()}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1"><label className={lbl}>How many parking</label>
@@ -669,6 +693,38 @@ export default function Index() {
                   </div>
                 ))}
               </div>
+              {/* ANPR: car photos */}
+              {(() => {
+                const unitCfg = unitsData.find(u => u.id === selectedRoom?.unit_id);
+                const parkingType = (unitCfg as any)?.parking_type || "None";
+                if (parkingType !== "ANPR" || Number(f.parkingCount) === 0) return null;
+                return (
+                  <div className="space-y-3 bg-accent/10 rounded-lg p-4">
+                    <div className="text-sm font-semibold">📸 ANPR — Upload car photos (front & back)</div>
+                    {Array.from({ length: Number(f.parkingCount) }, (_, i) => (
+                      <div key={i} className="space-y-2">
+                        {Number(f.parkingCount) > 1 && <div className="text-sm font-medium">Car {i + 1}: {f.carPlates[i] || "—"}</div>}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className={lbl}>Front photo *</label>
+                            <label className="block cursor-pointer border-2 border-dashed rounded-lg p-4 text-center text-sm text-muted-foreground hover:bg-secondary/50 transition-colors">
+                              {(uploadedFiles as any)[`carFront_${i}`] ? (uploadedFiles as any)[`carFront_${i}`].name : "Choose File"}
+                              <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUploadedFiles(prev => ({ ...prev, [`carFront_${i}`]: e.target.files![0] })); }} />
+                            </label>
+                          </div>
+                          <div className="space-y-1">
+                            <label className={lbl}>Back photo *</label>
+                            <label className="block cursor-pointer border-2 border-dashed rounded-lg p-4 text-center text-sm text-muted-foreground hover:bg-secondary/50 transition-colors">
+                              {(uploadedFiles as any)[`carBack_${i}`] ? (uploadedFiles as any)[`carBack_${i}`].name : "Choose File"}
+                              <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUploadedFiles(prev => ({ ...prev, [`carBack_${i}`]: e.target.files![0] })); }} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Document Uploads */}
