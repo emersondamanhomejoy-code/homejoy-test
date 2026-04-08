@@ -237,8 +237,10 @@ export default function AdminPage() {
     try {
       if (editingUnit.id) {
         await updateUnit.mutateAsync({ id: editingUnit.id, ...editingUnit });
+        logActivity("update_unit", "unit", editingUnit.id, { building: editingUnit.building, unit: editingUnit.unit });
       } else {
         await createUnit.mutateAsync({ unit: editingUnit, roomConfigs });
+        logActivity("create_unit", "unit", "", { building: editingUnit.building, unit: editingUnit.unit });
       }
       setEditingUnit(null);
     } catch (e: any) {
