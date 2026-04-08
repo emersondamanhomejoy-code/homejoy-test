@@ -237,7 +237,7 @@ export default function Index() {
 
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
-    if (selectedRoom.status !== "Available") return "This room is no longer available.";
+    if (selectedRoom.status !== "Available") return "This room is not available for booking yet.";
     const f = bookingForm;
     if (!f.tenantName) return "Please fill in Full Name.";
     if (!f.icPassport) return "Please fill in NRIC/Passport No.";
