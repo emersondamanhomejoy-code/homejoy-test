@@ -1108,6 +1108,70 @@ export default function AdminPage() {
                   )}
                   <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
                 </div>
+
+                {newAgent.role === "agent" && (
+                  <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
+                    <div className="text-sm font-semibold">Commission Settings</div>
+                    {newAgent.commission_type === "external" && (
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-muted-foreground">Commission %</label>
+                        <input className={`${inputClass} w-24`} type="number" value={newAgent.commission_config.percentage ?? 100} onChange={e => setNewAgent({ ...newAgent, commission_config: { percentage: Number(e.target.value) } })} />
+                        <span className="text-xs text-muted-foreground">% of monthly rent</span>
+                      </div>
+                    )}
+                    {(newAgent.commission_type === "internal_basic" || newAgent.commission_type === "internal_full") && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase">Tiers (by deals per month)</div>
+                        {(newAgent.commission_config.tiers || []).map((tier, i) => (
+                          <div key={i} className="flex items-center gap-2 flex-wrap">
+                            <input className={`${inputClass} w-20`} type="number" placeholder="From" value={tier.min} onChange={e => {
+                              const tiers = [...(newAgent.commission_config.tiers || [])];
+                              tiers[i] = { ...tiers[i], min: Number(e.target.value) };
+                              setNewAgent({ ...newAgent, commission_config: { tiers } });
+                            }} />
+                            <span className="text-xs text-muted-foreground">to</span>
+                            <input className={`${inputClass} w-20`} type="number" placeholder="∞" value={tier.max ?? ""} onChange={e => {
+                              const tiers = [...(newAgent.commission_config.tiers || [])];
+                              tiers[i] = { ...tiers[i], max: e.target.value ? Number(e.target.value) : null };
+                              setNewAgent({ ...newAgent, commission_config: { tiers } });
+                            }} />
+                            <span className="text-xs text-muted-foreground">deals →</span>
+                            {newAgent.commission_type === "internal_basic" ? (
+                              <>
+                                <span className="text-xs text-muted-foreground">RM</span>
+                                <input className={`${inputClass} w-24`} type="number" value={tier.amount ?? 0} onChange={e => {
+                                  const tiers = [...(newAgent.commission_config.tiers || [])];
+                                  tiers[i] = { ...tiers[i], amount: Number(e.target.value) };
+                                  setNewAgent({ ...newAgent, commission_config: { tiers } });
+                                }} />
+                              </>
+                            ) : (
+                              <>
+                                <input className={`${inputClass} w-20`} type="number" value={tier.percentage ?? 0} onChange={e => {
+                                  const tiers = [...(newAgent.commission_config.tiers || [])];
+                                  tiers[i] = { ...tiers[i], percentage: Number(e.target.value) };
+                                  setNewAgent({ ...newAgent, commission_config: { tiers } });
+                                }} />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </>
+                            )}
+                            <button onClick={() => {
+                              const tiers = (newAgent.commission_config.tiers || []).filter((_, idx) => idx !== i);
+                              setNewAgent({ ...newAgent, commission_config: { tiers } });
+                            }} className="px-2 py-1 rounded text-xs text-destructive hover:bg-destructive/10">✕</button>
+                          </div>
+                        ))}
+                        <button onClick={() => {
+                          const tiers = [...(newAgent.commission_config.tiers || [])];
+                          const lastMax = tiers.length > 0 ? (tiers[tiers.length - 1].max ?? 0) + 1 : 1;
+                          tiers.push({ min: lastMax, max: null, ...(newAgent.commission_type === "internal_basic" ? { amount: 0 } : { percentage: 0 }) });
+                          setNewAgent({ ...newAgent, commission_config: { tiers } });
+                        }} className="text-xs text-primary hover:underline">+ Add Tier</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-xs text-muted-foreground">User will receive an email to set up their own password.</p>
                 <div className="flex gap-2 justify-end">
                   <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "", role: "agent", commission_type: "internal_basic", commission_config: defaultConfigs.internal_basic }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
