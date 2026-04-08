@@ -237,7 +237,7 @@ export default function Index() {
 
   const validateBooking = () => {
     if (!selectedRoom) return "No room selected.";
-    if (selectedRoom.status !== "Available") return "This room is no longer available.";
+    if (selectedRoom.status !== "Available") return "This room is not available for booking yet.";
     const f = bookingForm;
     if (!f.tenantName) return "Please fill in Full Name.";
     if (!f.icPassport) return "Please fill in NRIC/Passport No.";
@@ -512,9 +512,15 @@ export default function Index() {
                   Copy for Tenant
                 </button>
               </div>
-              <button onClick={openBooking} className="w-full px-4 py-4 rounded-lg bg-cyan-500 text-white font-semibold text-base hover:bg-cyan-600 transition-colors">
-                Book Now
-              </button>
+              {selectedRoom.status === "Available Soon" ? (
+                <div className="w-full px-4 py-4 rounded-lg bg-muted text-muted-foreground font-semibold text-base text-center">
+                  🕐 Available Soon — {selectedRoom.available_date}
+                </div>
+              ) : (
+                <button onClick={openBooking} className="w-full px-4 py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity">
+                  Book Now
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1044,7 +1050,11 @@ export default function Index() {
                     </div>
                     <div className="flex flex-col gap-2 shrink-0">
                       <button onClick={() => openRoom(room)} className="px-4 py-2 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">Details</button>
-                      <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book</button>
+                      {room.status === "Available Soon" ? (
+                        <div className="px-4 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium text-center">🕐 Coming Soon</div>
+                      ) : (
+                        <button onClick={() => { setSelectedRoom(room); openBooking(); }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">Book</button>
+                      )}
                     </div>
                   </div>
                 </div>
