@@ -342,6 +342,10 @@ export default function Index() {
       const adminFee = unitAdminFee;
       const electricityReload = Number(bookingForm.electricityReload) || 0;
       const accessCardDeposit = cardCount * perCardCost;
+      const parkingCardCost = (unitConfig as any)?.parking_card_deposit || 0;
+      const parkingCount = Number(bookingForm.parkingCount) || 0;
+      const parkingCardDeposit = parkingType === "Access Card" ? parkingCount * parkingCardCost : 0;
+      const total = advance + deposit + adminFee + electricityReload + accessCardDeposit + parkingCardDeposit;
       const { error: dbErr } = await supabase.from("bookings").insert({
         room_id: selectedRoom.id,
         unit_id: selectedRoom.unit_id,
@@ -368,7 +372,7 @@ export default function Index() {
         car_plate: bookingForm.carPlates.slice(0, Number(bookingForm.parkingCount)).filter(p => p.trim()).join(", "),
         submitted_by: user.id,
         submitted_by_type: "agent",
-        move_in_cost: { advance, deposit, adminFee, electricityReload, accessCardDeposit, total: advance + deposit + adminFee + electricityReload + accessCardDeposit },
+        move_in_cost: { advance, deposit, adminFee, electricityReload, accessCardDeposit, parkingCardDeposit, total },
         doc_passport: passportPaths,
         doc_offer_letter: offerPaths,
         doc_transfer_slip: slipPaths,
