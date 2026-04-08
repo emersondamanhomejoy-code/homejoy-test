@@ -516,6 +516,7 @@ export default function AdminPage() {
                           </div>
                         </div>
                       ) : (
+                      <>
                       <div className="grid grid-cols-4 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
@@ -562,6 +563,8 @@ export default function AdminPage() {
                             <input className={`${inputClass} w-full`} type="number" min={1} value={rc.pax_staying || 1} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], pax_staying: Number(e.target.value) }; setRoomConfigs(c); }} />
                           </div>
                         </div>
+                      )}
+                      </>
                       )}
                     </div>
                     );
