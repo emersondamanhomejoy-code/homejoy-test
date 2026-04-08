@@ -138,6 +138,27 @@ Deno.serve(async (req) => {
       });
     }
 
+    // SET PASSWORD (admin use)
+    if (action === "set_password") {
+      const { user_id, password } = body;
+      if (!user_id || !password || password.length < 6) {
+        return new Response(JSON.stringify({ error: "user_id and password (min 6 chars) required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: updateError } = await supabase.auth.admin.updateUserById(user_id, { password });
+      if (updateError) {
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // UPDATE PROFILE
     if (action === "update_profile") {
       const { user_id, name, phone, address } = body;
