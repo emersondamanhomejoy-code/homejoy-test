@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
+import { logActivity } from "@/hooks/useActivityLog";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -79,7 +80,17 @@ const emptyUnit = {
 export default function AdminPage() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"dashboard" | "users" | "units" | "claims">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "users" | "units" | "claims" | "activity">("dashboard");
+  const canAccessAdmin = role === "boss" || role === "manager" || role === "admin";
+  const canViewActivityLog = role === "boss" || role === "manager";
+  const canCreateManager = role === "boss";
+  const canCreateAdmin = role === "boss" || role === "manager";
+  // Boss & manager can create any lower role; admin can only create agent
+  const canCreateRoles = role === "boss" ? ["manager", "admin", "agent"] : role === "manager" ? ["admin", "agent"] : ["agent"];
+
+  // Activity log state
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // Users state
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -120,11 +131,11 @@ export default function AdminPage() {
   const [claimRejectReason, setClaimRejectReason] = useState("");
 
   useEffect(() => {
-    if (!loading && (!user || role !== "admin")) navigate("/");
+    if (!loading && (!user || !canAccessAdmin)) navigate("/");
   }, [loading, user, role, navigate]);
 
   useEffect(() => {
-    if (user && role === "admin") fetchUsers();
+    if (user && canAccessAdmin) fetchUsers();
   }, [user, role]);
 
   const fetchUsers = async () => {
