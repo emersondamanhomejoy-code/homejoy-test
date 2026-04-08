@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Admin from "./pages/Admin.tsx";
 import Sign from "./pages/Sign.tsx";
 import SetPassword from "./pages/SetPassword.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import RoomPhotos from "./pages/RoomPhotos.tsx";
 import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
