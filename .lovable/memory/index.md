@@ -2,7 +2,7 @@
 
 ## Core
 HOMEJOY Agent Portal — room rental management system.
-Google OAuth only, no email/password auth.
+Email/password auth only, no Google OAuth.
 Each unit has 5 rooms (A-E), rooms independently available/unavailable.
 Lovable Cloud backend. Roles: boss > manager > admin > agent.
 Activity log tracks all CRUD, role changes, approvals.
