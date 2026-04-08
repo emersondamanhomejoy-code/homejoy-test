@@ -51,6 +51,9 @@ export default function Index() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All", roomType: "All" });
   const [signingIn, setSigningIn] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
