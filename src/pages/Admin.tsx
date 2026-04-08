@@ -75,7 +75,7 @@ const emptyUnit = {
   access_info: "", internal_only: false,
   deposit: "", meter_type: "Postpaid", meter_rate: 0,
   deposit_multiplier: 1.5, admin_fee: 330,
-  parking_type: "None",
+  parking_type: "None", parking_card_deposit: 0,
 };
 
 export default function AdminPage() {
