@@ -35,7 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const roles = (data ?? []).map((r: { role: string }) => r.role);
-      setRole(roles.includes("admin") ? "admin" : (roles[0] as AppRole ?? "agent"));
+      // Priority: boss > manager > admin > agent
+      if (roles.includes("boss")) setRole("boss");
+      else if (roles.includes("manager")) setRole("manager");
+      else if (roles.includes("admin")) setRole("admin");
+      else setRole(roles[0] as AppRole ?? "agent");
     } catch (e) {
       console.error("fetchRole catch:", e);
       setRole("agent");
