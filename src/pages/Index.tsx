@@ -66,6 +66,8 @@ export default function Index() {
   const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
   const [agentCommissionConfig, setAgentCommissionConfig] = useState<any>(null);
+  const [overviewPeriod, setOverviewPeriod] = useState<string>(String(new Date().getMonth()));
+  const [overviewYear, setOverviewYear] = useState<number>(new Date().getFullYear());
 
   // Fetch agent's commission type & config
   useEffect(() => {
