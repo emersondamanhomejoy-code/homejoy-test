@@ -588,6 +588,7 @@ export default function AdminPage() {
                 pax_staying: (booking as any).pax_staying || 1,
                 carParkIds: ((booking as any).documents as any)?.carParkIds || [],
               });
+              logActivity("approve_booking", "booking", booking.id, { tenant: booking.tenant_name });
               setSelectedBooking(null);
             } catch (e: any) { alert(e.message); }
           };
@@ -596,6 +597,7 @@ export default function AdminPage() {
             if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
             try {
               await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
+              logActivity("reject_booking", "booking", booking.id, { tenant: booking.tenant_name, reason: rejectReason });
               setSelectedBooking(null);
               setRejectReason("");
             } catch (e: any) { alert(e.message); }
