@@ -539,6 +539,7 @@ export default function AdminPage() {
           <button onClick={() => setTab("units")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "units" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Units & Rooms</button>
           <button onClick={() => setTab("claims")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "claims" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Claims {allClaims.filter(c => c.status === "pending").length > 0 ? `(${allClaims.filter(c => c.status === "pending").length})` : ""}</button>
           <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Users</button>
+          {canViewActivityLog && <button onClick={() => { setTab("activity"); fetchActivityLogs(); }} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "activity" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Activity Log</button>}
         </div>
 
         {error && <div className="rounded-lg bg-destructive/10 text-destructive p-4 text-sm">{error}</div>}
