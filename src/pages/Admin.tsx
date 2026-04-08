@@ -185,7 +185,7 @@ export default function AdminPage() {
       });
       if (res.error) throw res.error;
       logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
-      setNewAgent({ email: "", name: "", phone: "", address: "" });
+      setNewAgent({ email: "", name: "", phone: "", address: "", password: "" });
       setShowCreateAgent(false);
       await fetchUsers();
     } catch (e: any) {
@@ -1087,7 +1087,7 @@ export default function AdminPage() {
                   <div><label className="text-xs text-muted-foreground">Current Address</label><input className={`${inputClass} w-full`} placeholder="Current residential address" value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
+                  <button onClick={() => { setShowCreateAgent(false); setNewAgent({ email: "", name: "", phone: "", address: "", password: "" }); }} className="px-4 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
                   <button onClick={createAgent} disabled={creatingAgent} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{creatingAgent ? "Creating..." : "Create Agent"}</button>
                 </div>
               </div>
