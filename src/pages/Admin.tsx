@@ -1063,12 +1063,12 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{users.length} users</span>
-              <button onClick={() => setShowCreateAgent(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Agent</button>
+              <button onClick={() => setShowCreateAgent(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add User</button>
             </div>
 
             {showCreateAgent && (
               <div className="bg-card rounded-lg shadow-sm p-6 space-y-4">
-                <div className="text-lg font-bold">Create New Agent</div>
+                <div className="text-lg font-bold">Create New User</div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><label className="text-xs text-muted-foreground">Email (Google account) *</label><input className={`${inputClass} w-full`} placeholder="agent@gmail.com" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Name</label><input className={`${inputClass} w-full`} placeholder="Full name" value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
@@ -1110,11 +1110,15 @@ export default function AdminPage() {
                       </div>
                       {u.address && <div className="text-xs text-muted-foreground">📍 {u.address}</div>}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {u.roles.map((r) => (<span key={r} className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-semibold uppercase">{r}</span>))}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {u.roles.map((r) => (<span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "boss" ? "bg-amber-500/20 text-amber-600" : r === "manager" ? "bg-purple-500/20 text-purple-600" : r === "admin" ? "bg-blue-500/20 text-blue-600" : "bg-secondary text-secondary-foreground"}`}>{r}</span>))}
                       <button onClick={() => { setEditingProfile(u.id); setProfileDraft({ name: u.name, phone: u.phone, address: u.address }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:opacity-80 transition-colors">Edit Info</button>
-                      <button onClick={() => toggleRole(u.id, "admin", isAdmin)} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAdmin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAdmin ? "Remove Admin" : "Make Admin"}</button>
-                      <button onClick={() => toggleRole(u.id, "agent", isAgent)} disabled={updating === u.id + "agent"} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${isAgent ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{isAgent ? "Remove Agent" : "Make Agent"}</button>
+                      {canCreateRoles.includes("admin") && (
+                        <button onClick={() => toggleRole(u.id, "admin" as any, u.roles.includes("admin"))} disabled={updating === u.id + "admin" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("admin") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("admin") ? "Remove Admin" : "Make Admin"}</button>
+                      )}
+                      {canCreateManager && (
+                        <button onClick={() => toggleRole(u.id, "manager" as any, u.roles.includes("manager"))} disabled={updating === u.id + "manager" || u.id === user?.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${u.roles.includes("manager") ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>{u.roles.includes("manager") ? "Remove Manager" : "Make Manager"}</button>
+                      )}
                     </div>
                   </div>
 
