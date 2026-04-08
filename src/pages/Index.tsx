@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { lovable } from "@/integrations/lovable";
+
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
 import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { useBookings, Booking } from "@/hooks/useBookings";
