@@ -188,12 +188,21 @@ export default function Index() {
     return Array.from(map.values()).sort((a, b) => b.count - a.count);
   }, [roomsData, isExternalAgent]);
 
-  const handleGoogleLogin = async () => {
+  const handleLogin = async () => {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setLoginError("Please enter email and password");
+      return;
+    }
     setSigningIn(true);
+    setLoginError("");
     try {
-      await lovable.auth.signInWithOAuth("google");
-    } catch (e) {
-      console.error("Login failed:", e);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      setLoginError(e.message || "Login failed");
     } finally {
       setSigningIn(false);
     }
