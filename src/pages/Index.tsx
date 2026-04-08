@@ -142,7 +142,7 @@ export default function Index() {
   const availableRooms = useMemo(() => {
     return roomsData.filter((room) => {
       if (room.room_type === "Car Park") return false;
-      if (room.status !== "Available") return false;
+      if (room.status !== "Available" && room.status !== "Available Soon") return false;
       // External agents cannot see internal-only rooms
       if (isExternalAgent && room.internal_only) return false;
       const keyword = search.trim().toLowerCase();
@@ -159,7 +159,7 @@ export default function Index() {
   const buildingSummary = useMemo(() => {
     const allAvailable = roomsData.filter(r => {
       if (r.room_type === "Car Park") return false;
-      if (r.status !== "Available") return false;
+      if (r.status !== "Available" && r.status !== "Available Soon") return false;
       if (isExternalAgent && r.internal_only) return false;
       return true;
     });
@@ -443,7 +443,7 @@ export default function Index() {
                 <div className="flex gap-2 flex-wrap mt-3">
                   <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.room_type}</span>
                   <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.unit_type}</span>
-                  <span className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-sm font-medium">{selectedRoom.available_date}</span>
+                  <span className={`px-3 py-1 rounded-md text-sm font-medium ${selectedRoom.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"}`}>{selectedRoom.status === "Available Soon" ? `🕐 Available ${selectedRoom.available_date}` : selectedRoom.available_date}</span>
                 </div>
                 <button
                   onClick={() => {
@@ -1034,7 +1034,7 @@ export default function Index() {
                       <div className="flex gap-1.5 flex-wrap mt-2.5">
                         <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
                         <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
-                        <span className="px-2.5 py-1 rounded-md bg-accent/20 text-accent-foreground text-xs font-medium">{room.available_date}</span>
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${room.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent/20 text-accent-foreground"}`}>{room.status === "Available Soon" ? `🕐 Available ${room.available_date}` : room.available_date}</span>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground flex gap-3">
                         <span>Max: {room.unit_max_pax}</span>
