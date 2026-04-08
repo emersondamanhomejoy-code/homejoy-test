@@ -100,7 +100,7 @@ export default function AdminPage() {
   const [editingCommission, setEditingCommission] = useState<string | null>(null);
   const [commissionDraft, setCommissionDraft] = useState<{ type: string; config: CommissionConfig }>({ type: "internal_basic", config: defaultConfigs.internal_basic });
   const [showCreateAgent, setShowCreateAgent] = useState(false);
-  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "" });
+  const [newAgent, setNewAgent] = useState({ email: "", name: "", phone: "", address: "", password: "" });
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [editingProfile, setEditingProfile] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState({ name: "", phone: "", address: "" });
