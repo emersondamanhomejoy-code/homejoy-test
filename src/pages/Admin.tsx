@@ -155,7 +155,7 @@ export default function AdminPage() {
     }
   };
 
-  const toggleRole = async (userId: string, targetRole: string, hasRole: boolean) => {
+  const toggleRole = async (userId: string, targetRole: "admin" | "agent" | "boss" | "manager", hasRole: boolean) => {
     setUpdating(userId + targetRole);
     try {
       if (hasRole) {
@@ -165,6 +165,7 @@ export default function AdminPage() {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: targetRole });
         if (error) throw error;
       }
+      logActivity(hasRole ? "remove_role" : "add_role", "user", userId, { role: targetRole });
       await fetchUsers();
     } catch (e: any) {
       alert(e.message || "Failed to update role");
