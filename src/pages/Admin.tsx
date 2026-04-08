@@ -1036,6 +1036,7 @@ export default function AdminPage() {
                             {(unit as any).deposit && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit: {(unit as any).deposit}</span>}
                             {(unit as any).meter_type && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">⚡ {(unit as any).meter_type} {(unit as any).meter_rate ? `RM${(unit as any).meter_rate}/kWh` : ""}</span>}
                             <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit ×{(unit as any).deposit_multiplier ?? 1.5} | Admin Fee RM{(unit as any).admin_fee ?? 330}</span>
+                            {(unit as any).parking_type && (unit as any).parking_type !== "None" && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {(unit as any).parking_type}</span>}
                             {(unit as any).internal_only && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary">🔒 Internal Only</span>}
                           </div>
                         </div>
