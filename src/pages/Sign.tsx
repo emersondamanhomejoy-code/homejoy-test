@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import SignatureCanvas from "react-signature-canvas";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,35 @@ export default function SignPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const sigRef = useRef<SignatureCanvas>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Resize canvas to match container width to fix isEmpty() detection
+  const resizeCanvas = useCallback(() => {
+    if (sigRef.current && containerRef.current) {
+      const canvas = sigRef.current.getCanvas();
+      const container = containerRef.current;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = container.offsetWidth * ratio;
+      canvas.height = 200 * ratio;
+      canvas.style.width = `${container.offsetWidth}px`;
+      canvas.style.height = "200px";
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.scale(ratio, ratio);
+      }
+      sigRef.current.clear();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(resizeCanvas, 100);
+    window.addEventListener("resize", resizeCanvas);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, [resizeCanvas, loading, done, error]);
 
   useEffect(() => {
     if (!token) return;
@@ -117,13 +146,11 @@ export default function SignPage() {
 
         <div className="space-y-2">
           <div className="text-sm font-medium text-foreground">Your Signature</div>
-          <div className="border-2 border-muted-foreground/30 rounded-lg bg-white overflow-hidden">
+          <div ref={containerRef} className="border-2 border-muted-foreground/30 rounded-lg bg-white overflow-hidden">
             <SignatureCanvas
               ref={sigRef}
               canvasProps={{
-                className: "w-full",
-                width: 460,
-                height: 200,
+                className: "w-full touch-none",
                 style: { width: "100%", height: "200px" },
               }}
               backgroundColor="white"
