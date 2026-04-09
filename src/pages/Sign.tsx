@@ -11,6 +11,35 @@ export default function SignPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const sigRef = useRef<SignatureCanvas>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Resize canvas to match container width to fix isEmpty() detection
+  const resizeCanvas = useCallback(() => {
+    if (sigRef.current && containerRef.current) {
+      const canvas = sigRef.current.getCanvas();
+      const container = containerRef.current;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = container.offsetWidth * ratio;
+      canvas.height = 200 * ratio;
+      canvas.style.width = `${container.offsetWidth}px`;
+      canvas.style.height = "200px";
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.scale(ratio, ratio);
+      }
+      sigRef.current.clear();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(resizeCanvas, 100);
+    window.addEventListener("resize", resizeCanvas);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, [resizeCanvas, loading, done, error]);
 
   useEffect(() => {
     if (!token) return;
