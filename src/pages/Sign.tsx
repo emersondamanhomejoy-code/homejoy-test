@@ -146,13 +146,11 @@ export default function SignPage() {
 
         <div className="space-y-2">
           <div className="text-sm font-medium text-foreground">Your Signature</div>
-          <div className="border-2 border-muted-foreground/30 rounded-lg bg-white overflow-hidden">
+          <div ref={containerRef} className="border-2 border-muted-foreground/30 rounded-lg bg-white overflow-hidden">
             <SignatureCanvas
               ref={sigRef}
               canvasProps={{
-                className: "w-full",
-                width: 460,
-                height: 200,
+                className: "w-full touch-none",
                 style: { width: "100%", height: "200px" },
               }}
               backgroundColor="white"
