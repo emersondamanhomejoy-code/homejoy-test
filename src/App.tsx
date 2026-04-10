@@ -13,6 +13,7 @@ import RoomPhotos from "./pages/RoomPhotos.tsx";
 import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
+import Login from "./pages/Login.tsx";
 
 const queryClient = new QueryClient();
 
