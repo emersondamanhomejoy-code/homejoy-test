@@ -23,7 +23,7 @@ const menuItems = [
 ];
 
 export function AgentSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
