@@ -26,6 +26,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
           <Route path="/" element={<AgentDashboard />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/old" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/set-password" element={<SetPassword />} />

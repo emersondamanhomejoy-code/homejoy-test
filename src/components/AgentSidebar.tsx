@@ -84,7 +84,7 @@ export function AgentSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a className="cursor-pointer hover:bg-muted/50" onClick={handleLogout}>
+              <a className="cursor-pointer hover:bg-muted/50" onClick={handleLogout} role="button">
                 <LogOut className="h-4 w-4 mr-2" />
                 {!collapsed && <span>Logout</span>}
               </a>
