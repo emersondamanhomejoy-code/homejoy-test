@@ -70,6 +70,19 @@ function PipelineCard({ label, value, color, size, highlight }: {
 }
 
 export default function AgentDashboard() {
+  const { user, role, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login", { replace: true });
+    } else if (!loading && user && role && role !== "agent") {
+      navigate("/old", { replace: true });
+    }
+  }, [user, role, loading, navigate]);
+
+  if (loading || !user) return null;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
