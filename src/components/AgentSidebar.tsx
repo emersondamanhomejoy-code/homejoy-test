@@ -36,16 +36,19 @@ export function AgentSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className={`p-6 ${collapsed ? "px-2" : ""} flex items-center justify-between`}>
-          <h1 className={`font-bold text-primary ${collapsed ? "text-xs text-center" : "text-xl"}`}>
-            {collapsed ? "HJ" : "HOMEJOY"}
-          </h1>
-          <button
-            onClick={toggleSidebar}
-            className={`text-muted-foreground hover:text-foreground transition-colors ${collapsed ? "hidden" : ""}`}
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
+        <div className={`p-6 ${collapsed ? "px-2 py-4" : ""} flex items-center justify-between`}>
+          {collapsed ? (
+            <button onClick={toggleSidebar} className="w-full flex justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <PanelLeft className="h-5 w-5" />
+            </button>
+          ) : (
+            <>
+              <h1 className="font-bold text-primary text-xl">HOMEJOY</h1>
+              <button onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground transition-colors">
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </div>
         <SidebarGroup>
           <SidebarGroupContent>
