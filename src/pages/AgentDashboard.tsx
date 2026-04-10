@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 
 const pipelineData = {
@@ -72,10 +72,6 @@ export default function AgentDashboard() {
       <div className="min-h-screen flex w-full bg-background">
         <AgentSidebar />
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-12 flex items-center border-b border-border px-4">
-            <SidebarTrigger />
-          </header>
 
           {/* Announcement Banner */}
           <div className="bg-gradient-to-r from-primary/5 to-accent/5 px-8 py-3 border-b border-border">
