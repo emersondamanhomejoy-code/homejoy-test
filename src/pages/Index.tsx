@@ -438,83 +438,10 @@ export default function Index() {
     }
   };
 
-  // ─── LOGIN ───
+  // ─── LOGIN REDIRECT ───
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="w-full max-w-5xl bg-card rounded-lg shadow-xl grid md:grid-cols-2 overflow-hidden animate-fade-in">
-          <div className="bg-primary text-primary-foreground p-10 flex flex-col justify-center">
-            <div className="text-4xl font-extrabold tracking-tight">HOMEJOY</div>
-            <div className="text-xl mt-3 font-semibold opacity-90">Agent Portal</div>
-            <p className="mt-4 opacity-70 leading-relaxed">
-              Find available rooms, check unit details, copy move-in cost, submit booking, and manage your claims.
-            </p>
-          </div>
-           <div className="p-10 flex flex-col justify-center gap-4">
-            <div className="text-2xl font-bold text-card-foreground">Welcome back</div>
-            <p className="text-muted-foreground text-sm -mt-2">Sign in to access your dashboard</p>
-            {loginError && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{loginError}</div>}
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-muted-foreground font-medium">Email</label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                  placeholder="your@email.com"
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleLogin()}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground font-medium">Password</label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleLogin()}
-                />
-              </div>
-              <button
-                onClick={handleLogin}
-                disabled={signingIn}
-                className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {signingIn ? "Signing in..." : "Sign In"}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowForgotPassword(true); setForgotEmail(loginEmail); setForgotMsg(""); }}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Forgot Password?
-              </button>
-            </div>
-
-            {showForgotPassword && (
-              <div className="border-t border-border pt-4 space-y-3">
-                <div className="text-sm font-medium text-foreground">Reset Password</div>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                  placeholder="your@email.com"
-                  value={forgotEmail}
-                  onChange={e => setForgotEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleForgotPassword()}
-                />
-                {forgotMsg && <div className={`text-sm rounded-lg px-3 py-2 ${forgotMsg.startsWith("✅") ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"}`}>{forgotMsg}</div>}
-                <div className="flex gap-2">
-                  <button onClick={() => setShowForgotPassword(false)} className="flex-1 px-3 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
-                  <button onClick={handleForgotPassword} disabled={forgotSending} className="flex-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">{forgotSending ? "Sending..." : "Send Reset Link"}</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    navigate("/login", { replace: true });
+    return null;
   }
 
   // ─── ROOM DETAIL ───
