@@ -1,6 +1,7 @@
-import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -22,17 +23,32 @@ const menuItems = [
 ];
 
 export function AgentSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
-  const isActive = (url: string) => location.pathname === url;
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className={`p-6 ${collapsed ? "px-2" : ""}`}>
-          <h1 className={`font-bold text-primary ${collapsed ? "text-xs text-center" : "text-xl"}`}>
-            {collapsed ? "HJ" : "HOMEJOY"}
-          </h1>
+        <div className={`p-6 ${collapsed ? "px-2 py-4" : ""} flex items-center justify-between`}>
+          {collapsed ? (
+            <button onClick={toggleSidebar} className="w-full flex justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <PanelLeft className="h-5 w-5" />
+            </button>
+          ) : (
+            <>
+              <h1 className="font-bold text-primary text-xl">HOMEJOY</h1>
+              <button onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground transition-colors">
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </div>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -68,7 +84,7 @@ export function AgentSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a className="cursor-pointer hover:bg-muted/50">
+              <a className="cursor-pointer hover:bg-muted/50" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 {!collapsed && <span>Logout</span>}
               </a>
