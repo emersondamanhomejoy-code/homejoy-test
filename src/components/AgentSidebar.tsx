@@ -24,7 +24,7 @@ const menuItems = [
 export function AgentSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const isActive = (url: string) => location.pathname === url;
 
   return (
     <Sidebar collapsible="icon">
