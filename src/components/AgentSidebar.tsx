@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -14,17 +14,17 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/agent", icon: LayoutDashboard },
-  { title: "Rooms", url: "/agent/rooms", icon: Home },
-  { title: "Bookings", url: "/agent/bookings", icon: ClipboardList },
-  { title: "Claims", url: "/agent/claims", icon: DollarSign },
-  { title: "Settings", url: "/agent/settings", icon: Settings },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Rooms", url: "/rooms", icon: Home },
+  { title: "Bookings", url: "/bookings", icon: ClipboardList },
+  { title: "Claims", url: "/claims", icon: DollarSign },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AgentSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const isActive = (url: string) => location.pathname === url;
 
   return (
     <Sidebar collapsible="icon">
@@ -58,6 +58,14 @@ export function AgentSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <NavLink to="/old" className="hover:bg-muted/50 text-muted-foreground">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                {!collapsed && <span>Old Version</span>}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <a className="cursor-pointer hover:bg-muted/50">
