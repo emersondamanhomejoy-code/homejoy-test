@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import RoomPhotos from "./pages/RoomPhotos.tsx";
 import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AgentDashboard from "./pages/AgentDashboard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/agent" element={<AgentDashboard />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
