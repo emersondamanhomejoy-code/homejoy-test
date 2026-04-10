@@ -14,11 +14,11 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/agent", icon: LayoutDashboard },
-  { title: "Rooms", url: "/agent/rooms", icon: Home },
-  { title: "Bookings", url: "/agent/bookings", icon: ClipboardList },
-  { title: "Claims", url: "/agent/claims", icon: DollarSign },
-  { title: "Settings", url: "/agent/settings", icon: Settings },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Rooms", url: "/rooms", icon: Home },
+  { title: "Bookings", url: "/bookings", icon: ClipboardList },
+  { title: "Claims", url: "/claims", icon: DollarSign },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AgentSidebar() {
