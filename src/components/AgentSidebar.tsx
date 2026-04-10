@@ -1,6 +1,7 @@
 import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -24,7 +25,13 @@ const menuItems = [
 export function AgentSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const isActive = (url: string) => location.pathname === url;
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -68,7 +75,7 @@ export function AgentSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a className="cursor-pointer hover:bg-muted/50">
+              <a className="cursor-pointer hover:bg-muted/50" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 {!collapsed && <span>Logout</span>}
               </a>
