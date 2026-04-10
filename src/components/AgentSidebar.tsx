@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,10 +36,16 @@ export function AgentSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className={`p-6 ${collapsed ? "px-2" : ""}`}>
+        <div className={`p-6 ${collapsed ? "px-2" : ""} flex items-center justify-between`}>
           <h1 className={`font-bold text-primary ${collapsed ? "text-xs text-center" : "text-xl"}`}>
             {collapsed ? "HJ" : "HOMEJOY"}
           </h1>
+          <button
+            onClick={toggleSidebar}
+            className={`text-muted-foreground hover:text-foreground transition-colors ${collapsed ? "hidden" : ""}`}
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
         </div>
         <SidebarGroup>
           <SidebarGroupContent>
