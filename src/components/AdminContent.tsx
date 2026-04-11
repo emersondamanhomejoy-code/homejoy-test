@@ -68,28 +68,28 @@ const bedTypeMaxPax: Record<string, number> = {
   MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
 };
 
-const defaultRoomConfigs: RoomConfig[] = [
-  { room: "Room A", bed_type: "", max_pax: 1, rent: 0 },
-  { room: "Room B", bed_type: "", max_pax: 1, rent: 0 },
-  { room: "Room C", bed_type: "", max_pax: 1, rent: 0 },
-  { room: "Room D", bed_type: "", max_pax: 1, rent: 0 },
-  { room: "Room E", bed_type: "", max_pax: 1, rent: 0 },
-];
+const getDefaultRoomName = (index: number, naming: "alpha" | "digit") =>
+  naming === "alpha" ? `Room ${String.fromCharCode(65 + index)}` : `Room ${index + 1}`;
 
-const defaultCarParkConfig: RoomConfig = {
-  room: "Car Park 1",
-  bed_type: "",
-  max_pax: 0,
-  rent: 0,
-  room_type: "Car Park",
+const getDefaultCarParkName = (index: number) => index === 0 ? "Car Park" : `Car Park ${index + 1}`;
+
+const createDefaultRoomConfigs = (roomCount: number, carParkCount: number, naming: "alpha" | "digit"): RoomConfig[] => {
+  const rooms: RoomConfig[] = Array.from({ length: roomCount }, (_, i) => ({
+    room: getDefaultRoomName(i, naming),
+    bed_type: "",
+    max_pax: 1,
+    rent: 0,
+    status: "Available",
+  }));
+  const carParks: RoomConfig[] = Array.from({ length: carParkCount }, (_, i) => ({
+    room: getDefaultCarParkName(i),
+    bed_type: "",
+    max_pax: 0,
+    rent: 0,
+    room_type: "Car Park",
+  }));
+  return [...rooms, ...carParks];
 };
-
-const createDefaultRoomConfigs = (): RoomConfig[] => [
-  ...defaultRoomConfigs.map((room) => ({ ...room })),
-  { ...defaultCarParkConfig },
-];
-
-const getDefaultRoomName = (index: number) => `Room ${String.fromCharCode(65 + index)}`;
 
 const hasMeaningfulRoomData = (room: RoomConfig, index: number) => {
   if (room.room_type === "Car Park") {
