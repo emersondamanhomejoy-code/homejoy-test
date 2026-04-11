@@ -973,7 +973,8 @@ export default function Index() {
     };
 
     return (
-      <div className="min-h-screen bg-background p-6 text-foreground">
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
           <div className="text-3xl font-extrabold tracking-tight">💰 Claims</div>
@@ -1067,8 +1068,9 @@ export default function Index() {
           {claimTab === "pending" && renderClaimList(pendingClaims)}
           {claimTab === "approved" && renderClaimList(approvedClaims)}
           {claimTab === "rejected" && renderClaimList(rejectedClaims)}
+          </div>
         </div>
-      </div>
+      </OldDashboardLayout>
     );
   }
 
