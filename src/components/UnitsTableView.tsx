@@ -58,6 +58,7 @@ export function UnitsTableView({
   const [selectedUnitType, setSelectedUnitType] = useState<string>("all");
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
 
   const locations = useMemo(() => {
     const set = new Set(units.map(u => u.location).filter(Boolean));
