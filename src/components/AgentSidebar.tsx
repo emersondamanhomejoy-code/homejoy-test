@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LayoutDashboard, Home, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
