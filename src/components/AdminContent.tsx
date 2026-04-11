@@ -945,10 +945,6 @@ export function AdminContent({ tab }: AdminContentProps) {
                     <div className="space-y-4">
                       {isCP ? (
                         <div className="grid grid-cols-2 gap-4">
-                          <div><label className="text-xs text-muted-foreground">Parking Lot</label>
-                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => updateRC("bed_type", e.target.value)} /></div>
-                          <div><label className="text-xs text-muted-foreground">Rental (RM)</label>
-                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} /></div>
                           <div><label className="text-xs text-muted-foreground">Status</label>
                             <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
                               <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
@@ -956,26 +952,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 gap-4">
-                          <div><label className="text-xs text-muted-foreground">Bed Type *</label>
-                            <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
-                              const bt = e.target.value;
-                              const c = [...roomConfigs];
-                              c[idx] = { ...c[idx], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
-                              setRoomConfigs(c);
-                            }}>
-                              <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
-                            </select></div>
-                          <div><label className="text-xs text-muted-foreground">Rental (RM) *</label>
-                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} /></div>
-                          <div><label className="text-xs text-muted-foreground">Wall Type</label>
-                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
-                              <option value="">—</option><option value="Partition">Partition</option><option value="Original">Original</option>
-                            </select></div>
-                          <div><label className="text-xs text-muted-foreground">Special Type <span className="text-muted-foreground/60">(optional)</span></label>
-                            <select className={`${inputClass} w-full`} value={(rc as any).special_type || ""} onChange={e => updateRC("special_type", e.target.value)}>
-                              <option value="">— None —</option><option value="Balcony">Balcony</option><option value="Master">Master</option>
-                            </select></div>
-                          <div><label className="text-xs text-muted-foreground">Max Pax *</label>
+                          <div><label className="text-xs text-muted-foreground">Max Pax</label>
                             <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => updateRC("max_pax", Number(e.target.value))} /></div>
                           <div><label className="text-xs text-muted-foreground">Status</label>
                             <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
