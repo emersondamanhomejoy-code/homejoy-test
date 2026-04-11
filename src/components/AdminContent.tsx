@@ -109,6 +109,8 @@ export function AdminContent({ tab }: AdminContentProps) {
 
   // Units state
   const { data: units = [], isLoading: unitsLoading } = useUnits();
+  const { data: condosList = [] } = useCondos();
+  const { data: locationsList = [] } = useLocations();
   const createUnit = useCreateUnit();
   const updateUnit = useUpdateUnit();
   const deleteUnit = useDeleteUnit();
