@@ -325,7 +325,7 @@ export default function Rooms() {
                       </div>
                     </div>
                   </>
-                )
+                )}
               </div>
             </div>
           </main>
