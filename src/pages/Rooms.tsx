@@ -31,7 +31,7 @@ export default function Rooms() {
 
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
-  const [selectedGender, setSelectedGender] = useState<string>("all");
+  const [selectedGender, setSelectedGender] = useState<string>("mix");
   const [selectedStatus, setSelectedStatus] = useState<string>("Available");
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -72,7 +72,7 @@ export default function Rooms() {
     if (selectedStatus !== "all") list = list.filter((r) => r.status === selectedStatus);
     if (selectedLocations.length) list = list.filter((r) => selectedLocations.includes(r.location));
     if (selectedBuildings.length) list = list.filter((r) => selectedBuildings.includes(r.building));
-    if (selectedGender !== "all") {
+    if (selectedGender !== "mix") {
       list = list.filter((r) => r.unit_type?.toLowerCase().includes(selectedGender));
     }
     return list;
@@ -112,11 +112,11 @@ export default function Rooms() {
   const clearFilters = () => {
     setSelectedLocations([]);
     setSelectedBuildings([]);
-    setSelectedGender("all");
+    setSelectedGender("mix");
     setSelectedStatus("Available");
   };
 
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "all" || selectedStatus !== "Available";
+  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "mix" || selectedStatus !== "Available";
 
   if (loading || !user) return null;
 
@@ -174,10 +174,9 @@ export default function Rooms() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="mix">Mix Unit</SelectItem>
                         <SelectItem value="female">Female Unit</SelectItem>
                         <SelectItem value="male">Male Unit</SelectItem>
-                        <SelectItem value="mix">Mix Unit</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
