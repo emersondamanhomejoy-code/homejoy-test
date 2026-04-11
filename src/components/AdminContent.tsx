@@ -75,12 +75,45 @@ const defaultRoomConfigs: RoomConfig[] = [
   { room: "Room E", bed_type: "", max_pax: 1, rent: 0 },
 ];
 
+const defaultCarParkConfig: RoomConfig = {
+  room: "Car Park 1",
+  bed_type: "",
+  max_pax: 0,
+  rent: 0,
+  room_type: "Car Park",
+};
+
+const createDefaultRoomConfigs = (): RoomConfig[] => [
+  ...defaultRoomConfigs.map((room) => ({ ...room })),
+  { ...defaultCarParkConfig },
+];
+
+const getDefaultRoomName = (index: number) => `Room ${String.fromCharCode(65 + index)}`;
+
+const hasMeaningfulRoomData = (room: RoomConfig, index: number) => {
+  if (room.room_type === "Car Park") {
+    return Boolean(room.bed_type?.trim()) || Number(room.rent) > 0 || (room.room && room.room !== `Car Park ${index + 1}`);
+  }
+
+  return (
+    Boolean(room.bed_type?.trim()) ||
+    Number(room.rent) > 0 ||
+    Number(room.max_pax) !== 1 ||
+    Boolean(room.status && room.status !== "Available") ||
+    Boolean(room.tenant_name?.trim()) ||
+    Boolean(room.tenant_gender?.trim()) ||
+    Boolean(room.tenant_race?.trim()) ||
+    Number(room.pax_staying) > 0 ||
+    Boolean(room.room && room.room !== getDefaultRoomName(index))
+  );
+};
+
 const emptyUnit = {
   building: "", unit: "", location: "", unit_type: "Mix Unit", unit_max_pax: 6,
   passcode: "", access_card: "", parking_lot: "",
   access_card_source: "Provided by Us", access_card_deposit: 0,
   access_info: "", internal_only: false,
-  deposit: "", meter_type: "Postpaid", meter_rate: 0,
+  deposit: "", meter_type: "Postpaid", meter_rate: 0.65,
   deposit_multiplier: 1.5, admin_fee: 330,
   parking_type: "None", parking_card_deposit: 0,
   common_photos: [] as string[], wifi_name: "", wifi_password: "",
@@ -126,7 +159,8 @@ export function AdminContent({ tab }: AdminContentProps) {
   const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
+  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(createDefaultRoomConfigs());
+  const [roomCountInput, setRoomCountInput] = useState("5");
   const [unitFilters, setUnitFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All" });
   const [showUnitCancelConfirm, setShowUnitCancelConfirm] = useState(false);
   const [showRoomCancelConfirm, setShowRoomCancelConfirm] = useState(false);
@@ -370,11 +404,94 @@ export function AdminContent({ tab }: AdminContentProps) {
 
   const openCreateRoom2 = () => {
     setEditingUnit({ ...emptyUnit });
-    setRoomConfigs([...defaultRoomConfigs]);
+    setRoomConfigs(createDefaultRoomConfigs());
+    setRoomCountInput("5");
+  };
+
+  const applyRoomCountChange = (nextValue: string) => {
+    const regularRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
+    const carParks = roomConfigs.filter(r => r.room_type === "Car Park");
+    const currentCount = regularRooms.length;
+    const parsedValue = Number(nextValue);
+
+    if (!Number.isFinite(parsedValue)) {
+      setRoomCountInput(String(currentCount));
+      return;
+    }
+
+    const targetCount = Math.max(1, Math.min(20, Math.floor(parsedValue)));
+
+    if (targetCount === currentCount) {
+      setRoomCountInput(String(targetCount));
+      return;
+    }
+
+    if (targetCount < currentCount) {
+      const removedRooms = regularRooms.slice(targetCount);
+      const removingFilledRooms = removedRooms.some((room, index) => hasMeaningfulRoomData(room, targetCount + index));
+
+      if (removingFilledRooms) {
+        const removedLabels = removedRooms.map(room => room.room).join(", ");
+        const confirmed = window.confirm(`Reducing the room count will remove ${removedLabels}. Continue?`);
+        if (!confirmed) {
+          setRoomCountInput(String(currentCount));
+          return;
+        }
+      }
+    }
+
+    let nextRooms = regularRooms.slice(0, targetCount).map((room, index) => ({
+      ...room,
+      room: room.room || getDefaultRoomName(index),
+    }));
+
+    while (nextRooms.length < targetCount) {
+      nextRooms.push({ room: getDefaultRoomName(nextRooms.length), bed_type: "", max_pax: 1, rent: 0, status: "Available" });
+    }
+
+    setRoomConfigs([...nextRooms, ...carParks]);
+    setRoomCountInput(String(targetCount));
   };
 
   const saveUnit = async () => {
     if (!editingUnit) return;
+
+    const missingFields: string[] = [];
+    if (!((editingUnit.common_photos as string[] | undefined)?.length)) missingFields.push("Common area photo");
+    if (!editingUnit.building.trim()) missingFields.push("Condo / Building");
+    if (!editingUnit.location.trim()) missingFields.push("Location");
+    if (!editingUnit.unit.trim()) missingFields.push("Unit");
+    if (!editingUnit.unit_type.trim()) missingFields.push("Unit Type");
+    if (!Number.isFinite(Number(editingUnit.unit_max_pax)) || Number(editingUnit.unit_max_pax) < 1) missingFields.push("Max Occupants");
+    if (!Number.isFinite(Number(editingUnit.deposit_multiplier)) || Number(editingUnit.deposit_multiplier) <= 0) missingFields.push("Rental Deposit (months)");
+    if (!editingUnit.meter_type.trim()) missingFields.push("Meter Type");
+    if (!Number.isFinite(Number(editingUnit.meter_rate)) || Number(editingUnit.meter_rate) < 0) missingFields.push("Meter Rate");
+    if (!Number.isFinite(Number(editingUnit.admin_fee)) || Number(editingUnit.admin_fee) < 0) missingFields.push("Admin Fee");
+
+    if (!editingUnit.id) {
+      const regularRooms = roomConfigs.filter(room => room.room_type !== "Car Park");
+      const carParks = roomConfigs.filter(room => room.room_type === "Car Park");
+
+      if (regularRooms.length < 1) missingFields.push("Number of Rooms");
+
+      regularRooms.forEach((room, index) => {
+        const label = room.room || getDefaultRoomName(index);
+        if (!room.bed_type.trim()) missingFields.push(`${label} Bed Type`);
+        if (!Number.isFinite(Number(room.max_pax)) || Number(room.max_pax) < 1) missingFields.push(`${label} Max Pax`);
+        if (!Number.isFinite(Number(room.rent)) || Number(room.rent) <= 0) missingFields.push(`${label} Rent`);
+      });
+
+      carParks.forEach((room, index) => {
+        const label = room.room || `Car Park ${index + 1}`;
+        if (!room.bed_type?.trim()) missingFields.push(`${label} Parking Lot`);
+      });
+    }
+
+    if (missingFields.length > 0) {
+      alert(`Please complete the required fields:\n• ${missingFields.join("\n• ")}`);
+      return;
+    }
+
     try {
       if (editingUnit.id) {
         await updateUnit.mutateAsync({ id: editingUnit.id, ...editingUnit });
@@ -567,7 +684,7 @@ export function AdminContent({ tab }: AdminContentProps) {
       <div className="space-y-5 pb-4">
         {/* Common Area Photos */}
         <div>
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Common Area Photos</label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Common Area Photos *</label>
           <div className="flex flex-wrap gap-3 mt-2">
             {((u as any).common_photos as string[] || []).map((path: string, i: number) => (
               <div key={i} className="relative group">
@@ -608,7 +725,7 @@ export function AdminContent({ tab }: AdminContentProps) {
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-muted-foreground">Condo / Building</label>
+            <label className="text-xs text-muted-foreground">Condo / Building *</label>
             <select className={`${inputClass} w-full`} value={u.building} onChange={e => {
               const selectedCondo = condosList.find(c => c.name === e.target.value);
               const locationName = selectedCondo?.location?.name || "";
@@ -619,90 +736,54 @@ export function AdminContent({ tab }: AdminContentProps) {
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Location (auto-filled from condo)</label>
+            <label className="text-xs text-muted-foreground">Location (auto-filled from condo) *</label>
             <input className={`${inputClass} w-full bg-muted`} value={u.location} readOnly placeholder="Select a condo above" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Unit (e.g. A-17-8)</label>
+            <label className="text-xs text-muted-foreground">Unit (e.g. A-17-8) *</label>
             <input className={`${inputClass} w-full`} placeholder="Unit" value={u.unit} onChange={e => updateFieldU("unit", e.target.value)} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Unit Type</label>
+            <label className="text-xs text-muted-foreground">Unit Type *</label>
             <select className={`${inputClass} w-full`} value={u.unit_type} onChange={e => updateFieldU("unit_type", e.target.value)}>
               <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Max Occupants</label>
+            <label className="text-xs text-muted-foreground">Max Occupants *</label>
             <input className={`${inputClass} w-full`} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateFieldU("unit_max_pax", Number(e.target.value))} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Deposit Rate (Multiplier)</label>
-            <input className={`${inputClass} w-full`} type="number" step="0.1" placeholder="e.g. 1.5" value={u.deposit_multiplier} onChange={e => updateFieldU("deposit_multiplier", Number(e.target.value))} />
+            <label className="text-xs text-muted-foreground">Rental Deposit (months) *</label>
+            <input className={`${inputClass} w-full`} type="number" step="0.1" placeholder="e.g. 1.5 months" value={u.deposit_multiplier} onChange={e => updateFieldU("deposit_multiplier", Number(e.target.value))} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Meter Type</label>
+            <label className="text-xs text-muted-foreground">Meter Type *</label>
             <select className={`${inputClass} w-full`} value={u.meter_type} onChange={e => updateFieldU("meter_type", e.target.value)}>
               <option value="Postpaid">Postpaid</option>
               <option value="Prepaid">Prepaid</option>
-              <option value="Flat Rate">Flat Rate</option>
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Meter Rate (RM/kWh)</label>
+            <label className="text-xs text-muted-foreground">Meter Rate (RM/kWh) *</label>
             <input className={`${inputClass} w-full`} type="number" step="0.01" placeholder="Meter Rate" value={u.meter_rate || ""} onChange={e => updateFieldU("meter_rate", Number(e.target.value))} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Admin Fee (RM)</label>
+            <label className="text-xs text-muted-foreground">Admin Fee (RM) *</label>
             <input className={`${inputClass} w-full`} type="number" placeholder="Admin Fee" value={u.admin_fee} onChange={e => updateFieldU("admin_fee", Number(e.target.value))} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Main Door Passcode</label>
+            <label className="text-xs text-muted-foreground">Maintenance Passcode (optional)</label>
             <input className={`${inputClass} w-full`} placeholder="Passcode" value={u.passcode} onChange={e => updateFieldU("passcode", e.target.value)} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">WiFi Name</label>
+            <label className="text-xs text-muted-foreground">WiFi Name (optional)</label>
             <input className={`${inputClass} w-full`} placeholder="WiFi SSID" value={(u as any).wifi_name || ""} onChange={e => updateFieldU("wifi_name", e.target.value)} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">WiFi Password</label>
+            <label className="text-xs text-muted-foreground">WiFi Password (optional)</label>
             <input className={`${inputClass} w-full`} placeholder="WiFi Password" value={(u as any).wifi_password || ""} onChange={e => updateFieldU("wifi_password", e.target.value)} />
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Access Card Source</label>
-            <select className={`${inputClass} w-full`} value={u.access_card_source} onChange={e => updateFieldU("access_card_source", e.target.value)}>
-              <option value="Provided by Us">Provided by Us</option>
-              <option value="Management Office">Management Office</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Access Card Deposit (RM)</label>
-            <input className={`${inputClass} w-full`} type="number" placeholder="Access Card Deposit" value={u.access_card_deposit || ""} onChange={e => updateFieldU("access_card_deposit", Number(e.target.value))} />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Deposit Type</label>
-            <select className={`${inputClass} w-full`} value={u.deposit} onChange={e => updateFieldU("deposit", e.target.value)}>
-              <option value="">— Select —</option>
-              <option value="Refundable">Refundable</option>
-              <option value="Non-refundable">Non-refundable</option>
-              <option value="Zero Deposit">Zero Deposit</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Parking Type</label>
-            <select className={`${inputClass} w-full`} value={u.parking_type} onChange={e => updateFieldU("parking_type", e.target.value)}>
-              <option value="None">None</option>
-              <option value="Access Card">Access Card</option>
-              <option value="ANPR">ANPR</option>
-              <option value="Free">Free</option>
-            </select>
-          </div>
-          {u.parking_type === "Access Card" && (
-            <div>
-              <label className="text-xs text-muted-foreground">Parking Card Deposit (RM)</label>
-              <input className={`${inputClass} w-full`} type="number" placeholder="Parking Card Deposit" value={u.parking_card_deposit || ""} onChange={e => updateFieldU("parking_card_deposit", Number(e.target.value))} />
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-3 pt-2">
           <input type="checkbox" id="internalOnly" checked={u.internal_only} onChange={e => updateFieldU("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
@@ -715,18 +796,24 @@ export function AdminContent({ tab }: AdminContentProps) {
             <div className="flex items-center justify-between pt-4 border-t border-border">
               <div className="text-lg font-semibold">Rooms</div>
               <div className="flex gap-2 items-center">
-                <label className="text-xs text-muted-foreground">Number of Rooms:</label>
-                <input className={`${inputClass} w-16 text-center`} type="number" min={0} max={20} value={roomConfigs.filter(r => r.room_type !== "Car Park").length} onChange={e => {
-                  const target = Math.max(0, Math.min(20, Number(e.target.value)));
-                  const carParks = roomConfigs.filter(r => r.room_type === "Car Park");
-                  const currentRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
-                  let newRooms = currentRooms.slice(0, target);
-                  while (newRooms.length < target) {
-                    newRooms.push({ room: `Room ${String.fromCharCode(65 + newRooms.length)}`, bed_type: "", max_pax: 1, rent: 0 });
-                  }
-                  setRoomConfigs([...newRooms, ...carParks]);
-                }} />
-                <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Car Park`, bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">🅿️ + Car Park</button>
+                <label className="text-xs text-muted-foreground">Number of Rooms *</label>
+                <input
+                  className={`${inputClass} w-16 text-center`}
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={roomCountInput}
+                  onChange={e => setRoomCountInput(e.target.value)}
+                  onBlur={() => applyRoomCountChange(roomCountInput)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyRoomCountChange(roomCountInput);
+                    }
+                  }}
+                  onWheel={e => e.currentTarget.blur()}
+                />
+                <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Car Park ${roomConfigs.filter(r => r.room_type === "Car Park").length + 1}`, bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">🅿️ + Car Park</button>
               </div>
             </div>
             <div className="space-y-3">
@@ -736,12 +823,19 @@ export function AdminContent({ tab }: AdminContentProps) {
                 <div key={i} className={`rounded-lg border p-4 space-y-2 ${isCarParkConfig ? "bg-blue-500/5 border-blue-500/20" : ""}`}>
                   <div className="flex items-center justify-between">
                     <input className={`${inputClass} w-40`} value={rc.room} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], room: e.target.value }; setRoomConfigs(c); }} />
-                    <button onClick={() => setRoomConfigs(roomConfigs.filter((_, idx) => idx !== i))} className="text-xs text-destructive hover:underline">Remove</button>
+                    <button onClick={() => {
+                      const targetRoom = roomConfigs[i];
+                      const nextConfigs = roomConfigs.filter((_, idx) => idx !== i);
+                      setRoomConfigs(nextConfigs);
+                      if (targetRoom.room_type !== "Car Park") {
+                        setRoomCountInput(String(nextConfigs.filter(room => room.room_type !== "Car Park").length));
+                      }
+                    }} className="text-xs text-destructive hover:underline">Remove</button>
                   </div>
                   {isCarParkConfig ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground">Parking Lot</label>
+                        <label className="text-xs text-muted-foreground">Parking Lot *</label>
                       <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }} />
                     </div>
                     <div>
@@ -753,7 +847,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                   <>
                   <div className="grid grid-cols-4 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground">Bed Type</label>
+                      <label className="text-xs text-muted-foreground">Bed Type *</label>
                       <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
                         const bt = e.target.value;
                         const c = [...roomConfigs];
@@ -764,11 +858,11 @@ export function AdminContent({ tab }: AdminContentProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">Max Pax</label>
+                      <label className="text-xs text-muted-foreground">Max Pax *</label>
                       <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], max_pax: Number(e.target.value) }; setRoomConfigs(c); }} />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                      <label className="text-xs text-muted-foreground">Rent (RM) *</label>
                       <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
                     </div>
                     <div>
@@ -841,7 +935,7 @@ export function AdminContent({ tab }: AdminContentProps) {
       <Dialog open={!!editingUnit} onOpenChange={(open) => { if (!open) handleUnitClose(); }}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit"}</DialogTitle>
+            <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit and Rooms"}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {renderUnitFormDialog()}
@@ -849,7 +943,7 @@ export function AdminContent({ tab }: AdminContentProps) {
           <DialogFooter>
             <button onClick={handleUnitClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
             <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-              {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
+              {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : editingUnit?.id ? "Save Changes" : "Save Unit and Rooms"}
             </button>
           </DialogFooter>
         </DialogContent>
