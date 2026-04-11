@@ -18,7 +18,7 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Rooms", url: "/rooms", icon: Home },
   { title: "Bookings", url: "/bookings", icon: ClipboardList },
-  { title: "Claims", url: "/claims", icon: DollarSign },
+  { title: "Claims", url: "/old", icon: DollarSign, state: { page: "claims" } },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
