@@ -5,6 +5,7 @@ import { useRooms } from "@/hooks/useRooms";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -88,31 +89,22 @@ export default function Rooms() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, currentPage, pageSize]);
 
-  const addLocation = (val: string) => {
-    if (val && !selectedLocations.includes(val)) {
-      setSelectedLocations((prev) => [...prev, val]);
-      // Reset buildings that no longer match
+  const applyLocations = (next: string[]) => {
+    setSelectedLocations(next);
+    // Reset buildings that no longer match
+    if (next.length) {
       setSelectedBuildings((prev) => {
-        const validBuildings = new Set(
-          allRooms.filter((r) => [...selectedLocations, val].includes(r.location)).map((r) => r.building)
-        );
+        const validBuildings = new Set(allRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
         return prev.filter((b) => validBuildings.has(b));
       });
     }
   };
 
+  const applyBuildings = (next: string[]) => setSelectedBuildings(next);
+
   const removeLocation = (val: string) => {
     const next = selectedLocations.filter((l) => l !== val);
-    setSelectedLocations(next);
-    if (!next.length) return;
-    setSelectedBuildings((prev) => {
-      const validBuildings = new Set(allRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
-      return prev.filter((b) => validBuildings.has(b));
-    });
-  };
-
-  const addBuilding = (val: string) => {
-    if (val && !selectedBuildings.includes(val)) setSelectedBuildings((prev) => [...prev, val]);
+    applyLocations(next);
   };
 
   const removeBuilding = (val: string) => setSelectedBuildings((prev) => prev.filter((b) => b !== val));
@@ -154,35 +146,25 @@ export default function Rooms() {
               {/* Filters */}
               <div className="bg-card rounded-xl shadow-sm border border-border p-5">
                 <div className="flex flex-wrap items-end gap-4">
-                  {/* Location */}
-                  <div className="space-y-1.5 min-w-[200px]">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</label>
-                    <Select onValueChange={addLocation} value="">
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locations.filter((l) => !selectedLocations.includes(l)).map((loc) => (
-                          <SelectItem key={loc} value={loc} className="capitalize">{loc}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                   {/* Location */}
+                  <MultiSelectFilter
+                    label="Location"
+                    placeholder="Select location"
+                    options={locations}
+                    selected={selectedLocations}
+                    onApply={applyLocations}
+                    className="min-w-[200px]"
+                  />
 
                   {/* Building */}
-                  <div className="space-y-1.5 min-w-[200px]">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Building / Condo</label>
-                    <Select onValueChange={addBuilding} value="">
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select building" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {buildings.filter((b) => !selectedBuildings.includes(b)).map((b) => (
-                          <SelectItem key={b} value={b}>{b}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <MultiSelectFilter
+                    label="Building / Condo"
+                    placeholder="Select building"
+                    options={buildings}
+                    selected={selectedBuildings}
+                    onApply={applyBuildings}
+                    className="min-w-[200px]"
+                  />
 
                   {/* Gender */}
                   <div className="space-y-1.5 min-w-[160px]">
