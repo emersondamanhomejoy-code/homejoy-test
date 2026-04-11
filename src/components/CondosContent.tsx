@@ -22,12 +22,13 @@ export function CondosContent() {
 
   // Build stats per condo (matched by building name = condo name)
   const condoStats = useMemo(() => {
-    const map: Record<string, { totalUnits: number; available: number; availableSoon: number; reserved: number; occupied: number }> = {};
+    const map: Record<string, { totalUnits: number; totalRooms: number; available: number; availableSoon: number; reserved: number; occupied: number }> = {};
     for (const c of condos) {
       const condoUnits = units.filter(u => u.building === c.name);
       const rooms = condoUnits.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park"));
       map[c.id] = {
         totalUnits: condoUnits.length,
+        totalRooms: rooms.length,
         available: rooms.filter(r => r.status === "Available").length,
         availableSoon: rooms.filter(r => r.status === "Available Soon").length,
         reserved: rooms.filter(r => r.status === "Reserved").length,
@@ -203,6 +204,7 @@ export function CondosContent() {
               <TableHead>Condo Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead className="text-center">Units</TableHead>
+              <TableHead className="text-center">Total Rooms</TableHead>
               <TableHead className="text-center">Available</TableHead>
               <TableHead className="text-center">Avail Soon</TableHead>
               <TableHead className="text-center">Reserved</TableHead>
@@ -212,9 +214,9 @@ export function CondosContent() {
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
             ) : filtered.map((c, i) => {
-              const stats = condoStats[c.id] || { totalUnits: 0, available: 0, availableSoon: 0, reserved: 0, occupied: 0 };
+              const stats = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, available: 0, availableSoon: 0, reserved: 0, occupied: 0 };
               return (
               <TableRow key={c.id}>
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
@@ -224,6 +226,7 @@ export function CondosContent() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{c.location?.name || "—"}</TableCell>
                 <TableCell className="text-center font-semibold">{stats.totalUnits}</TableCell>
+                <TableCell className="text-center font-semibold">{stats.totalRooms}</TableCell>
                 <TableCell className="text-center">
                   {stats.available > 0 ? <Badge variant="secondary" className="bg-green-500/15 text-green-700 dark:text-green-400">{stats.available}</Badge> : <span className="text-muted-foreground">0</span>}
                 </TableCell>
