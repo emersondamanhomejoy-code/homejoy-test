@@ -309,6 +309,80 @@ export type Database = {
           },
         ]
       }
+      condos: {
+        Row: {
+          address: string
+          amenities: string
+          created_at: string
+          deposit_info: string
+          description: string
+          gps_link: string
+          id: string
+          location_id: string | null
+          name: string
+          parking_info: string
+          photos: Json
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          amenities?: string
+          created_at?: string
+          deposit_info?: string
+          description?: string
+          gps_link?: string
+          id?: string
+          location_id?: string | null
+          name: string
+          parking_info?: string
+          photos?: Json
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          amenities?: string
+          created_at?: string
+          deposit_info?: string
+          description?: string
+          gps_link?: string
+          id?: string
+          location_id?: string | null
+          name?: string
+          parking_info?: string
+          photos?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "condos_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string
