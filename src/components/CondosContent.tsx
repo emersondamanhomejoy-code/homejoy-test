@@ -47,7 +47,6 @@ export function CondosContent() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
