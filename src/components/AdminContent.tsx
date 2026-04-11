@@ -821,13 +821,13 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* Room Edit Dialog */}
       <Dialog open={!!editingRoom} onOpenChange={(open) => { if (!open) handleRoomClose(); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Edit {editingRoom?.room_type === "Car Park" ? `🅿️ ${editingRoom?.room}` : editingRoom?.room}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {renderRoomEditDialog()}
-          </ScrollArea>
+          </div>
           <DialogFooter>
             <button onClick={handleRoomClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
             <button onClick={saveRoom} disabled={updateRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
