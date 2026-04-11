@@ -452,8 +452,9 @@ export default function Index() {
   // ─── ROOM DETAIL ───
   if (page === "detail" && selectedRoom) {
     return (
-      <div className="min-h-screen bg-background p-6 text-foreground">
-        <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => selectedBuilding ? setPage("building") : setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             ← Back
           </button>
@@ -559,8 +560,9 @@ export default function Index() {
               )}
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      </OldDashboardLayout>
     );
   }
 
