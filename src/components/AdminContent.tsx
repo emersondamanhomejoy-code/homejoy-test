@@ -1011,24 +1011,99 @@ export function AdminContent({ tab }: AdminContentProps) {
           const existingRooms = units.find(un => un.id === u.id)?.rooms || [];
           const regularRooms = existingRooms.filter(r => r.room_type !== "Car Park");
           const carParkRooms = existingRooms.filter(r => r.room_type === "Car Park");
-          const detectedNaming = regularRooms.length > 0 && /^Room [A-Z]/.test(regularRooms[0]?.room || "") ? "Alphabet" : "Digit";
+          const detectedNaming: "alpha" | "digit" = regularRooms.length > 0 && /^Room [A-Z]/.test(regularRooms[0]?.room || "") ? "alpha" : "digit";
+
+          const handleEditRoomCount = async (newCount: number) => {
+            const current = regularRooms.length;
+            if (newCount === current || newCount < 1 || newCount > 20) return;
+            const naming = detectedNaming;
+            if (newCount > current) {
+              for (let i = current; i < newCount; i++) {
+                await createRoom.mutateAsync({
+                  unit_id: u.id,
+                  building: u.building,
+                  location: u.location,
+                  unit: u.unit,
+                  room: getDefaultRoomName(i, naming),
+                  bed_type: "",
+                  max_pax: 1,
+                  rent: 0,
+                  status: "Available",
+                });
+              }
+            } else {
+              const toRemove = regularRooms.slice(newCount);
+              for (const room of toRemove) {
+                await deleteRoom.mutateAsync(room.id);
+              }
+            }
+          };
+
+          const handleEditCarParkCount = async (newCount: number) => {
+            const current = carParkRooms.length;
+            if (newCount === current || newCount < 0 || newCount > 10) return;
+            if (newCount > current) {
+              for (let i = current; i < newCount; i++) {
+                await createRoom.mutateAsync({
+                  unit_id: u.id,
+                  building: u.building,
+                  location: u.location,
+                  unit: u.unit,
+                  room: getDefaultCarParkName(i),
+                  room_type: "Car Park",
+                  bed_type: "",
+                  max_pax: 0,
+                  rent: 0,
+                  status: "Available",
+                });
+              }
+            } else {
+              const toRemove = carParkRooms.slice(newCount);
+              for (const cp of toRemove) {
+                await deleteRoom.mutateAsync(cp.id);
+              }
+            }
+          };
+
+          const handleEditNaming = async (naming: "alpha" | "digit") => {
+            for (let i = 0; i < regularRooms.length; i++) {
+              const newName = getDefaultRoomName(i, naming);
+              if (regularRooms[i].room !== newName) {
+                await updateRoom.mutateAsync({ id: regularRooms[i].id, room: newName });
+              }
+            }
+          };
+
           return (
           <div className="pt-4 border-t border-border space-y-4">
             <div className="text-lg font-semibold">Rooms & Car Parks</div>
 
-            {/* Count & naming info */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Count & naming controls */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-muted-foreground">Number of Rooms</label>
-                <input className={`${inputClass} w-full bg-muted`} value={regularRooms.length} readOnly />
+                <label className="text-xs text-muted-foreground">Number of Rooms *</label>
+                <input className={`${inputClass} w-full`} type="number" min={1} max={20} value={regularRooms.length}
+                  onChange={e => handleEditRoomCount(Math.floor(Number(e.target.value) || 1))} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Number of Car Parks</label>
-                <input className={`${inputClass} w-full bg-muted`} value={carParkRooms.length} readOnly />
+                <input className={`${inputClass} w-full`} type="number" min={0} max={10} value={carParkRooms.length}
+                  onChange={e => handleEditCarParkCount(Math.floor(Number(e.target.value) || 0))} />
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Room Naming Convention</label>
-                <input className={`${inputClass} w-full bg-muted`} value={detectedNaming} readOnly />
+            </div>
+
+            {/* Naming convention radio */}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-2">Room Naming Convention</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="editRoomNaming" value="alpha" checked={detectedNaming === "alpha"} onChange={() => handleEditNaming("alpha")} className="w-4 h-4 accent-primary" />
+                  <span className="text-sm">Alphabet (Room A, B, C…)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="editRoomNaming" value="digit" checked={detectedNaming === "digit"} onChange={() => handleEditNaming("digit")} className="w-4 h-4 accent-primary" />
+                  <span className="text-sm">Digit (Room 1, 2, 3…)</span>
+                </label>
               </div>
             </div>
 
