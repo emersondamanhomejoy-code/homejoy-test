@@ -927,247 +927,27 @@ export function AdminContent({ tab }: AdminContentProps) {
       })()}
 
       {/* UNITS TAB */}
-      {tab === "units" && (() => {
-        const allLocations = Array.from(new Set(units.map(u => u.location).filter(Boolean))).sort();
-        const allBuildings = Array.from(new Set(units.filter(u => unitFilters.location === "All" || u.location === unitFilters.location).map(u => u.building).filter(Boolean))).sort();
-        const filteredUnits = units.filter(unit => {
-          if (unitFilters.location !== "All" && unit.location !== unitFilters.location) return false;
-          if (unitFilters.building !== "All" && unit.building !== unitFilters.building) return false;
-          if (unitFilters.unitType !== "All" && unit.unit_type !== unitFilters.unitType) return false;
-          if (unitFilters.price !== "All") {
-            const minRent = Math.min(...(unit.rooms?.filter(r => r.room_type !== "Car Park").map(r => r.rent) ?? [0]));
-            if (unitFilters.price === "Below RM700" && minRent >= 700) return false;
-            if (unitFilters.price === "RM700 - RM900" && (minRent < 700 || minRent > 900)) return false;
-            if (unitFilters.price === "Above RM900" && minRent <= 900) return false;
-          }
-          return true;
-        });
-        return (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{filteredUnits.length} of {units.length} units</span>
-            <button onClick={openCreateRoom2} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">+ Add Unit</button>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            <select className={inputClass} value={unitFilters.location} onChange={e => setUnitFilters({ ...unitFilters, location: e.target.value, building: "All" })}>
-              <option value="All">All Areas</option>
-              {allLocations.map(l => <option key={l}>{l}</option>)}
-            </select>
-            <select className={inputClass} value={unitFilters.building} onChange={e => setUnitFilters({ ...unitFilters, building: e.target.value })}>
-              <option value="All">All Properties</option>
-              {allBuildings.map(b => <option key={b}>{b}</option>)}
-            </select>
-            <select className={inputClass} value={unitFilters.price} onChange={e => setUnitFilters({ ...unitFilters, price: e.target.value })}>
-              <option value="All">All Prices</option>
-              <option>Below RM700</option><option>RM700 - RM900</option><option>Above RM900</option>
-            </select>
-            <select className={inputClass} value={unitFilters.unitType} onChange={e => setUnitFilters({ ...unitFilters, unitType: e.target.value })}>
-              <option value="All">All Gender</option>
-              <option>Female Unit</option><option>Mix Unit</option><option>Male Unit</option>
-            </select>
-          </div>
-          {unitsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : (
-            <div className="space-y-3">
-              {filteredUnits.map((unit) => {
-                const isExpanded = expandedUnit === unit.id;
-                const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
-                const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
-                const availableCount = regularRooms.filter(r => r.status === "Available").length;
-                const availableCP = carParks.filter(r => r.status === "Available").length;
-                return (
-                  <div key={unit.id} className="bg-card rounded-lg shadow-sm overflow-hidden">
-                    <div className="p-5 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}>
-                      <div>
-                        <div className="text-lg font-semibold">{unit.building} {unit.unit}</div>
-                        <div className="text-sm text-muted-foreground mt-1">{unit.location} • {unit.unit_type} • Maximum {unit.unit_max_pax} Pax</div>
-                        <div className="flex gap-2 flex-wrap mt-2">
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-accent text-accent-foreground">{availableCount} rooms avail</span>
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">{regularRooms.length - availableCount} tenanted</span>
-                          {carParks.length > 0 && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">🅿️ {availableCP}/{carParks.length} car parks</span>}
-                          {unit.passcode && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🔑 {unit.passcode}</span>}
-                          {(unit as any).access_card_source && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🪪 {(unit as any).access_card_source} {(unit as any).access_card_deposit ? `RM${(unit as any).access_card_deposit}` : ""}</span>}
-                          {(unit as any).deposit && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit: {(unit as any).deposit}</span>}
-                          {(unit as any).meter_type && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">⚡ {(unit as any).meter_type} {(unit as any).meter_rate ? `RM${(unit as any).meter_rate}/kWh` : ""}</span>}
-                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">💰 Deposit ×{(unit as any).deposit_multiplier ?? 1.5} | Admin Fee RM{(unit as any).admin_fee ?? 330}</span>
-                          {(unit as any).parking_type && (unit as any).parking_type !== "None" && <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">🅿️ {(unit as any).parking_type}</span>}
-                          {(unit as any).internal_only && <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary">🔒 Internal Only</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); setEditingUnit({ id: unit.id, building: unit.building, unit: unit.unit, location: unit.location, unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax, passcode: unit.passcode || "", access_card: unit.access_card || "", parking_lot: unit.parking_lot || "", access_card_source: (unit as any).access_card_source || "Provided by Us", access_card_deposit: (unit as any).access_card_deposit || 0, access_info: typeof unit.access_info === 'string' ? unit.access_info : "", internal_only: (unit as any).internal_only || false, deposit: (unit as any).deposit || "", meter_type: (unit as any).meter_type || "Postpaid", meter_rate: (unit as any).meter_rate || 0, deposit_multiplier: (unit as any).deposit_multiplier ?? 1.5, admin_fee: (unit as any).admin_fee ?? 330, parking_type: (unit as any).parking_type || "None", parking_card_deposit: (unit as any).parking_card_deposit || 0 }); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteUnit(unit.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>
-                        <span className="text-muted-foreground text-lg">{isExpanded ? "▲" : "▼"}</span>
-                      </div>
-                    </div>
-                    {isExpanded && unit.rooms && (
-                      <div className="border-t">
-                        {/* Common Area Photos */}
-                        <div className="p-4 border-b bg-secondary/20">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm font-semibold">🏠 Common Area Photos</div>
-                            <button
-                              onClick={() => {
-                                const url = `${window.location.origin}/common/${unit.id}`;
-                                navigator.clipboard.writeText(url);
-                                alert("Common area link copied!");
-                              }}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
-                            >
-                              📋 Copy Link
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-3">
-                            {((unit as any).common_photos as string[] || []).map((path: string, i: number) => (
-                              <div key={i} className="relative group">
-                                <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-24 w-24 object-cover rounded-lg" />
-                                <button onClick={async () => {
-                                  const newPhotos = ((unit as any).common_photos as string[]).filter((_: string, idx: number) => idx !== i);
-                                  try { await updateUnit.mutateAsync({ id: unit.id, common_photos: newPhotos } as any); } catch (e: any) { alert(e.message); }
-                                }} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-                              </div>
-                            ))}
-                            <label className="h-24 w-24 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                              <span className="text-xl text-muted-foreground">+</span>
-                              <span className="text-[10px] text-muted-foreground">Add</span>
-                              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                                const files = Array.from(e.target.files || []);
-                                if (!files.length) return;
-                                const newPaths: string[] = [];
-                                for (const file of files) {
-                                  const ext = file.name.split('.').pop();
-                                  const path = `common/${unit.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                                  const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
-                                  newPaths.push(path);
-                                }
-                                if (newPaths.length > 0) {
-                                  const existing = ((unit as any).common_photos as string[] || []);
-                                  try { await updateUnit.mutateAsync({ id: unit.id, common_photos: [...existing, ...newPaths] } as any); } catch (e: any) { alert(e.message); }
-                                }
-                                e.target.value = "";
-                              }} />
-                            </label>
-                          </div>
-                        </div>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-secondary/50">
-                              <th className="text-left px-4 py-2 font-medium">Room</th>
-                              <th className="text-left px-4 py-2 font-medium">Bed Type</th>
-                              <th className="text-left px-4 py-2 font-medium">Pax</th>
-                              <th className="text-left px-4 py-2 font-medium">Rent</th>
-                              <th className="text-left px-4 py-2 font-medium">Tenant</th>
-                              <th className="text-left px-4 py-2 font-medium">Status</th>
-                              <th className="text-right px-4 py-2 font-medium">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {unit.rooms.map((room) => {
-                              const isCP = room.room_type === "Car Park";
-                              return (
-                              <tr key={room.id} className={`border-t hover:bg-secondary/30 transition-colors ${isCP ? "bg-blue-500/5" : ""}`}>
-                                <td className="px-4 py-3 font-medium">{isCP ? `🅿️ ${room.room}` : room.room}</td>
-                                <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.bed_type ? `Lot: ${room.bed_type}` : "—") : (room.bed_type || "—")}</td>
-                                <td className="px-4 py-3">
-                                  {isCP ? "—" : (
-                                  <select className="bg-secondary rounded px-2 py-1 text-xs font-medium" value={room.pax_staying || 0} onChange={async (e) => {
-                                    try { await updateRoom.mutateAsync({ id: room.id, pax_staying: Number(e.target.value) }); } catch (err: any) { alert(err.message); }
-                                  }}>
-                                    {Array.from({ length: room.max_pax + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
-                                  </select>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">{room.rent > 0 ? `RM${room.rent}` : "—"}</td>
-                                <td className="px-4 py-3 text-muted-foreground">{isCP ? (room.tenant_gender || "—") : ([room.tenant_race, room.tenant_gender].filter(Boolean).join(" ") || "—")}</td>
-                                <td className="px-4 py-3">
-                                  <div className="flex flex-col gap-1">
-                                    <select
-                                      className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${
-                                        room.status === "Available" ? "bg-accent/50 text-accent-foreground" :
-                                        room.status === "Available Soon" ? "bg-primary/20 text-primary" :
-                                        "bg-destructive/10 text-destructive"
-                                      }`}
-                                      value={room.status}
-                                      onChange={e => changeRoomStatus(room, e.target.value)}
-                                    >
-                                      <option value="Available">Available</option>
-                                      <option value="Occupied">Occupied</option>
-                                      <option value="Tenanted">Tenanted</option>
-                                      <option value="Reserved">Reserved</option>
-                                      <option value="Available Soon">Available Soon</option>
-                                    </select>
-                                    {room.status === "Available Soon" && (
-                                      <input
-                                        type="date"
-                                        className="px-1.5 py-0.5 rounded border bg-secondary text-xs"
-                                        value={room.available_date !== "Available Now" ? room.available_date : ""}
-                                        onChange={e => changeRoomAvailableDate(room, e.target.value)}
-                                      />
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                  <div className="flex gap-1 justify-end">
-                                    <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Edit</button>
-                                    {isCP && <button onClick={async () => { if (confirm("Delete this car park?")) { try { await deleteRoom.mutateAsync(room.id); } catch (e: any) { alert(e.message); } } }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">Delete</button>}
-                                  </div>
-                                </td>
-                              </tr>
-                              );
-                            })}
-                            {/* Balance pax summary */}
-                            <tr className="border-t bg-secondary/30 font-semibold">
-                              <td className="px-4 py-2" colSpan={2}>Balance Pax</td>
-                              <td className="px-4 py-2">{unit.unit_max_pax - (unit.rooms?.filter(r => r.room_type !== "Car Park").reduce((sum, r) => sum + (r.pax_staying || 0), 0) ?? 0)}</td>
-                              <td colSpan={4} className="px-4 py-2 text-right">
-                                <button onClick={async () => {
-                                  const cpCount = (unit.rooms?.filter(r => r.room_type === "Car Park").length ?? 0) + 1;
-                                  try {
-                                    await createRoom.mutateAsync({
-                                      unit_id: unit.id,
-                                      building: unit.building,
-                                      unit: unit.unit,
-                                      room: cpCount === 1 ? "Car Park" : `Car Park ${cpCount}`,
-                                      location: unit.location,
-                                      rent: 0,
-                                      bed_type: "",
-                                      room_type: "Car Park",
-                                      unit_type: unit.unit_type,
-                                      status: "Available",
-                                      available_date: "Available Now",
-                                      max_pax: 0,
-                                      occupied_pax: 0,
-                                      pax_staying: 0,
-                                      unit_max_pax: unit.unit_max_pax,
-                                      unit_occupied_pax: 0,
-                                      housemates: [],
-                                      photos: [],
-                                      access_info: unit.access_info,
-                                      move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
-                                      tenant_gender: "",
-                                      tenant_race: "",
-                                      internal_only: (unit as any).internal_only || false,
-                                    });
-                                  } catch (e: any) { alert(e.message); }
-                                }} disabled={createRoom.isPending} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                                  🅿️ + Add Car Park
-                                </button>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        );
-      })()}
+      {tab === "units" && <UnitsTableView
+        units={units}
+        unitsLoading={unitsLoading}
+        unitFilters={unitFilters}
+        setUnitFilters={setUnitFilters}
+        openCreateRoom2={openCreateRoom2}
+        setEditingUnit={setEditingUnit}
+        handleDeleteUnit={handleDeleteUnit}
+        setEditingRoom={setEditingRoom}
+        expandedUnit={expandedUnit}
+        setExpandedUnit={setExpandedUnit}
+        updateRoom={updateRoom}
+        updateUnit={updateUnit}
+        createRoom={createRoom}
+        deleteRoom={deleteRoom}
+        changeRoomStatus={changeRoomStatus}
+        changeRoomAvailableDate={changeRoomAvailableDate}
+        condosList={condosList}
+        inputClass={inputClass}
+        emptyUnit={emptyUnit}
+      />}
 
       {/* CLAIMS TAB */}
       {tab === "claims" && (() => {
