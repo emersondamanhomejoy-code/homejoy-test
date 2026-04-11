@@ -8,6 +8,7 @@ import { logActivity } from "@/hooks/useActivityLog";
 import { useCondos } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { UnitsTableView } from "@/components/UnitsTableView";
+import { BookingsContent } from "@/components/BookingsContent";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -949,6 +950,9 @@ export function AdminContent({ tab }: AdminContentProps) {
         inputClass={inputClass}
         emptyUnit={emptyUnit}
       />}
+
+      {/* BOOKINGS TAB */}
+      {tab === "bookings" && <BookingsContent />}
 
       {/* CLAIMS TAB */}
       {tab === "claims" && (() => {
