@@ -1278,15 +1278,6 @@ export function AdminContent({ tab }: AdminContentProps) {
         openCreateRoom2={openCreateRoom2}
         setEditingUnit={setEditingUnit}
         handleDeleteUnit={handleDeleteUnit}
-        setEditingRoom={setEditingRoom}
-        expandedUnit={expandedUnit}
-        setExpandedUnit={setExpandedUnit}
-        updateRoom={updateRoom}
-        updateUnit={updateUnit}
-        createRoom={createRoom}
-        deleteRoom={deleteRoom}
-        changeRoomStatus={changeRoomStatus}
-        changeRoomAvailableDate={changeRoomAvailableDate}
         condosList={condosList}
         inputClass={inputClass}
         emptyUnit={emptyUnit}
