@@ -557,9 +557,22 @@ export function AdminContent({ tab }: AdminContentProps) {
         <div className="text-2xl font-extrabold">{u.id ? "Edit Unit" : "Add Unit"}</div>
         <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
-            <input className={inputClass} placeholder="Building name" value={u.building} onChange={e => updateField("building", e.target.value)} />
+            <div>
+              <label className="text-xs text-muted-foreground">Condo / Building</label>
+              <select className={`${inputClass} w-full`} value={u.building} onChange={e => {
+                const selectedCondo = condosList.find(c => c.name === e.target.value);
+                const locationName = selectedCondo?.location?.name || "";
+                setEditingUnit({ ...u, building: e.target.value, location: locationName });
+              }}>
+                <option value="">— Select Condo —</option>
+                {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
             <input className={inputClass} placeholder="Unit (e.g. A-17-8)" value={u.unit} onChange={e => updateField("unit", e.target.value)} />
-            <input className={inputClass} placeholder="Location" value={u.location} onChange={e => updateField("location", e.target.value)} />
+            <div>
+              <label className="text-xs text-muted-foreground">Location (auto-filled from condo)</label>
+              <input className={`${inputClass} w-full bg-muted`} value={u.location} readOnly placeholder="Select a condo above" />
+            </div>
             <select className={inputClass} value={u.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
               <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
             </select>
