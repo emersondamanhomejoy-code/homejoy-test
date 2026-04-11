@@ -1090,7 +1090,8 @@ export function AdminContent({ tab }: AdminContentProps) {
               })}
             </div>
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   };
