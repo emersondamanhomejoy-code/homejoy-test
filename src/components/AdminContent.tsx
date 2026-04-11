@@ -7,6 +7,7 @@ import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 import { logActivity } from "@/hooks/useActivityLog";
 import { useCondos } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
+import { UnitsTableView } from "@/components/UnitsTableView";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
