@@ -73,9 +73,9 @@ export function AgentSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink to="/old" className="hover:bg-muted/50 text-muted-foreground">
+              <NavLink to="/admin" className="hover:bg-muted/50 text-muted-foreground">
                 <ExternalLink className="h-4 w-4 mr-2" />
-                {!collapsed && <span>Old Version</span>}
+                {!collapsed && <span>Admin Panel</span>}
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

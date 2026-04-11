@@ -22,7 +22,7 @@ export default function Login() {
       if (role === "agent") {
         navigate("/", { replace: true });
       } else {
-        navigate("/old", { replace: true });
+        navigate("/admin", { replace: true });
       }
     }
   }, [user, role, loading, navigate]);

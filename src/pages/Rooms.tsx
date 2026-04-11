@@ -39,7 +39,7 @@ export default function Rooms() {
 
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
-    else if (!loading && user && role && role !== "agent") navigate("/old", { replace: true });
+    else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
   }, [user, role, loading, navigate]);
 
   // All non-internal rooms (exclude Car Park), will filter by status
