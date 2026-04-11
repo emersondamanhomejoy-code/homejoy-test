@@ -98,7 +98,7 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
             <SidebarMenuButton asChild>
               <NavLink to="/" className="hover:bg-muted/50 text-muted-foreground">
                 <Sparkles className="h-4 w-4 mr-2" />
-                {!collapsed && <span>New Version</span>}
+                {!collapsed && <span>Agent Dashboard</span>}
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
