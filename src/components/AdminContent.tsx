@@ -935,7 +935,7 @@ export function AdminContent({ tab }: AdminContentProps) {
       <Dialog open={!!editingUnit} onOpenChange={(open) => { if (!open) handleUnitClose(); }}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit"}</DialogTitle>
+            <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit and Rooms"}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {renderUnitFormDialog()}
@@ -943,7 +943,7 @@ export function AdminContent({ tab }: AdminContentProps) {
           <DialogFooter>
             <button onClick={handleUnitClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
             <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-              {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
+              {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : editingUnit?.id ? "Save Changes" : "Save Unit and Rooms"}
             </button>
           </DialogFooter>
         </DialogContent>

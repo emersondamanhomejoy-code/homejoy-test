@@ -169,7 +169,7 @@ export function UnitsTableView({
           <h3 className="font-semibold text-foreground">
             Units & Rooms <span className="text-muted-foreground font-normal text-sm ml-2">({allRows.length} units)</span>
           </h3>
-          <Button onClick={openCreateRoom2} size="sm">+ Add Unit</Button>
+          <Button onClick={openCreateRoom2} size="sm">+ Add Unit and Rooms</Button>
         </div>
 
         {unitsLoading ? (
