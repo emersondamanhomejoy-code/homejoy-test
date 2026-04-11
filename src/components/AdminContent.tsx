@@ -854,7 +854,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                         c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
                         setRoomConfigs(c);
                       }}>
-                        <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
+                        <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
                       </select>
                     </div>
                     <div>
