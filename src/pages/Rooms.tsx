@@ -112,11 +112,11 @@ export default function Rooms() {
   const clearFilters = () => {
     setSelectedLocations([]);
     setSelectedBuildings([]);
-    setSelectedGender("all");
+    setSelectedGender("mix");
     setSelectedStatus("Available");
   };
 
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "all" || selectedStatus !== "Available";
+  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "mix" || selectedStatus !== "Available";
 
   if (loading || !user) return null;
 
