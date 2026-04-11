@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
@@ -64,6 +64,7 @@ const defaultConfigs: Record<string, CommissionConfig> = {
 };
 
 const bedTypeMaxPax: Record<string, number> = {
+  Single: 1, "Super Single": 1, Queen: 2, King: 2,
   MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
 };
 
@@ -853,7 +854,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                         c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
                         setRoomConfigs(c);
                       }}>
-                        <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
+                        <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
                       </select>
                     </div>
                     <div>

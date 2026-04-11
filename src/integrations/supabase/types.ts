@@ -432,6 +432,7 @@ export type Database = {
           rent: number
           room: string
           room_type: string
+          special_type: string
           status: string
           tenant_gender: string
           tenant_race: string
@@ -441,6 +442,7 @@ export type Database = {
           unit_occupied_pax: number
           unit_type: string
           updated_at: string
+          wall_type: string
         }
         Insert: {
           access_info?: Json
@@ -460,6 +462,7 @@ export type Database = {
           rent?: number
           room: string
           room_type?: string
+          special_type?: string
           status?: string
           tenant_gender?: string
           tenant_race?: string
@@ -469,6 +472,7 @@ export type Database = {
           unit_occupied_pax?: number
           unit_type?: string
           updated_at?: string
+          wall_type?: string
         }
         Update: {
           access_info?: Json
@@ -488,6 +492,7 @@ export type Database = {
           rent?: number
           room?: string
           room_type?: string
+          special_type?: string
           status?: string
           tenant_gender?: string
           tenant_race?: string
@@ -497,6 +502,7 @@ export type Database = {
           unit_occupied_pax?: number
           unit_type?: string
           updated_at?: string
+          wall_type?: string
         }
         Relationships: [
           {
