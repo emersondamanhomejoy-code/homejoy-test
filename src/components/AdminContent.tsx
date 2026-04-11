@@ -901,19 +901,17 @@ export function AdminContent({ tab }: AdminContentProps) {
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-muted-foreground">Wall Type *</label>
-                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
-                              <option value="">—</option><option value="Partition">Partition</option><option value="Original">Original</option>
-                            </select>
-                          </div>
-                          <div>
                             <label className="text-xs text-muted-foreground">Rental (RM) *</label>
                             <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} />
                           </div>
                           <div>
-                            <label className="text-xs text-muted-foreground">Special Type</label>
-                            <select className={`${inputClass} w-full`} value={(rc as any).special_type || ""} onChange={e => updateRC("special_type", e.target.value)}>
-                              <option value="">— None —</option><option value="Balcony">Balcony</option><option value="Master">Master</option>
+                            <label className="text-xs text-muted-foreground">Max Pax *</label>
+                            <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => updateRC("max_pax", Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Status</label>
+                            <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
+                              <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
                             </select>
                           </div>
                         </div>
