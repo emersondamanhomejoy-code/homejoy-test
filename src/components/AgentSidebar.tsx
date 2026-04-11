@@ -17,7 +17,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Rooms", url: "/rooms", icon: Home },
-  { title: "Bookings", url: "/bookings", icon: ClipboardList },
+  { title: "Bookings", url: "/old", icon: ClipboardList, navState: { page: "dashboard" } },
   { title: "Claims", url: "/old", icon: DollarSign, navState: { page: "claims" } },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
