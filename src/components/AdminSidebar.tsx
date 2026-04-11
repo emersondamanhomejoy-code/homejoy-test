@@ -22,7 +22,7 @@ import {
 const adminMenuItems = [
   { title: "Dashboard", icon: LayoutDashboard, tab: "dashboard" },
   { title: "Locations", icon: MapPin, tab: "locations" },
-  { title: "Condos", icon: Building, tab: "condos" },
+  { title: "Buildings", icon: Building, tab: "condos" },
   { title: "Units & Rooms", icon: Building2, tab: "units" },
   { title: "Bookings", icon: ClipboardList, tab: "bookings" },
   { title: "Claims", icon: DollarSign, tab: "claims" },
