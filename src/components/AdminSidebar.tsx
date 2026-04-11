@@ -95,14 +95,6 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink to="/old" className="hover:bg-muted/50 text-muted-foreground">
-                <Home className="h-4 w-4 mr-2" />
-                {!collapsed && <span>Old Dashboard</span>}
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
               <NavLink to="/" className="hover:bg-muted/50 text-muted-foreground">
                 <Sparkles className="h-4 w-4 mr-2" />
                 {!collapsed && <span>New Version</span>}
