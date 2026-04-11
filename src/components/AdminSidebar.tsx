@@ -19,11 +19,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const adminMenuItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard, tab: "dashboard" },
-  { title: "Units & Rooms", url: "/admin", icon: Building2, tab: "units" },
-  { title: "Claims", url: "/admin", icon: DollarSign, tab: "claims" },
-  { title: "Users", url: "/admin", icon: Users, tab: "users" },
-  { title: "Activity Log", url: "/admin", icon: FileText, tab: "activity", bossOnly: true },
+  { title: "Dashboard", icon: LayoutDashboard, tab: "dashboard" },
+  { title: "Units & Rooms", icon: Building2, tab: "units" },
+  { title: "Bookings", icon: ClipboardList, tab: "bookings", link: "/" },
+  { title: "Claims", icon: DollarSign, tab: "claims" },
+  { title: "Users", icon: Users, tab: "users" },
+  { title: "Activity Log", icon: FileText, tab: "activity", bossOnly: true },
 ];
 
 interface AdminSidebarProps {
