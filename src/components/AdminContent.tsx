@@ -5,6 +5,8 @@ import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, u
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 import { logActivity } from "@/hooks/useActivityLog";
+import { useCondos } from "@/hooks/useCondos";
+import { useLocations } from "@/hooks/useLocations";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
