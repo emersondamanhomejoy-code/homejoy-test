@@ -478,7 +478,7 @@ export function AdminContent({ tab }: AdminContentProps) {
       if (regularRooms.length < 1) missingFields.push("Number of Rooms");
 
       regularRooms.forEach((room, index) => {
-        const label = room.room || getDefaultRoomName(index);
+        const label = room.room || getDefaultRoomName(index, roomNaming);
         if (!room.bed_type.trim()) missingFields.push(`${label} Bed Type`);
         if (!Number.isFinite(Number(room.max_pax)) || Number(room.max_pax) < 1) missingFields.push(`${label} Max Pax`);
         if (!Number.isFinite(Number(room.rent)) || Number(room.rent) <= 0) missingFields.push(`${label} Rent`);
