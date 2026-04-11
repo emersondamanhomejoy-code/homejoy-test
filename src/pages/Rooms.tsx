@@ -227,7 +227,8 @@ export default function Rooms() {
                           <TableHead>Unit Type</TableHead>
                           <TableHead className="text-right">Rent (RM)</TableHead>
                           <TableHead className="text-center">Max Pax</TableHead>
-                          <TableHead>Available</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-center">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -256,7 +257,12 @@ export default function Rooms() {
                             </TableCell>
                             <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                             <TableCell className="text-center">{room.max_pax}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{room.available_date}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{room.status}</TableCell>
+                            <TableCell className="text-center">
+                              <Button size="sm" variant="outline" onClick={() => navigate(`/book/${room.id}`)}>
+                                Book
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
