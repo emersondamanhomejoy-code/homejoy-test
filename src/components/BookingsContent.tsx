@@ -67,7 +67,9 @@ export function BookingsContent() {
       ? "bg-yellow-500/20 text-yellow-600"
       : status === "approved"
         ? "bg-green-500/20 text-green-600"
-        : "bg-red-500/20 text-red-600";
+        : status === "cancelled"
+          ? "bg-gray-500/20 text-gray-500"
+          : "bg-red-500/20 text-red-600";
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${cls}`}>{status.toUpperCase()}</span>;
   };
 
@@ -117,37 +119,52 @@ export function BookingsContent() {
             </div>
           </div>
 
-          {b.status === "pending" && (
+          {(b.status === "pending" || b.status === "approved") && (
             <div className="flex flex-col gap-3 pt-4 border-t border-border">
-              <div className="flex gap-2">
-                <Button
-                  onClick={async () => {
-                    if (!user) return;
-                    await updateBookingStatus.mutateAsync({
-                      id: b.id, status: "approved", reviewed_by: user.id,
-                      room_id: b.room_id, tenant_name: b.tenant_name,
-                      tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
-                      pax_staying: b.pax_staying,
-                    });
-                    setSelectedBooking(null);
-                  }}
-                  disabled={updateBookingStatus.isPending}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >✅ Approve</Button>
-              </div>
-              <div className="flex gap-2">
-                <Input placeholder="Reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="flex-1" />
-                <Button
-                  onClick={async () => {
-                    if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
-                    await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
-                    setSelectedBooking(null);
-                    setRejectReason("");
-                  }}
-                  disabled={updateBookingStatus.isPending}
-                  variant="destructive"
-                >❌ Reject</Button>
-              </div>
+              {b.status === "pending" && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      if (!user) return;
+                      await updateBookingStatus.mutateAsync({
+                        id: b.id, status: "approved", reviewed_by: user.id,
+                        room_id: b.room_id, tenant_name: b.tenant_name,
+                        tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
+                        pax_staying: b.pax_staying,
+                      });
+                      setSelectedBooking(null);
+                    }}
+                    disabled={updateBookingStatus.isPending}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >✅ Approve</Button>
+                </div>
+              )}
+              {b.status === "pending" && (
+                <div className="flex gap-2">
+                  <Input placeholder="Reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="flex-1" />
+                  <Button
+                    onClick={async () => {
+                      if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
+                      await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+                      setSelectedBooking(null);
+                      setRejectReason("");
+                    }}
+                    disabled={updateBookingStatus.isPending}
+                    variant="destructive"
+                  >❌ Reject</Button>
+                </div>
+              )}
+              <Button
+                onClick={async () => {
+                  if (!user) return;
+                  if (!confirm("Are you sure you want to cancel this booking?")) return;
+                  await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: "Cancelled by admin" });
+                  setSelectedBooking(null);
+                }}
+                disabled={updateBookingStatus.isPending}
+                variant="outline"
+                className="text-gray-500 border-gray-300 hover:bg-gray-100"
+              >🚫 Cancel Booking</Button>
             </div>
           )}
 
@@ -181,6 +198,7 @@ export function BookingsContent() {
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
         <Input placeholder="Search name, ID, condo..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
