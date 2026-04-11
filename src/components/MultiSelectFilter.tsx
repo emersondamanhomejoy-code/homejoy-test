@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -91,7 +92,8 @@ export function MultiSelectFilter({
           </div>
 
           {/* Options */}
-          <div className="max-h-[200px] overflow-y-auto p-1">
+          <ScrollArea className="max-h-[280px]">
+            <div className="p-1">
             {filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No results
@@ -110,7 +112,8 @@ export function MultiSelectFilter({
                 </label>
               ))
             )}
-          </div>
+            </div>
+          </ScrollArea>
 
           {/* Footer */}
           <div className="border-t border-border p-2 flex items-center justify-between gap-2">
