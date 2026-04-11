@@ -106,9 +106,10 @@ export function useCreateUnit() {
       roomConfigs: RoomConfig[];
     }) => {
       const { unit, roomConfigs } = payload;
+      const { wifi_name, wifi_password, rooms, ...cleanUnit } = unit as any;
       const { data: newUnit, error: uErr } = await supabase
         .from("units")
-        .insert(unit)
+        .insert(cleanUnit)
         .select()
         .single();
       if (uErr) throw uErr;
@@ -149,7 +150,8 @@ export function useUpdateUnit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...rest }: Partial<Unit> & { id: string }) => {
-      const { error } = await supabase.from("units").update(rest).eq("id", id);
+      const { wifi_name, wifi_password, rooms, ...cleanRest } = rest as any;
+      const { error } = await supabase.from("units").update(cleanRest).eq("id", id);
       if (error) throw error;
       // Sync internal_only to rooms
       if (rest.internal_only !== undefined) {

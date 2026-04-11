@@ -457,7 +457,6 @@ export function AdminContent({ tab }: AdminContentProps) {
     if (!editingUnit) return;
 
     const missingFields: string[] = [];
-    if (!((editingUnit.common_photos as string[] | undefined)?.length)) missingFields.push("Common area photo");
     if (!editingUnit.building.trim()) missingFields.push("Condo / Building");
     if (!editingUnit.location.trim()) missingFields.push("Location");
     if (!editingUnit.unit.trim()) missingFields.push("Unit");
