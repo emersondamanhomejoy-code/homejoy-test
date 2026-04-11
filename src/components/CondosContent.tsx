@@ -226,6 +226,7 @@ export function CondosContent() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{c.location?.name || "—"}</TableCell>
                 <TableCell className="text-center font-semibold">{stats.totalUnits}</TableCell>
+                <TableCell className="text-center font-semibold">{stats.totalRooms}</TableCell>
                 <TableCell className="text-center">
                   {stats.available > 0 ? <Badge variant="secondary" className="bg-green-500/15 text-green-700 dark:text-green-400">{stats.available}</Badge> : <span className="text-muted-foreground">0</span>}
                 </TableCell>
