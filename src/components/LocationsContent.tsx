@@ -3,7 +3,7 @@ import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation }
 import { useCondos } from "@/hooks/useCondos";
 import { useUnits } from "@/hooks/useRooms";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+
 import { Pencil, Trash2, Plus } from "lucide-react";
 
 export function LocationsContent() {
