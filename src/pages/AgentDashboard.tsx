@@ -5,7 +5,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 
 const navigateToOld = (navigate: ReturnType<typeof useNavigate>, page = "dashboard") => {
-  navigate("/old", { state: { page } });
+  navigate("/admin", { state: { page } });
 };
 
 const pipelineData = {
@@ -81,7 +81,7 @@ export default function AgentDashboard() {
     if (!loading && !user) {
       navigate("/login", { replace: true });
     } else if (!loading && user && role && role !== "agent") {
-      navigate("/old", { replace: true });
+      navigate("/admin", { replace: true });
     }
   }, [user, role, loading, navigate]);
 
