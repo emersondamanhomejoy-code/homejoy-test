@@ -127,6 +127,8 @@ export function AdminContent({ tab }: AdminContentProps) {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(defaultRoomConfigs);
   const [unitFilters, setUnitFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All" });
+  const [showUnitCancelConfirm, setShowUnitCancelConfirm] = useState(false);
+  const [showRoomCancelConfirm, setShowRoomCancelConfirm] = useState(false);
 
   // Bookings state
   const { data: allBookings = [] } = useBookings();
