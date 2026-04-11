@@ -117,7 +117,7 @@ export default function AgentDashboard() {
                       {key === "movein" ? "Move-in" : key.charAt(0).toUpperCase() + key.slice(1)}
                     </div>
                     {cards.map((card, i) => (
-                      <PipelineCard key={i} {...card} />
+                      <PipelineCard key={i} {...card} onClick={key === "claim" ? () => navigateToClaims(navigate) : undefined} />
                     ))}
                   </div>
                 ))}
