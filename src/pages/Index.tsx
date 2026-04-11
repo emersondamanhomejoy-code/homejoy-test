@@ -878,7 +878,8 @@ export default function Index() {
   // ─── BOOKING SUCCESS ───
   if (page === "booking-success" && bookingSubmitted) {
     return (
-      <div className="min-h-screen bg-background p-6 text-foreground">
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-3xl mx-auto bg-card rounded-lg shadow-lg p-8 space-y-6 animate-fade-in">
           <div className="text-center">
             <div className="text-5xl mb-3">✅</div>
