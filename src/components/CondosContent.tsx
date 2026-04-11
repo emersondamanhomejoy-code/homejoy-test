@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCondos, useCreateCondo, useUpdateCondo, useDeleteCondo, Condo, CondoInput } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
+import { useUnits } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, Plus, ChevronLeft } from "lucide-react";
 
 const emptyCondo: CondoInput = {
