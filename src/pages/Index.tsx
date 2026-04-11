@@ -7,6 +7,7 @@ import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { useBookings, Booking } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
+import { AdminContent } from "@/components/AdminContent";
 
 const rankingData = {
   internal: [
