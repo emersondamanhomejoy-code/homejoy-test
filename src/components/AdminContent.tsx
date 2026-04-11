@@ -901,19 +901,17 @@ export function AdminContent({ tab }: AdminContentProps) {
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-muted-foreground">Wall Type *</label>
-                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
-                              <option value="">—</option><option value="Partition">Partition</option><option value="Original">Original</option>
-                            </select>
-                          </div>
-                          <div>
                             <label className="text-xs text-muted-foreground">Rental (RM) *</label>
                             <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} />
                           </div>
                           <div>
-                            <label className="text-xs text-muted-foreground">Special Type</label>
-                            <select className={`${inputClass} w-full`} value={(rc as any).special_type || ""} onChange={e => updateRC("special_type", e.target.value)}>
-                              <option value="">— None —</option><option value="Balcony">Balcony</option><option value="Master">Master</option>
+                            <label className="text-xs text-muted-foreground">Max Pax *</label>
+                            <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => updateRC("max_pax", Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Status</label>
+                            <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
+                              <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
                             </select>
                           </div>
                         </div>
@@ -924,12 +922,13 @@ export function AdminContent({ tab }: AdminContentProps) {
               </div>
             </div>
 
-            {/* Inline edit dialog for room config */}
+            {/* More Details dialog for room config */}
             <Dialog open={editingRoomConfigIndex !== null} onOpenChange={(open) => { if (!open) setEditingRoomConfigIndex(null); }}>
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
                 <DialogHeader>
-                  <DialogTitle>Edit {editingRoomConfigIndex !== null ? roomConfigs[editingRoomConfigIndex]?.room : ""}</DialogTitle>
+                  <DialogTitle>{editingRoomConfigIndex !== null ? roomConfigs[editingRoomConfigIndex]?.room : ""} — More Details</DialogTitle>
                 </DialogHeader>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
                 {editingRoomConfigIndex !== null && (() => {
                   const idx = editingRoomConfigIndex;
                   const rc = roomConfigs[idx];
@@ -942,27 +941,63 @@ export function AdminContent({ tab }: AdminContentProps) {
                   };
 
                   return (
-                    <div className="space-y-4">
+                    <div className="space-y-5 pb-4">
+                      {/* Room Photos placeholder (new unit — no upload yet, just info) */}
+                      {!isCP && (
+                        <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-4 text-center">
+                          📷 Room photos can be uploaded after the unit is created.
+                        </div>
+                      )}
+
                       {isCP ? (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div><label className="text-xs text-muted-foreground">Parking Lot</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => updateRC("bed_type", e.target.value)} /></div>
+                          <div><label className="text-xs text-muted-foreground">Rental (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} /></div>
                           <div><label className="text-xs text-muted-foreground">Status</label>
                             <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
                               <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
                             </select></div>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 gap-4">
+                        <>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div><label className="text-xs text-muted-foreground">Bed Type</label>
+                            <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
+                              const bt = e.target.value;
+                              const c = [...roomConfigs];
+                              c[idx] = { ...c[idx], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
+                              setRoomConfigs(c);
+                            }}>
+                              <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
+                            </select></div>
+                          <div><label className="text-xs text-muted-foreground">Rental (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} /></div>
+                          <div><label className="text-xs text-muted-foreground">Wall Type</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
+                              <option value="">—</option><option value="Partition">Partition</option><option value="Original">Original</option>
+                            </select></div>
+                          <div><label className="text-xs text-muted-foreground">Special Type <span className="text-muted-foreground/60">(optional)</span></label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).special_type || ""} onChange={e => updateRC("special_type", e.target.value)}>
+                              <option value="">— None —</option><option value="Balcony">Balcony</option><option value="Master">Master</option>
+                            </select></div>
                           <div><label className="text-xs text-muted-foreground">Max Pax</label>
                             <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => updateRC("max_pax", Number(e.target.value))} /></div>
                           <div><label className="text-xs text-muted-foreground">Status</label>
                             <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
                               <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
                             </select></div>
+                          <div><label className="text-xs text-muted-foreground">Available Date</label>
+                            <input className={`${inputClass} w-full`} type="date" value={(rc as any).available_date && (rc as any).available_date !== "Available Now" ? (rc as any).available_date : ""} onChange={e => updateRC("available_date", e.target.value || "Available Now")} />
+                            <span className="text-xs text-muted-foreground">Leave empty for "Available Now"</span></div>
                         </div>
+                        </>
                       )}
                     </div>
                   );
                 })()}
+                </div>
                 <DialogFooter>
                   <button onClick={() => setEditingRoomConfigIndex(null)} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">Done</button>
                 </DialogFooter>
