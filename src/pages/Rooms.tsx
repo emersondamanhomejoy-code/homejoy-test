@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -276,7 +277,7 @@ export default function Rooms() {
                               </TableCell>
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell className="text-center">{room.max_pax}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{room.status}</TableCell>
+                              <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
                                 <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
                                   Book
