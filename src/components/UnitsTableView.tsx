@@ -31,15 +31,6 @@ interface UnitsTableViewProps {
   openCreateRoom2: () => void;
   setEditingUnit: (u: any) => void;
   handleDeleteUnit: (id: string) => void;
-  setEditingRoom: (r: Room) => void;
-  expandedUnit: string | null;
-  setExpandedUnit: (id: string | null) => void;
-  updateRoom: any;
-  updateUnit: any;
-  createRoom: any;
-  deleteRoom: any;
-  changeRoomStatus: (room: Room, status: string) => void;
-  changeRoomAvailableDate: (room: Room, date: string) => void;
   condosList: any[];
   inputClass: string;
   emptyUnit: any;
@@ -48,9 +39,6 @@ interface UnitsTableViewProps {
 export function UnitsTableView({
   units, unitsLoading, unitFilters, setUnitFilters,
   openCreateRoom2, setEditingUnit, handleDeleteUnit,
-  setEditingRoom, expandedUnit, setExpandedUnit,
-  updateRoom, updateUnit, createRoom, deleteRoom,
-  changeRoomStatus, changeRoomAvailableDate,
   condosList, inputClass, emptyUnit,
 }: UnitsTableViewProps) {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
