@@ -1082,13 +1082,15 @@ export function AdminContent({ tab }: AdminContentProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-muted-foreground">Number of Rooms *</label>
-                <input className={`${inputClass} w-full`} type="number" min={1} max={20} value={regularRooms.length}
-                  onChange={e => handleEditRoomCount(Math.floor(Number(e.target.value) || 1))} />
+                <input className={`${inputClass} w-full`} type="number" min={1} max={20} defaultValue={regularRooms.length}
+                  onBlur={e => handleEditRoomCount(Math.floor(Number(e.target.value) || 1))}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Number of Car Parks</label>
-                <input className={`${inputClass} w-full`} type="number" min={0} max={10} value={carParkRooms.length}
-                  onChange={e => handleEditCarParkCount(Math.floor(Number(e.target.value) || 0))} />
+                <input className={`${inputClass} w-full`} type="number" min={0} max={10} defaultValue={carParkRooms.length}
+                  onBlur={e => handleEditCarParkCount(Math.floor(Number(e.target.value) || 0))}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
               </div>
             </div>
 
