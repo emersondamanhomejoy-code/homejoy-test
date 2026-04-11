@@ -31,6 +31,7 @@ export default function Rooms() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("Available");
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -39,41 +40,47 @@ export default function Rooms() {
     else if (!loading && user && role && role !== "agent") navigate("/old", { replace: true });
   }, [user, role, loading, navigate]);
 
-  // Only show available, non-internal rooms (exclude Car Park)
-  const availableRooms = useMemo(
-    () => (rooms ?? []).filter((r) => r.status === "Available" && !r.internal_only && r.room_type !== "Car Park"),
+  // All non-internal rooms (exclude Car Park), will filter by status
+  const allRooms = useMemo(
+    () => (rooms ?? []).filter((r) => !r.internal_only && r.room_type !== "Car Park"),
     [rooms]
   );
 
   // Derive filter options
   const locations = useMemo(() => {
-    const set = new Set(availableRooms.map((r) => r.location).filter(Boolean));
+    const set = new Set(allRooms.map((r) => r.location).filter(Boolean));
     return Array.from(set).sort();
-  }, [availableRooms]);
+  }, [allRooms]);
 
   const buildings = useMemo(() => {
     const source = selectedLocations.length
-      ? availableRooms.filter((r) => selectedLocations.includes(r.location))
-      : availableRooms;
+      ? allRooms.filter((r) => selectedLocations.includes(r.location))
+      : allRooms;
     const set = new Set(source.map((r) => r.building).filter(Boolean));
     return Array.from(set).sort();
-  }, [availableRooms, selectedLocations]);
+  }, [allRooms, selectedLocations]);
+
+  const statuses = useMemo(() => {
+    const set = new Set(allRooms.map((r) => r.status).filter(Boolean));
+    return Array.from(set).sort();
+  }, [allRooms]);
 
   // Filtered rows
   const filtered = useMemo(() => {
-    let list = availableRooms;
+    let list = allRooms;
+    if (selectedStatus !== "all") list = list.filter((r) => r.status === selectedStatus);
     if (selectedLocations.length) list = list.filter((r) => selectedLocations.includes(r.location));
     if (selectedBuildings.length) list = list.filter((r) => selectedBuildings.includes(r.building));
     if (selectedGender !== "all") {
       list = list.filter((r) => r.unit_type?.toLowerCase().includes(selectedGender));
     }
     return list;
-  }, [availableRooms, selectedLocations, selectedBuildings, selectedGender]);
+  }, [allRooms, selectedLocations, selectedBuildings, selectedGender, selectedStatus]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedLocations, selectedBuildings, selectedGender, pageSize]);
+  }, [selectedLocations, selectedBuildings, selectedGender, selectedStatus, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedRooms = useMemo(() => {
@@ -87,7 +94,7 @@ export default function Rooms() {
       // Reset buildings that no longer match
       setSelectedBuildings((prev) => {
         const validBuildings = new Set(
-          availableRooms.filter((r) => [...selectedLocations, val].includes(r.location)).map((r) => r.building)
+          allRooms.filter((r) => [...selectedLocations, val].includes(r.location)).map((r) => r.building)
         );
         return prev.filter((b) => validBuildings.has(b));
       });
@@ -99,7 +106,7 @@ export default function Rooms() {
     setSelectedLocations(next);
     if (!next.length) return;
     setSelectedBuildings((prev) => {
-      const validBuildings = new Set(availableRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
+      const validBuildings = new Set(allRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
       return prev.filter((b) => validBuildings.has(b));
     });
   };
@@ -114,9 +121,10 @@ export default function Rooms() {
     setSelectedLocations([]);
     setSelectedBuildings([]);
     setSelectedGender("all");
+    setSelectedStatus("Available");
   };
 
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "all";
+  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "all" || selectedStatus !== "Available";
 
   if (loading || !user) return null;
 
@@ -192,6 +200,22 @@ export default function Rooms() {
                     </Select>
                   </div>
 
+                  {/* Status */}
+                  <div className="space-y-1.5 min-w-[160px]">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
+                    <Select onValueChange={setSelectedStatus} value={selectedStatus}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        {statuses.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {hasFilters && (
                     <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
                       <X className="h-4 w-4 mr-1" /> Clear
@@ -219,9 +243,9 @@ export default function Rooms() {
               {/* Table */}
               <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
                 <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                  <h3 className="font-semibold text-foreground">
-                    {filtered.length} room{filtered.length !== 1 ? "s" : ""} found
-                  </h3>
+                <h3 className="font-semibold text-foreground">
+                  {selectedStatus === "all" ? "All Rooms" : `${selectedStatus} Rooms`}
+                </h3>
                 </div>
                 {isLoading ? (
                   <div className="p-12 text-center text-muted-foreground">Loading rooms…</div>
