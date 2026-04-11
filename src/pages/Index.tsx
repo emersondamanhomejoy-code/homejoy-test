@@ -902,6 +902,7 @@ export default function Index() {
               Back to Dashboard
             </button>
           </div>
+          </div>
         </div>
       </OldDashboardLayout>
     );
