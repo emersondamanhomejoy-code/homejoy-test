@@ -204,6 +204,7 @@ export function CondosContent() {
               <TableHead>Condo Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead className="text-center">Units</TableHead>
+              <TableHead className="text-center">Total Rooms</TableHead>
               <TableHead className="text-center">Available</TableHead>
               <TableHead className="text-center">Avail Soon</TableHead>
               <TableHead className="text-center">Reserved</TableHead>
@@ -213,9 +214,9 @@ export function CondosContent() {
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
             ) : filtered.map((c, i) => {
-              const stats = condoStats[c.id] || { totalUnits: 0, available: 0, availableSoon: 0, reserved: 0, occupied: 0 };
+              const stats = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, available: 0, availableSoon: 0, reserved: 0, occupied: 0 };
               return (
               <TableRow key={c.id}>
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
