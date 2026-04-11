@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,11 +31,11 @@ export function BookingsContent() {
 
   // Fetch users for agent name display
   const [users, setUsers] = useState<UserInfo[]>([]);
-  useState(() => {
+  useEffect(() => {
     supabase.from("profiles").select("user_id, email, name").then(({ data }) => {
       if (data) setUsers(data.map(p => ({ id: p.user_id || "", email: p.email, name: p.name })));
     });
-  });
+  }, []);
 
   const getAgentName = (agentId: string | null) => {
     if (!agentId) return "—";
