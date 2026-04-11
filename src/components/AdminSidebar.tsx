@@ -24,7 +24,7 @@ const adminMenuItems = [
   { title: "Locations", icon: MapPin, tab: "locations" },
   { title: "Condos", icon: Building, tab: "condos" },
   { title: "Units & Rooms", icon: Building2, tab: "units" },
-  { title: "Bookings", icon: ClipboardList, tab: "bookings", link: "/" },
+  { title: "Bookings", icon: ClipboardList, tab: "bookings" },
   { title: "Claims", icon: DollarSign, tab: "claims" },
   { title: "Users", icon: Users, tab: "users" },
   { title: "Activity Log", icon: FileText, tab: "activity", bossOnly: true },
