@@ -1247,7 +1247,29 @@ export function AdminContent({ tab }: AdminContentProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DASHBOARD TAB */}
+      {/* Remove Room Confirmation */}
+      <AlertDialog open={!!roomToRemove} onOpenChange={(open) => { if (!open) setRoomToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {roomToRemove?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {roomToRemove && ["Occupied", "Available Soon", "Pending"].includes(roomToRemove.status)
+                ? `This room cannot be removed because its status is "${roomToRemove.status}". Only rooms with "Available" status can be removed.`
+                : `Are you sure you want to permanently remove "${roomToRemove?.name}"? This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {roomToRemove && !["Occupied", "Available Soon", "Pending"].includes(roomToRemove.status) && (
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+                try { await deleteRoom.mutateAsync(roomToRemove.id); } catch {}
+                setRoomToRemove(null);
+              }}>Remove</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {tab === "dashboard" && (() => {
         const pendingBookings = allBookings.filter(b => b.status === "pending");
         const approvedBookings = allBookings.filter(b => b.status === "approved");
