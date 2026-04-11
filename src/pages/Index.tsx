@@ -52,6 +52,8 @@ export default function Index() {
     const navState = location.state as { page?: string } | null;
     return navState?.page || "dashboard";
   });
+  const isAdmin = role === "admin" || role === "boss" || role === "manager";
+  const [adminTab, setAdminTab] = useState<string>("dashboard");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
