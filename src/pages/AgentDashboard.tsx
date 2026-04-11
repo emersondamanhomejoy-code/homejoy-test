@@ -4,6 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 
+const navigateToClaims = (navigate: ReturnType<typeof useNavigate>) => {
+  navigate("/old", { state: { page: "claims" } });
+};
+
 const pipelineData = {
   booking: [
     { label: "Submitted", value: 5, color: "text-blue-500", size: "large" },
@@ -38,15 +42,15 @@ const dotColor: Record<string, string> = {
   info: "bg-primary",
 };
 
-function PipelineCard({ label, value, color, size, highlight }: {
-  label: string; value: string | number; color: string; size: string; highlight?: boolean;
+function PipelineCard({ label, value, color, size, highlight, onClick }: {
+  label: string; value: string | number; color: string; size: string; highlight?: boolean; onClick?: () => void;
 }) {
   const isSmall = size === "small";
   const isMedium = size === "medium";
 
   if (isSmall) {
     return (
-      <div className="bg-muted/50 rounded-lg p-3 border border-border cursor-pointer hover:bg-muted transition-all">
+      <div onClick={onClick} className="bg-muted/50 rounded-lg p-3 border border-border cursor-pointer hover:bg-muted transition-all">
         <div className={`text-xs font-semibold ${color} mb-1`}>{label}</div>
         <div className="text-xl font-semibold text-muted-foreground tabular-nums">{value}</div>
       </div>
@@ -54,7 +58,7 @@ function PipelineCard({ label, value, color, size, highlight }: {
   }
 
   return (
-    <div className={`rounded-xl shadow-sm border cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all ${
+    <div onClick={onClick} className={`rounded-xl shadow-sm border cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all ${
       highlight 
         ? "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900" 
         : "bg-card border-border"
