@@ -54,9 +54,8 @@ export function AgentSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
-                      to={item.navState ? { pathname: item.url } : item.url}
-                      state={item.navState}
-                      end={item.url === "/agent"}
+                      to={item.url}
+                      end={item.url === "/"}
                       className="hover:bg-muted/50"
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >

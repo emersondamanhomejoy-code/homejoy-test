@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, DollarSign, FileText, LogOut,
-  PanelLeftClose, PanelLeft, Sparkles, Building2
+  PanelLeftClose, PanelLeft, Sparkles, Building2, ClipboardList
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
