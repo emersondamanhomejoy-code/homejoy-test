@@ -408,53 +408,53 @@ export function AdminContent({ tab }: AdminContentProps) {
 
   const openCreateRoom2 = () => {
     setEditingUnit({ ...emptyUnit });
-    setRoomConfigs(createDefaultRoomConfigs());
+    setRoomNaming("alpha");
     setRoomCountInput("5");
+    setCarParkCountInput("0");
+    setRoomConfigs(createDefaultRoomConfigs(5, 0, "alpha"));
+    setEditingRoomConfigIndex(null);
   };
 
-  const applyRoomCountChange = (nextValue: string) => {
+  const rebuildRoomConfigs = (roomCount: number, carParkCount: number, naming: "alpha" | "digit") => {
     const regularRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
     const carParks = roomConfigs.filter(r => r.room_type === "Car Park");
-    const currentCount = regularRooms.length;
-    const parsedValue = Number(nextValue);
 
-    if (!Number.isFinite(parsedValue)) {
-      setRoomCountInput(String(currentCount));
-      return;
-    }
-
-    const targetCount = Math.max(1, Math.min(20, Math.floor(parsedValue)));
-
-    if (targetCount === currentCount) {
-      setRoomCountInput(String(targetCount));
-      return;
-    }
-
-    if (targetCount < currentCount) {
-      const removedRooms = regularRooms.slice(targetCount);
-      const removingFilledRooms = removedRooms.some((room, index) => hasMeaningfulRoomData(room, targetCount + index));
-
-      if (removingFilledRooms) {
-        const removedLabels = removedRooms.map(room => room.room).join(", ");
-        const confirmed = window.confirm(`Reducing the room count will remove ${removedLabels}. Continue?`);
-        if (!confirmed) {
-          setRoomCountInput(String(currentCount));
-          return;
-        }
-      }
-    }
-
-    let nextRooms = regularRooms.slice(0, targetCount).map((room, index) => ({
+    // Rebuild regular rooms
+    let nextRooms = regularRooms.slice(0, roomCount).map((room, index) => ({
       ...room,
-      room: room.room || getDefaultRoomName(index),
+      room: getDefaultRoomName(index, naming),
     }));
-
-    while (nextRooms.length < targetCount) {
-      nextRooms.push({ room: getDefaultRoomName(nextRooms.length), bed_type: "", max_pax: 1, rent: 0, status: "Available" });
+    while (nextRooms.length < roomCount) {
+      nextRooms.push({ room: getDefaultRoomName(nextRooms.length, naming), bed_type: "", max_pax: 1, rent: 0, status: "Available" });
     }
 
-    setRoomConfigs([...nextRooms, ...carParks]);
-    setRoomCountInput(String(targetCount));
+    // Rebuild car parks
+    let nextCPs = carParks.slice(0, carParkCount).map((cp, index) => ({
+      ...cp,
+      room: getDefaultCarParkName(index),
+    }));
+    while (nextCPs.length < carParkCount) {
+      nextCPs.push({ room: getDefaultCarParkName(nextCPs.length), bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" });
+    }
+
+    setRoomConfigs([...nextRooms, ...nextCPs]);
+  };
+
+  const handleRoomCountChange = (val: string) => {
+    const n = Math.max(1, Math.min(20, Math.floor(Number(val) || 1)));
+    setRoomCountInput(String(n));
+    rebuildRoomConfigs(n, Number(carParkCountInput) || 0, roomNaming);
+  };
+
+  const handleCarParkCountChange = (val: string) => {
+    const n = Math.max(0, Math.min(10, Math.floor(Number(val) || 0)));
+    setCarParkCountInput(String(n));
+    rebuildRoomConfigs(Number(roomCountInput) || 1, n, roomNaming);
+  };
+
+  const handleNamingChange = (naming: "alpha" | "digit") => {
+    setRoomNaming(naming);
+    rebuildRoomConfigs(Number(roomCountInput) || 1, Number(carParkCountInput) || 0, naming);
   };
 
   const saveUnit = async () => {
