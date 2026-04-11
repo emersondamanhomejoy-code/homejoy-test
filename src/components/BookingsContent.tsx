@@ -28,6 +28,7 @@ export function BookingsContent() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
 
   // Fetch users for agent name display
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -154,17 +155,24 @@ export function BookingsContent() {
                   >❌ Reject</Button>
                 </div>
               )}
-              <Button
-                onClick={async () => {
-                  if (!user) return;
-                  if (!confirm("Are you sure you want to cancel this booking?")) return;
-                  await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: "Cancelled by admin" });
-                  setSelectedBooking(null);
-                }}
-                disabled={updateBookingStatus.isPending}
-                variant="outline"
-                className="text-gray-500 border-gray-300 hover:bg-gray-100"
-              >🚫 Cancel Booking</Button>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-700">
+                ⚠️ Booking fee is <strong>non-refundable</strong> once paid. Please confirm with the tenant before cancelling.
+              </div>
+              <div className="flex gap-2">
+                <Input placeholder="Cancel reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} className="flex-1" />
+                <Button
+                  onClick={async () => {
+                    if (!user || !cancelReason.trim()) { alert("Please enter a cancel reason"); return; }
+                    if (!confirm("Are you sure you want to cancel this booking? Booking fee is non-refundable.")) return;
+                    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason });
+                    setSelectedBooking(null);
+                    setCancelReason("");
+                  }}
+                  disabled={updateBookingStatus.isPending}
+                  variant="outline"
+                  className="text-gray-500 border-gray-300 hover:bg-gray-100"
+                >🚫 Cancel</Button>
+              </div>
             </div>
           )}
 
