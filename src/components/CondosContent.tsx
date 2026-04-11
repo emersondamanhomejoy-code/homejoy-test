@@ -204,23 +204,45 @@ export function CondosContent() {
 
                 {/* Photos */}
                 <div>
-                  <label className="text-xs text-muted-foreground">Photos (optional)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-muted-foreground">Photos ({editing.photos.length}/{MAX_PHOTOS})</label>
+                    <span className="text-xs text-muted-foreground">Drag to reorder</span>
+                  </div>
                   <div className="grid grid-cols-4 gap-3 mt-2">
                     {editing.photos.map((path, i) => (
-                      <div key={i} className="relative group">
+                      <div
+                        key={path}
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={(e) => handleDragOver(e, i)}
+                        onDrop={() => handleDrop(i)}
+                        onDragEnd={handleDragEnd}
+                        className={`relative group cursor-grab active:cursor-grabbing transition-all ${dragOverIndex === i ? "ring-2 ring-primary scale-105" : ""} ${dragIndex === i ? "opacity-50" : ""}`}
+                      >
+                        <div className="absolute top-1 left-1 z-10 bg-black/50 rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <GripVertical className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        <div className="absolute top-1 left-7 z-10 bg-black/50 rounded px-1.5 py-0.5 text-[10px] text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                          {i + 1}
+                        </div>
                         <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Photo ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
-                        <button onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                        <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                       </div>
                     ))}
-                    <label className="h-28 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                      <span className="text-2xl text-muted-foreground">+</span>
-                      <span className="text-xs text-muted-foreground mt-1">{uploading ? "Uploading..." : "Add Photo"}</span>
-                      <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
-                        const files = Array.from(e.target.files || []);
-                        for (const f of files) await uploadPhoto(f);
-                        e.target.value = "";
-                      }} />
-                    </label>
+                    {editing.photos.length < MAX_PHOTOS && (
+                      <label className="h-28 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                        <span className="text-2xl text-muted-foreground">+</span>
+                        <span className="text-xs text-muted-foreground mt-1">{uploading ? "Uploading..." : "Add Photo"}</span>
+                        <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          const remaining = MAX_PHOTOS - (editing?.photos.length || 0);
+                          const toUpload = files.slice(0, remaining);
+                          for (const f of toUpload) await uploadPhoto(f);
+                          if (files.length > remaining) alert(`Only ${remaining} more photo(s) can be added. Extra files were skipped.`);
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    )}
                   </div>
                 </div>
               </div>
