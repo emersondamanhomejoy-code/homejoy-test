@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Home, Users, DollarSign, FileText, LogOut,
+  LayoutDashboard, Users, DollarSign, FileText, LogOut,
   PanelLeftClose, PanelLeft, Sparkles, Building2
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
