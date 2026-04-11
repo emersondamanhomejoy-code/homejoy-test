@@ -182,9 +182,8 @@ export function UnitsTableView({
           <>
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
+                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="w-8"></TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Building</TableHead>
                     <TableHead>Unit</TableHead>
