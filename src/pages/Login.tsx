@@ -85,67 +85,73 @@ export default function Login() {
           </p>
         </div>
         <div className="p-10 flex flex-col justify-center gap-4">
-          <div className="text-2xl font-bold text-card-foreground">Welcome back</div>
-          <p className="text-muted-foreground text-sm -mt-2">Sign in to access your dashboard</p>
-          {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</div>}
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-muted-foreground font-medium">Email</label>
-              <input
-                type="email"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                placeholder="your@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleLogin()}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground font-medium">Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleLogin()}
-              />
-            </div>
-            <button
-              onClick={handleLogin}
-              disabled={signingIn}
-              className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {signingIn ? "Signing in..." : "Sign In"}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotMsg(""); }}
-              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot Password?
-            </button>
-          </div>
-
-          {showForgot && (
-            <div className="border-t border-border pt-4 space-y-3">
-              <div className="text-sm font-medium text-foreground">Reset Password</div>
-              <input
-                type="email"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                placeholder="your@email.com"
-                value={forgotEmail}
-                onChange={e => setForgotEmail(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleForgotPassword()}
-              />
+          {!showForgot ? (
+            <>
+              <div className="text-2xl font-bold text-card-foreground">Welcome back</div>
+              <p className="text-muted-foreground text-sm -mt-2">Sign in to access your dashboard</p>
+              {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</div>}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium">Email</label>
+                  <input
+                    type="email"
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleLogin()}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium">Password</label>
+                  <input
+                    type="password"
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleLogin()}
+                  />
+                </div>
+                <button
+                  onClick={handleLogin}
+                  disabled={signingIn}
+                  className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {signingIn ? "Signing in..." : "Sign In"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotMsg(""); }}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="text-2xl font-bold text-card-foreground">Reset Password</div>
+              <p className="text-muted-foreground text-sm -mt-2">Enter your registered email address and we'll send you a password reset link.</p>
+              <div>
+                <label className="text-xs text-muted-foreground font-medium">Email Address</label>
+                <input
+                  type="email"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  placeholder="your@email.com"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleForgotPassword()}
+                />
+              </div>
               {forgotMsg && (
                 <div className={`text-sm rounded-lg px-3 py-2 ${forgotMsg.startsWith("✅") ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"}`}>
                   {forgotMsg}
                 </div>
               )}
-              <div className="flex gap-2">
-                <button onClick={() => setShowForgot(false)} className="flex-1 px-3 py-2 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Cancel</button>
-                <button onClick={handleForgotPassword} disabled={forgotSending} className="flex-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setShowForgot(false)} className="flex-1 px-3 py-2.5 rounded-lg border text-foreground text-sm hover:bg-secondary transition-colors">Back to Login</button>
+                <button onClick={handleForgotPassword} disabled={forgotSending} className="flex-1 px-3 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
                   {forgotSending ? "Sending..." : "Send Reset Link"}
                 </button>
               </div>
