@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AdminSidebar } from "@/components/AdminSidebar";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
@@ -755,22 +757,18 @@ export default function AdminPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background p-6 text-foreground">
-      <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-        <button onClick={() => navigate("/")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
-        <div>
-          <div className="text-sm font-bold text-muted-foreground tracking-widest uppercase">Homejoy</div>
-          <div className="text-3xl font-extrabold tracking-tight mt-1">Admin Panel</div>
-        </div>
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab as any);
+    if (newTab === "activity") fetchActivityLogs();
+  };
 
-        <div className="flex gap-2">
-          <button onClick={() => setTab("dashboard")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "dashboard" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Dashboard</button>
-          <button onClick={() => setTab("units")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "units" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Units & Rooms</button>
-          <button onClick={() => setTab("claims")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "claims" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Claims {allClaims.filter(c => c.status === "pending").length > 0 ? `(${allClaims.filter(c => c.status === "pending").length})` : ""}</button>
-          <button onClick={() => setTab("users")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "users" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Users</button>
-          {canViewActivityLog && <button onClick={() => { setTab("activity"); fetchActivityLogs(); }} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "activity" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>Activity Log</button>}
-        </div>
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background text-foreground">
+        <AdminSidebar activeTab={tab} onTabChange={handleTabChange} />
+        <div className="flex-1 flex flex-col">
+          <main className="flex-1 p-8 overflow-auto">
+            <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
 
         {error && <div className="rounded-lg bg-destructive/10 text-destructive p-4 text-sm">{error}</div>}
 
@@ -1759,7 +1757,10 @@ export default function AdminPage() {
             )}
           </div>
         )}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
