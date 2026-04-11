@@ -580,7 +580,7 @@ export function BookingsContent() {
                 <TableHead>Booking ID</TableHead>
                 <TableHead>Condo</TableHead>
                 <TableHead>Tenant</TableHead>
-                <TableHead>Created By</TableHead>
+                <TableHead>Agent</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
