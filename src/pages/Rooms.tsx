@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 export default function Rooms() {
   const { user, role, loading } = useAuth();
@@ -31,6 +31,8 @@ export default function Rooms() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<string>("all");
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
@@ -67,6 +69,17 @@ export default function Rooms() {
     }
     return list;
   }, [availableRooms, selectedLocations, selectedBuildings, selectedGender]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedLocations, selectedBuildings, selectedGender, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedRooms = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const addLocation = (val: string) => {
     if (val && !selectedLocations.includes(val)) {
@@ -232,7 +245,7 @@ export default function Rooms() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filtered.map((room) => (
+                         {paginatedRooms.map((room) => (
                           <TableRow key={room.id} className="hover:bg-muted/30 cursor-pointer">
                             <TableCell className="capitalize text-muted-foreground">{room.location || "—"}</TableCell>
                             <TableCell className="font-medium text-foreground">{room.building || "—"}</TableCell>
@@ -267,6 +280,48 @@ export default function Rooms() {
                         ))}
                       </TableBody>
                     </Table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>Show</span>
+                      <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                        <SelectTrigger className="w-[70px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span>per page</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={currentPage <= 1}
+                        onClick={() => setCurrentPage((p) => p - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
