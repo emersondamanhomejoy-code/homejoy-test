@@ -422,6 +422,74 @@ export function UnitsTableView({
           </>
         )}
       </div>
+
+      {/* View Details Dialog */}
+      <Dialog open={!!viewingUnit} onOpenChange={(open) => { if (!open) setViewingUnit(null); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Unit Details — {viewingUnit?.building} · {viewingUnit?.unit}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0 space-y-5 pb-4">
+            {viewingUnit && (
+              <>
+                {/* Common Area Photos */}
+                <div>
+                  <div className="text-sm font-semibold mb-2">🏠 Common Area Photos</div>
+                  {((viewingUnit as any).common_photos as string[] || []).length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No common area photos uploaded.</div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                      {((viewingUnit as any).common_photos as string[] || []).map((path: string, i: number) => (
+                        <div key={i} className="relative group">
+                          <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
+                          <button
+                            className="absolute bottom-1 right-1 bg-background/80 text-foreground rounded px-2 py-0.5 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`;
+                              navigator.clipboard.writeText(url);
+                              alert("Photo link copied!");
+                            }}
+                          >📋 Copy Link</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Unit Info */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-muted-foreground">Location:</span> {viewingUnit.location}</div>
+                  <div><span className="text-muted-foreground">Building:</span> {viewingUnit.building}</div>
+                  <div><span className="text-muted-foreground">Unit:</span> {viewingUnit.unit}</div>
+                  <div><span className="text-muted-foreground">Unit Type:</span> {viewingUnit.unit_type}</div>
+                  <div><span className="text-muted-foreground">Max Pax:</span> {viewingUnit.unit_max_pax}</div>
+                  <div><span className="text-muted-foreground">Rental Deposit:</span> {(viewingUnit as any).deposit_multiplier} months</div>
+                  <div><span className="text-muted-foreground">Meter Type:</span> {(viewingUnit as any).meter_type}</div>
+                  <div><span className="text-muted-foreground">Meter Rate:</span> {(viewingUnit as any).meter_rate}</div>
+                  <div><span className="text-muted-foreground">Admin Fee:</span> RM{(viewingUnit as any).admin_fee}</div>
+                  <div><span className="text-muted-foreground">Passcode:</span> {viewingUnit.passcode || "—"}</div>
+                  {(viewingUnit as any).internal_only && <div className="col-span-2"><Badge variant="secondary" className="bg-primary/20 text-primary">🔒 Internal Only</Badge></div>}
+                </div>
+
+                {/* Rooms summary */}
+                <div>
+                  <div className="text-sm font-semibold mb-2">Rooms ({viewingUnit.rooms?.length || 0})</div>
+                  <div className="space-y-1 text-sm">
+                    {viewingUnit.rooms?.map(room => (
+                      <div key={room.id} className="flex items-center gap-3 py-1 border-b border-border/50 last:border-0">
+                        <span className="font-medium w-24">{room.room_type === "Car Park" ? `🅿️ ${room.room}` : room.room}</span>
+                        <span className="text-muted-foreground w-24">{room.bed_type || "—"}</span>
+                        <span className="w-16">RM{room.rent}</span>
+                        <StatusBadge status={room.status} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
