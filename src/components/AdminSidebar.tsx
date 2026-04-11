@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Users, DollarSign, FileText, LogOut,
-  PanelLeftClose, PanelLeft, Sparkles, Building2, ClipboardList
+  PanelLeftClose, PanelLeft, Sparkles, Building2, ClipboardList,
+  MapPin, Building
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +21,8 @@ import {
 
 const adminMenuItems = [
   { title: "Dashboard", icon: LayoutDashboard, tab: "dashboard" },
+  { title: "Locations", icon: MapPin, tab: "locations" },
+  { title: "Condos", icon: Building, tab: "condos" },
   { title: "Units & Rooms", icon: Building2, tab: "units" },
   { title: "Bookings", icon: ClipboardList, tab: "bookings", link: "/" },
   { title: "Claims", icon: DollarSign, tab: "claims" },
