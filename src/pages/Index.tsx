@@ -7,6 +7,7 @@ import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { useBookings, Booking } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
+import { AdminContent } from "@/components/AdminContent";
 
 const rankingData = {
   internal: [
@@ -51,6 +52,8 @@ export default function Index() {
     const navState = location.state as { page?: string } | null;
     return navState?.page || "dashboard";
   });
+  const isAdmin = role === "admin" || role === "boss" || role === "manager";
+  const [adminTab, setAdminTab] = useState<string>("dashboard");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -1164,9 +1167,21 @@ export default function Index() {
   }
 
   return (
-    <OldDashboardLayout>
+    <OldDashboardLayout activeTab={adminTab} onTabChange={(t) => { setAdminTab(t); setPage("dashboard"); }}>
       <div className="flex-1 overflow-auto text-foreground">
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
+        {/* Admin Content for non-dashboard tabs */}
+        {isAdmin && adminTab !== "dashboard" && (
+          <div className="max-w-5xl mx-auto">
+            <AdminContent tab={adminTab as any} />
+          </div>
+        )}
+
+        {/* Show dashboard content only when on dashboard tab */}
+        {(!isAdmin || adminTab === "dashboard") && (<>
+        {/* Admin Dashboard Stats */}
+        {isAdmin && <AdminContent tab="dashboard" />}
+
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-xl shadow-sm p-5 border">
@@ -1402,6 +1417,7 @@ export default function Index() {
             </div>
           </div>
         </div>
+        </>)}
         </div>
       </div>
     </OldDashboardLayout>

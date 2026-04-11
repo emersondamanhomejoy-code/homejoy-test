@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index.tsx";
-import Admin from "./pages/Admin.tsx";
 import Sign from "./pages/Sign.tsx";
 import SetPassword from "./pages/SetPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
@@ -30,7 +29,6 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/old" element={<Index />} />
-          <Route path="/admin" element={<Admin />} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sign/:token" element={<Sign />} />

@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Home, Users, DollarSign, FileText, LogOut,
+  LayoutDashboard, Users, DollarSign, FileText, LogOut,
   PanelLeftClose, PanelLeft, Sparkles, Building2
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -93,14 +93,6 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/old" className="hover:bg-muted/50 text-muted-foreground">
-                <Home className="h-4 w-4 mr-2" />
-                {!collapsed && <span>Old Dashboard</span>}
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <NavLink to="/" className="hover:bg-muted/50 text-muted-foreground">
