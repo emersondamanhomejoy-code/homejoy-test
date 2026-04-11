@@ -1087,31 +1087,8 @@ export default function Index() {
     const buildingCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === selectedBuilding).length;
 
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        {/* Top Bar */}
-        <div className="bg-card border-b sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-xl font-extrabold tracking-tight text-primary">HOMEJOY</div>
-              <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">{role ?? "agent"}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground hidden md:inline">{user?.email}</span>
-              {(role === "admin" || role === "boss" || role === "manager") && (
-                <button onClick={() => navigate("/admin")} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
-                  Admin Panel
-                </button>
-              )}
-              <button onClick={() => navigate("/")} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
-                New Version ✨
-              </button>
-              <button onClick={signOut} className="px-3 py-1.5 rounded-lg border text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-
+      <OldDashboardLayout>
+        <div className="flex-1 overflow-auto text-foreground">
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
           <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             ← Back to Dashboard
@@ -1180,8 +1157,9 @@ export default function Index() {
               ))}
             </div>
           )}
+          </div>
         </div>
-      </div>
+      </OldDashboardLayout>
     );
   }
 
