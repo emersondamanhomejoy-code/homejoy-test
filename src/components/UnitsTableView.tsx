@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, X, Pencil, Trash2, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Pencil, Trash2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface UnitsTableViewProps {
