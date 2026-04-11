@@ -4,8 +4,12 @@ import { useLocations } from "@/hooks/useLocations";
 import { useUnits } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Plus, ChevronLeft } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const emptyCondo: CondoInput = {
   name: "", address: "", description: "", gps_link: "",
@@ -20,7 +24,6 @@ export function CondosContent() {
   const updateCondo = useUpdateCondo();
   const deleteCondo = useDeleteCondo();
 
-  // Build stats per condo (matched by building name = condo name)
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; available: number; availableSoon: number; reserved: number; occupied: number }> = {};
     for (const c of condos) {
@@ -41,6 +44,7 @@ export function CondosContent() {
   const [editing, setEditing] = useState<(CondoInput & { id?: string }) | null>(null);
   const [search, setSearch] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
@@ -50,6 +54,14 @@ export function CondosContent() {
     gps_link: c.gps_link, photos: c.photos || [], deposit_info: c.deposit_info,
     parking_info: c.parking_info, amenities: c.amenities, location_id: c.location_id,
   });
+
+  const handleClose = () => {
+    if (editing && (editing.name.trim() || editing.address.trim() || editing.description.trim())) {
+      setShowCancelConfirm(true);
+    } else {
+      setEditing(null);
+    }
+  };
 
   const handleSave = async () => {
     if (!editing) return;
@@ -104,95 +116,110 @@ export function CondosContent() {
 
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
-  // ─── FORM ───
-  if (editing) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <button onClick={() => setEditing(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-          <ChevronLeft className="h-4 w-4" /> Back
-        </button>
-        <div className="text-2xl font-extrabold">{editing.id ? "Edit Building" : "Add Building"}</div>
-        <div className="bg-card rounded-lg shadow-sm p-6 space-y-5 border">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground">Building Name *</label>
-               <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={editing.name} onChange={e => updateField("name", e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Location *</label>
-              <select className={`${inputClass} w-full`} value={editing.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
-                <option value="">— Select Location —</option>
-                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-muted-foreground">Address</label>
-              <input className={`${inputClass} w-full`} placeholder="Full address" value={editing.address} onChange={e => updateField("address", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-muted-foreground">GPS Link</label>
-              <input className={`${inputClass} w-full`} placeholder="Google Maps link" value={editing.gps_link} onChange={e => updateField("gps_link", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-muted-foreground">Description</label>
-              <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={editing.description} onChange={e => updateField("description", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-muted-foreground">Amenities</label>
-              <textarea className={`${inputClass} w-full h-20`} placeholder="Swimming pool, gym, playground, mini mart..." value={editing.amenities} onChange={e => updateField("amenities", e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Deposit Info</label>
-              <textarea className={`${inputClass} w-full h-20`} placeholder="Deposit terms, refundable/non-refundable..." value={editing.deposit_info} onChange={e => updateField("deposit_info", e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Parking Info</label>
-              <textarea className={`${inputClass} w-full h-20`} placeholder="Parking type, rates, access card info..." value={editing.parking_info} onChange={e => updateField("parking_info", e.target.value)} />
-            </div>
-          </div>
-
-          {/* Photos */}
-          <div>
-            <label className="text-xs text-muted-foreground">Photos (optional)</label>
-            <div className="grid grid-cols-4 gap-3 mt-2">
-              {editing.photos.map((path, i) => (
-                <div key={i} className="relative group">
-                  <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Photo ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
-                  <button onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-                </div>
-              ))}
-              <label className="h-28 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                <span className="text-2xl text-muted-foreground">+</span>
-                <span className="text-xs text-muted-foreground mt-1">{uploading ? "Uploading..." : "Add Photo"}</span>
-                <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
-                  const files = Array.from(e.target.files || []);
-                  for (const f of files) await uploadPhoto(f);
-                  e.target.value = "";
-                }} />
-              </label>
-            </div>
-          </div>
-
-          <div className="flex gap-3 justify-end pt-4">
-            <button onClick={() => setEditing(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-            <button onClick={handleSave} disabled={createCondo.isPending || updateCondo.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-              {createCondo.isPending || updateCondo.isPending ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── TABLE ───
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="text-2xl font-extrabold">Buildings</div>
-        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" /> Add Building
-        </button>
+        </Button>
       </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={!!editing} onOpenChange={(open) => { if (!open) handleClose(); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{editing?.id ? "Edit Building" : "Add Building"}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {editing && (
+              <div className="space-y-5 pb-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Building Name *</label>
+                    <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={editing.name} onChange={e => updateField("name", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Location *</label>
+                    <select className={`${inputClass} w-full`} value={editing.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
+                      <option value="">— Select Location —</option>
+                      {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">Address</label>
+                    <input className={`${inputClass} w-full`} placeholder="Full address" value={editing.address} onChange={e => updateField("address", e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">GPS Link</label>
+                    <input className={`${inputClass} w-full`} placeholder="Google Maps link" value={editing.gps_link} onChange={e => updateField("gps_link", e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">Description</label>
+                    <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={editing.description} onChange={e => updateField("description", e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">Amenities</label>
+                    <textarea className={`${inputClass} w-full h-20`} placeholder="Swimming pool, gym, playground, mini mart..." value={editing.amenities} onChange={e => updateField("amenities", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Deposit Info</label>
+                    <textarea className={`${inputClass} w-full h-20`} placeholder="Deposit terms, refundable/non-refundable..." value={editing.deposit_info} onChange={e => updateField("deposit_info", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Parking Info</label>
+                    <textarea className={`${inputClass} w-full h-20`} placeholder="Parking type, rates, access card info..." value={editing.parking_info} onChange={e => updateField("parking_info", e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Photos */}
+                <div>
+                  <label className="text-xs text-muted-foreground">Photos (optional)</label>
+                  <div className="grid grid-cols-4 gap-3 mt-2">
+                    {editing.photos.map((path, i) => (
+                      <div key={i} className="relative group">
+                        <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Photo ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
+                        <button onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                      </div>
+                    ))}
+                    <label className="h-28 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                      <span className="text-2xl text-muted-foreground">+</span>
+                      <span className="text-xs text-muted-foreground mt-1">{uploading ? "Uploading..." : "Add Photo"}</span>
+                      <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        for (const f of files) await uploadPhoto(f);
+                        e.target.value = "";
+                      }} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleSave} disabled={createCondo.isPending || updateCondo.isPending}>
+              {createCondo.isPending || updateCondo.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to cancel? Your unsaved changes will be lost.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setEditing(null); setShowCancelConfirm(false); }}>
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <input className={`${inputClass} w-full max-w-sm`} placeholder="Search buildings..." value={search} onChange={e => setSearch(e.target.value)} />
 
