@@ -85,15 +85,21 @@ export function CondosContent() {
     try { await deleteCondo.mutateAsync(id); } catch (e: any) { alert(e.message); }
   };
 
+  const MAX_PHOTOS = 10;
+
   const uploadPhoto = async (file: File) => {
     if (!editing) return;
+    if (editing.photos.length >= MAX_PHOTOS) {
+      alert(`Maximum ${MAX_PHOTOS} photos allowed`);
+      return;
+    }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
       const path = `condos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from("room-photos").upload(path, file);
       if (error) throw error;
-      setEditing({ ...editing, photos: [...editing.photos, path] });
+      setEditing(prev => prev ? { ...prev, photos: [...prev.photos, path] } : prev);
     } catch (e: any) {
       alert(e.message || "Upload failed");
     } finally {
@@ -104,6 +110,28 @@ export function CondosContent() {
   const removePhoto = (index: number) => {
     if (!editing) return;
     setEditing({ ...editing, photos: editing.photos.filter((_, i) => i !== index) });
+  };
+
+  const handleDragStart = (index: number) => setDragIndex(index);
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => {
+    if (dragIndex === null || !editing) return;
+    const newPhotos = [...editing.photos];
+    const [moved] = newPhotos.splice(dragIndex, 1);
+    newPhotos.splice(index, 0, moved);
+    setEditing({ ...editing, photos: newPhotos });
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
   };
 
   const updateField = (field: string, value: any) => {
