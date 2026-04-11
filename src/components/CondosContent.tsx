@@ -202,19 +202,40 @@ export function CondosContent() {
               <TableHead className="w-12">#</TableHead>
               <TableHead>Condo Name</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead>Address</TableHead>
+              <TableHead className="text-center">Units</TableHead>
+              <TableHead className="text-center">Available</TableHead>
+              <TableHead className="text-center">Avail Soon</TableHead>
+              <TableHead className="text-center">Reserved</TableHead>
+              <TableHead className="text-center">Occupied</TableHead>
               <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
-            ) : filtered.map((c, i) => (
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
+            ) : filtered.map((c, i) => {
+              const stats = condoStats[c.id] || { totalUnits: 0, available: 0, availableSoon: 0, reserved: 0, occupied: 0 };
+              return (
               <TableRow key={c.id}>
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                <TableCell className="font-medium">{c.name}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{c.name}</div>
+                  {c.address && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{c.address}</div>}
+                </TableCell>
                 <TableCell className="text-muted-foreground">{c.location?.name || "—"}</TableCell>
-                <TableCell className="text-muted-foreground truncate max-w-[200px]">{c.address || "—"}</TableCell>
+                <TableCell className="text-center font-semibold">{stats.totalUnits}</TableCell>
+                <TableCell className="text-center">
+                  {stats.available > 0 ? <Badge variant="secondary" className="bg-green-500/15 text-green-700 dark:text-green-400">{stats.available}</Badge> : <span className="text-muted-foreground">0</span>}
+                </TableCell>
+                <TableCell className="text-center">
+                  {stats.availableSoon > 0 ? <Badge variant="secondary" className="bg-primary/15 text-primary">{stats.availableSoon}</Badge> : <span className="text-muted-foreground">0</span>}
+                </TableCell>
+                <TableCell className="text-center">
+                  {stats.reserved > 0 ? <Badge variant="secondary" className="bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">{stats.reserved}</Badge> : <span className="text-muted-foreground">0</span>}
+                </TableCell>
+                <TableCell className="text-center">
+                  {stats.occupied > 0 ? <Badge variant="secondary" className="bg-destructive/15 text-destructive">{stats.occupied}</Badge> : <span className="text-muted-foreground">0</span>}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
                     <button onClick={() => openEdit(c)} className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
@@ -222,7 +243,8 @@ export function CondosContent() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
