@@ -181,6 +181,11 @@ export function BookingsContent() {
               <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
             </div>
           )}
+          {b.status === "cancelled" && b.reject_reason && (
+            <div className="bg-gray-500/10 text-gray-600 rounded-lg p-3 text-sm">
+              <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
+            </div>
+          )}
         </div>
       </div>
     );
