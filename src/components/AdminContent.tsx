@@ -744,13 +744,13 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* Unit Add/Edit Dialog */}
       <Dialog open={!!editingUnit} onOpenChange={(open) => { if (!open) handleUnitClose(); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit"}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {renderUnitFormDialog()}
-          </ScrollArea>
+          </div>
           <DialogFooter>
             <button onClick={handleUnitClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
             <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
