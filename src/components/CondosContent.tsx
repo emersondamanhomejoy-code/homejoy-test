@@ -157,52 +157,14 @@ export function CondosContent() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={!!editing} onOpenChange={(open) => { if (!open) handleClose(); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{editing?.id ? "Edit Building" : "Add Building"}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {editing && (
               <div className="space-y-5 pb-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Building Name *</label>
-                    <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={editing.name} onChange={e => updateField("name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Location *</label>
-                    <select className={`${inputClass} w-full`} value={editing.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
-                      <option value="">— Select Location —</option>
-                      {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-muted-foreground">Address</label>
-                    <input className={`${inputClass} w-full`} placeholder="Full address" value={editing.address} onChange={e => updateField("address", e.target.value)} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-muted-foreground">GPS Link</label>
-                    <input className={`${inputClass} w-full`} placeholder="Google Maps link" value={editing.gps_link} onChange={e => updateField("gps_link", e.target.value)} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-muted-foreground">Description</label>
-                    <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={editing.description} onChange={e => updateField("description", e.target.value)} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-muted-foreground">Amenities</label>
-                    <textarea className={`${inputClass} w-full h-20`} placeholder="Swimming pool, gym, playground, mini mart..." value={editing.amenities} onChange={e => updateField("amenities", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Deposit Info</label>
-                    <textarea className={`${inputClass} w-full h-20`} placeholder="Deposit terms, refundable/non-refundable..." value={editing.deposit_info} onChange={e => updateField("deposit_info", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Parking Info</label>
-                    <textarea className={`${inputClass} w-full h-20`} placeholder="Parking type, rates, access card info..." value={editing.parking_info} onChange={e => updateField("parking_info", e.target.value)} />
-                  </div>
-                </div>
-
-                {/* Photos */}
+                {/* Photos — moved to top */}
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs text-muted-foreground">Photos ({editing.photos.length}/{MAX_PHOTOS})</label>
@@ -245,9 +207,47 @@ export function CondosContent() {
                     )}
                   </div>
                 </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Building Name *</label>
+                    <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={editing.name} onChange={e => updateField("name", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Location *</label>
+                    <select className={`${inputClass} w-full`} value={editing.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
+                      <option value="">— Select Location —</option>
+                      {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">Address</label>
+                    <input className={`${inputClass} w-full`} placeholder="Full address" value={editing.address} onChange={e => updateField("address", e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">GPS Link</label>
+                    <input className={`${inputClass} w-full`} placeholder="Google Maps link" value={editing.gps_link} onChange={e => updateField("gps_link", e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">Description</label>
+                    <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={editing.description} onChange={e => updateField("description", e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-muted-foreground">Amenities</label>
+                    <textarea className={`${inputClass} w-full h-20`} placeholder="Swimming pool, gym, playground, mini mart..." value={editing.amenities} onChange={e => updateField("amenities", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Deposit Info</label>
+                    <textarea className={`${inputClass} w-full h-20`} placeholder="Deposit terms, refundable/non-refundable..." value={editing.deposit_info} onChange={e => updateField("deposit_info", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Parking Info</label>
+                    <textarea className={`${inputClass} w-full h-20`} placeholder="Parking type, rates, access card info..." value={editing.parking_info} onChange={e => updateField("parking_info", e.target.value)} />
+                  </div>
+                </div>
               </div>
             )}
-          </ScrollArea>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>Cancel</Button>
             <Button onClick={handleSave} disabled={createCondo.isPending || updateCondo.isPending}>
