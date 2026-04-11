@@ -1007,9 +1007,31 @@ export function AdminContent({ tab }: AdminContentProps) {
         )}
 
         {/* Rooms list for existing units */}
-        {u.id && (
-          <div className="pt-4 border-t border-border space-y-3">
+        {u.id && (() => {
+          const existingRooms = units.find(un => un.id === u.id)?.rooms || [];
+          const regularRooms = existingRooms.filter(r => r.room_type !== "Car Park");
+          const carParkRooms = existingRooms.filter(r => r.room_type === "Car Park");
+          const detectedNaming = regularRooms.length > 0 && /^Room [A-Z]/.test(regularRooms[0]?.room || "") ? "Alphabet" : "Digit";
+          return (
+          <div className="pt-4 border-t border-border space-y-4">
             <div className="text-lg font-semibold">Rooms & Car Parks</div>
+
+            {/* Count & naming info */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground">Number of Rooms</label>
+                <input className={`${inputClass} w-full bg-muted`} value={regularRooms.length} readOnly />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Number of Car Parks</label>
+                <input className={`${inputClass} w-full bg-muted`} value={carParkRooms.length} readOnly />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Room Naming Convention</label>
+                <input className={`${inputClass} w-full bg-muted`} value={detectedNaming} readOnly />
+              </div>
+            </div>
+
             <div className="space-y-3">
               {(units.find(un => un.id === u.id)?.rooms || []).map((room) => {
                 const isCP = room.room_type === "Car Park";
