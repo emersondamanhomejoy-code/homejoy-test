@@ -356,18 +356,19 @@ export function UnitsTableView({
                                             <div className="flex flex-col gap-1">
                                               <select
                                                 className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors cursor-pointer ${
-                                                  room.status === "Available" ? "bg-accent/50 text-accent-foreground" :
-                                                  room.status === "Available Soon" ? "bg-primary/20 text-primary" :
-                                                  "bg-destructive/10 text-destructive"
+                                                  room.status === "Available" ? "bg-emerald-100 text-emerald-700" :
+                                                  room.status === "Available Soon" ? "bg-sky-100 text-sky-700" :
+                                                  room.status === "Pending" ? "bg-amber-100 text-amber-700" :
+                                                  room.status === "Occupied" ? "bg-red-100 text-red-700" :
+                                                  "bg-muted text-muted-foreground"
                                                 }`}
                                                 value={room.status}
                                                 onChange={e => changeRoomStatus(room, e.target.value)}
                                               >
                                                 <option value="Available">Available</option>
-                                                <option value="Occupied">Occupied</option>
-                                                <option value="Tenanted">Tenanted</option>
-                                                <option value="Reserved">Reserved</option>
                                                 <option value="Available Soon">Available Soon</option>
+                                                <option value="Pending">Pending</option>
+                                                <option value="Occupied">Occupied</option>
                                               </select>
                                               {room.status === "Available Soon" && (
                                                 <input type="date" className="px-1.5 py-0.5 rounded border bg-secondary text-xs"

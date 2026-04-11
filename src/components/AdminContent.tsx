@@ -584,7 +584,7 @@ export function AdminContent({ tab }: AdminContentProps) {
             <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateFieldR("rent", Number(e.target.value))} /></div>
             <div><label className="text-xs text-muted-foreground">Status</label>
               <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateFieldR("status", e.target.value)}>
-                <option>Available</option><option>Tenanted</option><option>Unavailable</option>
+                <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
               </select>
             </div>
             <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Rented to (Tenant from same building)</label>
@@ -606,7 +606,7 @@ export function AdminContent({ tab }: AdminContentProps) {
           <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateFieldR("rent", Number(e.target.value))} /></div>
           <div><label className="text-xs text-muted-foreground">Status</label>
             <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateFieldR("status", e.target.value)}>
-              <option>Available</option><option>Tenanted</option><option>Unavailable</option>
+              <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
             </select>
           </div>
           <div><label className="text-xs text-muted-foreground">Pax Staying</label><input className={`${inputClass} w-full`} type="number" value={r.pax_staying ?? 0} onChange={e => updateFieldR("pax_staying", Number(e.target.value))} /></div>
@@ -868,6 +868,8 @@ export function AdminContent({ tab }: AdminContentProps) {
                       <label className="text-xs text-muted-foreground">Status</label>
                       <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], status: e.target.value }; setRoomConfigs(c); }}>
                         <option value="Available">Available</option>
+                        <option value="Available Soon">Available Soon</option>
+                        <option value="Pending">Pending</option>
                         <option value="Occupied">Occupied</option>
                       </select>
                     </div>
