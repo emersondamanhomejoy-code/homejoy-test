@@ -91,9 +91,9 @@ const createDefaultRoomConfigs = (roomCount: number, carParkCount: number, namin
   return [...rooms, ...carParks];
 };
 
-const hasMeaningfulRoomData = (room: RoomConfig, index: number) => {
+const hasMeaningfulRoomData = (room: RoomConfig, index: number, naming: "alpha" | "digit" = "alpha") => {
   if (room.room_type === "Car Park") {
-    return Boolean(room.bed_type?.trim()) || Number(room.rent) > 0 || (room.room && room.room !== `Car Park ${index + 1}`);
+    return Boolean(room.bed_type?.trim()) || Number(room.rent) > 0 || (room.room && room.room !== getDefaultCarParkName(index));
   }
 
   return (
@@ -105,7 +105,7 @@ const hasMeaningfulRoomData = (room: RoomConfig, index: number) => {
     Boolean(room.tenant_gender?.trim()) ||
     Boolean(room.tenant_race?.trim()) ||
     Number(room.pax_staying) > 0 ||
-    Boolean(room.room && room.room !== getDefaultRoomName(index))
+    Boolean(room.room && room.room !== getDefaultRoomName(index, naming))
   );
 };
 
