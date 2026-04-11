@@ -975,32 +975,33 @@ export function AdminContent({ tab }: AdminContentProps) {
         {u.id && (
           <div className="pt-4 border-t border-border space-y-3">
             <div className="text-lg font-semibold">Rooms & Car Parks</div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {(units.find(un => un.id === u.id)?.rooms || []).map((room) => {
                 const isCP = room.room_type === "Car Park";
                 return (
-                  <div key={room.id} className={`rounded-lg border p-3 flex items-center justify-between ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
-                    <div className="flex items-center gap-4 text-sm flex-1 min-w-0">
-                      <span className="font-semibold w-24 shrink-0">{isCP ? `🅿️ ${room.room}` : room.room}</span>
-                      {!isCP ? (
-                        <>
-                          <span className="text-muted-foreground">{room.bed_type || "—"}</span>
-                          <span className="text-muted-foreground">{(room as any).wall_type || "—"}</span>
-                          <span className="text-muted-foreground">{(room as any).special_type || "—"}</span>
-                          <span>RM{room.rent}</span>
-                          <StatusBadge status={room.status} />
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-muted-foreground">{room.bed_type ? `Lot: ${room.bed_type}` : "—"}</span>
-                          <span>RM{room.rent}</span>
-                          <StatusBadge status={room.status} />
-                        </>
-                      )}
+                  <div key={room.id} className={`rounded-lg border p-4 space-y-3 ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-sm">{isCP ? `🅿️ ${room.room}` : room.room}</span>
+                        <StatusBadge status={room.status} />
+                      </div>
+                      <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0">
+                        More Details
+                      </button>
                     </div>
-                    <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0">
-                      Edit {room.room}
-                    </button>
+                    {isCP ? (
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-muted-foreground">Lot:</span> {room.bed_type || "—"}</div>
+                        <div><span className="text-muted-foreground">Rental:</span> RM{room.rent}</div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-3 text-sm">
+                        <div><span className="text-muted-foreground">Bed:</span> {room.bed_type || "—"}</div>
+                        <div><span className="text-muted-foreground">Wall:</span> {(room as any).wall_type || "—"}</div>
+                        <div><span className="text-muted-foreground">Rental:</span> RM{room.rent}</div>
+                        <div><span className="text-muted-foreground">Special:</span> {(room as any).special_type || "—"}</div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
