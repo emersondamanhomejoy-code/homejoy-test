@@ -574,7 +574,8 @@ export default function Index() {
     const set = (field: string, value: string) => setBookingForm({ ...f, [field]: value });
 
     return (
-      <div className="min-h-screen bg-background p-6 text-foreground">
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => setPage("detail")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Room Detail</button>
           <div className="bg-card rounded-lg shadow-lg p-6 space-y-6">
