@@ -83,6 +83,7 @@ const emptyUnit = {
   deposit: "", meter_type: "Postpaid", meter_rate: 0,
   deposit_multiplier: 1.5, admin_fee: 330,
   parking_type: "None", parking_card_deposit: 0,
+  common_photos: [] as string[], wifi_name: "", wifi_password: "",
 };
 
 interface AdminContentProps {
@@ -564,6 +565,47 @@ export function AdminContent({ tab }: AdminContentProps) {
 
     return (
       <div className="space-y-5 pb-4">
+        {/* Common Area Photos */}
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Common Area Photos</label>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {((u as any).common_photos as string[] || []).map((path: string, i: number) => (
+              <div key={i} className="relative group">
+                <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg" />
+                <button onClick={() => {
+                  const newPhotos = ((u as any).common_photos as string[] || []).filter((_: string, idx: number) => idx !== i);
+                  setEditingUnit({ ...u, common_photos: newPhotos });
+                }} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+              </div>
+            ))}
+            {((u as any).common_photos || []).length < 10 && (
+              <label className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                <span className="text-xl text-muted-foreground">+</span>
+                <span className="text-[10px] text-muted-foreground">Add</span>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  const existing = ((u as any).common_photos as string[] || []);
+                  const remaining = 10 - existing.length;
+                  const toUpload = files.slice(0, remaining);
+                  const newPaths: string[] = [];
+                  for (const file of toUpload) {
+                    const ext = file.name.split('.').pop();
+                    const path = `common/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                    const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                    if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                    newPaths.push(path);
+                  }
+                  if (newPaths.length > 0) {
+                    setEditingUnit({ ...u, common_photos: [...existing, ...newPaths] });
+                  }
+                  e.target.value = "";
+                }} />
+              </label>
+            )}
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="text-xs text-muted-foreground">Condo / Building</label>
@@ -576,61 +618,114 @@ export function AdminContent({ tab }: AdminContentProps) {
               {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
             </select>
           </div>
-          <input className={inputClass} placeholder="Unit (e.g. A-17-8)" value={u.unit} onChange={e => updateFieldU("unit", e.target.value)} />
           <div>
             <label className="text-xs text-muted-foreground">Location (auto-filled from condo)</label>
             <input className={`${inputClass} w-full bg-muted`} value={u.location} readOnly placeholder="Select a condo above" />
           </div>
-          <select className={inputClass} value={u.unit_type} onChange={e => updateFieldU("unit_type", e.target.value)}>
-            <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
-          </select>
-          <input className={inputClass} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateFieldU("unit_max_pax", Number(e.target.value))} />
-          <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateFieldU("passcode", e.target.value)} />
-          <select className={inputClass} value={u.access_card_source} onChange={e => updateFieldU("access_card_source", e.target.value)}>
-            <option value="Provided by Us">Access Card: Provided by Us</option>
-            <option value="Management Office">Access Card: Management Office</option>
-          </select>
-          <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit || ""} onChange={e => updateFieldU("access_card_deposit", Number(e.target.value))} />
-          <select className={inputClass} value={u.deposit} onChange={e => updateFieldU("deposit", e.target.value)}>
-            <option value="">Deposit Type</option>
-            <option value="Refundable">Refundable</option>
-            <option value="Non-refundable">Non-refundable</option>
-            <option value="Zero Deposit">Zero Deposit</option>
-          </select>
-          <input className={inputClass} type="number" step="0.1" placeholder="Deposit Multiplier" value={u.deposit_multiplier} onChange={e => updateFieldU("deposit_multiplier", Number(e.target.value))} />
-          <select className={inputClass} value={u.meter_type} onChange={e => updateFieldU("meter_type", e.target.value)}>
-            <option value="Postpaid">Electricity: Postpaid</option>
-            <option value="Prepaid">Electricity: Prepaid</option>
-            <option value="Flat Rate">Electricity: Flat Rate</option>
-          </select>
-          <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM/kWh)" value={u.meter_rate || ""} onChange={e => updateFieldU("meter_rate", Number(e.target.value))} />
-          <input className={inputClass} type="number" placeholder="Admin Fee (RM)" value={u.admin_fee} onChange={e => updateFieldU("admin_fee", Number(e.target.value))} />
-          <select className={inputClass} value={u.parking_type} onChange={e => updateFieldU("parking_type", e.target.value)}>
-            <option value="None">Parking: None</option>
-            <option value="Access Card">Parking: Access Card</option>
-            <option value="ANPR">Parking: ANPR</option>
-            <option value="Free">Parking: Free</option>
-          </select>
+          <div>
+            <label className="text-xs text-muted-foreground">Unit (e.g. A-17-8)</label>
+            <input className={`${inputClass} w-full`} placeholder="Unit" value={u.unit} onChange={e => updateFieldU("unit", e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Unit Type</label>
+            <select className={`${inputClass} w-full`} value={u.unit_type} onChange={e => updateFieldU("unit_type", e.target.value)}>
+              <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Max Occupants</label>
+            <input className={`${inputClass} w-full`} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateFieldU("unit_max_pax", Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Deposit Rate (Multiplier)</label>
+            <input className={`${inputClass} w-full`} type="number" step="0.1" placeholder="e.g. 1.5" value={u.deposit_multiplier} onChange={e => updateFieldU("deposit_multiplier", Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Meter Type</label>
+            <select className={`${inputClass} w-full`} value={u.meter_type} onChange={e => updateFieldU("meter_type", e.target.value)}>
+              <option value="Postpaid">Postpaid</option>
+              <option value="Prepaid">Prepaid</option>
+              <option value="Flat Rate">Flat Rate</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Meter Rate (RM/kWh)</label>
+            <input className={`${inputClass} w-full`} type="number" step="0.01" placeholder="Meter Rate" value={u.meter_rate || ""} onChange={e => updateFieldU("meter_rate", Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Admin Fee (RM)</label>
+            <input className={`${inputClass} w-full`} type="number" placeholder="Admin Fee" value={u.admin_fee} onChange={e => updateFieldU("admin_fee", Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Main Door Passcode</label>
+            <input className={`${inputClass} w-full`} placeholder="Passcode" value={u.passcode} onChange={e => updateFieldU("passcode", e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">WiFi Name</label>
+            <input className={`${inputClass} w-full`} placeholder="WiFi SSID" value={(u as any).wifi_name || ""} onChange={e => updateFieldU("wifi_name", e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">WiFi Password</label>
+            <input className={`${inputClass} w-full`} placeholder="WiFi Password" value={(u as any).wifi_password || ""} onChange={e => updateFieldU("wifi_password", e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Access Card Source</label>
+            <select className={`${inputClass} w-full`} value={u.access_card_source} onChange={e => updateFieldU("access_card_source", e.target.value)}>
+              <option value="Provided by Us">Provided by Us</option>
+              <option value="Management Office">Management Office</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Access Card Deposit (RM)</label>
+            <input className={`${inputClass} w-full`} type="number" placeholder="Access Card Deposit" value={u.access_card_deposit || ""} onChange={e => updateFieldU("access_card_deposit", Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Deposit Type</label>
+            <select className={`${inputClass} w-full`} value={u.deposit} onChange={e => updateFieldU("deposit", e.target.value)}>
+              <option value="">— Select —</option>
+              <option value="Refundable">Refundable</option>
+              <option value="Non-refundable">Non-refundable</option>
+              <option value="Zero Deposit">Zero Deposit</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Parking Type</label>
+            <select className={`${inputClass} w-full`} value={u.parking_type} onChange={e => updateFieldU("parking_type", e.target.value)}>
+              <option value="None">None</option>
+              <option value="Access Card">Access Card</option>
+              <option value="ANPR">ANPR</option>
+              <option value="Free">Free</option>
+            </select>
+          </div>
           {u.parking_type === "Access Card" && (
-            <input className={inputClass} type="number" placeholder="Parking Card Deposit (RM)" value={u.parking_card_deposit || ""} onChange={e => updateFieldU("parking_card_deposit", Number(e.target.value))} />
+            <div>
+              <label className="text-xs text-muted-foreground">Parking Card Deposit (RM)</label>
+              <input className={`${inputClass} w-full`} type="number" placeholder="Parking Card Deposit" value={u.parking_card_deposit || ""} onChange={e => updateFieldU("parking_card_deposit", Number(e.target.value))} />
+            </div>
           )}
         </div>
         <div className="flex items-center gap-3 pt-2">
           <input type="checkbox" id="internalOnly" checked={u.internal_only} onChange={e => updateFieldU("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
           <label htmlFor="internalOnly" className="text-sm font-medium">🔒 Internal Only (hidden from external agents)</label>
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Access Info (Passcode, WiFi, etc.)</label>
-          <textarea className={`${inputClass} w-full h-24`} placeholder="e.g. Main door passcode: 1234#..." value={u.access_info} onChange={e => updateFieldU("access_info", e.target.value)} />
-        </div>
 
         {/* Room Configs (only for new units) */}
         {!u.id && (
           <>
-            <div className="flex items-center justify-between pt-4">
+            <div className="flex items-center justify-between pt-4 border-t border-border">
               <div className="text-lg font-semibold">Rooms</div>
-              <div className="flex gap-2">
-                <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Room ${String.fromCharCode(65 + roomConfigs.filter(r => !r.room_type || r.room_type !== "Car Park").length)}`, bed_type: "", max_pax: 1, rent: 0 }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">+ Add Room</button>
+              <div className="flex gap-2 items-center">
+                <label className="text-xs text-muted-foreground">Number of Rooms:</label>
+                <input className={`${inputClass} w-16 text-center`} type="number" min={0} max={20} value={roomConfigs.filter(r => r.room_type !== "Car Park").length} onChange={e => {
+                  const target = Math.max(0, Math.min(20, Number(e.target.value)));
+                  const carParks = roomConfigs.filter(r => r.room_type === "Car Park");
+                  const currentRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
+                  let newRooms = currentRooms.slice(0, target);
+                  while (newRooms.length < target) {
+                    newRooms.push({ room: `Room ${String.fromCharCode(65 + newRooms.length)}`, bed_type: "", max_pax: 1, rent: 0 });
+                  }
+                  setRoomConfigs([...newRooms, ...carParks]);
+                }} />
                 <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Car Park`, bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">🅿️ + Car Park</button>
               </div>
             </div>
@@ -726,13 +821,13 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* Room Edit Dialog */}
       <Dialog open={!!editingRoom} onOpenChange={(open) => { if (!open) handleRoomClose(); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Edit {editingRoom?.room_type === "Car Park" ? `🅿️ ${editingRoom?.room}` : editingRoom?.room}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {renderRoomEditDialog()}
-          </ScrollArea>
+          </div>
           <DialogFooter>
             <button onClick={handleRoomClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
             <button onClick={saveRoom} disabled={updateRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
@@ -744,13 +839,13 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* Unit Add/Edit Dialog */}
       <Dialog open={!!editingUnit} onOpenChange={(open) => { if (!open) handleUnitClose(); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit"}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             {renderUnitFormDialog()}
-          </ScrollArea>
+          </div>
           <DialogFooter>
             <button onClick={handleUnitClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
             <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
