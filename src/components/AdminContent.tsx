@@ -160,8 +160,11 @@ export function AdminContent({ tab }: AdminContentProps) {
   const [editingUnit, setEditingUnit] = useState<typeof emptyUnit & { id?: string } | null>(null);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(createDefaultRoomConfigs());
+  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>([]);
   const [roomCountInput, setRoomCountInput] = useState("5");
+  const [carParkCountInput, setCarParkCountInput] = useState("0");
+  const [roomNaming, setRoomNaming] = useState<"alpha" | "digit">("alpha");
+  const [editingRoomConfigIndex, setEditingRoomConfigIndex] = useState<number | null>(null);
   const [unitFilters, setUnitFilters] = useState({ location: "All", building: "All", price: "All", unitType: "All" });
   const [showUnitCancelConfirm, setShowUnitCancelConfirm] = useState(false);
   const [showRoomCancelConfirm, setShowRoomCancelConfirm] = useState(false);
