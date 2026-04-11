@@ -94,7 +94,7 @@ export default function Rooms() {
       // Reset buildings that no longer match
       setSelectedBuildings((prev) => {
         const validBuildings = new Set(
-          availableRooms.filter((r) => [...selectedLocations, val].includes(r.location)).map((r) => r.building)
+          allRooms.filter((r) => [...selectedLocations, val].includes(r.location)).map((r) => r.building)
         );
         return prev.filter((b) => validBuildings.has(b));
       });
@@ -106,7 +106,7 @@ export default function Rooms() {
     setSelectedLocations(next);
     if (!next.length) return;
     setSelectedBuildings((prev) => {
-      const validBuildings = new Set(availableRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
+      const validBuildings = new Set(allRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
       return prev.filter((b) => validBuildings.has(b));
     });
   };
