@@ -856,34 +856,68 @@ export function AdminContent({ tab }: AdminContentProps) {
                 </div>
               </div>
 
-              {/* Room/CarPark cards */}
-              <div className="space-y-2">
+              {/* Room/CarPark cards with inline editing */}
+              <div className="space-y-3">
                 {roomConfigs.map((rc, i) => {
                   const isCP = rc.room_type === "Car Park";
+                  const updateRC = (field: string, value: any) => {
+                    const c = [...roomConfigs];
+                    c[i] = { ...c[i], [field]: value };
+                    setRoomConfigs(c);
+                  };
                   return (
-                    <div key={i} className={`rounded-lg border p-3 flex items-center justify-between ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
-                      <div className="flex items-center gap-4 text-sm flex-1 min-w-0">
-                        <span className="font-semibold w-24 shrink-0">{isCP ? `🅿️ ${rc.room}` : rc.room}</span>
-                        {!isCP ? (
-                          <>
-                            <span className="text-muted-foreground">{rc.bed_type || "No bed type"}</span>
-                            <span className="text-muted-foreground">{(rc as any).wall_type || "—"}</span>
-                            <span className="text-muted-foreground">{(rc as any).special_type || "—"}</span>
-                            <span>{rc.rent > 0 ? `RM${rc.rent}` : "RM0"}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-muted-foreground">{rc.bed_type ? `Lot: ${rc.bed_type}` : "No lot"}</span>
-                            <span>{rc.rent > 0 ? `RM${rc.rent}` : "RM0"}</span>
-                          </>
-                        )}
+                    <div key={i} className={`rounded-lg border p-4 space-y-3 ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{isCP ? `🅿️ ${rc.room}` : rc.room}</span>
+                        <button
+                          onClick={() => setEditingRoomConfigIndex(i)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0"
+                        >
+                          More Details
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setEditingRoomConfigIndex(i)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0"
-                      >
-                        Edit {rc.room}
-                      </button>
+                      {isCP ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Parking Lot *</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => updateRC("bed_type", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Rental (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Bed Type *</label>
+                            <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
+                              const bt = e.target.value;
+                              const c = [...roomConfigs];
+                              c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
+                              setRoomConfigs(c);
+                            }}>
+                              <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Wall Type *</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
+                              <option value="">—</option><option value="Partition">Partition</option><option value="Original">Original</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Rental (RM) *</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Special Type</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).special_type || ""} onChange={e => updateRC("special_type", e.target.value)}>
+                              <option value="">— None —</option><option value="Balcony">Balcony</option><option value="Master">Master</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
