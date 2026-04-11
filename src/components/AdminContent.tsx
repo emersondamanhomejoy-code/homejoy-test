@@ -82,7 +82,7 @@ const emptyUnit = {
 };
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "claims" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "claims" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
