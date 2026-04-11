@@ -1093,6 +1093,9 @@ export default function Index() {
                   Admin Panel
                 </button>
               )}
+              <button onClick={() => navigate("/")} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
+                New Version ✨
+              </button>
               <button onClick={signOut} className="px-3 py-1.5 rounded-lg border text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                 Sign Out
               </button>
@@ -1189,6 +1192,9 @@ export default function Index() {
                 Admin Panel
               </button>
             )}
+            <button onClick={() => navigate("/")} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-80 transition-opacity">
+              New Version ✨
+            </button>
             <button onClick={signOut} className="px-3 py-1.5 rounded-lg border text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
               Sign Out
             </button>
