@@ -259,7 +259,7 @@ export default function Rooms() {
                             <TableCell className="text-center">{room.max_pax}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{room.status}</TableCell>
                             <TableCell className="text-center">
-                              <Button size="sm" variant="outline" onClick={() => navigate(`/book/${room.id}`)}>
+                              <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
                                 Book
                               </Button>
                             </TableCell>
