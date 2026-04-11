@@ -8,6 +8,8 @@ import { useBookings, Booking } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
+import { LocationsContent } from "@/components/LocationsContent";
+import { CondosContent } from "@/components/CondosContent";
 
 const rankingData = {
   internal: [
@@ -1173,7 +1175,9 @@ export default function Index() {
         {/* Admin Content for non-dashboard tabs */}
         {isAdmin && adminTab !== "dashboard" && (
           <div className="max-w-5xl mx-auto">
-            <AdminContent tab={adminTab as any} />
+            {adminTab === "locations" ? <LocationsContent /> :
+             adminTab === "condos" ? <CondosContent /> :
+             <AdminContent tab={adminTab as any} />}
           </div>
         )}
 
