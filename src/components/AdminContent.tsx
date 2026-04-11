@@ -64,6 +64,7 @@ const defaultConfigs: Record<string, CommissionConfig> = {
 };
 
 const bedTypeMaxPax: Record<string, number> = {
+  Single: 1, "Super Single": 1, Queen: 2, King: 2,
   MASTER: 2, QUEEN: 2, "QUEEN BALCONY": 2, MEDIUM: 2, SINGLE: 1, "SUPER SINGLE": 1,
 };
 
