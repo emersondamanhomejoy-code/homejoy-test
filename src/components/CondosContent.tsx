@@ -22,12 +22,13 @@ export function CondosContent() {
 
   // Build stats per condo (matched by building name = condo name)
   const condoStats = useMemo(() => {
-    const map: Record<string, { totalUnits: number; available: number; availableSoon: number; reserved: number; occupied: number }> = {};
+    const map: Record<string, { totalUnits: number; totalRooms: number; available: number; availableSoon: number; reserved: number; occupied: number }> = {};
     for (const c of condos) {
       const condoUnits = units.filter(u => u.building === c.name);
       const rooms = condoUnits.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park"));
       map[c.id] = {
         totalUnits: condoUnits.length,
+        totalRooms: rooms.length,
         available: rooms.filter(r => r.status === "Available").length,
         availableSoon: rooms.filter(r => r.status === "Available Soon").length,
         reserved: rooms.filter(r => r.status === "Reserved").length,
