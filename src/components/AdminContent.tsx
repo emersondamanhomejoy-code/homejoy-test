@@ -1117,9 +1117,14 @@ export function AdminContent({ tab }: AdminContentProps) {
                   <div key={room.id} className={`rounded-lg border p-4 space-y-3 ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm">{isCP ? `🅿️ ${room.room}` : room.room}</span>
-                      <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0">
-                        More Details
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setRoomToRemove({ id: room.id, name: room.room, status: room.status })} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shrink-0">
+                          Remove
+                        </button>
+                        <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0">
+                          More Details
+                        </button>
+                      </div>
                     </div>
                     {isCP ? (
                       <div className="grid grid-cols-2 gap-3">
