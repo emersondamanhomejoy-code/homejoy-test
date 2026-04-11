@@ -15,9 +15,27 @@ const emptyCondo: CondoInput = {
 export function CondosContent() {
   const { data: condos = [], isLoading } = useCondos();
   const { data: locations = [] } = useLocations();
+  const { data: units = [] } = useUnits();
   const createCondo = useCreateCondo();
   const updateCondo = useUpdateCondo();
   const deleteCondo = useDeleteCondo();
+
+  // Build stats per condo (matched by building name = condo name)
+  const condoStats = useMemo(() => {
+    const map: Record<string, { totalUnits: number; available: number; availableSoon: number; reserved: number; occupied: number }> = {};
+    for (const c of condos) {
+      const condoUnits = units.filter(u => u.building === c.name);
+      const rooms = condoUnits.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park"));
+      map[c.id] = {
+        totalUnits: condoUnits.length,
+        available: rooms.filter(r => r.status === "Available").length,
+        availableSoon: rooms.filter(r => r.status === "Available Soon").length,
+        reserved: rooms.filter(r => r.status === "Reserved").length,
+        occupied: rooms.filter(r => r.status === "Tenanted" || r.status === "Occupied").length,
+      };
+    }
+    return map;
+  }, [condos, units]);
 
   const [editing, setEditing] = useState<(CondoInput & { id?: string }) | null>(null);
   const [search, setSearch] = useState("");
