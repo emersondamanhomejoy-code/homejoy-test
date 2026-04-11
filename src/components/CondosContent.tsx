@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useCondos, useCreateCondo, useUpdateCondo, useDeleteCondo, Condo, CondoInput } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { useUnits } from "@/hooks/useRooms";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, GripVertical } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const emptyCondo: CondoInput = {
