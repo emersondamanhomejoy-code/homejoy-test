@@ -914,6 +914,23 @@ export default function Index() {
     );
   }
 
+  // ─── MY BOOKINGS PAGE ───
+  if (page === "myBookings") {
+    return (
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+            <AgentBookingsContent onEditBooking={(booking) => {
+              // TODO: Pre-fill booking form and navigate to edit mode
+              alert("Edit & Resubmit feature coming soon. Booking ID: " + booking.id.slice(0, 8));
+            }} />
+          </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
   // ─── CLAIMS PAGE ───
   if (page === "claims") {
     const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
