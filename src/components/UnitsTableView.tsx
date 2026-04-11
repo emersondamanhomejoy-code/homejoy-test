@@ -241,6 +241,9 @@ export function UnitsTableView({
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex gap-1 justify-center" onClick={e => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View Details" onClick={() => setViewingUnit(unit)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                                 setEditingUnit({
                                   id: unit.id, building: unit.building, unit: unit.unit, location: unit.location,
