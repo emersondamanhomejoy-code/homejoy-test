@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, ClipboardList, DollarSign, Settings, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LayoutDashboard, Home, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,9 +17,6 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Rooms", url: "/rooms", icon: Home },
-  { title: "Bookings", url: "/old", icon: ClipboardList, navState: { page: "dashboard" } },
-  { title: "Claims", url: "/old", icon: DollarSign, navState: { page: "claims" } },
-  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AgentSidebar() {
@@ -57,9 +54,8 @@ export function AgentSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
-                      to={item.navState ? { pathname: item.url } : item.url}
-                      state={item.navState}
-                      end={item.url === "/agent"}
+                      to={item.url}
+                      end={item.url === "/"}
                       className="hover:bg-muted/50"
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
