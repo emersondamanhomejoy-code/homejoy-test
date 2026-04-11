@@ -53,7 +53,7 @@ export function CondosContent() {
 
   const handleSave = async () => {
     if (!editing) return;
-    if (!editing.name.trim()) { alert("Condo name is required"); return; }
+    if (!editing.name.trim()) { alert("Building name is required"); return; }
     try {
       if (editing.id) {
         await updateCondo.mutateAsync({ id: editing.id, ...editing });
@@ -62,12 +62,12 @@ export function CondosContent() {
       }
       setEditing(null);
     } catch (e: any) {
-      alert(e.message || "Failed to save condo");
+      alert(e.message || "Failed to save building");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this condo/building?")) return;
+    if (!confirm("Delete this building?")) return;
     try { await deleteCondo.mutateAsync(id); } catch (e: any) { alert(e.message); }
   };
 
@@ -111,12 +111,12 @@ export function CondosContent() {
         <button onClick={() => setEditing(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
-        <div className="text-2xl font-extrabold">{editing.id ? "Edit Condo" : "Add Condo"}</div>
+        <div className="text-2xl font-extrabold">{editing.id ? "Edit Building" : "Add Building"}</div>
         <div className="bg-card rounded-lg shadow-sm p-6 space-y-5 border">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-muted-foreground">Condo Name *</label>
-              <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={editing.name} onChange={e => updateField("name", e.target.value)} />
+              <label className="text-xs text-muted-foreground">Building Name *</label>
+               <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={editing.name} onChange={e => updateField("name", e.target.value)} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Location *</label>
@@ -135,7 +135,7 @@ export function CondosContent() {
             </div>
             <div className="md:col-span-2">
               <label className="text-xs text-muted-foreground">Description</label>
-              <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the condo, nearby facilities..." value={editing.description} onChange={e => updateField("description", e.target.value)} />
+              <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={editing.description} onChange={e => updateField("description", e.target.value)} />
             </div>
             <div className="md:col-span-2">
               <label className="text-xs text-muted-foreground">Amenities</label>
@@ -188,20 +188,20 @@ export function CondosContent() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div className="text-2xl font-extrabold">Condos / Buildings</div>
+        <div className="text-2xl font-extrabold">Buildings</div>
         <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
-          <Plus className="h-4 w-4" /> Add Condo
+          <Plus className="h-4 w-4" /> Add Building
         </button>
       </div>
 
-      <input className={`${inputClass} w-full max-w-sm`} placeholder="Search condos..." value={search} onChange={e => setSearch(e.target.value)} />
+      <input className={`${inputClass} w-full max-w-sm`} placeholder="Search buildings..." value={search} onChange={e => setSearch(e.target.value)} />
 
       <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Condo Name</TableHead>
+              <TableHead>Building Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead className="text-center">Units</TableHead>
               <TableHead className="text-center">Total Rooms</TableHead>
@@ -214,7 +214,7 @@ export function CondosContent() {
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No condos found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
             ) : filtered.map((c, i) => {
               const stats = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, available: 0, availableSoon: 0, reserved: 0, occupied: 0 };
               return (
