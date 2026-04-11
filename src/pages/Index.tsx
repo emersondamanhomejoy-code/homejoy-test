@@ -1167,9 +1167,21 @@ export default function Index() {
   }
 
   return (
-    <OldDashboardLayout>
+    <OldDashboardLayout activeTab={adminTab} onTabChange={(t) => { setAdminTab(t); setPage("dashboard"); }}>
       <div className="flex-1 overflow-auto text-foreground">
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
+        {/* Admin Content for non-dashboard tabs */}
+        {isAdmin && adminTab !== "dashboard" && (
+          <div className="max-w-5xl mx-auto">
+            <AdminContent tab={adminTab as any} />
+          </div>
+        )}
+
+        {/* Show dashboard content only when on dashboard tab */}
+        {(!isAdmin || adminTab === "dashboard") && (<>
+        {/* Admin Dashboard Stats */}
+        {isAdmin && <AdminContent tab="dashboard" />}
+
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-xl shadow-sm p-5 border">
