@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
 import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
-import { useBookings, Booking } from "@/hooks/useBookings";
+import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
+import { AgentBookingsContent } from "@/components/AgentBookingsContent";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
@@ -907,6 +908,23 @@ export default function Index() {
               Back to Dashboard
             </button>
           </div>
+          </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
+  // ─── MY BOOKINGS PAGE ───
+  if (page === "myBookings") {
+    return (
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+            <AgentBookingsContent onEditBooking={(booking) => {
+              // TODO: Pre-fill booking form and navigate to edit mode
+              alert("Edit & Resubmit feature coming soon. Booking ID: " + booking.id.slice(0, 8));
+            }} />
           </div>
         </div>
       </OldDashboardLayout>

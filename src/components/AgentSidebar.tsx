@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LayoutDashboard, Home, LogOut, ExternalLink, PanelLeftClose, PanelLeft, ClipboardList } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Rooms", url: "/rooms", icon: Home },
+  { title: "My Bookings", url: "/admin", icon: ClipboardList, state: { page: "myBookings" } },
 ];
 
 export function AgentSidebar() {
@@ -53,15 +54,26 @@ export function AgentSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <item.icon className="h-4 w-4 mr-2" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                    {(item as any).state ? (
+                      <a
+                        className="hover:bg-muted/50 flex items-center cursor-pointer"
+                        onClick={() => navigate(item.url, { state: (item as any).state })}
+                        role="button"
+                      >
+                        <item.icon className="h-4 w-4 mr-2" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </a>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/"}
+                        className="hover:bg-muted/50"
+                        activeClassName="bg-primary/10 text-primary font-medium"
+                      >
+                        <item.icon className="h-4 w-4 mr-2" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
