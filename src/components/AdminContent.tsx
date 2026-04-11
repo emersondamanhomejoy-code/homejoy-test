@@ -817,119 +817,183 @@ export function AdminContent({ tab }: AdminContentProps) {
         {/* Room Configs (only for new units) */}
         {!u.id && (
           <>
-            <div className="flex items-center justify-between pt-4 border-t border-border">
-              <div className="text-lg font-semibold">Rooms</div>
-              <div className="flex gap-2 items-center">
-                <label className="text-xs text-muted-foreground">Number of Rooms *</label>
-                <input
-                  className={`${inputClass} w-16 text-center`}
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={roomCountInput}
-                  onChange={e => setRoomCountInput(e.target.value)}
-                  onBlur={() => applyRoomCountChange(roomCountInput)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      applyRoomCountChange(roomCountInput);
-                    }
-                  }}
-                  onWheel={e => e.currentTarget.blur()}
-                />
-                <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Car Park ${roomConfigs.filter(r => r.room_type === "Car Park").length + 1}`, bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">🅿️ + Car Park</button>
+            <div className="pt-4 border-t border-border space-y-4">
+              <div className="text-lg font-semibold">Rooms & Car Parks</div>
+
+              {/* Count selectors */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground">Number of Rooms *</label>
+                  <input className={`${inputClass} w-full`} type="number" min={1} max={20} value={roomCountInput}
+                    onChange={e => { setRoomCountInput(e.target.value); }}
+                    onBlur={() => handleRoomCountChange(roomCountInput)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleRoomCountChange(roomCountInput); } }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Number of Car Parks</label>
+                  <input className={`${inputClass} w-full`} type="number" min={0} max={10} value={carParkCountInput}
+                    onChange={e => { setCarParkCountInput(e.target.value); }}
+                    onBlur={() => handleCarParkCountChange(carParkCountInput)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleCarParkCountChange(carParkCountInput); } }}
+                  />
+                </div>
+              </div>
+
+              {/* Naming convention radio */}
+              <div>
+                <label className="text-xs text-muted-foreground block mb-2">Room Naming Convention</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="roomNaming" value="alpha" checked={roomNaming === "alpha"} onChange={() => handleNamingChange("alpha")} className="w-4 h-4 accent-primary" />
+                    <span className="text-sm">Alphabet (Room A, B, C…)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="roomNaming" value="digit" checked={roomNaming === "digit"} onChange={() => handleNamingChange("digit")} className="w-4 h-4 accent-primary" />
+                    <span className="text-sm">Digit (Room 1, 2, 3…)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Room/CarPark cards */}
+              <div className="space-y-2">
+                {roomConfigs.map((rc, i) => {
+                  const isCP = rc.room_type === "Car Park";
+                  return (
+                    <div key={i} className={`rounded-lg border p-3 flex items-center justify-between ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
+                      <div className="flex items-center gap-4 text-sm flex-1 min-w-0">
+                        <span className="font-semibold w-24 shrink-0">{isCP ? `🅿️ ${rc.room}` : rc.room}</span>
+                        {!isCP ? (
+                          <>
+                            <span className="text-muted-foreground">{rc.bed_type || "No bed type"}</span>
+                            <span className="text-muted-foreground">{(rc as any).wall_type || "—"}</span>
+                            <span className="text-muted-foreground">{(rc as any).special_type || "—"}</span>
+                            <span>{rc.rent > 0 ? `RM${rc.rent}` : "RM0"}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-muted-foreground">{rc.bed_type ? `Lot: ${rc.bed_type}` : "No lot"}</span>
+                            <span>{rc.rent > 0 ? `RM${rc.rent}` : "RM0"}</span>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setEditingRoomConfigIndex(i)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0"
+                      >
+                        Edit {rc.room}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <div className="space-y-3">
-              {roomConfigs.map((rc, i) => {
-                const isCarParkConfig = rc.room_type === "Car Park";
+
+            {/* Inline edit dialog for room config */}
+            <Dialog open={editingRoomConfigIndex !== null} onOpenChange={(open) => { if (!open) setEditingRoomConfigIndex(null); }}>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Edit {editingRoomConfigIndex !== null ? roomConfigs[editingRoomConfigIndex]?.room : ""}</DialogTitle>
+                </DialogHeader>
+                {editingRoomConfigIndex !== null && (() => {
+                  const idx = editingRoomConfigIndex;
+                  const rc = roomConfigs[idx];
+                  if (!rc) return null;
+                  const isCP = rc.room_type === "Car Park";
+                  const updateRC = (field: string, value: any) => {
+                    const c = [...roomConfigs];
+                    c[idx] = { ...c[idx], [field]: value };
+                    setRoomConfigs(c);
+                  };
+
+                  return (
+                    <div className="space-y-4">
+                      {isCP ? (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><label className="text-xs text-muted-foreground">Parking Lot</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => updateRC("bed_type", e.target.value)} /></div>
+                          <div><label className="text-xs text-muted-foreground">Rental (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} /></div>
+                          <div><label className="text-xs text-muted-foreground">Status</label>
+                            <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
+                              <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
+                            </select></div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><label className="text-xs text-muted-foreground">Bed Type *</label>
+                            <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
+                              const bt = e.target.value;
+                              const c = [...roomConfigs];
+                              c[idx] = { ...c[idx], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
+                              setRoomConfigs(c);
+                            }}>
+                              <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
+                            </select></div>
+                          <div><label className="text-xs text-muted-foreground">Rental (RM) *</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} /></div>
+                          <div><label className="text-xs text-muted-foreground">Wall Type</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
+                              <option value="">—</option><option value="Partition">Partition</option><option value="Original">Original</option>
+                            </select></div>
+                          <div><label className="text-xs text-muted-foreground">Special Type <span className="text-muted-foreground/60">(optional)</span></label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).special_type || ""} onChange={e => updateRC("special_type", e.target.value)}>
+                              <option value="">— None —</option><option value="Balcony">Balcony</option><option value="Master">Master</option>
+                            </select></div>
+                          <div><label className="text-xs text-muted-foreground">Max Pax *</label>
+                            <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => updateRC("max_pax", Number(e.target.value))} /></div>
+                          <div><label className="text-xs text-muted-foreground">Status</label>
+                            <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
+                              <option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Pending">Pending</option><option value="Occupied">Occupied</option>
+                            </select></div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <DialogFooter>
+                  <button onClick={() => setEditingRoomConfigIndex(null)} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">Done</button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+
+        {/* Rooms list for existing units */}
+        {u.id && (
+          <div className="pt-4 border-t border-border space-y-3">
+            <div className="text-lg font-semibold">Rooms & Car Parks</div>
+            <div className="space-y-2">
+              {(units.find(un => un.id === u.id)?.rooms || []).map((room) => {
+                const isCP = room.room_type === "Car Park";
                 return (
-                <div key={i} className={`rounded-lg border p-4 space-y-2 ${isCarParkConfig ? "bg-blue-500/5 border-blue-500/20" : ""}`}>
-                  <div className="flex items-center justify-between">
-                    <input className={`${inputClass} w-40`} value={rc.room} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], room: e.target.value }; setRoomConfigs(c); }} />
-                    <button onClick={() => {
-                      const targetRoom = roomConfigs[i];
-                      const nextConfigs = roomConfigs.filter((_, idx) => idx !== i);
-                      setRoomConfigs(nextConfigs);
-                      if (targetRoom.room_type !== "Car Park") {
-                        setRoomCountInput(String(nextConfigs.filter(room => room.room_type !== "Car Park").length));
-                      }
-                    }} className="text-xs text-destructive hover:underline">Remove</button>
+                  <div key={room.id} className={`rounded-lg border p-3 flex items-center justify-between ${isCP ? "bg-sky-500/5 border-sky-500/20" : "bg-card"}`}>
+                    <div className="flex items-center gap-4 text-sm flex-1 min-w-0">
+                      <span className="font-semibold w-24 shrink-0">{isCP ? `🅿️ ${room.room}` : room.room}</span>
+                      {!isCP ? (
+                        <>
+                          <span className="text-muted-foreground">{room.bed_type || "—"}</span>
+                          <span className="text-muted-foreground">{(room as any).wall_type || "—"}</span>
+                          <span className="text-muted-foreground">{(room as any).special_type || "—"}</span>
+                          <span>RM{room.rent}</span>
+                          <StatusBadge status={room.status} />
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-muted-foreground">{room.bed_type ? `Lot: ${room.bed_type}` : "—"}</span>
+                          <span>RM{room.rent}</span>
+                          <StatusBadge status={room.status} />
+                        </>
+                      )}
+                    </div>
+                    <button onClick={() => setEditingRoom(room)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors shrink-0">
+                      Edit {room.room}
+                    </button>
                   </div>
-                  {isCarParkConfig ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className="text-xs text-muted-foreground">Parking Lot *</label>
-                      <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Rent (RM)</label>
-                      <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
-                    </div>
-                  </div>
-                  ) : (
-                  <>
-                  <div className="grid grid-cols-4 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Bed Type *</label>
-                      <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
-                        const bt = e.target.value;
-                        const c = [...roomConfigs];
-                        c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
-                        setRoomConfigs(c);
-                      }}>
-                        <option value="">—</option><option value="Single">Single</option><option value="Super Single">Super Single</option><option value="Queen">Queen</option><option value="King">King</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Max Pax *</label>
-                      <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], max_pax: Number(e.target.value) }; setRoomConfigs(c); }} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Rent (RM) *</label>
-                      <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Status</label>
-                      <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], status: e.target.value }; setRoomConfigs(c); }}>
-                        <option value="Available">Available</option>
-                        <option value="Available Soon">Available Soon</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Occupied">Occupied</option>
-                      </select>
-                    </div>
-                  </div>
-                  {rc.status === "Occupied" && (
-                    <div className="grid grid-cols-4 gap-3 mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Tenant Name</label>
-                        <input className={`${inputClass} w-full`} placeholder="Name" value={rc.tenant_name || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_name: e.target.value }; setRoomConfigs(c); }} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Gender</label>
-                        <select className={`${inputClass} w-full`} value={rc.tenant_gender || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_gender: e.target.value }; setRoomConfigs(c); }}>
-                          <option value="">—</option><option>Male</option><option>Female</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Race</label>
-                        <select className={`${inputClass} w-full`} value={rc.tenant_race || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_race: e.target.value }; setRoomConfigs(c); }}>
-                          <option value="">—</option><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Pax Staying</label>
-                        <input className={`${inputClass} w-full`} type="number" min={1} value={rc.pax_staying || 1} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], pax_staying: Number(e.target.value) }; setRoomConfigs(c); }} />
-                      </div>
-                    </div>
-                  )}
-                  </>
-                  )}
-                </div>
                 );
               })}
             </div>
-          </>
+          </div>
         )}
       </div>
     );
