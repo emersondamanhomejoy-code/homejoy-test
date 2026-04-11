@@ -432,305 +432,361 @@ export function AdminContent({ tab }: AdminContentProps) {
 
   const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
-  // ─── ROOM EDIT FORM ───
-  if (editingRoom) {
+  // Helper functions for dialog close with confirmation
+  const handleUnitClose = () => {
+    if (editingUnit && (editingUnit.building || editingUnit.unit)) {
+      setShowUnitCancelConfirm(true);
+    } else {
+      setEditingUnit(null);
+    }
+  };
+
+  const handleRoomClose = () => {
+    setShowRoomCancelConfirm(true);
+  };
+
+  // ─── ROOM EDIT DIALOG CONTENT ───
+  const renderRoomEditDialog = () => {
+    if (!editingRoom) return null;
     const r = editingRoom;
     const isCarPark = r.room_type === "Car Park";
-    const updateField = (field: string, value: any) => setEditingRoom({ ...r, [field]: value });
+    const updateFieldR = (field: string, value: any) => setEditingRoom({ ...r, [field]: value });
     const updateCost = (field: string, value: number) => setEditingRoom({ ...r, move_in_cost: { ...r.move_in_cost, [field]: value } });
 
     return (
-      <div className="space-y-6 animate-fade-in">
-        <button onClick={() => setEditingRoom(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
-        <div className="text-2xl font-extrabold">Edit {isCarPark ? `🅿️ ${r.room}` : r.room}</div>
-        <div className="text-muted-foreground text-sm">{r.building} {r.unit}</div>
-        <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
-          {isCarPark ? (() => {
-            const sameBuildingTenants = units
-              .filter(u => u.building === r.building)
-              .flatMap(u => (u.rooms || []).filter(rm => rm.room_type !== "Car Park" && rm.status === "Tenanted" && rm.tenant_gender))
-              .map(rm => `${rm.unit} ${rm.room} — ${rm.tenant_gender}`);
-            return (
-            <div className="grid md:grid-cols-2 gap-4">
-              <div><label className="text-xs text-muted-foreground">Parking Lot</label><input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={r.bed_type || ""} onChange={e => updateField("bed_type", e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
-              <div><label className="text-xs text-muted-foreground">Status</label>
-                <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
-                  <option>Available</option><option>Tenanted</option><option>Unavailable</option>
-                </select>
-              </div>
-              <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Rented to (Tenant from same building)</label>
-                <select className={`${inputClass} w-full`} value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)}>
-                  <option value="">— None —</option>
-                  {sameBuildingTenants.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <input className={`${inputClass} w-full mt-2`} placeholder="Or type manually (e.g. name / plate)" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} />
-              </div>
-            </div>
-            );
-          })() : (
+      <div className="space-y-5 pb-4">
+        <div className="text-muted-foreground text-sm">{r.building} · {r.unit}</div>
+        {isCarPark ? (() => {
+          const sameBuildingTenants = units
+            .filter(u => u.building === r.building)
+            .flatMap(u => (u.rooms || []).filter(rm => rm.room_type !== "Car Park" && rm.status === "Tenanted" && rm.tenant_gender))
+            .map(rm => `${rm.unit} ${rm.room} — ${rm.tenant_gender}`);
+          return (
           <div className="grid md:grid-cols-2 gap-4">
-            <div><label className="text-xs text-muted-foreground">Bed Type</label>
-              <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
-                <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
-              </select>
-            </div>
-            <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateField("rent", Number(e.target.value))} /></div>
+            <div><label className="text-xs text-muted-foreground">Parking Lot</label><input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={r.bed_type || ""} onChange={e => updateFieldR("bed_type", e.target.value)} /></div>
+            <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateFieldR("rent", Number(e.target.value))} /></div>
             <div><label className="text-xs text-muted-foreground">Status</label>
-              <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateField("status", e.target.value)}>
+              <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateFieldR("status", e.target.value)}>
                 <option>Available</option><option>Tenanted</option><option>Unavailable</option>
               </select>
             </div>
-            <div><label className="text-xs text-muted-foreground">Pax Staying</label><input className={`${inputClass} w-full`} type="number" value={r.pax_staying ?? 0} onChange={e => updateField("pax_staying", Number(e.target.value))} /></div>
-            <div><label className="text-xs text-muted-foreground">Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.max_pax} onChange={e => updateField("max_pax", Number(e.target.value))} /></div>
-            <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateField("available_date", e.target.value)} /></div>
-            <div><label className="text-xs text-muted-foreground">Tenant Gender</label><input className={`${inputClass} w-full`} placeholder="e.g. Chinese girl" value={r.tenant_gender || ""} onChange={e => updateField("tenant_gender", e.target.value)} /></div>
-            <div><label className="text-xs text-muted-foreground">Tenant Race</label><input className={`${inputClass} w-full`} placeholder="e.g. Indian, Malay" value={r.tenant_race || ""} onChange={e => updateField("tenant_race", e.target.value)} /></div>
+            <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Rented to (Tenant from same building)</label>
+              <select className={`${inputClass} w-full`} value={r.tenant_gender || ""} onChange={e => updateFieldR("tenant_gender", e.target.value)}>
+                <option value="">— None —</option>
+                {sameBuildingTenants.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <input className={`${inputClass} w-full mt-2`} placeholder="Or type manually (e.g. name / plate)" value={r.tenant_gender || ""} onChange={e => updateFieldR("tenant_gender", e.target.value)} />
+            </div>
           </div>
-          )}
-          {!isCarPark && (
-          <>
-          <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
-          <div className="grid md:grid-cols-4 gap-4">
-            <div><label className="text-xs text-muted-foreground">Advance</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.advance ?? 0} onChange={e => updateCost("advance", Number(e.target.value))} /></div>
-            <div><label className="text-xs text-muted-foreground">Deposit</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.deposit ?? 0} onChange={e => updateCost("deposit", Number(e.target.value))} /></div>
-            <div><label className="text-xs text-muted-foreground">Access Card</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.accessCard ?? 0} onChange={e => updateCost("accessCard", Number(e.target.value))} /></div>
-            <div><label className="text-xs text-muted-foreground">Move-in Fee</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.moveInFee ?? 0} onChange={e => updateCost("moveInFee", Number(e.target.value))} /></div>
+          );
+        })() : (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div><label className="text-xs text-muted-foreground">Bed Type</label>
+            <select className={`${inputClass} w-full`} value={r.bed_type || ""} onChange={e => { const bt = e.target.value; setEditingRoom({ ...r, bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 }); }}>
+              <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
+            </select>
           </div>
-          <div className="text-sm text-muted-foreground">Total: RM{(r.move_in_cost?.advance || 0) + (r.move_in_cost?.deposit || 0) + (r.move_in_cost?.accessCard || 0) + (r.move_in_cost?.moveInFee || 0)}</div>
-          </>
-          )}
-
-          {/* Room Photos */}
-          {!isCarPark && (
-          <>
-          <div className="text-lg font-semibold pt-2">Room Photos</div>
-          <div className="grid grid-cols-3 gap-3">
-            {(r.photos as string[] || []).map((url: string, i: number) => (
-              <div key={i} className="relative group">
-                <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${url}`} alt={`Photo ${i + 1}`} className="h-32 w-full object-cover rounded-lg" />
-                <button onClick={async () => {
-                  const newPhotos = (r.photos as string[]).filter((_, idx) => idx !== i);
-                  updateField("photos", newPhotos);
-                  try { await updateRoom.mutateAsync({ id: r.id, photos: newPhotos } as any); } catch (err: any) { alert(err.message); }
-                }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-              </div>
-            ))}
-            <label className="h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-              <span className="text-2xl text-muted-foreground">+</span>
-              <span className="text-xs text-muted-foreground mt-1">Add Photo</span>
-              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                const files = Array.from(e.target.files || []);
-                if (!files.length) return;
-                const newPaths: string[] = [];
-                for (const file of files) {
-                  const ext = file.name.split('.').pop();
-                  const path = `${r.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                  const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
-                  newPaths.push(path);
-                }
-                if (newPaths.length > 0) {
-                  const updatedPhotos = [...(r.photos as string[] || []), ...newPaths];
-                  updateField("photos", updatedPhotos);
-                  try { await updateRoom.mutateAsync({ id: r.id, photos: updatedPhotos } as any); } catch (err: any) { alert(err.message); }
-                }
-                e.target.value = "";
-              }} />
-            </label>
+          <div><label className="text-xs text-muted-foreground">Rent (RM)</label><input className={`${inputClass} w-full`} type="number" value={r.rent} onChange={e => updateFieldR("rent", Number(e.target.value))} /></div>
+          <div><label className="text-xs text-muted-foreground">Status</label>
+            <select className={`${inputClass} w-full`} value={r.status} onChange={e => updateFieldR("status", e.target.value)}>
+              <option>Available</option><option>Tenanted</option><option>Unavailable</option>
+            </select>
           </div>
-          </>
-          )}
-
-          <div className="flex gap-3 justify-end pt-4">
-            <button onClick={() => setEditingRoom(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-            <button onClick={saveRoom} disabled={updateRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-              {updateRoom.isPending ? "Saving..." : "Save"}
-            </button>
-          </div>
+          <div><label className="text-xs text-muted-foreground">Pax Staying</label><input className={`${inputClass} w-full`} type="number" value={r.pax_staying ?? 0} onChange={e => updateFieldR("pax_staying", Number(e.target.value))} /></div>
+          <div><label className="text-xs text-muted-foreground">Max Pax</label><input className={`${inputClass} w-full`} type="number" value={r.max_pax} onChange={e => updateFieldR("max_pax", Number(e.target.value))} /></div>
+          <div><label className="text-xs text-muted-foreground">Available Date</label><input className={`${inputClass} w-full`} value={r.available_date} onChange={e => updateFieldR("available_date", e.target.value)} /></div>
+          <div><label className="text-xs text-muted-foreground">Tenant Gender</label><input className={`${inputClass} w-full`} placeholder="e.g. Chinese girl" value={r.tenant_gender || ""} onChange={e => updateFieldR("tenant_gender", e.target.value)} /></div>
+          <div><label className="text-xs text-muted-foreground">Tenant Race</label><input className={`${inputClass} w-full`} placeholder="e.g. Indian, Malay" value={r.tenant_race || ""} onChange={e => updateFieldR("tenant_race", e.target.value)} /></div>
         </div>
+        )}
+        {!isCarPark && (
+        <>
+        <div className="text-lg font-semibold pt-2">Move-in Cost (RM)</div>
+        <div className="grid md:grid-cols-4 gap-4">
+          <div><label className="text-xs text-muted-foreground">Advance</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.advance ?? 0} onChange={e => updateCost("advance", Number(e.target.value))} /></div>
+          <div><label className="text-xs text-muted-foreground">Deposit</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.deposit ?? 0} onChange={e => updateCost("deposit", Number(e.target.value))} /></div>
+          <div><label className="text-xs text-muted-foreground">Access Card</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.accessCard ?? 0} onChange={e => updateCost("accessCard", Number(e.target.value))} /></div>
+          <div><label className="text-xs text-muted-foreground">Move-in Fee</label><input className={`${inputClass} w-full`} type="number" value={r.move_in_cost?.moveInFee ?? 0} onChange={e => updateCost("moveInFee", Number(e.target.value))} /></div>
+        </div>
+        <div className="text-sm text-muted-foreground">Total: RM{(r.move_in_cost?.advance || 0) + (r.move_in_cost?.deposit || 0) + (r.move_in_cost?.accessCard || 0) + (r.move_in_cost?.moveInFee || 0)}</div>
+        </>
+        )}
+
+        {/* Room Photos */}
+        {!isCarPark && (
+        <>
+        <div className="text-lg font-semibold pt-2">Room Photos</div>
+        <div className="grid grid-cols-3 gap-3">
+          {(r.photos as string[] || []).map((url: string, i: number) => (
+            <div key={i} className="relative group">
+              <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${url}`} alt={`Photo ${i + 1}`} className="h-32 w-full object-cover rounded-lg" />
+              <button onClick={async () => {
+                const newPhotos = (r.photos as string[]).filter((_, idx) => idx !== i);
+                updateFieldR("photos", newPhotos);
+                try { await updateRoom.mutateAsync({ id: r.id, photos: newPhotos } as any); } catch (err: any) { alert(err.message); }
+              }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+            </div>
+          ))}
+          <label className="h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+            <span className="text-2xl text-muted-foreground">+</span>
+            <span className="text-xs text-muted-foreground mt-1">Add Photo</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+              const files = Array.from(e.target.files || []);
+              if (!files.length) return;
+              const newPaths: string[] = [];
+              for (const file of files) {
+                const ext = file.name.split('.').pop();
+                const path = `${r.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                newPaths.push(path);
+              }
+              if (newPaths.length > 0) {
+                const updatedPhotos = [...(r.photos as string[] || []), ...newPaths];
+                updateFieldR("photos", updatedPhotos);
+                try { await updateRoom.mutateAsync({ id: r.id, photos: updatedPhotos } as any); } catch (err: any) { alert(err.message); }
+              }
+              e.target.value = "";
+            }} />
+          </label>
+        </div>
+        </>
+        )}
       </div>
     );
-  }
+  };
 
-  // ─── UNIT FORM ───
-  if (editingUnit) {
+  // ─── UNIT FORM DIALOG CONTENT ───
+  const renderUnitFormDialog = () => {
+    if (!editingUnit) return null;
     const u = editingUnit;
-    const updateField = (field: string, value: any) => setEditingUnit({ ...u, [field]: value });
+    const updateFieldU = (field: string, value: any) => setEditingUnit({ ...u, [field]: value });
 
     return (
-      <div className="space-y-6 animate-fade-in">
-        <button onClick={() => setEditingUnit(null)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
-        <div className="text-2xl font-extrabold">{u.id ? "Edit Unit" : "Add Unit"}</div>
-        <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground">Condo / Building</label>
-              <select className={`${inputClass} w-full`} value={u.building} onChange={e => {
-                const selectedCondo = condosList.find(c => c.name === e.target.value);
-                const locationName = selectedCondo?.location?.name || "";
-                setEditingUnit({ ...u, building: e.target.value, location: locationName });
-              }}>
-                <option value="">— Select Condo —</option>
-                {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select>
-            </div>
-            <input className={inputClass} placeholder="Unit (e.g. A-17-8)" value={u.unit} onChange={e => updateField("unit", e.target.value)} />
-            <div>
-              <label className="text-xs text-muted-foreground">Location (auto-filled from condo)</label>
-              <input className={`${inputClass} w-full bg-muted`} value={u.location} readOnly placeholder="Select a condo above" />
-            </div>
-            <select className={inputClass} value={u.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
-              <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
-            </select>
-            <input className={inputClass} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
-            <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateField("passcode", e.target.value)} />
-            <select className={inputClass} value={u.access_card_source} onChange={e => updateField("access_card_source", e.target.value)}>
-              <option value="Provided by Us">Access Card: Provided by Us</option>
-              <option value="Management Office">Access Card: Management Office</option>
-            </select>
-            <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit || ""} onChange={e => updateField("access_card_deposit", Number(e.target.value))} />
-            <select className={inputClass} value={u.deposit} onChange={e => updateField("deposit", e.target.value)}>
-              <option value="">Deposit Type</option>
-              <option value="Refundable">Refundable</option>
-              <option value="Non-refundable">Non-refundable</option>
-              <option value="Zero Deposit">Zero Deposit</option>
-            </select>
-            <input className={inputClass} type="number" step="0.1" placeholder="Deposit Multiplier" value={u.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
-            <select className={inputClass} value={u.meter_type} onChange={e => updateField("meter_type", e.target.value)}>
-              <option value="Postpaid">Electricity: Postpaid</option>
-              <option value="Prepaid">Electricity: Prepaid</option>
-              <option value="Flat Rate">Electricity: Flat Rate</option>
-            </select>
-            <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM/kWh)" value={u.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
-            <input className={inputClass} type="number" placeholder="Admin Fee (RM)" value={u.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
-            <select className={inputClass} value={u.parking_type} onChange={e => updateField("parking_type", e.target.value)}>
-              <option value="None">Parking: None</option>
-              <option value="Access Card">Parking: Access Card</option>
-              <option value="ANPR">Parking: ANPR</option>
-              <option value="Free">Parking: Free</option>
-            </select>
-            {u.parking_type === "Access Card" && (
-              <input className={inputClass} type="number" placeholder="Parking Card Deposit (RM)" value={u.parking_card_deposit || ""} onChange={e => updateField("parking_card_deposit", Number(e.target.value))} />
-            )}
-          </div>
-          <div className="flex items-center gap-3 pt-2">
-            <input type="checkbox" id="internalOnly" checked={u.internal_only} onChange={e => updateField("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
-            <label htmlFor="internalOnly" className="text-sm font-medium">🔒 Internal Only (hidden from external agents)</label>
-          </div>
+      <div className="space-y-5 pb-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-muted-foreground">Access Info (Passcode, WiFi, etc.)</label>
-            <textarea className={`${inputClass} w-full h-24`} placeholder="e.g. Main door passcode: 1234#..." value={u.access_info} onChange={e => updateField("access_info", e.target.value)} />
+            <label className="text-xs text-muted-foreground">Condo / Building</label>
+            <select className={`${inputClass} w-full`} value={u.building} onChange={e => {
+              const selectedCondo = condosList.find(c => c.name === e.target.value);
+              const locationName = selectedCondo?.location?.name || "";
+              setEditingUnit({ ...u, building: e.target.value, location: locationName });
+            }}>
+              <option value="">— Select Condo —</option>
+              {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
           </div>
-
-          {/* Room Configs (only for new units) */}
-          {!u.id && (() => {
-            return (
-            <>
-              <div className="flex items-center justify-between pt-4">
-                <div className="text-lg font-semibold">Rooms</div>
-                <div className="flex gap-2">
-                  <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Room ${String.fromCharCode(65 + roomConfigs.filter(r => !r.room_type || r.room_type !== "Car Park").length)}`, bed_type: "", max_pax: 1, rent: 0 }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">+ Add Room</button>
-                  <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Car Park`, bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">🅿️ + Car Park</button>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {roomConfigs.map((rc, i) => {
-                  const isCarParkConfig = rc.room_type === "Car Park";
-                  return (
-                  <div key={i} className={`rounded-lg border p-4 space-y-2 ${isCarParkConfig ? "bg-blue-500/5 border-blue-500/20" : ""}`}>
-                    <div className="flex items-center justify-between">
-                      <input className={`${inputClass} w-40`} value={rc.room} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], room: e.target.value }; setRoomConfigs(c); }} />
-                      <button onClick={() => setRoomConfigs(roomConfigs.filter((_, idx) => idx !== i))} className="text-xs text-destructive hover:underline">Remove</button>
-                    </div>
-                    {isCarParkConfig ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Parking Lot</label>
-                        <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Rent (RM)</label>
-                        <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
-                      </div>
-                    </div>
-                    ) : (
-                    <>
-                    <div className="grid grid-cols-4 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Bed Type</label>
-                        <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
-                          const bt = e.target.value;
-                          const c = [...roomConfigs];
-                          c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
-                          setRoomConfigs(c);
-                        }}>
-                          <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Max Pax</label>
-                        <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], max_pax: Number(e.target.value) }; setRoomConfigs(c); }} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Rent (RM)</label>
-                        <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Status</label>
-                        <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], status: e.target.value }; setRoomConfigs(c); }}>
-                          <option value="Available">Available</option>
-                          <option value="Occupied">Occupied</option>
-                        </select>
-                      </div>
-                    </div>
-                    {rc.status === "Occupied" && (
-                      <div className="grid grid-cols-4 gap-3 mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                        <div>
-                          <label className="text-xs text-muted-foreground">Tenant Name</label>
-                          <input className={`${inputClass} w-full`} placeholder="Name" value={rc.tenant_name || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_name: e.target.value }; setRoomConfigs(c); }} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Gender</label>
-                          <select className={`${inputClass} w-full`} value={rc.tenant_gender || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_gender: e.target.value }; setRoomConfigs(c); }}>
-                            <option value="">—</option><option>Male</option><option>Female</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Race</label>
-                          <select className={`${inputClass} w-full`} value={rc.tenant_race || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_race: e.target.value }; setRoomConfigs(c); }}>
-                            <option value="">—</option><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Pax Staying</label>
-                          <input className={`${inputClass} w-full`} type="number" min={1} value={rc.pax_staying || 1} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], pax_staying: Number(e.target.value) }; setRoomConfigs(c); }} />
-                        </div>
-                      </div>
-                    )}
-                    </>
-                    )}
-                  </div>
-                  );
-                })}
-              </div>
-            </>
-            );
-          })()}
-          <div className="flex gap-3 justify-end pt-4">
-            <button onClick={() => setEditingUnit(null)} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
-            <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-              {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
-            </button>
+          <input className={inputClass} placeholder="Unit (e.g. A-17-8)" value={u.unit} onChange={e => updateFieldU("unit", e.target.value)} />
+          <div>
+            <label className="text-xs text-muted-foreground">Location (auto-filled from condo)</label>
+            <input className={`${inputClass} w-full bg-muted`} value={u.location} readOnly placeholder="Select a condo above" />
           </div>
+          <select className={inputClass} value={u.unit_type} onChange={e => updateFieldU("unit_type", e.target.value)}>
+            <option>Mix Unit</option><option>Female Unit</option><option>Male Unit</option>
+          </select>
+          <input className={inputClass} type="number" placeholder="Maximum Pax" value={u.unit_max_pax} onChange={e => updateFieldU("unit_max_pax", Number(e.target.value))} />
+          <input className={inputClass} placeholder="Main Door Passcode" value={u.passcode} onChange={e => updateFieldU("passcode", e.target.value)} />
+          <select className={inputClass} value={u.access_card_source} onChange={e => updateFieldU("access_card_source", e.target.value)}>
+            <option value="Provided by Us">Access Card: Provided by Us</option>
+            <option value="Management Office">Access Card: Management Office</option>
+          </select>
+          <input className={inputClass} type="number" placeholder="Access Card Deposit (RM)" value={u.access_card_deposit || ""} onChange={e => updateFieldU("access_card_deposit", Number(e.target.value))} />
+          <select className={inputClass} value={u.deposit} onChange={e => updateFieldU("deposit", e.target.value)}>
+            <option value="">Deposit Type</option>
+            <option value="Refundable">Refundable</option>
+            <option value="Non-refundable">Non-refundable</option>
+            <option value="Zero Deposit">Zero Deposit</option>
+          </select>
+          <input className={inputClass} type="number" step="0.1" placeholder="Deposit Multiplier" value={u.deposit_multiplier} onChange={e => updateFieldU("deposit_multiplier", Number(e.target.value))} />
+          <select className={inputClass} value={u.meter_type} onChange={e => updateFieldU("meter_type", e.target.value)}>
+            <option value="Postpaid">Electricity: Postpaid</option>
+            <option value="Prepaid">Electricity: Prepaid</option>
+            <option value="Flat Rate">Electricity: Flat Rate</option>
+          </select>
+          <input className={inputClass} type="number" step="0.01" placeholder="Meter Rate (RM/kWh)" value={u.meter_rate || ""} onChange={e => updateFieldU("meter_rate", Number(e.target.value))} />
+          <input className={inputClass} type="number" placeholder="Admin Fee (RM)" value={u.admin_fee} onChange={e => updateFieldU("admin_fee", Number(e.target.value))} />
+          <select className={inputClass} value={u.parking_type} onChange={e => updateFieldU("parking_type", e.target.value)}>
+            <option value="None">Parking: None</option>
+            <option value="Access Card">Parking: Access Card</option>
+            <option value="ANPR">Parking: ANPR</option>
+            <option value="Free">Parking: Free</option>
+          </select>
+          {u.parking_type === "Access Card" && (
+            <input className={inputClass} type="number" placeholder="Parking Card Deposit (RM)" value={u.parking_card_deposit || ""} onChange={e => updateFieldU("parking_card_deposit", Number(e.target.value))} />
+          )}
         </div>
+        <div className="flex items-center gap-3 pt-2">
+          <input type="checkbox" id="internalOnly" checked={u.internal_only} onChange={e => updateFieldU("internal_only", e.target.checked)} className="w-4 h-4 rounded" />
+          <label htmlFor="internalOnly" className="text-sm font-medium">🔒 Internal Only (hidden from external agents)</label>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Access Info (Passcode, WiFi, etc.)</label>
+          <textarea className={`${inputClass} w-full h-24`} placeholder="e.g. Main door passcode: 1234#..." value={u.access_info} onChange={e => updateFieldU("access_info", e.target.value)} />
+        </div>
+
+        {/* Room Configs (only for new units) */}
+        {!u.id && (
+          <>
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-lg font-semibold">Rooms</div>
+              <div className="flex gap-2">
+                <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Room ${String.fromCharCode(65 + roomConfigs.filter(r => !r.room_type || r.room_type !== "Car Park").length)}`, bed_type: "", max_pax: 1, rent: 0 }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">+ Add Room</button>
+                <button onClick={() => setRoomConfigs([...roomConfigs, { room: `Car Park`, bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" }])} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">🅿️ + Car Park</button>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {roomConfigs.map((rc, i) => {
+                const isCarParkConfig = rc.room_type === "Car Park";
+                return (
+                <div key={i} className={`rounded-lg border p-4 space-y-2 ${isCarParkConfig ? "bg-blue-500/5 border-blue-500/20" : ""}`}>
+                  <div className="flex items-center justify-between">
+                    <input className={`${inputClass} w-40`} value={rc.room} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], room: e.target.value }; setRoomConfigs(c); }} />
+                    <button onClick={() => setRoomConfigs(roomConfigs.filter((_, idx) => idx !== i))} className="text-xs text-destructive hover:underline">Remove</button>
+                  </div>
+                  {isCarParkConfig ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Parking Lot</label>
+                      <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.bed_type || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], bed_type: e.target.value }; setRoomConfigs(c); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                      <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
+                    </div>
+                  </div>
+                  ) : (
+                  <>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Bed Type</label>
+                      <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
+                        const bt = e.target.value;
+                        const c = [...roomConfigs];
+                        c[i] = { ...c[i], bed_type: bt, max_pax: bedTypeMaxPax[bt] || 1 };
+                        setRoomConfigs(c);
+                      }}>
+                        <option value="">—</option><option>MASTER</option><option>QUEEN</option><option>QUEEN BALCONY</option><option>MEDIUM</option><option>SINGLE</option><option>SUPER SINGLE</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Max Pax</label>
+                      <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], max_pax: Number(e.target.value) }; setRoomConfigs(c); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Rent (RM)</label>
+                      <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], rent: Number(e.target.value) }; setRoomConfigs(c); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Status</label>
+                      <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], status: e.target.value }; setRoomConfigs(c); }}>
+                        <option value="Available">Available</option>
+                        <option value="Occupied">Occupied</option>
+                      </select>
+                    </div>
+                  </div>
+                  {rc.status === "Occupied" && (
+                    <div className="grid grid-cols-4 gap-3 mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Tenant Name</label>
+                        <input className={`${inputClass} w-full`} placeholder="Name" value={rc.tenant_name || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_name: e.target.value }; setRoomConfigs(c); }} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Gender</label>
+                        <select className={`${inputClass} w-full`} value={rc.tenant_gender || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_gender: e.target.value }; setRoomConfigs(c); }}>
+                          <option value="">—</option><option>Male</option><option>Female</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Race</label>
+                        <select className={`${inputClass} w-full`} value={rc.tenant_race || ""} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], tenant_race: e.target.value }; setRoomConfigs(c); }}>
+                          <option value="">—</option><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Pax Staying</label>
+                        <input className={`${inputClass} w-full`} type="number" min={1} value={rc.pax_staying || 1} onChange={e => { const c = [...roomConfigs]; c[i] = { ...c[i], pax_staying: Number(e.target.value) }; setRoomConfigs(c); }} />
+                      </div>
+                    </div>
+                  )}
+                  </>
+                  )}
+                </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     );
-  }
+  };
 
   return (
     <div className="space-y-6">
       {error && <div className="rounded-lg bg-destructive/10 text-destructive p-4 text-sm">{error}</div>}
+
+      {/* Room Edit Dialog */}
+      <Dialog open={!!editingRoom} onOpenChange={(open) => { if (!open) handleRoomClose(); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Edit {editingRoom?.room_type === "Car Park" ? `🅿️ ${editingRoom?.room}` : editingRoom?.room}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {renderRoomEditDialog()}
+          </ScrollArea>
+          <DialogFooter>
+            <button onClick={handleRoomClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+            <button onClick={saveRoom} disabled={updateRoom.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              {updateRoom.isPending ? "Saving..." : "Save"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unit Add/Edit Dialog */}
+      <Dialog open={!!editingUnit} onOpenChange={(open) => { if (!open) handleUnitClose(); }}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit"}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {renderUnitFormDialog()}
+          </ScrollArea>
+          <DialogFooter>
+            <button onClick={handleUnitClose} className="px-5 py-2.5 rounded-lg border text-foreground hover:bg-secondary transition-colors font-medium">Cancel</button>
+            <button onClick={saveUnit} disabled={createUnit.isPending || updateUnit.isPending} className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              {(createUnit.isPending || updateUnit.isPending) ? "Saving..." : "Save Unit"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation for Unit */}
+      <AlertDialog open={showUnitCancelConfirm} onOpenChange={setShowUnitCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to cancel? Your unsaved changes will be lost.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setEditingUnit(null); setShowUnitCancelConfirm(false); }}>Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Confirmation for Room */}
+      <AlertDialog open={showRoomCancelConfirm} onOpenChange={setShowRoomCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to cancel? Your unsaved changes will be lost.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setEditingRoom(null); setShowRoomCancelConfirm(false); }}>Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* DASHBOARD TAB */}
       {tab === "dashboard" && (() => {
