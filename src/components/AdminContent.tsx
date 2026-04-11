@@ -83,6 +83,7 @@ const emptyUnit = {
   deposit: "", meter_type: "Postpaid", meter_rate: 0,
   deposit_multiplier: 1.5, admin_fee: 330,
   parking_type: "None", parking_card_deposit: 0,
+  common_photos: [] as string[], wifi_name: "", wifi_password: "",
 };
 
 interface AdminContentProps {
