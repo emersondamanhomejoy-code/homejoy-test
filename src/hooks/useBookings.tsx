@@ -5,7 +5,7 @@ export interface Booking {
   id: string;
   room_id: string | null;
   unit_id: string | null;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "cancelled";
   tenant_name: string;
   tenant_phone: string;
   tenant_email: string;
@@ -75,7 +75,7 @@ export function useUpdateBookingStatus() {
       carParkIds,
     }: {
       id: string;
-      status: "approved" | "rejected";
+      status: "approved" | "rejected" | "cancelled";
       reviewed_by: string;
       reject_reason?: string;
       room_id?: string | null;
