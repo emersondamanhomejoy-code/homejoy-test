@@ -3,7 +3,9 @@ import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation }
 import { useCondos } from "@/hooks/useCondos";
 import { useUnits } from "@/hooks/useRooms";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus } from "lucide-react";
 
 export function LocationsContent() {
@@ -18,6 +20,7 @@ export function LocationsContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const locationStats = useMemo(() => {
     const map: Record<string, { buildings: number; units: number; rooms: number }> = {};
@@ -35,6 +38,14 @@ export function LocationsContent() {
 
   const openCreate = () => { setEditingId(null); setName(""); setShowForm(true); };
   const openEdit = (loc: { id: string; name: string }) => { setEditingId(loc.id); setName(loc.name); setShowForm(true); };
+
+  const handleClose = () => {
+    if (name.trim()) {
+      setShowCancelConfirm(true);
+    } else {
+      setShowForm(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { alert("Location name is required"); return; }
@@ -61,23 +72,42 @@ export function LocationsContent() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="text-2xl font-extrabold">Locations</div>
-        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" /> Add Location
-        </button>
+        </Button>
       </div>
 
-      {showForm && (
-        <div className="bg-card rounded-lg shadow-sm p-6 space-y-4 border">
-          <div className="text-lg font-semibold">{editingId ? "Edit Location" : "Add Location"}</div>
+      {/* Add/Edit Dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { if (!open) handleClose(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Location" : "Add Location"}</DialogTitle>
+          </DialogHeader>
           <input className={`${inputClass} w-full`} placeholder="Location name (e.g. Bukit Jalil)" value={name} onChange={e => setName(e.target.value)} autoFocus />
-          <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg border text-foreground hover:bg-secondary transition-colors text-sm font-medium">Cancel</button>
-            <button onClick={handleSave} disabled={createLocation.isPending || updateLocation.isPending} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleSave} disabled={createLocation.isPending || updateLocation.isPending}>
               {createLocation.isPending || updateLocation.isPending ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </div>
-      )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to cancel? Your unsaved changes will be lost.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowForm(false); setShowCancelConfirm(false); setName(""); setEditingId(null); }}>
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <input className={`${inputClass} w-full max-w-sm`} placeholder="Search locations..." value={search} onChange={e => setSearch(e.target.value)} />
 
