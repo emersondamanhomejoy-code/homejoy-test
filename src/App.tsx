@@ -14,6 +14,7 @@ import CommonPhotos from "./pages/CommonPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
 import Login from "./pages/Login.tsx";
+import Rooms from "./pages/Rooms.tsx";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
           <Route path="/" element={<AgentDashboard />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/rooms" element={<Rooms />} />
           <Route path="/old" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/set-password" element={<SetPassword />} />

@@ -1,0 +1,273 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useRooms } from "@/hooks/useRooms";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AgentSidebar } from "@/components/AgentSidebar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { X } from "lucide-react";
+
+export default function Rooms() {
+  const { user, role, loading } = useAuth();
+  const navigate = useNavigate();
+  const { data: rooms, isLoading } = useRooms();
+
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
+  const [selectedGender, setSelectedGender] = useState<string>("all");
+
+  useEffect(() => {
+    if (!loading && !user) navigate("/login", { replace: true });
+    else if (!loading && user && role && role !== "agent") navigate("/old", { replace: true });
+  }, [user, role, loading, navigate]);
+
+  // Only show available, non-internal rooms (exclude Car Park)
+  const availableRooms = useMemo(
+    () => (rooms ?? []).filter((r) => r.status === "Available" && !r.internal_only && r.room_type !== "Car Park"),
+    [rooms]
+  );
+
+  // Derive filter options
+  const locations = useMemo(() => {
+    const set = new Set(availableRooms.map((r) => r.location).filter(Boolean));
+    return Array.from(set).sort();
+  }, [availableRooms]);
+
+  const buildings = useMemo(() => {
+    const source = selectedLocations.length
+      ? availableRooms.filter((r) => selectedLocations.includes(r.location))
+      : availableRooms;
+    const set = new Set(source.map((r) => r.building).filter(Boolean));
+    return Array.from(set).sort();
+  }, [availableRooms, selectedLocations]);
+
+  // Filtered rows
+  const filtered = useMemo(() => {
+    let list = availableRooms;
+    if (selectedLocations.length) list = list.filter((r) => selectedLocations.includes(r.location));
+    if (selectedBuildings.length) list = list.filter((r) => selectedBuildings.includes(r.building));
+    if (selectedGender !== "all") {
+      list = list.filter((r) => r.unit_type?.toLowerCase().includes(selectedGender));
+    }
+    return list;
+  }, [availableRooms, selectedLocations, selectedBuildings, selectedGender]);
+
+  const addLocation = (val: string) => {
+    if (val && !selectedLocations.includes(val)) {
+      setSelectedLocations((prev) => [...prev, val]);
+      // Reset buildings that no longer match
+      setSelectedBuildings((prev) => {
+        const validBuildings = new Set(
+          availableRooms.filter((r) => [...selectedLocations, val].includes(r.location)).map((r) => r.building)
+        );
+        return prev.filter((b) => validBuildings.has(b));
+      });
+    }
+  };
+
+  const removeLocation = (val: string) => {
+    const next = selectedLocations.filter((l) => l !== val);
+    setSelectedLocations(next);
+    if (!next.length) return;
+    setSelectedBuildings((prev) => {
+      const validBuildings = new Set(availableRooms.filter((r) => next.includes(r.location)).map((r) => r.building));
+      return prev.filter((b) => validBuildings.has(b));
+    });
+  };
+
+  const addBuilding = (val: string) => {
+    if (val && !selectedBuildings.includes(val)) setSelectedBuildings((prev) => [...prev, val]);
+  };
+
+  const removeBuilding = (val: string) => setSelectedBuildings((prev) => prev.filter((b) => b !== val));
+
+  const clearFilters = () => {
+    setSelectedLocations([]);
+    setSelectedBuildings([]);
+    setSelectedGender("all");
+  };
+
+  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedGender !== "all";
+
+  if (loading || !user) return null;
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AgentSidebar />
+        <div className="flex-1 flex flex-col">
+          {/* Announcement Banner */}
+          <div className="bg-gradient-to-r from-primary/5 to-accent/5 px-8 py-3 border-b border-border">
+            <p className="text-center text-sm font-medium text-foreground">
+              📢 New commission structure effective from 1st July 2025.{" "}
+              <a href="#" className="text-primary underline">Learn More</a>
+            </p>
+          </div>
+
+          {/* Main Content */}
+          <main className="flex-1 p-8 overflow-auto">
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Available Rooms</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Browse and filter available rooms across all locations.
+                </p>
+              </div>
+
+              {/* Filters */}
+              <div className="bg-card rounded-xl shadow-sm border border-border p-5">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* Location */}
+                  <div className="space-y-1.5 min-w-[200px]">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</label>
+                    <Select onValueChange={addLocation} value="">
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locations.filter((l) => !selectedLocations.includes(l)).map((loc) => (
+                          <SelectItem key={loc} value={loc} className="capitalize">{loc}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Building */}
+                  <div className="space-y-1.5 min-w-[200px]">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Building / Condo</label>
+                    <Select onValueChange={addBuilding} value="">
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select building" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {buildings.filter((b) => !selectedBuildings.includes(b)).map((b) => (
+                          <SelectItem key={b} value={b}>{b}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Gender */}
+                  <div className="space-y-1.5 min-w-[160px]">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unit Type</label>
+                    <Select onValueChange={setSelectedGender} value={selectedGender}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="female">Female Unit</SelectItem>
+                        <SelectItem value="male">Male Unit</SelectItem>
+                        <SelectItem value="mix">Mix Unit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {hasFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                      <X className="h-4 w-4 mr-1" /> Clear
+                    </Button>
+                  )}
+                </div>
+
+                {/* Active filter chips */}
+                {(selectedLocations.length > 0 || selectedBuildings.length > 0) && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {selectedLocations.map((l) => (
+                      <Badge key={`loc-${l}`} variant="secondary" className="gap-1 capitalize cursor-pointer" onClick={() => removeLocation(l)}>
+                        {l} <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                    {selectedBuildings.map((b) => (
+                      <Badge key={`bld-${b}`} variant="outline" className="gap-1 cursor-pointer" onClick={() => removeBuilding(b)}>
+                        {b} <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Table */}
+              <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+                <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                  <h3 className="font-semibold text-foreground">
+                    {filtered.length} room{filtered.length !== 1 ? "s" : ""} found
+                  </h3>
+                </div>
+                {isLoading ? (
+                  <div className="p-12 text-center text-muted-foreground">Loading rooms…</div>
+                ) : filtered.length === 0 ? (
+                  <div className="p-12 text-center text-muted-foreground">No available rooms match your filters.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30">
+                          <TableHead>Location</TableHead>
+                          <TableHead>Building</TableHead>
+                          <TableHead>Unit</TableHead>
+                          <TableHead>Room</TableHead>
+                          <TableHead>Room Type</TableHead>
+                          <TableHead>Unit Type</TableHead>
+                          <TableHead className="text-right">Rent (RM)</TableHead>
+                          <TableHead className="text-center">Max Pax</TableHead>
+                          <TableHead>Available</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filtered.map((room) => (
+                          <TableRow key={room.id} className="hover:bg-muted/30 cursor-pointer">
+                            <TableCell className="capitalize text-muted-foreground">{room.location || "—"}</TableCell>
+                            <TableCell className="font-medium text-foreground">{room.building || "—"}</TableCell>
+                            <TableCell>{room.unit}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="font-mono">{room.room}</Badge>
+                            </TableCell>
+                            <TableCell>{room.room_type || room.bed_type || "—"}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="secondary"
+                                className={
+                                  room.unit_type?.toLowerCase().includes("female")
+                                    ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
+                                    : room.unit_type?.toLowerCase().includes("male") && !room.unit_type?.toLowerCase().includes("female")
+                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                    : ""
+                                }
+                              >
+                                {room.unit_type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
+                            <TableCell className="text-center">{room.max_pax}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{room.available_date}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
