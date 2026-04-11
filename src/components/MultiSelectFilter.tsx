@@ -112,7 +112,8 @@ export function MultiSelectFilter({
                 </label>
               ))
             )}
-          </div>
+            </div>
+          </ScrollArea>
 
           {/* Footer */}
           <div className="border-t border-border p-2 flex items-center justify-between gap-2">
