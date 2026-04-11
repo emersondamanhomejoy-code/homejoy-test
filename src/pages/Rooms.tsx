@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 export default function Rooms() {
   const { user, role, loading } = useAuth();
@@ -31,6 +31,8 @@ export default function Rooms() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<string>("all");
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
@@ -67,6 +69,17 @@ export default function Rooms() {
     }
     return list;
   }, [availableRooms, selectedLocations, selectedBuildings, selectedGender]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedLocations, selectedBuildings, selectedGender, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedRooms = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const addLocation = (val: string) => {
     if (val && !selectedLocations.includes(val)) {
@@ -215,59 +228,103 @@ export default function Rooms() {
                 ) : filtered.length === 0 ? (
                   <div className="p-12 text-center text-muted-foreground">No available rooms match your filters.</div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/30">
-                          <TableHead>Location</TableHead>
-                          <TableHead>Building</TableHead>
-                          <TableHead>Unit</TableHead>
-                          <TableHead>Room</TableHead>
-                          <TableHead>Room Type</TableHead>
-                          <TableHead>Unit Type</TableHead>
-                          <TableHead className="text-right">Rent (RM)</TableHead>
-                          <TableHead className="text-center">Max Pax</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-center">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filtered.map((room) => (
-                          <TableRow key={room.id} className="hover:bg-muted/30 cursor-pointer">
-                            <TableCell className="capitalize text-muted-foreground">{room.location || "—"}</TableCell>
-                            <TableCell className="font-medium text-foreground">{room.building || "—"}</TableCell>
-                            <TableCell>{room.unit}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="font-mono">{room.room}</Badge>
-                            </TableCell>
-                            <TableCell>{room.room_type || room.bed_type || "—"}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="secondary"
-                                className={
-                                  room.unit_type?.toLowerCase().includes("female")
-                                    ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
-                                    : room.unit_type?.toLowerCase().includes("male") && !room.unit_type?.toLowerCase().includes("female")
-                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                    : ""
-                                }
-                              >
-                                {room.unit_type}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
-                            <TableCell className="text-center">{room.max_pax}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{room.status}</TableCell>
-                            <TableCell className="text-center">
-                              <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
-                                Book
-                              </Button>
-                            </TableCell>
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead>Location</TableHead>
+                            <TableHead>Building</TableHead>
+                            <TableHead>Unit</TableHead>
+                            <TableHead>Room</TableHead>
+                            <TableHead>Room Type</TableHead>
+                            <TableHead>Unit Type</TableHead>
+                            <TableHead className="text-right">Rent (RM)</TableHead>
+                            <TableHead className="text-center">Max Pax</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-center">Action</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedRooms.map((room) => (
+                            <TableRow key={room.id} className="hover:bg-muted/30 cursor-pointer">
+                              <TableCell className="capitalize text-muted-foreground">{room.location || "—"}</TableCell>
+                              <TableCell className="font-medium text-foreground">{room.building || "—"}</TableCell>
+                              <TableCell>{room.unit}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono">{room.room}</Badge>
+                              </TableCell>
+                              <TableCell>{room.room_type || room.bed_type || "—"}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    room.unit_type?.toLowerCase().includes("female")
+                                      ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
+                                      : room.unit_type?.toLowerCase().includes("male") && !room.unit_type?.toLowerCase().includes("female")
+                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                      : ""
+                                  }
+                                >
+                                  {room.unit_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
+                              <TableCell className="text-center">{room.max_pax}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{room.status}</TableCell>
+                              <TableCell className="text-center">
+                                <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
+                                  Book
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Show</span>
+                        <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                          <SelectTrigger className="w-[70px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span>per page</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          disabled={currentPage <= 1}
+                          onClick={() => setCurrentPage((p) => p - 1)}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          disabled={currentPage >= totalPages}
+                          onClick={() => setCurrentPage((p) => p + 1)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
