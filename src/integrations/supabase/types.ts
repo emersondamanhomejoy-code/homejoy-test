@@ -541,6 +541,7 @@ export type Database = {
           id: string
           internal_only: boolean
           location: string
+          max_pets: number
           meter_rate: number
           meter_type: string
           parking_card_deposit: number
@@ -566,6 +567,7 @@ export type Database = {
           id?: string
           internal_only?: boolean
           location: string
+          max_pets?: number
           meter_rate?: number
           meter_type?: string
           parking_card_deposit?: number
@@ -591,6 +593,7 @@ export type Database = {
           id?: string
           internal_only?: boolean
           location?: string
+          max_pets?: number
           meter_rate?: number
           meter_type?: string
           parking_card_deposit?: number

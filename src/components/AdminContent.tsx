@@ -11,6 +11,7 @@ import { logActivity } from "@/hooks/useActivityLog";
 import { useCondos } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { UnitsTableView } from "@/components/UnitsTableView";
+import { UnitsRoomsContent } from "@/components/UnitsRoomsContent";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BookingsContent } from "@/components/BookingsContent";
 
@@ -1471,17 +1472,9 @@ export function AdminContent({ tab }: AdminContentProps) {
       })()}
 
       {/* UNITS TAB */}
-      {tab === "units" && <UnitsTableView
-        units={units}
-        unitsLoading={unitsLoading}
-        unitFilters={unitFilters}
-        setUnitFilters={setUnitFilters}
-        openCreateRoom2={openCreateRoom2}
-        setEditingUnit={setEditingUnit}
-        handleDeleteUnit={handleDeleteUnit}
-        condosList={condosList}
-        inputClass={inputClass}
-        emptyUnit={emptyUnit}
+      {tab === "units" && <UnitsRoomsContent
+        onEditUnit={setEditingUnit}
+        onAddUnit={openCreateRoom2}
       />}
 
       {/* BOOKINGS TAB */}

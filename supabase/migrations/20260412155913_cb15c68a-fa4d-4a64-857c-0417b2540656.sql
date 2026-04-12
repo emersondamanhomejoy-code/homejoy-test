@@ -1,0 +1,1 @@
+ALTER TABLE public.units ADD COLUMN max_pets integer NOT NULL DEFAULT 0;
