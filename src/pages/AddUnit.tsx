@@ -473,7 +473,16 @@ export default function AddUnit() {
                 </div>
               );
             })}
-          </div>
+        </section>
+
+        {/* Bottom buttons */}
+        <div className="flex items-center justify-end gap-3 pb-8 border-t border-border pt-6">
+          <Button variant="outline" onClick={handleCancel}>Cancel</Button>
+          <Button onClick={saveUnit} disabled={saving}>
+            {saving ? "Saving..." : "Save Unit & Rooms"}
+          </Button>
+        </div>
+      </div>
 
       {/* Cancel Confirmation */}
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
