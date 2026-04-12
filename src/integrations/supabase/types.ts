@@ -428,6 +428,7 @@ export type Database = {
       rooms: {
         Row: {
           access_info: Json
+          assigned_to: string
           available_date: string
           bed_type: string
           building: string
@@ -435,14 +436,17 @@ export type Database = {
           housemates: Json
           id: string
           internal_only: boolean
+          internal_remark: string
           location: string
           max_pax: number
           move_in_cost: Json
           occupied_pax: number
+          optional_features: Json
           pax_staying: number
           photos: Json
           rent: number
           room: string
+          room_category: string
           room_type: string
           special_type: string
           status: string
@@ -458,6 +462,7 @@ export type Database = {
         }
         Insert: {
           access_info?: Json
+          assigned_to?: string
           available_date?: string
           bed_type?: string
           building: string
@@ -465,14 +470,17 @@ export type Database = {
           housemates?: Json
           id?: string
           internal_only?: boolean
+          internal_remark?: string
           location: string
           max_pax?: number
           move_in_cost?: Json
           occupied_pax?: number
+          optional_features?: Json
           pax_staying?: number
           photos?: Json
           rent?: number
           room: string
+          room_category?: string
           room_type?: string
           special_type?: string
           status?: string
@@ -488,6 +496,7 @@ export type Database = {
         }
         Update: {
           access_info?: Json
+          assigned_to?: string
           available_date?: string
           bed_type?: string
           building?: string
@@ -495,14 +504,17 @@ export type Database = {
           housemates?: Json
           id?: string
           internal_only?: boolean
+          internal_remark?: string
           location?: string
           max_pax?: number
           move_in_cost?: Json
           occupied_pax?: number
+          optional_features?: Json
           pax_staying?: number
           photos?: Json
           rent?: number
           room?: string
+          room_category?: string
           room_type?: string
           special_type?: string
           status?: string
