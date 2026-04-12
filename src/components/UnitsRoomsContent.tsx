@@ -292,7 +292,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                               <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => setViewingUnit(unit)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => setEditUnitId(unit.id)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete" onClick={() => setDeleteConfirm(unit.id)}>
