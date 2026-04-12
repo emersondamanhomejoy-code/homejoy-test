@@ -195,27 +195,9 @@ export default function AddUnit({ onClose }: { onClose?: () => void } = {}) {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={handleCancel}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold">Add Unit</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-            <Button onClick={saveUnit} disabled={saving}>
-              {saving ? "Saving..." : "Save Unit & Rooms"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+  const content = (
+    <>
+      <div className="space-y-8">
         {/* ── Unit Information ── */}
         <section className="space-y-5">
           <h2 className="text-lg font-semibold border-b border-border pb-2">Unit Information</h2>
