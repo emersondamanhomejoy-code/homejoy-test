@@ -11,11 +11,13 @@ import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
 import { LocationsContent } from "@/components/LocationsContent";
 import { CondosContent } from "@/components/CondosContent";
+import { BuildingForm } from "@/components/BuildingForm";
 import { RoomsContent } from "@/components/RoomsContent";
 import { TenantsContent } from "@/components/TenantsContent";
 import { MoveInContent } from "@/components/MoveInContent";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
+import { Condo } from "@/hooks/useCondos";
 
 const rankingData = {
   internal: [
