@@ -153,7 +153,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               <TableHead className="w-12">No.</TableHead>
               <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
               <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
-              <SortableTableHead sortKey="address" currentSort={sort} onSort={handleSort}>Address Preview</SortableTableHead>
+              
               <SortableTableHead sortKey="totalUnits" currentSort={sort} onSort={handleSort} className="text-center">Total Units</SortableTableHead>
               <SortableTableHead sortKey="totalRooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
               <SortableTableHead sortKey="totalCarparks" currentSort={sort} onSort={handleSort} className="text-center">Total Carparks</SortableTableHead>
@@ -164,7 +164,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           </TableHeader>
           <TableBody>
             {sortedFiltered.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
             ) : sortedFiltered.map((c, i) => {
               const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 };
               return (
@@ -172,9 +172,6 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="text-muted-foreground">{c.location?.name || "—"}</TableCell>
                   <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="max-w-[200px]">
-                    <span className="truncate block text-muted-foreground text-sm">{c.address || "—"}</span>
-                  </TableCell>
                   <TableCell className="text-center font-semibold">{s.totalUnits}</TableCell>
                   <TableCell className="text-center font-semibold">{s.totalRooms}</TableCell>
                   <TableCell className="text-center font-semibold">{s.totalCarparks}</TableCell>
