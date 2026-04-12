@@ -602,7 +602,6 @@ export function TenantsContent() {
                   <Input type="number" value={editForm.monthly_salary || ""} onChange={e => setField("monthly_salary", Number(e.target.value))} />
                 </div>
               </div>
-              </div>
 
               <div className="border-t pt-4">
                 <div className="text-sm font-semibold mb-3">Emergency Contact 1</div>
@@ -722,7 +721,6 @@ export function TenantsContent() {
                   <label className={lbl}>Monthly Salary</label>
                   <Input type="number" value={addForm.monthly_salary || ""} onChange={e => setAddField("monthly_salary", Number(e.target.value))} />
                 </div>
-              </div>
               </div>
 
               <div className="border-t pt-4">
