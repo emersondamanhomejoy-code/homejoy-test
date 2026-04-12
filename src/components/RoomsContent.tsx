@@ -97,6 +97,11 @@ export function RoomsContent() {
     
     if (selectedBedTypes.length) list = list.filter(r => selectedBedTypes.includes(r.bed_type));
     if (selectedWallTypes.length) list = list.filter(r => selectedWallTypes.includes((r as any).wall_type));
+    if (selectedFeatures.length) list = list.filter(r => {
+      const feats = [...((r as any).optional_features || [])];
+      if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+      return selectedFeatures.some(f => feats.includes(f));
+    });
     if (statusFilter !== "all") list = list.filter(r => r.status === statusFilter);
     if (minPrice) list = list.filter(r => r.rent >= Number(minPrice));
     if (maxPrice) list = list.filter(r => r.rent <= Number(maxPrice));
