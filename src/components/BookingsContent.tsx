@@ -157,18 +157,9 @@ export function BookingsContent() {
   const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom || dateTo;
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
-  // ======================== DETAIL VIEW ========================
-  if (view.type === "detail") {
-    const freshBooking = allBookings.find(b => b.id === view.booking.id) || view.booking;
-    return (
-      <BookingDetailView
-        booking={freshBooking}
-        onBack={() => setView({ type: "list" })}
-        onEdit={(b) => setView({ type: "edit", booking: b })}
-        getAgentName={getAgentName}
-      />
-    );
-  }
+  // ======================== DETAIL VIEW (now a dialog, rendered alongside list) ========================
+
+  // ======================== EDIT VIEW ========================
 
   // ======================== EDIT VIEW ========================
   if (view.type === "edit") {
