@@ -385,7 +385,7 @@ export default function EditUnit({ onClose, unitIdProp, focusRoomId }: EditUnitP
                 if (collapsed) {
                   const parts = [rc.room, (rc as any).bed_type || "—", `RM${rc.rent || 0}`, rc.status || "Available"];
                   return (
-                    <div key={room.id} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => toggleCollapse(room.id)}>
+                    <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => toggleCollapse(room.id)}>
                       <span className="text-sm font-medium">{parts.join(" · ")}</span>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Remove" onClick={(e) => { e.stopPropagation(); setDeleteConfirmRoom(room.id); }}>
@@ -398,7 +398,7 @@ export default function EditUnit({ onClose, unitIdProp, focusRoomId }: EditUnitP
                 }
 
                 return (
-                  <div key={room.id} className="rounded-lg border bg-card p-4 space-y-3">
+                  <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm">{rc.room}</span>
                       <div className="flex items-center gap-1">
