@@ -315,66 +315,82 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                                        {unitRooms.length === 0 && unitCarparks.length === 0 && (
                                          <div className="text-sm text-muted-foreground py-2">No rooms configured.</div>
                                        )}
-                                       {unitRooms.length > 0 && (
-                                         <div>
-                                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Rooms</div>
-                                           <div className="grid gap-1">
-                                              <div className="grid grid-cols-[60px_80px_80px_120px_60px_70px_140px_60px_80px_70px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
-                                                <span>Room</span>
-                                                <span>Bed</span>
-                                                <span>Wall</span>
-                                                <span>Features</span>
-                                                <span>Pax</span>
-                                                <span>Rent</span>
-                                                <span>Status</span>
-                                                <span>Stay</span>
-                                                <span>Nationality</span>
-                                                <span>Gender</span>
-                                              </div>
-                                             {unitRooms.map(room => {
-                                               const feats = [...((room as any).optional_features || [])];
-                                               if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
-                                               return (
-                                                  <div key={room.id} className="grid grid-cols-[60px_80px_80px_120px_60px_70px_140px_60px_80px_70px] text-sm py-1.5 items-center">
-                                                    <span className="font-medium">{room.room.replace(/^Room\s+/i, "")}</span>
-                                                    <span className="text-muted-foreground">{room.bed_type || "—"}</span>
-                                                    <span className="text-muted-foreground">{(room as any).wall_type || "—"}</span>
-                                                    <span className="text-muted-foreground text-xs truncate">{feats.length > 0 ? feats.join(", ") : "—"}</span>
-                                                    <span>{room.max_pax}</span>
-                                                    <span>RM{room.rent}</span>
-                                                    <span><StatusBadge status={room.status} availableDate={room.available_date} /></span>
-                                                    <span>{room.pax_staying || 0}</span>
-                                                    <span className="text-muted-foreground truncate">{(room as any).tenant_nationality || "—"}</span>
-                                                    <span className="text-muted-foreground">{room.tenant_gender || "—"}</span>
-                                                  </div>
-                                               );
-                                             })}
-                                           </div>
-                                         </div>
-                                       )}
-                                       {unitCarparks.length > 0 && (
-                                         <div>
-                                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Carparks</div>
-                                           <div className="grid gap-1">
-                                             <div className="grid grid-cols-[120px_100px_80px_100px_1fr] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
-                                               <span>Name</span>
-                                               <span>Lot</span>
-                                               <span>Rent</span>
-                                               <span>Status</span>
-                                               <span>Remark</span>
-                                             </div>
-                                             {unitCarparks.map(cp => (
-                                               <div key={cp.id} className="grid grid-cols-[120px_100px_80px_100px_1fr] text-sm py-1.5 items-center">
-                                                 <span className="font-medium">🅿️ {cp.room}</span>
-                                                 <span className="text-muted-foreground">{(cp as any).parking_lot || "—"}</span>
-                                                 <span>RM{cp.rent}</span>
-                                                 <span><StatusBadge status={cp.status} /></span>
-                                                 <span className="text-muted-foreground truncate">{(cp as any).internal_remark || "—"}</span>
-                                               </div>
-                                             ))}
-                                           </div>
-                                         </div>
-                                       )}
+                                        {unitRooms.length > 0 && (
+                                          <div>
+                                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Rooms</div>
+                                            <div className="overflow-x-auto rounded-lg border">
+                                              <Table>
+                                                <TableHeader>
+                                                  <TableRow>
+                                                    <TableHead>Room</TableHead>
+                                                    <TableHead>Bed Type</TableHead>
+                                                    <TableHead>Wall Type</TableHead>
+                                                    <TableHead>Features</TableHead>
+                                                    <TableHead className="text-center">Max Pax</TableHead>
+                                                    <TableHead className="text-right">Rental (RM)</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead className="text-center">Pax Staying</TableHead>
+                                                    <TableHead>Nationality</TableHead>
+                                                    <TableHead>Gender</TableHead>
+                                                  </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                  {unitRooms.map(room => {
+                                                    const feats = [...((room as any).optional_features || [])];
+                                                    if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+                                                    return (
+                                                      <TableRow key={room.id}>
+                                                        <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
+                                                        <TableCell>{room.bed_type || "—"}</TableCell>
+                                                        <TableCell>{(room as any).wall_type || "—"}</TableCell>
+                                                        <TableCell>
+                                                          <div className="flex flex-wrap gap-1">
+                                                            {feats.length > 0 ? feats.map((f: string) => (
+                                                              <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
+                                                            )) : <span className="text-muted-foreground">—</span>}
+                                                          </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-center">{room.max_pax}</TableCell>
+                                                        <TableCell className="text-right">{room.rent}</TableCell>
+                                                        <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
+                                                        <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
+                                                        <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
+                                                        <TableCell>{room.tenant_gender || "—"}</TableCell>
+                                                      </TableRow>
+                                                    );
+                                                  })}
+                                                </TableBody>
+                                              </Table>
+                                            </div>
+                                          </div>
+                                        )}
+                                        {unitCarparks.length > 0 && (
+                                          <div>
+                                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Carparks</div>
+                                            <div className="overflow-x-auto rounded-lg border">
+                                              <Table>
+                                                <TableHeader>
+                                                  <TableRow>
+                                                    <TableHead>Carpark Name</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Assigned To</TableHead>
+                                                    <TableHead>Remark</TableHead>
+                                                  </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                  {unitCarparks.map(cp => (
+                                                    <TableRow key={cp.id}>
+                                                      <TableCell className="font-medium">🅿️ {cp.room}</TableCell>
+                                                      <TableCell><StatusBadge status={cp.status} /></TableCell>
+                                                      <TableCell>{(cp as any).assigned_to || "—"}</TableCell>
+                                                      <TableCell>{(cp as any).internal_remark || "—"}</TableCell>
+                                                    </TableRow>
+                                                  ))}
+                                                </TableBody>
+                                              </Table>
+                                            </div>
+                                          </div>
+                                        )}
                                      </>
                                    );
                                  })()}
