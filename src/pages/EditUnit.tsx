@@ -15,7 +15,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ArrowLeft, Plus, Pencil, Trash2, Eye, Save } from "lucide-react";
 import { toast } from "sonner";
 
-const OPTIONAL_FEATURES = ["Balcony", "Private Toilet", "Window", "Master Room"];
+const OPTIONAL_FEATURES = ["Balcony", "Private Toilet", "Window", "Master Room", "Studio"];
 const bedTypeMaxPax: Record<string, number> = { Single: 1, "Super Single": 1, Queen: 2, King: 2 };
 const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
@@ -280,7 +280,6 @@ export default function EditUnit() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Room</TableHead>
-                    <TableHead>Room Type</TableHead>
                     <TableHead>Bed Type</TableHead>
                     <TableHead>Wall Type</TableHead>
                     <TableHead>Features</TableHead>
@@ -297,22 +296,24 @@ export default function EditUnit() {
                 <TableBody>
                   {rooms.map(room => (
                     <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.room}</TableCell>
-                      <TableCell>{(room as any).room_category || room.room_type || "—"}</TableCell>
+                      <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
                       <TableCell>{room.bed_type || "—"}</TableCell>
                       <TableCell>{(room as any).wall_type || "—"}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {((room as any).optional_features || []).map((f: string) => (
-                            <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
-                          ))}
-                          {((room as any).optional_features || []).length === 0 && <span className="text-muted-foreground text-xs">—</span>}
+                          {(() => {
+                            const feats = [...((room as any).optional_features || [])];
+                            if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+                            return feats.length > 0 ? feats.map((f: string) => (
+                              <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
+                            )) : <span className="text-muted-foreground text-xs">—</span>;
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">{room.max_pax}</TableCell>
                       <TableCell className="text-right">{room.rent}</TableCell>
                       <TableCell><StatusBadge status={room.status} /></TableCell>
-                      <TableCell>{room.available_date || "—"}</TableCell>
+                      <TableCell>{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</TableCell>
                       <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
                       <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
                       <TableCell>{room.tenant_gender || "—"}</TableCell>
@@ -499,18 +500,6 @@ function RoomEditDialog({ room, onClose, onSave, isNew }: { room: Room | null; o
             <div>
               <label className="text-xs text-muted-foreground">Room Name</label>
               <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={data.room} readOnly />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Room Type</label>
-              <select className={`${inputClass} w-full`} value={data.room_category || "Normal Room"} onChange={e => {
-                const val = e.target.value;
-                up("room_category", val);
-                if (val === "Studio") up("bed_type", "None");
-                else if (data.bed_type === "None") up("bed_type", "");
-              }}>
-                <option value="Normal Room">Normal Room</option>
-                <option value="Studio">Studio</option>
-              </select>
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Bed Type {!isStudio && "*"}</label>
