@@ -57,8 +57,9 @@ export default function AddUnit() {
   const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(() => {
     const rooms: RoomConfig[] = Array.from({ length: 5 }, (_, i) => ({
       room: getDefaultRoomName(i, "alpha"), bed_type: "", max_pax: 1, rent: 0, status: "Available",
+      room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "", available_date: "",
     }));
-    const cps: RoomConfig[] = [{ room: getDefaultCarParkName(0), bed_type: "", max_pax: 0, rent: 150, room_type: "Car Park" }];
+    const cps: RoomConfig[] = [{ room: getDefaultCarParkName(0), bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park", status: "Available", assigned_to: "", internal_remark: "" }];
     return [...rooms, ...cps];
   });
 
