@@ -106,6 +106,8 @@ export function TenantsContent() {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [editForm, setEditForm] = useState<Partial<Tenant>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [addingTenant, setAddingTenant] = useState(false);
+  const [addForm, setAddForm] = useState<Partial<Tenant>>({});
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
