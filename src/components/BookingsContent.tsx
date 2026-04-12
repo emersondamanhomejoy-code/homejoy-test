@@ -36,6 +36,7 @@ export function BookingsContent() {
   const { data: roomsData = [] } = useRooms();
 
   const [view, setView] = useState<View>({ type: "list" });
+  const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filters
