@@ -98,7 +98,6 @@ export default function ViewUnit() {
                     <TableHead className="text-center">Max Pax</TableHead>
                     <TableHead className="text-right">Rental (RM)</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Available Date</TableHead>
                     <TableHead className="text-center">Pax Staying</TableHead>
                     <TableHead>Nationality</TableHead>
                     <TableHead>Gender</TableHead>
@@ -124,8 +123,7 @@ export default function ViewUnit() {
                       </TableCell>
                       <TableCell className="text-center">{room.max_pax}</TableCell>
                       <TableCell className="text-right">{room.rent}</TableCell>
-                      <TableCell><StatusBadge status={room.status} /></TableCell>
-                      <TableCell>{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</TableCell>
+                      <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
                       <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
                       <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
                       <TableCell>{room.tenant_gender || "—"}</TableCell>

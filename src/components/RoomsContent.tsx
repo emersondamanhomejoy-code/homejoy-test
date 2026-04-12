@@ -265,7 +265,7 @@ export function RoomsContent() {
                     <TableHead>Features</TableHead>
                     <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Rental (RM)</SortableTableHead>
                     <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                    <SortableTableHead sortKey="available_date" currentSort={sort} onSort={handleSort}>Available Date</SortableTableHead>
+                    
                     <SortableTableHead sortKey="pax_staying" currentSort={sort} onSort={handleSort} className="text-center">Pax</SortableTableHead>
                     <TableHead>Nationality</TableHead>
                     <TableHead>Gender</TableHead>
@@ -303,8 +303,7 @@ export function RoomsContent() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">RM{r.rent}</TableCell>
-                      <TableCell><StatusBadge status={r.status} /></TableCell>
-                      <TableCell className="text-muted-foreground">{(r.status === "Available Soon" || r.status === "Pending") ? (r.available_date || "—") : ""}</TableCell>
+                      <TableCell><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
                       <TableCell className="text-center">{r.pax_staying || 0}</TableCell>
                       <TableCell className="text-muted-foreground">{(r as any).tenant_nationality || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.tenant_gender || "—"}</TableCell>

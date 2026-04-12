@@ -319,36 +319,34 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                                          <div>
                                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Rooms</div>
                                            <div className="grid gap-1">
-                                             <div className="grid grid-cols-[60px_80px_80px_120px_60px_70px_100px_90px_60px_80px_70px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
-                                               <span>Room</span>
-                                               <span>Bed</span>
-                                               <span>Wall</span>
-                                               <span>Features</span>
-                                               <span>Pax</span>
-                                               <span>Rent</span>
-                                               <span>Status</span>
-                                               <span>Avail. Date</span>
-                                               <span>Stay</span>
-                                               <span>Nationality</span>
-                                               <span>Gender</span>
-                                             </div>
+                                              <div className="grid grid-cols-[60px_80px_80px_120px_60px_70px_140px_60px_80px_70px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
+                                                <span>Room</span>
+                                                <span>Bed</span>
+                                                <span>Wall</span>
+                                                <span>Features</span>
+                                                <span>Pax</span>
+                                                <span>Rent</span>
+                                                <span>Status</span>
+                                                <span>Stay</span>
+                                                <span>Nationality</span>
+                                                <span>Gender</span>
+                                              </div>
                                              {unitRooms.map(room => {
                                                const feats = [...((room as any).optional_features || [])];
                                                if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
                                                return (
-                                                 <div key={room.id} className="grid grid-cols-[60px_80px_80px_120px_60px_70px_100px_90px_60px_80px_70px] text-sm py-1.5 items-center">
-                                                   <span className="font-medium">{room.room.replace(/^Room\s+/i, "")}</span>
-                                                   <span className="text-muted-foreground">{room.bed_type || "—"}</span>
-                                                   <span className="text-muted-foreground">{(room as any).wall_type || "—"}</span>
-                                                   <span className="text-muted-foreground text-xs truncate">{feats.length > 0 ? feats.join(", ") : "—"}</span>
-                                                   <span>{room.max_pax}</span>
-                                                   <span>RM{room.rent}</span>
-                                                   <span><StatusBadge status={room.status} /></span>
-                                                   <span className="text-muted-foreground">{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</span>
-                                                   <span>{room.pax_staying || 0}</span>
-                                                   <span className="text-muted-foreground truncate">{(room as any).tenant_nationality || "—"}</span>
-                                                   <span className="text-muted-foreground">{room.tenant_gender || "—"}</span>
-                                                 </div>
+                                                  <div key={room.id} className="grid grid-cols-[60px_80px_80px_120px_60px_70px_140px_60px_80px_70px] text-sm py-1.5 items-center">
+                                                    <span className="font-medium">{room.room.replace(/^Room\s+/i, "")}</span>
+                                                    <span className="text-muted-foreground">{room.bed_type || "—"}</span>
+                                                    <span className="text-muted-foreground">{(room as any).wall_type || "—"}</span>
+                                                    <span className="text-muted-foreground text-xs truncate">{feats.length > 0 ? feats.join(", ") : "—"}</span>
+                                                    <span>{room.max_pax}</span>
+                                                    <span>RM{room.rent}</span>
+                                                    <span><StatusBadge status={room.status} availableDate={room.available_date} /></span>
+                                                    <span>{room.pax_staying || 0}</span>
+                                                    <span className="text-muted-foreground truncate">{(room as any).tenant_nationality || "—"}</span>
+                                                    <span className="text-muted-foreground">{room.tenant_gender || "—"}</span>
+                                                  </div>
                                                );
                                              })}
                                            </div>
@@ -484,7 +482,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                               <TableHead className="text-center">Max Pax</TableHead>
                               <TableHead className="text-right">Rental</TableHead>
                               <TableHead>Status</TableHead>
-                              <TableHead>Avail. Date</TableHead>
+                              
                               <TableHead className="text-center">Pax</TableHead>
                               <TableHead>Nationality</TableHead>
                               <TableHead>Gender</TableHead>
@@ -502,8 +500,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                                   <TableCell><div className="flex flex-wrap gap-1">{feats.length > 0 ? feats.map((f: string) => <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>) : <span className="text-muted-foreground text-xs">—</span>}</div></TableCell>
                                   <TableCell className="text-center">{room.max_pax}</TableCell>
                                   <TableCell className="text-right">RM{room.rent}</TableCell>
-                                  <TableCell><StatusBadge status={room.status} /></TableCell>
-                                  <TableCell>{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</TableCell>
+                                  <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
                                   <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
                                   <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
                                   <TableCell>{room.tenant_gender || "—"}</TableCell>
