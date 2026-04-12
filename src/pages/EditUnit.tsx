@@ -20,6 +20,7 @@ const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-fore
 interface EditUnitProps {
   onClose?: () => void;
   unitIdProp?: string;
+  focusRoomId?: string;
 }
 
 export default function EditUnit({ onClose, unitIdProp }: EditUnitProps = {}) {
