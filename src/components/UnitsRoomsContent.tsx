@@ -41,6 +41,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
+  const [addUnitOpen, setAddUnitOpen] = useState(false);
 
   const { sort, handleSort, sortData } = useTableSort("building");
 
