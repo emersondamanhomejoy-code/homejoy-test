@@ -327,7 +327,14 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
           {!isNone && (
             <div>
               <label className={labelClass}>Chargeable</label>
-              <select className={`${inputClass} w-full`} value={item.chargeable_type} onChange={e => updateItem(items, setItems, item.id, "chargeable_type", e.target.value)}>
+              <select className={`${inputClass} w-full`} value={item.chargeable_type} onChange={e => {
+                const newType = e.target.value;
+                const defaultPrices: Record<string, number> = { deposit: 100, processing_fee: 50 };
+                updateItem(items, setItems, item.id, "chargeable_type", newType);
+                if (defaultPrices[newType] && !item.price) {
+                  updateItem(items, setItems, item.id, "price", defaultPrices[newType]);
+                }
+              }}>
                 {CHARGEABLE_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
