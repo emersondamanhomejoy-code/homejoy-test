@@ -153,7 +153,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               <TableHead className="w-12">No.</TableHead>
               <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
               <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
-              <SortableTableHead sortKey="address" currentSort={sort} onSort={handleSort}>Address Preview</SortableTableHead>
+              
               <SortableTableHead sortKey="totalUnits" currentSort={sort} onSort={handleSort} className="text-center">Total Units</SortableTableHead>
               <SortableTableHead sortKey="totalRooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
               <SortableTableHead sortKey="totalCarparks" currentSort={sort} onSort={handleSort} className="text-center">Total Carparks</SortableTableHead>
