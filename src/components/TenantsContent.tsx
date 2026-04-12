@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
