@@ -41,7 +41,20 @@ export default function EditUnit({ onClose, unitIdProp, focusRoomId }: EditUnitP
   const [saving, setSaving] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [deleteConfirmRoom, setDeleteConfirmRoom] = useState<string | null>(null);
-  const [collapsedRooms, setCollapsedRooms] = useState<Record<string, boolean>>({});
+  const [collapsedRooms, setCollapsedRooms] = useState<Record<string, boolean>>(() => {
+    if (focusRoomId) return { [focusRoomId]: false };
+    return {};
+  });
+
+  // Scroll to focused room on mount
+  useEffect(() => {
+    if (focusRoomId) {
+      setTimeout(() => {
+        const el = document.getElementById(`room-card-${focusRoomId}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }, [focusRoomId, unit]);
 
   // Initialize form from unit
   useEffect(() => {
