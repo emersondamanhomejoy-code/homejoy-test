@@ -108,6 +108,7 @@ export function TenantsContent() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
   const [addForm, setAddForm] = useState<Partial<Tenant>>({});
+  const [addUploadedFiles, setAddUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
@@ -233,20 +234,33 @@ export function TenantsContent() {
   // Add
   const openAdd = () => {
     setAddForm({});
+    setAddUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
     setAddingTenant(true);
   };
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
+
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("booking-docs").upload(path, file);
+    if (error) throw error;
+    return path;
+  };
+
   const saveNewTenant = async () => {
     if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
     if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
     try {
+      const passportPaths = await Promise.all(addUploadedFiles.passport.map(f => uploadFile(f, "passport")));
+      const offerPaths = await Promise.all(addUploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
+      const slipPaths = await Promise.all(addUploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
+
       const { error } = await supabase.from("tenants").insert({
         name: addForm.name || "",
         phone: addForm.phone || "",
         email: addForm.email || "",
         ic_passport: addForm.ic_passport || "",
         gender: addForm.gender || "",
-        race: addForm.race || "",
         nationality: addForm.nationality || "",
         occupation: addForm.occupation || "",
         company: addForm.company || "",
@@ -259,7 +273,10 @@ export function TenantsContent() {
         emergency_2_phone: addForm.emergency_2_phone || "",
         emergency_2_relationship: addForm.emergency_2_relationship || "",
         car_plate: addForm.car_plate || "",
-      });
+        doc_passport: passportPaths,
+        doc_offer_letter: offerPaths,
+        doc_transfer_slip: slipPaths,
+      } as any);
       if (error) throw error;
       toast.success("Tenant added.");
       setAddingTenant(false);
