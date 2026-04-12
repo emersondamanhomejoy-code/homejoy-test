@@ -41,6 +41,7 @@ export function RoomsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editUnitId, setEditUnitId] = useState<string | null>(null);
 
   const { sort, handleSort, sortData } = useTableSort("building");
 
@@ -312,7 +313,7 @@ export function RoomsContent() {
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => navigate(`/photos/${r.id}`)}>
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => navigate(`/admin/edit-unit/${r.unit_id}`)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditUnitId(r.unit_id)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
