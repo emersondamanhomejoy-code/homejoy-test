@@ -17,6 +17,7 @@ import { SortableTableHead, useTableSort } from "@/components/SortableTableHead"
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { BookingDetailView } from "@/components/BookingDetailView";
 import { BookingEditView } from "@/components/BookingEditView";
+import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { toast } from "sonner";
 
 interface UserInfo {
