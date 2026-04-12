@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -106,6 +106,8 @@ export function TenantsContent() {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [editForm, setEditForm] = useState<Partial<Tenant>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [addingTenant, setAddingTenant] = useState(false);
+  const [addForm, setAddForm] = useState<Partial<Tenant>>({});
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
@@ -228,6 +230,45 @@ export function TenantsContent() {
     }
   };
 
+  // Add
+  const openAdd = () => {
+    setAddForm({});
+    setAddingTenant(true);
+  };
+  const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
+  const saveNewTenant = async () => {
+    if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
+    if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
+    try {
+      const { error } = await supabase.from("tenants").insert({
+        name: addForm.name || "",
+        phone: addForm.phone || "",
+        email: addForm.email || "",
+        ic_passport: addForm.ic_passport || "",
+        gender: addForm.gender || "",
+        race: addForm.race || "",
+        nationality: addForm.nationality || "",
+        occupation: addForm.occupation || "",
+        company: addForm.company || "",
+        position: addForm.position || "",
+        monthly_salary: addForm.monthly_salary || 0,
+        emergency_1_name: addForm.emergency_1_name || "",
+        emergency_1_phone: addForm.emergency_1_phone || "",
+        emergency_1_relationship: addForm.emergency_1_relationship || "",
+        emergency_2_name: addForm.emergency_2_name || "",
+        emergency_2_phone: addForm.emergency_2_phone || "",
+        emergency_2_relationship: addForm.emergency_2_relationship || "",
+        car_plate: addForm.car_plate || "",
+      });
+      if (error) throw error;
+      toast.success("Tenant added.");
+      setAddingTenant(false);
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to add tenant");
+    }
+  };
+
   // Delete
   const handleDelete = async () => {
     if (!deleteConfirm) return;
@@ -253,7 +294,12 @@ export function TenantsContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Tenants</h2>
-        <span className="text-sm text-muted-foreground">{filtered.length} tenant(s)</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{filtered.length} tenant(s)</span>
+          {isAdmin && (
+            <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Tenant</Button>
+          )}
+        </div>
       </div>
 
       {/* Search + Filters */}
@@ -611,6 +657,116 @@ export function TenantsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Tenant Dialog */}
+      <Dialog open={addingTenant} onOpenChange={(open) => { if (!open) setAddingTenant(false); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Add Tenant</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-4 pb-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className={lbl}>Full Name *</label>
+                  <Input value={addForm.name || ""} onChange={e => setAddField("name", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Phone *</label>
+                  <Input value={addForm.phone || ""} onChange={e => setAddField("phone", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Email</label>
+                  <Input value={addForm.email || ""} onChange={e => setAddField("email", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>IC / Passport</label>
+                  <Input value={addForm.ic_passport || ""} onChange={e => setAddField("ic_passport", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Gender</label>
+                  <Select value={addForm.gender || ""} onValueChange={v => setAddField("gender", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Couple">Couple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Race</label>
+                  <Input value={addForm.race || ""} onChange={e => setAddField("race", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Nationality</label>
+                  <Input value={addForm.nationality || ""} onChange={e => setAddField("nationality", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Occupation</label>
+                  <Input value={addForm.occupation || ""} onChange={e => setAddField("occupation", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Company</label>
+                  <Input value={addForm.company || ""} onChange={e => setAddField("company", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Position</label>
+                  <Input value={addForm.position || ""} onChange={e => setAddField("position", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Monthly Salary</label>
+                  <Input type="number" value={addForm.monthly_salary || ""} onChange={e => setAddField("monthly_salary", Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Car Plate</label>
+                  <Input value={addForm.car_plate || ""} onChange={e => setAddField("car_plate", e.target.value)} />
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Emergency Contact 1</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Name</label>
+                    <Input value={addForm.emergency_1_name || ""} onChange={e => setAddField("emergency_1_name", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Phone</label>
+                    <Input value={addForm.emergency_1_phone || ""} onChange={e => setAddField("emergency_1_phone", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Relationship</label>
+                    <Input value={addForm.emergency_1_relationship || ""} onChange={e => setAddField("emergency_1_relationship", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Emergency Contact 2</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Name</label>
+                    <Input value={addForm.emergency_2_name || ""} onChange={e => setAddField("emergency_2_name", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Phone</label>
+                    <Input value={addForm.emergency_2_phone || ""} onChange={e => setAddField("emergency_2_phone", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Relationship</label>
+                    <Input value={addForm.emergency_2_relationship || ""} onChange={e => setAddField("emergency_2_relationship", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddingTenant(false)}>Cancel</Button>
+            <Button onClick={saveNewTenant}>Add Tenant</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
