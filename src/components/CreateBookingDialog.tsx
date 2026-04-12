@@ -330,10 +330,14 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 {sectionTitle("👤", "Agent")}
                 <div className="space-y-1">
+                  <label className={lbl}>Search Agent</label>
+                  <input className={ic} placeholder="Search by name or email..." value={agentSearch} onChange={e => setAgentSearch(e.target.value)} />
+                </div>
+                <div className="space-y-1">
                   <label className={lbl}>Select Agent *</label>
                   <select className={ic} value={form.agentId} onChange={e => set("agentId", e.target.value)}>
                     <option value="">— Select Agent —</option>
-                    {agents.map(a => (
+                    {filteredAgents.map(a => (
                       <option key={a.id} value={a.id}>{a.name || a.email}{a.name ? ` (${a.email})` : ""}</option>
                     ))}
                   </select>
