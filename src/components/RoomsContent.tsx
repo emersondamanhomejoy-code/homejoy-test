@@ -133,19 +133,19 @@ export function RoomsContent() {
       };
       return map[key];
     });
-  }, [allRooms, selectedLocations, selectedBuildings, selectedUnits, selectedUnitTypes, selectedBedTypes, selectedWallTypes, statusFilter, minPrice, maxPrice, search, sort]);
+  }, [allRooms, selectedLocations, selectedBuildings, selectedUnits, selectedUnitTypes, selectedBedTypes, selectedWallTypes, selectedFeatures, statusFilter, minPrice, maxPrice, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
     selectedUnitTypes.length > 0 || selectedBedTypes.length > 0 ||
-    selectedWallTypes.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
+    selectedWallTypes.length > 0 || selectedFeatures.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
 
   const clearFilters = () => {
     setSelectedLocations([]); setSelectedBuildings([]); setSelectedUnits([]);
     setSelectedUnitTypes([]); setSelectedBedTypes([]);
-    setSelectedWallTypes([]); setStatusFilter("all"); setMinPrice(""); setMaxPrice("");
+    setSelectedWallTypes([]); setSelectedFeatures([]); setStatusFilter("all"); setMinPrice(""); setMaxPrice("");
     setSearch(""); setPage(1);
   };
 
