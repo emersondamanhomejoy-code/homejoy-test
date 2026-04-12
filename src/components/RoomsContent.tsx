@@ -77,6 +77,15 @@ export function RoomsContent() {
   
   const bedTypes = useMemo(() => Array.from(new Set(allRooms.map(r => r.bed_type).filter(Boolean))).sort(), [allRooms]);
   const wallTypes = useMemo(() => Array.from(new Set(allRooms.map(r => (r as any).wall_type).filter(Boolean))).sort(), [allRooms]);
+  const featureOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of allRooms) {
+      const feats = (r as any).optional_features || [];
+      if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) set.add("Studio");
+      for (const f of feats) if (f) set.add(f);
+    }
+    return Array.from(set).sort();
+  }, [allRooms]);
 
   // Filter
   const filtered = useMemo(() => {
