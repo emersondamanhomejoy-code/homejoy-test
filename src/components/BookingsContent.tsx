@@ -26,8 +26,6 @@ interface UserInfo {
   name: string;
 }
 
-type View = { type: "list" } | { type: "detail"; booking: Booking } | { type: "edit"; booking: Booking };
-
 export function BookingsContent() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -35,8 +33,8 @@ export function BookingsContent() {
   const updateBookingStatus = useUpdateBookingStatus();
   const { data: roomsData = [] } = useRooms();
 
-  const [view, setView] = useState<View>({ type: "list" });
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filters
@@ -157,22 +155,6 @@ export function BookingsContent() {
   const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom || dateTo;
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
-  // ======================== DETAIL VIEW (now a dialog, rendered alongside list) ========================
-
-  // ======================== EDIT VIEW ========================
-
-  // ======================== EDIT VIEW ========================
-  if (view.type === "edit") {
-    const freshBooking = allBookings.find(b => b.id === view.booking.id) || view.booking;
-    return (
-      <BookingEditView
-        booking={freshBooking}
-        onBack={() => { setViewBooking(view.booking); setView({ type: "list" }); }}
-      />
-    );
-  }
-
-  // ======================== LIST VIEW ========================
   return (
     <div className="space-y-4">
       {/* Create Booking Dialog */}
@@ -184,8 +166,15 @@ export function BookingsContent() {
           booking={allBookings.find(bk => bk.id === viewBooking.id) || viewBooking}
           open={!!viewBooking}
           onOpenChange={(open) => { if (!open) setViewBooking(null); }}
-          onEdit={(b) => { setViewBooking(null); setView({ type: "edit", booking: b }); }}
           getAgentName={getAgentName}
+        />
+      )}
+
+      {editBooking && (
+        <BookingEditView
+          booking={allBookings.find(bk => bk.id === editBooking.id) || editBooking}
+          open={!!editBooking}
+          onOpenChange={(open) => { if (!open) setEditBooking(null); }}
         />
       )}
 
@@ -306,7 +295,7 @@ export function BookingsContent() {
                             <Eye className="h-4 w-4" />
                           </Button>
                           {(b.status === "pending" || b.status === "rejected") && (
-                            <Button variant="ghost" size="icon" onClick={() => setView({ type: "edit", booking: b })} title="Edit">
+                            <Button variant="ghost" size="icon" onClick={() => setEditBooking(b)} title="Edit">
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
