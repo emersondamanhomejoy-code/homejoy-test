@@ -38,6 +38,7 @@ export function RoomsContent() {
   const [selectedUnitTypes, setSelectedUnitTypes] = useState<string[]>([]);
   const [selectedBedTypes, setSelectedBedTypes] = useState<string[]>([]);
   const [selectedWallTypes, setSelectedWallTypes] = useState<string[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -76,6 +77,15 @@ export function RoomsContent() {
   
   const bedTypes = useMemo(() => Array.from(new Set(allRooms.map(r => r.bed_type).filter(Boolean))).sort(), [allRooms]);
   const wallTypes = useMemo(() => Array.from(new Set(allRooms.map(r => (r as any).wall_type).filter(Boolean))).sort(), [allRooms]);
+  const featureOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of allRooms) {
+      const feats = (r as any).optional_features || [];
+      if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) set.add("Studio");
+      for (const f of feats) if (f) set.add(f);
+    }
+    return Array.from(set).sort();
+  }, [allRooms]);
 
   // Filter
   const filtered = useMemo(() => {
@@ -87,6 +97,11 @@ export function RoomsContent() {
     
     if (selectedBedTypes.length) list = list.filter(r => selectedBedTypes.includes(r.bed_type));
     if (selectedWallTypes.length) list = list.filter(r => selectedWallTypes.includes((r as any).wall_type));
+    if (selectedFeatures.length) list = list.filter(r => {
+      const feats = [...((r as any).optional_features || [])];
+      if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+      return selectedFeatures.some(f => feats.includes(f));
+    });
     if (statusFilter !== "all") list = list.filter(r => r.status === statusFilter);
     if (minPrice) list = list.filter(r => r.rent >= Number(minPrice));
     if (maxPrice) list = list.filter(r => r.rent <= Number(maxPrice));
@@ -118,19 +133,19 @@ export function RoomsContent() {
       };
       return map[key];
     });
-  }, [allRooms, selectedLocations, selectedBuildings, selectedUnits, selectedUnitTypes, selectedBedTypes, selectedWallTypes, statusFilter, minPrice, maxPrice, search, sort]);
+  }, [allRooms, selectedLocations, selectedBuildings, selectedUnits, selectedUnitTypes, selectedBedTypes, selectedWallTypes, selectedFeatures, statusFilter, minPrice, maxPrice, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
     selectedUnitTypes.length > 0 || selectedBedTypes.length > 0 ||
-    selectedWallTypes.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
+    selectedWallTypes.length > 0 || selectedFeatures.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
 
   const clearFilters = () => {
     setSelectedLocations([]); setSelectedBuildings([]); setSelectedUnits([]);
     setSelectedUnitTypes([]); setSelectedBedTypes([]);
-    setSelectedWallTypes([]); setStatusFilter("all"); setMinPrice(""); setMaxPrice("");
+    setSelectedWallTypes([]); setSelectedFeatures([]); setStatusFilter("all"); setMinPrice(""); setMaxPrice("");
     setSearch(""); setPage(1);
   };
 
@@ -206,6 +221,8 @@ export function RoomsContent() {
             onApply={v => { setSelectedBedTypes(v); setPage(1); }} />
           <MultiSelectFilter label="Wall Type" placeholder="All Wall Types" options={wallTypes} selected={selectedWallTypes}
             onApply={v => { setSelectedWallTypes(v); setPage(1); }} />
+          <MultiSelectFilter label="Features" placeholder="All Features" options={featureOptions} selected={selectedFeatures}
+            onApply={v => { setSelectedFeatures(v); setPage(1); }} />
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
