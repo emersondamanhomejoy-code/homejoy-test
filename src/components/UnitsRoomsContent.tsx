@@ -238,8 +238,6 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                     <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
                     <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Occupants</SortableTableHead>
                     
-                    <SortableTableHead sortKey="total_rooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
-                    <SortableTableHead sortKey="total_carparks" currentSort={sort} onSort={handleSort} className="text-center">Total Carparks</SortableTableHead>
                     <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Remaining Rooms</SortableTableHead>
                     <SortableTableHead sortKey="remaining_carparks" currentSort={sort} onSort={handleSort} className="text-center">Remaining Carparks</SortableTableHead>
                     
@@ -279,13 +277,13 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                           </TableCell>
                           <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
                           
-                          <TableCell className="text-center">{rooms.length}</TableCell>
-                          <TableCell className="text-center">{carparks.length}</TableCell>
                           <TableCell className="text-center">
                             <span className={availableRooms > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{availableRooms}</span>
+                            <span className="text-muted-foreground">/{rooms.length}</span>
                           </TableCell>
                           <TableCell className="text-center">
                             <span className={availableCarparks > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{availableCarparks}</span>
+                            <span className="text-muted-foreground">/{carparks.length}</span>
                           </TableCell>
                           
                           <TableCell className="text-center" onClick={e => e.stopPropagation()}>
@@ -305,7 +303,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                         {/* Expanded room preview */}
                         {isExpanded && (
                           <TableRow key={`${unit.id}-expand`} className="bg-muted/10">
-                            <TableCell colSpan={13} className="p-0">
+                            <TableCell colSpan={11} className="p-0">
                               <div className="px-8 py-3 space-y-1">
                                 {(unit.rooms || []).length === 0 ? (
                                   <div className="text-sm text-muted-foreground py-2">No rooms configured.</div>
