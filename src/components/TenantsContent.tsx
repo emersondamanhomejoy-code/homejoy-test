@@ -294,7 +294,12 @@ export function TenantsContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Tenants</h2>
-        <span className="text-sm text-muted-foreground">{filtered.length} tenant(s)</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{filtered.length} tenant(s)</span>
+          {isAdmin && (
+            <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Tenant</Button>
+          )}
+        </div>
       </div>
 
       {/* Search + Filters */}
