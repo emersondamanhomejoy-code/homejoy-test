@@ -364,29 +364,33 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                                             </div>
                                           </div>
                                         )}
-                                       {unitCarparks.length > 0 && (
-                                         <div>
-                                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Carparks</div>
-                                           <div className="grid gap-1">
-                                             <div className="grid grid-cols-[120px_100px_80px_100px_1fr] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
-                                               <span>Name</span>
-                                               <span>Lot</span>
-                                               <span>Rent</span>
-                                               <span>Status</span>
-                                               <span>Remark</span>
-                                             </div>
-                                             {unitCarparks.map(cp => (
-                                               <div key={cp.id} className="grid grid-cols-[120px_100px_80px_100px_1fr] text-sm py-1.5 items-center">
-                                                 <span className="font-medium">🅿️ {cp.room}</span>
-                                                 <span className="text-muted-foreground">{(cp as any).parking_lot || "—"}</span>
-                                                 <span>RM{cp.rent}</span>
-                                                 <span><StatusBadge status={cp.status} /></span>
-                                                 <span className="text-muted-foreground truncate">{(cp as any).internal_remark || "—"}</span>
-                                               </div>
-                                             ))}
-                                           </div>
-                                         </div>
-                                       )}
+                                        {unitCarparks.length > 0 && (
+                                          <div>
+                                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Carparks</div>
+                                            <div className="overflow-x-auto rounded-lg border">
+                                              <Table>
+                                                <TableHeader>
+                                                  <TableRow>
+                                                    <TableHead>Carpark Name</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Assigned To</TableHead>
+                                                    <TableHead>Remark</TableHead>
+                                                  </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                  {unitCarparks.map(cp => (
+                                                    <TableRow key={cp.id}>
+                                                      <TableCell className="font-medium">🅿️ {cp.room}</TableCell>
+                                                      <TableCell><StatusBadge status={cp.status} /></TableCell>
+                                                      <TableCell>{(cp as any).assigned_to || "—"}</TableCell>
+                                                      <TableCell>{(cp as any).internal_remark || "—"}</TableCell>
+                                                    </TableRow>
+                                                  ))}
+                                                </TableBody>
+                                              </Table>
+                                            </div>
+                                          </div>
+                                        )}
                                      </>
                                    );
                                  })()}
