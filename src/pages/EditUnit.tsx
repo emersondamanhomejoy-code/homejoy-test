@@ -23,7 +23,7 @@ interface EditUnitProps {
   focusRoomId?: string;
 }
 
-export default function EditUnit({ onClose, unitIdProp }: EditUnitProps = {}) {
+export default function EditUnit({ onClose, unitIdProp, focusRoomId }: EditUnitProps = {}) {
   const params = useParams<{ unitId: string }>();
   const unitId = unitIdProp || params.unitId;
   const navigate = useNavigate();
