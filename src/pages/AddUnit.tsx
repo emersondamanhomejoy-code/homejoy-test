@@ -63,7 +63,7 @@ export default function AddUnit() {
   // Dialogs
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReduceConfirm, setShowReduceConfirm] = useState<{ type: "room" | "carpark"; newCount: number } | null>(null);
-  const [editingRoomConfigIndex, setEditingRoomConfigIndex] = useState<number | null>(null);
+  const [collapsedRooms, setCollapsedRooms] = useState<Record<number, boolean>>({});
   const [saving, setSaving] = useState(false);
 
   const rebuildConfigs = (roomCount: number, carParkCount: number, naming: "alpha" | "digit") => {
