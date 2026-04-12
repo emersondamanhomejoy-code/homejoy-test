@@ -108,10 +108,13 @@ export function TenantsContent() {
   const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [editForm, setEditForm] = useState<Partial<Tenant>>({});
+  const [editUploadedFiles, setEditUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
+  const [editExistingDocs, setEditExistingDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
+  const [editDocRemoveConfirm, setEditDocRemoveConfirm] = useState<"passport" | "offerLetter" | "transferSlip" | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
   const [addForm, setAddForm] = useState<Partial<Tenant>>({});
-  const [addUploadedFiles, setAddUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
+  const [addUploadedFiles, setAddUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
