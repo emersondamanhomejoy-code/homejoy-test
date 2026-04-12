@@ -594,15 +594,15 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="text-sm font-semibold">Contact 1 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm font-semibold">Contact 2 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
                   </div>
                 </div>
               </div>
