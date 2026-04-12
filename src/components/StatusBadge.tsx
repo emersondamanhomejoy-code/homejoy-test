@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 const statusStyles: Record<string, string> = {
   Available: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
@@ -10,10 +11,23 @@ const statusStyles: Record<string, string> = {
 
 const fallback = "bg-muted text-muted-foreground";
 
-export function StatusBadge({ status, className }: { status: string; className?: string }) {
+function formatShortDate(dateStr: string): string {
+  try {
+    return format(new Date(dateStr), "d MMM yyyy");
+  } catch {
+    return dateStr;
+  }
+}
+
+export function StatusBadge({ status, availableDate, className }: { status: string; availableDate?: string; className?: string }) {
+  const label =
+    status === "Available Soon" && availableDate && availableDate !== "Available Now"
+      ? `Available on ${formatShortDate(availableDate)}`
+      : status;
+
   return (
-    <Badge variant="secondary" className={cn("font-medium border-0", statusStyles[status] || fallback, className)}>
-      {status}
+    <Badge variant="secondary" className={cn("font-medium border-0 whitespace-nowrap", statusStyles[status] || fallback, className)}>
+      {label}
     </Badge>
   );
 }
