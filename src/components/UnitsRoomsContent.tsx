@@ -552,8 +552,8 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
       </Dialog>
 
       {/* Add Unit Dialog */}
-      <Dialog open={addUnitOpen} onOpenChange={open => { if (!open) setAddUnitOpen(false); }}>
-        <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <Dialog open={addUnitOpen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>Add Unit</DialogTitle>
           </DialogHeader>

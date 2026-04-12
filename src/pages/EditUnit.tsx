@@ -490,8 +490,8 @@ function RoomEditDialog({ room, onClose, onSave, isNew }: { room: Room | null; o
   const features = Array.isArray(data.optional_features) ? data.optional_features : [];
 
   return (
-    <Dialog open={!!room} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+    <Dialog open={!!room} onOpenChange={() => {}}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{isNew ? "Add Room" : `Edit ${data.room}`}</DialogTitle>
         </DialogHeader>
@@ -596,8 +596,8 @@ function CarparkEditDialog({ carpark, onClose, onSave, isNew }: { carpark: Room 
   const up = (f: string, v: any) => setData((prev: any) => ({ ...prev, [f]: v }));
 
   return (
-    <Dialog open={!!carpark} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-md">
+    <Dialog open={!!carpark} onOpenChange={() => {}}>
+      <DialogContent className="max-w-md" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{isNew ? "Add Carpark" : `Edit ${data.room}`}</DialogTitle>
         </DialogHeader>

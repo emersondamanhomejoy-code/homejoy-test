@@ -926,7 +926,7 @@ export function AdminContent({ tab }: AdminContentProps) {
 
             {/* More Details dialog for room config */}
             <Dialog open={editingRoomConfigIndex !== null} onOpenChange={(open) => { if (!open) setEditingRoomConfigIndex(null); }}>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                 <DialogHeader>
                   <DialogTitle>{editingRoomConfigIndex !== null ? roomConfigs[editingRoomConfigIndex]?.room : ""} — More Details</DialogTitle>
                 </DialogHeader>
@@ -1186,7 +1186,7 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* Room Edit Dialog */}
       <Dialog open={!!editingRoom} onOpenChange={(open) => { if (!open) handleRoomClose(); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Edit {editingRoom?.room_type === "Car Park" ? `🅿️ ${editingRoom?.room}` : editingRoom?.room}</DialogTitle>
           </DialogHeader>
@@ -1204,7 +1204,7 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* Unit Add/Edit Dialog */}
       <Dialog open={!!editingUnit} onOpenChange={(open) => { if (!open) handleUnitClose(); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editingUnit?.id ? "Edit Unit" : "Add Unit and Rooms"}</DialogTitle>
           </DialogHeader>

@@ -92,7 +92,7 @@ export function LocationsContent() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) handleClose(); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Location" : "Add Location"}</DialogTitle>
           </DialogHeader>

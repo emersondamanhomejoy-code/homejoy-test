@@ -1210,8 +1210,8 @@ export default function Index() {
              adminTab === "condos" ? (
                <>
                  <CondosContent onOpenForm={(building?: Condo) => { setBuildingFormData(building); setBuildingFormOpen(true); }} />
-                 <Dialog open={buildingFormOpen} onOpenChange={(open) => { if (!open) { setBuildingFormOpen(false); setBuildingFormData(undefined); } }}>
-                   <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+                 <Dialog open={buildingFormOpen} onOpenChange={() => {}}>
+                    <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                      <div className="flex-1 overflow-y-auto p-6">
                        <BuildingForm building={buildingFormData} onClose={() => { setBuildingFormOpen(false); setBuildingFormData(undefined); }} />
                      </div>
