@@ -561,16 +561,16 @@ export function TenantsContent() {
                   <Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className={lbl}>Phone</label>
-                  <Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} />
+                  <label className={lbl}>NRIC / Passport No</label>
+                  <Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Email</label>
                   <Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className={lbl}>IC / Passport</label>
-                  <Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} />
+                  <label className={lbl}>Contact No</label>
+                  <Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Gender</label>
@@ -580,12 +580,9 @@ export function TenantsContent() {
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Couple">Couple</SelectItem>
+                      <SelectItem value="2 Pax">2 Pax</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Race</label>
-                  <Input value={editForm.race || ""} onChange={e => setField("race", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Nationality</label>
