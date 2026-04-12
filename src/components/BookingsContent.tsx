@@ -167,7 +167,7 @@ export function BookingsContent() {
     return (
       <BookingEditView
         booking={freshBooking}
-        onBack={() => setView({ type: "detail", booking: view.booking })}
+        onBack={() => { setViewBooking(view.booking); setView({ type: "list" }); }}
       />
     );
   }
