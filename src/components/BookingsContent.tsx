@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -13,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import { toast } from "sonner";
 
 interface UserInfo {
   id: string;
@@ -39,19 +42,35 @@ const initialForm = {
 
 export function BookingsContent() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: allBookings = [], isLoading } = useBookings();
   const updateBookingStatus = useUpdateBookingStatus();
   const { data: roomsData = [] } = useRooms();
   const { data: unitsData = [] } = useUnits();
 
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string[]>([]);
+  const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
+  const [unitFilter, setUnitFilter] = useState<string[]>([]);
+  const [roomFilter, setRoomFilter] = useState<string[]>([]);
+  const [agentFilter, setAgentFilter] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  // View / Edit / Delete states
+  const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState<Booking | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<Booking | null>(null);
+
+  // Create booking
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
@@ -62,11 +81,9 @@ export function BookingsContent() {
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [agents, setAgents] = useState<(UserInfo & { roles: string[] })[]>([]);
   useEffect(() => {
-    // Fetch profiles
     supabase.from("profiles").select("user_id, email, name").then(({ data }) => {
       if (data) setUsers(data.map(p => ({ id: p.user_id || "", email: p.email, name: p.name })));
     });
-    // Fetch agents (users with agent role)
     const fetchAgents = async () => {
       const { data: roles } = await supabase.from("user_roles").select("user_id, role");
       const { data: profiles } = await supabase.from("profiles").select("user_id, email, name");
@@ -89,6 +106,13 @@ export function BookingsContent() {
     return u?.name || u?.email || agentId.slice(0, 8);
   };
 
+  // Filter options derived from data
+  const locationOptions = useMemo(() => [...new Set(roomsData.map(r => r.location).filter(Boolean))].sort(), [roomsData]);
+  const buildingOptions = useMemo(() => [...new Set(roomsData.map(r => r.building).filter(Boolean))].sort(), [roomsData]);
+  const unitOptions = useMemo(() => [...new Set(roomsData.map(r => r.unit).filter(Boolean))].sort(), [roomsData]);
+  const roomOptions = useMemo(() => [...new Set(roomsData.map(r => r.room).filter(Boolean))].sort(), [roomsData]);
+  const agentOptions = useMemo(() => agents.map(a => a.name || a.email).filter(Boolean).sort(), [agents]);
+
   // Available rooms for booking
   const availableRooms = useMemo(() => {
     return roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available");
@@ -97,6 +121,13 @@ export function BookingsContent() {
   const selectedRoom = useMemo(() => {
     return roomsData.find(r => r.id === form.roomId) || null;
   }, [roomsData, form.roomId]);
+
+  // Room lookup for bookings
+  const getRoomInfo = (booking: Booking) => {
+    if (booking.room) return booking.room;
+    const r = roomsData.find(rm => rm.id === booking.room_id);
+    return r ? { room: r.room, building: r.building, unit: r.unit } : null;
+  };
 
   const filtered = useMemo(() => {
     let list = allBookings;
@@ -111,18 +142,59 @@ export function BookingsContent() {
         (b.room?.building || "").toLowerCase().includes(s)
       );
     }
+    if (locationFilter.length > 0) {
+      list = list.filter(b => {
+        const r = roomsData.find(rm => rm.id === b.room_id);
+        return r && locationFilter.includes(r.location);
+      });
+    }
+    if (buildingFilter.length > 0) {
+      list = list.filter(b => {
+        const info = getRoomInfo(b);
+        return info && buildingFilter.includes(info.building);
+      });
+    }
+    if (unitFilter.length > 0) {
+      list = list.filter(b => {
+        const info = getRoomInfo(b);
+        return info && unitFilter.includes(info.unit);
+      });
+    }
+    if (roomFilter.length > 0) {
+      list = list.filter(b => {
+        const info = getRoomInfo(b);
+        return info && roomFilter.includes(info.room);
+      });
+    }
+    if (agentFilter.length > 0) {
+      list = list.filter(b => {
+        const name = getAgentName(b.submitted_by);
+        return agentFilter.includes(name);
+      });
+    }
+    if (dateFrom) {
+      list = list.filter(b => b.created_at >= dateFrom);
+    }
+    if (dateTo) {
+      const to = dateTo + "T23:59:59";
+      list = list.filter(b => b.created_at <= to);
+    }
     return sortData(list, (b: Booking, key: string) => {
+      const info = getRoomInfo(b);
       const map: Record<string, any> = {
         id: b.id,
-        building: b.room?.building || "",
+        building: info?.building || "",
+        unit: info?.unit || "",
+        room: info?.room || "",
         tenant_name: b.tenant_name,
-        agent: b.submitted_by || "",
+        monthly_salary: b.monthly_salary,
+        agent: getAgentName(b.submitted_by),
         created_at: b.created_at,
         status: b.status,
       };
       return map[key];
     });
-  }, [allBookings, statusFilter, search, sort]);
+  }, [allBookings, statusFilter, search, sort, locationFilter, buildingFilter, unitFilter, roomFilter, agentFilter, dateFrom, dateTo, roomsData, agents, users]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
@@ -150,14 +222,14 @@ export function BookingsContent() {
 
   const handleCreateBooking = async () => {
     if (!user) return;
-    if (!form.agentId) { alert("Please select an agent"); return; }
-    if (!form.roomId) { alert("Please select a room"); return; }
-    if (!form.tenantName.trim()) { alert("Please fill in tenant name"); return; }
-    if (!form.phone.trim()) { alert("Please fill in contact number"); return; }
-    if (!form.moveInDate) { alert("Please select move-in date"); return; }
-    if (!form.gender) { alert("Please select gender"); return; }
-    if (!form.emergency1Name || !form.emergency1Phone || !form.emergency1Relationship) { alert("Please complete Emergency Contact 1"); return; }
-    if (!form.emergency2Name || !form.emergency2Phone || !form.emergency2Relationship) { alert("Please complete Emergency Contact 2"); return; }
+    if (!form.agentId) { toast.error("Please select an agent"); return; }
+    if (!form.roomId) { toast.error("Please select a room"); return; }
+    if (!form.tenantName.trim()) { toast.error("Please fill in tenant name"); return; }
+    if (!form.phone.trim()) { toast.error("Please fill in contact number"); return; }
+    if (!form.moveInDate) { toast.error("Please select move-in date"); return; }
+    if (!form.gender) { toast.error("Please select gender"); return; }
+    if (!form.emergency1Name || !form.emergency1Phone || !form.emergency1Relationship) { toast.error("Please complete Emergency Contact 1"); return; }
+    if (!form.emergency2Name || !form.emergency2Phone || !form.emergency2Relationship) { toast.error("Please complete Emergency Contact 2"); return; }
 
     setSubmitting(true);
     try {
@@ -219,12 +291,19 @@ export function BookingsContent() {
       });
       if (dbErr) throw dbErr;
 
-      alert("✅ Booking created successfully!");
+      // Set room status to Pending
+      if (form.roomId) {
+        await supabase.from("rooms").update({ status: "Pending" }).eq("id", form.roomId);
+      }
+
+      toast.success("Booking created successfully!");
       setForm(initialForm);
       setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
       setShowCreateForm(false);
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     } catch (e: any) {
-      alert(e.message || "Failed to create booking");
+      toast.error(e.message || "Failed to create booking");
     } finally {
       setSubmitting(false);
     }
@@ -238,122 +317,62 @@ export function BookingsContent() {
     }
   };
 
-  // ─── BOOKING DETAIL VIEW (still inline since it's read-only view, not a form) ───
-  if (selectedBooking) {
-    const b = selectedBooking;
-    return (
-      <div className="space-y-4">
-        <button onClick={() => setSelectedBooking(null)} className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back to Bookings
-        </button>
-        <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="text-xl font-bold">{b.tenant_name}</div>
-            {statusBadge(b.status)}
-          </div>
-          {b.room && <div className="text-sm text-muted-foreground">{b.room.building} · {b.room.unit} · {b.room.room}</div>}
-          <div className="text-xs text-muted-foreground">Booking ID: {b.id.slice(0, 8)}... · Submitted by: {getAgentName(b.submitted_by)}</div>
+  const handleApprove = async (b: Booking) => {
+    if (!user) return;
+    await updateBookingStatus.mutateAsync({
+      id: b.id, status: "approved", reviewed_by: user.id,
+      room_id: b.room_id, tenant_name: b.tenant_name,
+      tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
+      pax_staying: b.pax_staying,
+    });
+    toast.success("Booking approved");
+    setViewingBooking(null);
+  };
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenant Info</div>
-              <div className="text-sm space-y-1">
-                <div>📞 {b.tenant_phone}</div>
-                <div>✉️ {b.tenant_email || "—"}</div>
-                <div>🪪 {b.tenant_ic_passport || "—"}</div>
-                <div>👤 {b.tenant_gender || "—"} · {b.tenant_race || "—"} · {b.tenant_nationality || "—"}</div>
-                <div>📅 Move-in: {b.move_in_date}</div>
-                <div>📝 Contract: {b.contract_months} months</div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work & Details</div>
-              <div className="text-sm space-y-1">
-                <div>💼 {b.occupation || b.company || "—"}</div>
-                <div>💰 RM{b.monthly_salary || "—"}/month</div>
-                <div>👥 Pax: {b.pax_staying || "—"}</div>
-                <div>🪪 Access Cards: {b.access_card_count || 0}</div>
-                <div>🅿️ Parking: {b.parking || "0"} {b.car_plate ? `(${b.car_plate})` : ""}</div>
-              </div>
-              <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 1</div>
-              <div className="text-sm space-y-1">
-                <div>👤 {b.emergency_name || "—"}</div>
-                <div>📞 {b.emergency_phone || "—"}</div>
-                <div>🔗 {b.emergency_relationship || "—"}</div>
-              </div>
-            </div>
-          </div>
+  const handleReject = async (b: Booking) => {
+    if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
+    await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+    // Set room back to Available
+    if (b.room_id) {
+      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+    }
+    toast.success("Booking rejected");
+    setViewingBooking(null);
+    setRejectReason("");
+  };
 
-          {(b.status === "pending" || b.status === "approved") && (
-            <div className="flex flex-col gap-3 pt-4 border-t border-border">
-              {b.status === "pending" && (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={async () => {
-                      if (!user) return;
-                      await updateBookingStatus.mutateAsync({
-                        id: b.id, status: "approved", reviewed_by: user.id,
-                        room_id: b.room_id, tenant_name: b.tenant_name,
-                        tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
-                        pax_staying: b.pax_staying,
-                      });
-                      setSelectedBooking(null);
-                    }}
-                    disabled={updateBookingStatus.isPending}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >✅ Approve</Button>
-                </div>
-              )}
-              {b.status === "pending" && (
-                <div className="flex gap-2">
-                  <Input placeholder="Reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="flex-1" />
-                  <Button
-                    onClick={async () => {
-                      if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
-                      await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
-                      setSelectedBooking(null);
-                      setRejectReason("");
-                    }}
-                    disabled={updateBookingStatus.isPending}
-                    variant="destructive"
-                  >❌ Reject</Button>
-                </div>
-              )}
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-700">
-                ⚠️ Booking fee is <strong>non-refundable</strong> once paid. Please confirm with the tenant before cancelling.
-              </div>
-              <div className="flex gap-2">
-                <Input placeholder="Cancel reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} className="flex-1" />
-                <Button
-                  onClick={async () => {
-                    if (!user || !cancelReason.trim()) { alert("Please enter a cancel reason"); return; }
-                    if (!confirm("Are you sure you want to cancel this booking? Booking fee is non-refundable.")) return;
-                    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason });
-                    setSelectedBooking(null);
-                    setCancelReason("");
-                  }}
-                  disabled={updateBookingStatus.isPending}
-                  variant="outline"
-                  className="text-muted-foreground"
-                >🚫 Cancel</Button>
-              </div>
-            </div>
-          )}
+  const handleCancel = async () => {
+    if (!user || !showCancelDialog || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
+    const b = showCancelDialog;
+    await updateBookingStatus.mutateAsync({
+      id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason,
+    });
+    // Set room back to Available if it was Pending/Occupied
+    if (b.room_id) {
+      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+    }
+    toast.success("Booking cancelled");
+    setShowCancelDialog(null);
+    setCancelReason("");
+    setViewingBooking(null);
+  };
 
-          {b.status === "rejected" && b.reject_reason && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-              <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
-            </div>
-          )}
-          {b.status === "cancelled" && b.reject_reason && (
-            <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm">
-              <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const handleDelete = async () => {
+    if (!showDeleteDialog) return;
+    const b = showDeleteDialog;
+    // Release room if pending
+    if (b.room_id && (b.status === "pending")) {
+      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
+    }
+    await supabase.from("bookings").delete().eq("id", b.id);
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    queryClient.invalidateQueries({ queryKey: ["rooms"] });
+    toast.success("Booking deleted");
+    setShowDeleteDialog(null);
+    setViewingBooking(null);
+  };
 
   const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
   const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
@@ -367,6 +386,11 @@ export function BookingsContent() {
   const elecReload = Number(form.electricityReload) || 0;
   const accessCardDep = cardCount * perCardCost;
   const total = adv + dep + unitAdminFee + elecReload + accessCardDep;
+
+  const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom || dateTo;
+  const clearAllFilters = () => {
+    setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo("");
+  };
 
   return (
     <div className="space-y-4">
@@ -503,7 +527,7 @@ export function BookingsContent() {
                   </div>
                   {Array.from({ length: Number(form.parkingCount) }, (_, i) => (
                     <div key={i} className="space-y-1"><label className={lbl}>Car Plate {Number(form.parkingCount) > 1 ? i + 1 : ""} *</label>
-                      <input className={ic} placeholder={`Car Plate No`} value={form.carPlates[i] || ""} onChange={e => {
+                      <input className={ic} placeholder="Car Plate No" value={form.carPlates[i] || ""} onChange={e => {
                         const plates = [...form.carPlates];
                         plates[i] = e.target.value;
                         setForm(prev => ({ ...prev, carPlates: plates }));
@@ -582,29 +606,203 @@ export function BookingsContent() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* View Booking Dialog */}
+      <Dialog open={!!viewingBooking} onOpenChange={(open) => { if (!open) { setViewingBooking(null); setRejectReason(""); } }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {viewingBooking && (() => {
+            const b = viewingBooking;
+            const info = getRoomInfo(b);
+            const moveInCost = b.move_in_cost as Record<string, number> | null;
+            return (
+              <ScrollArea className="flex-1 -mx-6 px-6">
+                <div className="space-y-5 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xl font-bold">{b.tenant_name}</div>
+                    {statusBadge(b.status)}
+                  </div>
+                  {info && <div className="text-sm text-muted-foreground">{info.building} · {info.unit} · {info.room}</div>}
+                  <div className="text-xs text-muted-foreground">Booking ID: {b.id.slice(0, 8)}... · Agent: {getAgentName(b.submitted_by)} · Submitted: {format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenant Info</div>
+                      <div className="text-sm space-y-1">
+                        <div>📞 {b.tenant_phone}</div>
+                        <div>✉️ {b.tenant_email || "—"}</div>
+                        <div>🪪 {b.tenant_ic_passport || "—"}</div>
+                        <div>👤 {b.tenant_gender || "—"} · {b.tenant_race || "—"} · {b.tenant_nationality || "—"}</div>
+                        <div>📅 Move-in: {b.move_in_date}</div>
+                        <div>📝 Contract: {b.contract_months} months</div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work & Details</div>
+                      <div className="text-sm space-y-1">
+                        <div>💼 {b.occupation || b.company || "—"}</div>
+                        <div>💰 RM{b.monthly_salary || "—"}/month</div>
+                        <div>👥 Pax: {b.pax_staying || "—"}</div>
+                        <div>🪪 Access Cards: {b.access_card_count || 0}</div>
+                        <div>🅿️ Parking: {b.parking || "0"} {b.car_plate ? `(${b.car_plate})` : ""}</div>
+                      </div>
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 1</div>
+                      <div className="text-sm space-y-1">
+                        <div>👤 {b.emergency_1_name || b.emergency_name || "—"}</div>
+                        <div>📞 {b.emergency_1_phone || b.emergency_phone || "—"}</div>
+                        <div>🔗 {b.emergency_1_relationship || b.emergency_relationship || "—"}</div>
+                      </div>
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 2</div>
+                      <div className="text-sm space-y-1">
+                        <div>👤 {b.emergency_2_name || b.emergency_contact_2 || "—"}</div>
+                        <div>📞 {b.emergency_2_phone || "—"}</div>
+                        <div>🔗 {b.emergency_2_relationship || "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Move-in Cost */}
+                  {moveInCost && Object.keys(moveInCost).length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Move-in Cost</div>
+                      <div className="bg-secondary rounded-lg p-4 text-sm space-y-1">
+                        {moveInCost.advance != null && <div className="flex justify-between"><span>Advance Rental</span><span>RM{moveInCost.advance}</span></div>}
+                        {moveInCost.deposit != null && <div className="flex justify-between"><span>Deposit</span><span>RM{moveInCost.deposit}</span></div>}
+                        {moveInCost.adminFee != null && <div className="flex justify-between"><span>Admin Fee</span><span>RM{moveInCost.adminFee}</span></div>}
+                        {moveInCost.electricityReload != null && <div className="flex justify-between"><span>Electricity Reload</span><span>RM{moveInCost.electricityReload}</span></div>}
+                        {moveInCost.accessCardDeposit != null && <div className="flex justify-between"><span>Access Card Deposit</span><span>RM{moveInCost.accessCardDeposit}</span></div>}
+                        <div className="flex justify-between font-bold border-t border-border pt-1 mt-1"><span>Total</span><span>RM{moveInCost.total}</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reject reason */}
+                  {b.status === "rejected" && b.reject_reason && (
+                    <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                      <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
+                    </div>
+                  )}
+                  {b.status === "cancelled" && b.reject_reason && (
+                    <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm">
+                      <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
+                    </div>
+                  )}
+
+                  {/* Actions for pending */}
+                  {b.status === "pending" && (
+                    <div className="flex flex-col gap-3 pt-4 border-t border-border">
+                      <Button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="bg-green-600 hover:bg-green-700 text-white">
+                        ✅ Approve
+                      </Button>
+                      <div className="flex gap-2">
+                        <Input placeholder="Reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="flex-1" />
+                        <Button onClick={() => handleReject(b)} disabled={updateBookingStatus.isPending} variant="destructive">
+                          ❌ Reject
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cancel for pending/approved */}
+                  {(b.status === "pending" || b.status === "approved") && (
+                    <div className="pt-2">
+                      <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(b)}>
+                        🚫 Cancel Booking
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Booking Dialog */}
+      <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ⚠️ Booking fee is <strong>non-refundable</strong> once paid. Please confirm with the tenant before cancelling.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6 pb-2">
+            <Input placeholder="Cancel reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>
+              Cancel Booking
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Booking Dialog */}
+      <AlertDialog open={!!showDeleteDialog} onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The booking record will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Bookings</h2>
         <Button onClick={() => { setForm(initialForm); setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] }); setShowCreateForm(true); }}>
-          <Plus className="h-4 w-4 mr-1" /> Create Booking
+          <Plus className="h-4 w-4 mr-1" /> Add Booking
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Search + Status filter */}
       <div className="flex flex-wrap gap-3 items-center">
+        <Input placeholder="Search name, ID, building..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
-        <Input placeholder="Search name, ID, condo..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-muted-foreground">
+            <X className="h-3 w-3 mr-1" /> Clear Filters
+          </Button>
+        )}
+      </div>
+
+      {/* Advanced Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={v => { setLocationFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={v => { setBuildingFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Unit" placeholder="All" options={unitOptions} selected={unitFilter} onApply={v => { setUnitFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Room" placeholder="All" options={roomOptions} selected={roomFilter} onApply={v => { setRoomFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Agent" placeholder="All" options={agentOptions} selected={agentFilter} onApply={v => { setAgentFilter(v); setPage(0); }} />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date From</label>
+          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date To</label>
+          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="h-10" />
+        </div>
       </div>
 
       {/* Table */}
@@ -616,52 +814,62 @@ export function BookingsContent() {
             <TableHeader>
               <TableRow>
                 <SortableTableHead sortKey="id" currentSort={sort} onSort={handleSort}>Booking ID</SortableTableHead>
-                <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Condo</SortableTableHead>
-                <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant</SortableTableHead>
-                <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
-                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted</SortableTableHead>
+                <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+                <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+                <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+                <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
+                <SortableTableHead sortKey="monthly_salary" currentSort={sort} onSort={handleSort}>Final Rental</SortableTableHead>
                 <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
+                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted At</SortableTableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8">
                     No bookings found
                   </TableCell>
                 </TableRow>
               ) : (
-                paged.map(b => (
-                  <TableRow key={b.id}>
-                    <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}</TableCell>
-                    <TableCell>{b.room?.building || "—"}</TableCell>
-                    <TableCell className="font-medium">{b.tenant_name}</TableCell>
-                    <TableCell className="text-sm">{getAgentName(b.submitted_by)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}
-                    </TableCell>
-                    <TableCell>{statusBadge(b.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedBooking(b)} title="View">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedBooking(b)} title="Edit">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Delete"
-                          onClick={async () => {
-                            if (!confirm("Delete this booking?")) return;
-                            await supabase.from("bookings").delete().eq("id", b.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                paged.map(b => {
+                  const info = getRoomInfo(b);
+                  return (
+                    <TableRow key={b.id}>
+                      <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}</TableCell>
+                      <TableCell>{info?.building || "—"}</TableCell>
+                      <TableCell>{info?.unit || "—"}</TableCell>
+                      <TableCell>{info?.room || "—"}</TableCell>
+                      <TableCell className="font-medium">{b.tenant_name}</TableCell>
+                      <TableCell>RM{b.monthly_salary || 0}</TableCell>
+                      <TableCell>{statusBadge(b.status)}</TableCell>
+                      <TableCell className="text-sm">{getAgentName(b.submitted_by)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 justify-center">
+                          <Button variant="ghost" size="icon" onClick={() => setViewingBooking(b)} title="View">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setViewingBooking(b)} title="Edit">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {(b.status === "pending" || b.status === "approved") ? (
+                            <Button variant="ghost" size="icon" title="Cancel" onClick={() => setShowCancelDialog(b)}>
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="icon" title="Delete" onClick={() => setShowDeleteDialog(b)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
