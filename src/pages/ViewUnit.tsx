@@ -41,9 +41,6 @@ export default function ViewUnit() {
             </Button>
             <h1 className="text-xl font-bold">Unit Details</h1>
           </div>
-          <Button onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
-            <Pencil className="h-4 w-4 mr-2" /> Edit Unit
-          </Button>
         </div>
       </div>
 
