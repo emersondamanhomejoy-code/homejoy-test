@@ -547,100 +547,58 @@ export function TenantsContent() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingTenant} onOpenChange={(open) => { if (!open) setEditingTenant(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>Edit Tenant</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-4 pb-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className={lbl}>Full Name</label>
-                  <Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>NRIC / Passport No</label>
-                  <Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Email</label>
-                  <Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Contact No</label>
-                  <Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Gender</label>
-                  <Select value={editForm.gender || ""} onValueChange={v => setField("gender", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Couple">Couple</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Nationality</label>
-                  <Input value={editForm.nationality || ""} onChange={e => setField("nationality", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Occupation</label>
-                  <Input value={editForm.occupation || ""} onChange={e => setField("occupation", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Company</label>
-                  <Input value={editForm.company || ""} onChange={e => setField("company", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Position</label>
-                  <Input value={editForm.position || ""} onChange={e => setField("position", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Monthly Salary</label>
-                  <Input type="number" value={editForm.monthly_salary || ""} onChange={e => setField("monthly_salary", Number(e.target.value))} />
+          <div className="flex-1 overflow-y-auto px-6 pb-2">
+            <div className="space-y-4 py-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="space-y-1"><label className={lbl}>Full Name</label><Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>NRIC / Passport No</label><Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Email</label><Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Contact No</label><Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} /></div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Gender</label>
+                    <Select value={editForm.gender || ""} onValueChange={v => setField("gender", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Couple">Couple</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1"><label className={lbl}>Nationality</label><Input value={editForm.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Occupation</label><Input value={editForm.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Company</label><Input value={editForm.company || ""} onChange={e => setField("company", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Position</label><Input value={editForm.position || ""} onChange={e => setField("position", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Monthly Salary</label><Input type="number" value={editForm.monthly_salary || ""} onChange={e => setField("monthly_salary", Number(e.target.value))} /></div>
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <div className="text-sm font-semibold mb-3">Emergency Contact 1</div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className={lbl}>Name</label>
-                    <Input value={editForm.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} />
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold">Contact 1</div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><Input value={editForm.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><Input value={editForm.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><Input value={editForm.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} /></div>
                   </div>
-                  <div className="space-y-1">
-                    <label className={lbl}>Phone</label>
-                    <Input value={editForm.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className={lbl}>Relationship</label>
-                    <Input value={editForm.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="text-sm font-semibold mb-3">Emergency Contact 2</div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className={lbl}>Name</label>
-                    <Input value={editForm.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className={lbl}>Phone</label>
-                    <Input value={editForm.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className={lbl}>Relationship</label>
-                    <Input value={editForm.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} />
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold">Contact 2</div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><Input value={editForm.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><Input value={editForm.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><Input value={editForm.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} /></div>
                   </div>
                 </div>
               </div>
             </div>
-          </ScrollArea>
-          <DialogFooter>
+          </div>
+          <DialogFooter className="px-6 pb-6 pt-2 border-t">
             <Button variant="outline" onClick={() => setEditingTenant(null)}>Cancel</Button>
             <Button onClick={saveTenant}>Save Changes</Button>
           </DialogFooter>
