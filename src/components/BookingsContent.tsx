@@ -178,6 +178,17 @@ export function BookingsContent() {
       {/* Create Booking Dialog */}
       <CreateBookingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
 
+      {/* View Booking Dialog */}
+      {viewBooking && (
+        <BookingDetailView
+          booking={allBookings.find(bk => bk.id === viewBooking.id) || viewBooking}
+          open={!!viewBooking}
+          onOpenChange={(open) => { if (!open) setViewBooking(null); }}
+          onEdit={(b) => { setViewBooking(null); setView({ type: "edit", booking: b }); }}
+          getAgentName={getAgentName}
+        />
+      )}
+
       {/* Cancel Booking Dialog */}
       <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
         <AlertDialogContent>
