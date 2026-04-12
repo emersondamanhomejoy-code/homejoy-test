@@ -330,10 +330,8 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
               <select className={`${inputClass} w-full`} value={item.chargeable_type} onChange={e => {
                 const newType = e.target.value;
                 const defaultPrices: Record<string, number> = { deposit: 100, processing_fee: 50, none: 0 };
-                updateItem(items, setItems, item.id, "chargeable_type", newType);
-                if (newType in defaultPrices) {
-                  updateItem(items, setItems, item.id, "price", defaultPrices[newType]);
-                }
+                const newPrice = newType in defaultPrices ? defaultPrices[newType] : item.price;
+                setItems(items.map(i => i.id === item.id ? { ...i, chargeable_type: newType, price: newPrice } : i));
               }}>
                 {CHARGEABLE_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
