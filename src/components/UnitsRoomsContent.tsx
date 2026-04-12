@@ -44,7 +44,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
   const [addUnitOpen, setAddUnitOpen] = useState(false);
-
+  const [editUnitId, setEditUnitId] = useState<string | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
 
   // Derive filter options
