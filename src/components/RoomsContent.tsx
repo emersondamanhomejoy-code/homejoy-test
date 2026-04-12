@@ -221,6 +221,8 @@ export function RoomsContent() {
             onApply={v => { setSelectedBedTypes(v); setPage(1); }} />
           <MultiSelectFilter label="Wall Type" placeholder="All Wall Types" options={wallTypes} selected={selectedWallTypes}
             onApply={v => { setSelectedWallTypes(v); setPage(1); }} />
+          <MultiSelectFilter label="Features" placeholder="All Features" options={featureOptions} selected={selectedFeatures}
+            onApply={v => { setSelectedFeatures(v); setPage(1); }} />
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
