@@ -20,9 +20,10 @@ const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-fore
 interface EditUnitProps {
   onClose?: () => void;
   unitIdProp?: string;
+  focusRoomId?: string;
 }
 
-export default function EditUnit({ onClose, unitIdProp }: EditUnitProps = {}) {
+export default function EditUnit({ onClose, unitIdProp, focusRoomId }: EditUnitProps = {}) {
   const params = useParams<{ unitId: string }>();
   const unitId = unitIdProp || params.unitId;
   const navigate = useNavigate();
@@ -40,7 +41,20 @@ export default function EditUnit({ onClose, unitIdProp }: EditUnitProps = {}) {
   const [saving, setSaving] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [deleteConfirmRoom, setDeleteConfirmRoom] = useState<string | null>(null);
-  const [collapsedRooms, setCollapsedRooms] = useState<Record<string, boolean>>({});
+  const [collapsedRooms, setCollapsedRooms] = useState<Record<string, boolean>>(() => {
+    if (focusRoomId) return { [focusRoomId]: false };
+    return {};
+  });
+
+  // Scroll to focused room on mount
+  useEffect(() => {
+    if (focusRoomId) {
+      setTimeout(() => {
+        const el = document.getElementById(`room-card-${focusRoomId}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }, [focusRoomId, unit]);
 
   // Initialize form from unit
   useEffect(() => {
@@ -371,7 +385,7 @@ export default function EditUnit({ onClose, unitIdProp }: EditUnitProps = {}) {
                 if (collapsed) {
                   const parts = [rc.room, (rc as any).bed_type || "—", `RM${rc.rent || 0}`, rc.status || "Available"];
                   return (
-                    <div key={room.id} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => toggleCollapse(room.id)}>
+                    <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => toggleCollapse(room.id)}>
                       <span className="text-sm font-medium">{parts.join(" · ")}</span>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Remove" onClick={(e) => { e.stopPropagation(); setDeleteConfirmRoom(room.id); }}>
@@ -384,7 +398,7 @@ export default function EditUnit({ onClose, unitIdProp }: EditUnitProps = {}) {
                 }
 
                 return (
-                  <div key={room.id} className="rounded-lg border bg-card p-4 space-y-3">
+                  <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm">{rc.room}</span>
                       <div className="flex items-center gap-1">
