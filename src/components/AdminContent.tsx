@@ -11,6 +11,7 @@ import { logActivity } from "@/hooks/useActivityLog";
 import { useCondos } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { UnitsTableView } from "@/components/UnitsTableView";
+import { UnitsRoomsContent } from "@/components/UnitsRoomsContent";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BookingsContent } from "@/components/BookingsContent";
 
