@@ -649,13 +649,13 @@ export function BookingsContent() {
                       </div>
                       <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 1</div>
                       <div className="text-sm space-y-1">
-                        <div>👤 {b.emergency_1_name || b.emergency_name || "—"}</div>
-                        <div>📞 {b.emergency_1_phone || b.emergency_phone || "—"}</div>
-                        <div>🔗 {b.emergency_1_relationship || b.emergency_relationship || "—"}</div>
+                        <div>👤 {b.emergency_1_name || "—"}</div>
+                        <div>📞 {b.emergency_1_phone || "—"}</div>
+                        <div>🔗 {b.emergency_1_relationship || "—"}</div>
                       </div>
                       <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 2</div>
                       <div className="text-sm space-y-1">
-                        <div>👤 {b.emergency_2_name || b.emergency_contact_2 || "—"}</div>
+                        <div>👤 {b.emergency_2_name || "—"}</div>
                         <div>📞 {b.emergency_2_phone || "—"}</div>
                         <div>🔗 {b.emergency_2_relationship || "—"}</div>
                       </div>
