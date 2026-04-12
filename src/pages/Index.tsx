@@ -1203,7 +1203,13 @@ export default function Index() {
         {isAdmin && adminTab !== "dashboard" && (
           <div className="max-w-5xl mx-auto">
             {adminTab === "locations" ? <LocationsContent /> :
-             adminTab === "condos" ? <CondosContent /> :
+             adminTab === "condos" ? (
+               buildingFormOpen ? (
+                 <BuildingForm building={buildingFormData} onClose={() => { setBuildingFormOpen(false); setBuildingFormData(undefined); }} />
+               ) : (
+                 <CondosContent onOpenForm={(building?: Condo) => { setBuildingFormData(building); setBuildingFormOpen(true); }} />
+               )
+             ) :
              adminTab === "rooms" ? <RoomsContent /> :
              adminTab === "tenants" ? <TenantsContent /> :
              adminTab === "movein" ? <MoveInContent /> :
