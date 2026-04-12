@@ -440,16 +440,16 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                       </select>
                     </div>
                     <div className="space-y-1">
+                      <label className={lbl}>Move-in Date *</label>
+                      <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
                       <label className={lbl}>Tenancy Duration *</label>
                       <select className={ic} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
                         {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
                           <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : ""}</option>
                         ))}
                       </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className={lbl}>Move-in Date *</label>
-                      <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
                     </div>
                   </div>
                 )}
