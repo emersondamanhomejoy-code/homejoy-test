@@ -261,9 +261,9 @@ export function TenantsContent() {
     if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
     if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
     try {
-      const passportPaths = await Promise.all(addUploadedFiles.passport.map(f => uploadFile(f, "passport")));
-      const offerPaths = await Promise.all(addUploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
-      const slipPaths = await Promise.all(addUploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
+      const passportPath = addUploadedFiles.passport ? await uploadFile(addUploadedFiles.passport, "passport") : "";
+      const offerPath = addUploadedFiles.offerLetter ? await uploadFile(addUploadedFiles.offerLetter, "offer-letter") : "";
+      const slipPath = addUploadedFiles.transferSlip ? await uploadFile(addUploadedFiles.transferSlip, "transfer-slip") : "";
 
       const { error } = await supabase.from("tenants").insert({
         name: addForm.name || "",
@@ -273,19 +273,15 @@ export function TenantsContent() {
         gender: addForm.gender || "",
         nationality: addForm.nationality || "",
         occupation: addForm.occupation || "",
-        company: addForm.company || "",
-        position: addForm.position || "",
-        monthly_salary: addForm.monthly_salary || 0,
         emergency_1_name: addForm.emergency_1_name || "",
         emergency_1_phone: addForm.emergency_1_phone || "",
         emergency_1_relationship: addForm.emergency_1_relationship || "",
         emergency_2_name: addForm.emergency_2_name || "",
         emergency_2_phone: addForm.emergency_2_phone || "",
         emergency_2_relationship: addForm.emergency_2_relationship || "",
-        car_plate: addForm.car_plate || "",
-        doc_passport: passportPaths,
-        doc_offer_letter: offerPaths,
-        doc_transfer_slip: slipPaths,
+        doc_passport: passportPath ? [passportPath] : [],
+        doc_offer_letter: offerPath ? [offerPath] : [],
+        doc_transfer_slip: slipPath ? [slipPath] : [],
       } as any);
       if (error) throw error;
       toast.success("Tenant added.");
