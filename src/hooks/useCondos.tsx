@@ -12,6 +12,10 @@ export interface Condo {
   parking_info: string;
   amenities: string;
   location_id: string | null;
+  access_items: any[];
+  visitor_car_parking: string;
+  visitor_motorcycle_parking: string;
+  arrival_instruction: string;
   created_at: string;
   updated_at: string;
   location?: { id: string; name: string } | null;

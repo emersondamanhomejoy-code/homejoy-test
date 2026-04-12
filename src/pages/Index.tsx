@@ -11,11 +11,13 @@ import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
 import { LocationsContent } from "@/components/LocationsContent";
 import { CondosContent } from "@/components/CondosContent";
+import { BuildingForm } from "@/components/BuildingForm";
 import { RoomsContent } from "@/components/RoomsContent";
 import { TenantsContent } from "@/components/TenantsContent";
 import { MoveInContent } from "@/components/MoveInContent";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
+import { Condo } from "@/hooks/useCondos";
 
 const rankingData = {
   internal: [
@@ -63,6 +65,8 @@ export default function Index() {
   const isAdmin = role === "admin" || role === "boss" || role === "manager";
   const [adminTab, setAdminTab] = useState<string>("dashboard");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  const [buildingFormOpen, setBuildingFormOpen] = useState(false);
+  const [buildingFormData, setBuildingFormData] = useState<Condo | undefined>(undefined);
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
@@ -1192,14 +1196,20 @@ export default function Index() {
   }
 
   return (
-    <OldDashboardLayout activeTab={adminTab} onTabChange={(t) => { setAdminTab(t); setPage("dashboard"); }}>
+    <OldDashboardLayout activeTab={adminTab} onTabChange={(t) => { setAdminTab(t); setPage("dashboard"); setBuildingFormOpen(false); setBuildingFormData(undefined); }}>
       <div className="flex-1 overflow-auto text-foreground">
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
         {/* Admin Content for non-dashboard tabs */}
         {isAdmin && adminTab !== "dashboard" && (
           <div className="max-w-5xl mx-auto">
             {adminTab === "locations" ? <LocationsContent /> :
-             adminTab === "condos" ? <CondosContent /> :
+             adminTab === "condos" ? (
+               buildingFormOpen ? (
+                 <BuildingForm building={buildingFormData} onClose={() => { setBuildingFormOpen(false); setBuildingFormData(undefined); }} />
+               ) : (
+                 <CondosContent onOpenForm={(building?: Condo) => { setBuildingFormData(building); setBuildingFormOpen(true); }} />
+               )
+             ) :
              adminTab === "rooms" ? <RoomsContent /> :
              adminTab === "tenants" ? <TenantsContent /> :
              adminTab === "movein" ? <MoveInContent /> :
