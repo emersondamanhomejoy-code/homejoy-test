@@ -23,7 +23,7 @@ const getDefaultCarParkName = (index: number) => index === 0 ? "Car Park" : `Car
 
 const hasMeaningfulData = (rc: RoomConfig, index: number, naming: "alpha" | "digit", isCarPark: boolean) => {
   if (isCarPark) {
-    return Boolean(rc.bed_type?.trim()) || Number(rc.rent) > 0;
+    return Boolean(rc.bed_type?.trim()) || Number(rc.rent) > 150;
   }
   return Boolean(rc.bed_type?.trim()) || Number(rc.rent) > 0 || Number(rc.max_pax) !== 1 ||
     (rc.status && rc.status !== "Available") || Boolean(rc.tenant_name?.trim());
