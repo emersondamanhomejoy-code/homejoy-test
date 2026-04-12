@@ -470,16 +470,18 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                     );
                   })}
 
-                  {chargeableCarpark.length > 0 && Number(form.parkingCount) > 0 && (
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
-                      <div className="font-semibold text-amber-700">Chargeable Car Park Access (Homejoy)</div>
-                      {chargeableCarpark.map((a, i) => (
-                        <div key={i} className="flex justify-between">
-                          <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
-                          <span>RM{a.price} × {form.parkingCount} = <strong>RM{a.price * (Number(form.parkingCount) || 0)}</strong></span>
+                      {chargeableCarpark.length > 0 && Number(form.parkingCount) > 0 && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
+                          <div className="font-semibold text-amber-700">Chargeable Car Park Access (Homejoy)</div>
+                          {chargeableCarpark.map((a, i) => (
+                            <div key={i} className="flex justify-between">
+                              <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
+                              <span>RM{a.price} × {form.parkingCount} = <strong>RM{a.price * (Number(form.parkingCount) || 0)}</strong></span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
