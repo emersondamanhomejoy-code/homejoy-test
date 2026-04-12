@@ -4,6 +4,7 @@ import { useUnits, useDeleteUnit, Unit } from "@/hooks/useRooms";
 import { useLocations } from "@/hooks/useLocations";
 import { useCondos } from "@/hooks/useCondos";
 import AddUnit from "@/pages/AddUnit";
+import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
