@@ -1,187 +1,480 @@
-import { useState, useMemo } from "react";
-import { useBookings, Booking } from "@/hooks/useBookings";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useUnits } from "@/hooks/useRooms";
-import { Input } from "@/components/ui/input";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+interface TenantRoom {
+  id: string;
+  room_id: string;
+  move_in_date: string | null;
+  contract_months: number;
+  status: string;
+  room?: {
+    id: string;
+    room: string;
+    building: string;
+    unit: string;
+    room_type: string;
+    status: string;
+    rent: number;
+  };
+}
+
+interface Tenant {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  ic_passport: string;
+  gender: string;
+  race: string;
+  nationality: string;
+  occupation: string;
+  company: string;
+  position: string;
+  monthly_salary: number;
+  emergency_1_name: string;
+  emergency_1_phone: string;
+  emergency_1_relationship: string;
+  emergency_2_name: string;
+  emergency_2_phone: string;
+  emergency_2_relationship: string;
+  car_plate: string;
+  booking_id: string | null;
+  created_at: string;
+  updated_at: string;
+  tenant_rooms?: TenantRoom[];
+}
+
+const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
+const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+
+function useTenants() {
+  return useQuery({
+    queryKey: ["tenants"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("*, tenant_rooms(*, room:rooms(id, room, building, unit, room_type, status, rent))")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as Tenant[];
+    },
+  });
+}
 
 export function TenantsContent() {
-  const { data: bookings = [], isLoading } = useBookings();
+  const { role } = useAuth();
+  const isAdmin = role === "admin" || role === "boss" || role === "manager";
+  const queryClient = useQueryClient();
+  const { data: tenants = [], isLoading } = useTenants();
   const { data: units = [] } = useUnits();
 
   const [search, setSearch] = useState("");
+  const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
+  const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
+  const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [selectedTenant, setSelectedTenant] = useState<Booking | null>(null);
 
-  const { sort, handleSort, sortData } = useTableSort("tenant_name");
+  const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Tenant>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Only show approved/active bookings as "tenants"
-  const tenants = useMemo(() => {
-    let list = bookings.filter(b => b.status === "approved");
+  const { sort, handleSort, sortData } = useTableSort("name");
+
+  // Derive filter options
+  const nationalities = useMemo(() => Array.from(new Set(tenants.map(t => t.nationality).filter(Boolean))).sort(), [tenants]);
+  const genders = useMemo(() => Array.from(new Set(tenants.map(t => t.gender).filter(Boolean))).sort(), [tenants]);
+  const buildings = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of tenants) {
+      for (const tr of t.tenant_rooms || []) {
+        if (tr.room?.building) set.add(tr.room.building);
+      }
+    }
+    return Array.from(set).sort();
+  }, [tenants]);
+  const unitNumbers = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of tenants) {
+      for (const tr of t.tenant_rooms || []) {
+        if (tr.room?.unit) set.add(tr.room.unit);
+      }
+    }
+    return Array.from(set).sort();
+  }, [tenants]);
+
+  // Filter & sort
+  const filtered = useMemo(() => {
+    let list = tenants;
+    if (selectedNationalities.length) list = list.filter(t => selectedNationalities.includes(t.nationality));
+    if (selectedGenders.length) list = list.filter(t => selectedGenders.includes(t.gender));
+    if (selectedBuildings.length) list = list.filter(t =>
+      (t.tenant_rooms || []).some(tr => tr.room?.building && selectedBuildings.includes(tr.room.building))
+    );
+    if (selectedUnits.length) list = list.filter(t =>
+      (t.tenant_rooms || []).some(tr => tr.room?.unit && selectedUnits.includes(tr.room.unit))
+    );
+    if (statusFilter !== "all") list = list.filter(t =>
+      (t.tenant_rooms || []).some(tr => tr.status === statusFilter)
+    );
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(b =>
-        b.tenant_name.toLowerCase().includes(s) ||
-        b.tenant_phone.toLowerCase().includes(s) ||
-        b.tenant_email?.toLowerCase().includes(s) ||
-        (b.room?.building || "").toLowerCase().includes(s) ||
-        (b.room?.unit || "").toLowerCase().includes(s) ||
-        (b.room?.room || "").toLowerCase().includes(s)
+      list = list.filter(t =>
+        t.name.toLowerCase().includes(s) ||
+        t.phone.toLowerCase().includes(s) ||
+        t.email.toLowerCase().includes(s) ||
+        (t.tenant_rooms || []).some(tr =>
+          (tr.room?.building || "").toLowerCase().includes(s) ||
+          (tr.room?.unit || "").toLowerCase().includes(s) ||
+          (tr.room?.room || "").toLowerCase().includes(s)
+        )
       );
     }
-    return sortData(list, (b: Booking, key: string) => {
+    return sortData(list, (t: Tenant, key: string) => {
+      const rooms = t.tenant_rooms || [];
+      const activeRooms = rooms.filter(r => r.room?.room_type !== "Car Park");
       const map: Record<string, any> = {
-        tenant_name: b.tenant_name,
-        tenant_phone: b.tenant_phone,
-        tenant_email: b.tenant_email || "",
-        property: b.room?.building || "",
-        room: b.room ? `${b.room.unit} · ${b.room.room}` : "",
-        move_in_date: b.move_in_date,
-        contract_months: b.contract_months,
+        name: t.name,
+        phone: t.phone,
+        email: t.email,
+        nationality: t.nationality,
+        gender: t.gender,
+        building: activeRooms[0]?.room?.building || "",
+        unit: activeRooms[0]?.room?.unit || "",
+        room: activeRooms[0]?.room?.room || "",
+        status: rooms[0]?.status || "",
       };
       return map[key];
     });
-  }, [bookings, search, sort]);
+  }, [tenants, selectedNationalities, selectedGenders, selectedBuildings, selectedUnits, statusFilter, search, sort]);
 
-  const totalPages = Math.max(1, Math.ceil(tenants.length / pageSize));
-  const paged = tenants.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  const hasFilters = selectedNationalities.length > 0 || selectedGenders.length > 0 ||
+    selectedBuildings.length > 0 || selectedUnits.length > 0 ||
+    statusFilter !== "all" || search.trim();
+
+  const clearFilters = () => {
+    setSelectedNationalities([]); setSelectedGenders([]);
+    setSelectedBuildings([]); setSelectedUnits([]);
+    setStatusFilter("all"); setSearch(""); setPage(1);
+  };
+
+  // Edit
+  const openEdit = (t: Tenant) => {
+    setEditingTenant(t);
+    setEditForm({ ...t });
+  };
+  const setField = (key: keyof Tenant, value: any) => setEditForm(prev => ({ ...prev, [key]: value }));
+
+  const saveTenant = async () => {
+    if (!editingTenant) return;
+    try {
+      const { error } = await supabase.from("tenants").update({
+        name: editForm.name || "",
+        phone: editForm.phone || "",
+        email: editForm.email || "",
+        ic_passport: editForm.ic_passport || "",
+        gender: editForm.gender || "",
+        race: editForm.race || "",
+        nationality: editForm.nationality || "",
+        occupation: editForm.occupation || "",
+        company: editForm.company || "",
+        position: editForm.position || "",
+        monthly_salary: editForm.monthly_salary || 0,
+        emergency_1_name: editForm.emergency_1_name || "",
+        emergency_1_phone: editForm.emergency_1_phone || "",
+        emergency_1_relationship: editForm.emergency_1_relationship || "",
+        emergency_2_name: editForm.emergency_2_name || "",
+        emergency_2_phone: editForm.emergency_2_phone || "",
+        emergency_2_relationship: editForm.emergency_2_relationship || "",
+        car_plate: editForm.car_plate || "",
+      }).eq("id", editingTenant.id);
+      if (error) throw error;
+      toast.success("Tenant updated.");
+      setEditingTenant(null);
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update tenant");
+    }
+  };
+
+  // Delete
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      const { error } = await supabase.from("tenants").delete().eq("id", deleteConfirm);
+      if (error) throw error;
+      toast.success("Tenant deleted.");
+      setDeleteConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete tenant");
+    }
+  };
+
+  // Helpers
+  const getRooms = (t: Tenant) => (t.tenant_rooms || []).filter(tr => tr.room?.room_type !== "Car Park");
+  const getCarparks = (t: Tenant) => (t.tenant_rooms || []).filter(tr => tr.room?.room_type === "Car Park");
+  const getPax = (t: Tenant) => getRooms(t).length;
 
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search tenants..."
-          value={search}
-          onChange={e => { setSearch(e.target.value); setPage(1); }}
-          className="w-64"
-        />
-        <span className="text-sm text-muted-foreground ml-auto">{tenants.length} active tenants</span>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Tenants</h2>
+        <span className="text-sm text-muted-foreground">{filtered.length} tenant(s)</span>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Name</SortableTableHead>
-              <SortableTableHead sortKey="tenant_phone" currentSort={sort} onSort={handleSort}>Phone</SortableTableHead>
-              <SortableTableHead sortKey="tenant_email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
-              <SortableTableHead sortKey="property" currentSort={sort} onSort={handleSort}>Property</SortableTableHead>
-              <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
-              <SortableTableHead sortKey="move_in_date" currentSort={sort} onSort={handleSort}>Move-in</SortableTableHead>
-              <SortableTableHead sortKey="contract_months" currentSort={sort} onSort={handleSort}>Contract</SortableTableHead>
-              <TableHead className="w-[60px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  No tenants found
-                </TableCell>
-              </TableRow>
-            ) : (
-              paged.map(b => (
-                <TableRow key={b.id}>
-                  <TableCell className="text-sm font-medium">{b.tenant_name}</TableCell>
-                  <TableCell className="text-sm">{b.tenant_phone}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{b.tenant_email || "—"}</TableCell>
-                  <TableCell className="text-sm">{b.room?.building || "—"}</TableCell>
-                  <TableCell className="text-sm">{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
-                  <TableCell className="text-sm">{b.move_in_date}</TableCell>
-                  <TableCell className="text-sm">{b.contract_months}m</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedTenant(b)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Search + Filters */}
+      <div className="bg-card rounded-xl shadow-sm border border-border p-5 space-y-4">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by name, phone, email, building, unit, room..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            className={`${inputClass} w-full pl-10`}
+          />
+        </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows:</span>
-            <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
-              <SelectTrigger className="w-20 h-8">
-                <SelectValue />
-              </SelectTrigger>
+        <div className="flex flex-wrap items-end gap-3">
+          <MultiSelectFilter label="Nationality" placeholder="All" options={nationalities} selected={selectedNationalities}
+            onApply={v => { setSelectedNationalities(v); setPage(1); }} />
+          <MultiSelectFilter label="Gender" placeholder="All" options={genders} selected={selectedGenders}
+            onApply={v => { setSelectedGenders(v); setPage(1); }} />
+          <MultiSelectFilter label="Building" placeholder="All" options={buildings} selected={selectedBuildings}
+            onApply={v => { setSelectedBuildings(v); setPage(1); }} />
+          <MultiSelectFilter label="Unit" placeholder="All" options={unitNumbers} selected={selectedUnits}
+            onApply={v => { setSelectedUnits(v); setPage(1); }} />
+
+          <div className="space-y-1.5">
+            <label className={lbl}>Status</label>
+            <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="ended">Ended</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
-            <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
-      {/* Tenant Detail Dialog */}
-      <Dialog open={!!selectedTenant} onOpenChange={() => setSelectedTenant(null)}>
-        <DialogContent className="sm:max-w-lg">
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+              <X className="h-4 w-4 mr-1" /> Clear
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        {filtered.length === 0 ? (
+          <div className="p-12 text-muted-foreground">No tenants found.</div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
+                    <SortableTableHead sortKey="phone" currentSort={sort} onSort={handleSort}>Phone</SortableTableHead>
+                    <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
+                    <SortableTableHead sortKey="nationality" currentSort={sort} onSort={handleSort}>Nationality</SortableTableHead>
+                    <SortableTableHead sortKey="gender" currentSort={sort} onSort={handleSort}>Gender</SortableTableHead>
+                    <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+                    <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+                    <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+                    <TableHead>Carpark</TableHead>
+                    <TableHead>Pax</TableHead>
+                    <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map(t => {
+                    const rooms = getRooms(t);
+                    const carparks = getCarparks(t);
+                    const activeRooms = rooms.filter(r => r.status === "active");
+                    const status = activeRooms.length > 0 ? "active" : rooms.length > 0 ? rooms[0].status : "—";
+                    return (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-medium">{t.name || "—"}</TableCell>
+                        <TableCell>{t.phone || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{t.email || "—"}</TableCell>
+                        <TableCell>{t.nationality || "—"}</TableCell>
+                        <TableCell>{t.gender || "—"}</TableCell>
+                        <TableCell>{rooms.map(r => r.room?.building).filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell>{rooms.map(r => r.room?.unit).filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell>{rooms.map(r => r.room?.room?.replace(/^Room\s+/i, "")).filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell>{carparks.map(c => c.room?.room).filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell>{rooms.length || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={status === "active" ? "default" : "secondary"} className={
+                            status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : ""
+                          }>
+                            {status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 justify-center">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingTenant(t)}>
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            {isAdmin && (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => openEdit(t)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirm(t.id)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Show</span>
+                <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
+                  <SelectTrigger className="w-[70px] h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* View Dialog */}
+      <Dialog open={!!viewingTenant} onOpenChange={() => setViewingTenant(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Tenant Details</DialogTitle>
           </DialogHeader>
-          {selectedTenant && (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-4 pr-4">
+          {viewingTenant && (
+            <ScrollArea className="flex-1 -mx-6 px-6">
+              <div className="space-y-4 pb-4">
                 <div>
-                  <div className="text-lg font-semibold">{selectedTenant.tenant_name}</div>
-                  {selectedTenant.room && (
-                    <div className="text-sm text-muted-foreground">
-                      {selectedTenant.room.building} · {selectedTenant.room.unit} · {selectedTenant.room.room}
-                    </div>
-                  )}
+                  <div className="text-lg font-semibold">{viewingTenant.name}</div>
+                  <div className="text-sm text-muted-foreground">{viewingTenant.email || "—"}</div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground">Phone:</span> {selectedTenant.tenant_phone}</div>
-                  <div><span className="text-muted-foreground">Email:</span> {selectedTenant.tenant_email || "—"}</div>
-                  <div><span className="text-muted-foreground">IC/Passport:</span> {selectedTenant.tenant_ic_passport || "—"}</div>
-                  <div><span className="text-muted-foreground">Gender:</span> {selectedTenant.tenant_gender || "—"}</div>
-                  <div><span className="text-muted-foreground">Race:</span> {selectedTenant.tenant_race || "—"}</div>
-                  <div><span className="text-muted-foreground">Nationality:</span> {selectedTenant.tenant_nationality || "—"}</div>
-                  <div><span className="text-muted-foreground">Move-in:</span> {selectedTenant.move_in_date}</div>
-                  <div><span className="text-muted-foreground">Contract:</span> {selectedTenant.contract_months} months</div>
-                  <div><span className="text-muted-foreground">Occupation:</span> {selectedTenant.occupation || "—"}</div>
-                  <div><span className="text-muted-foreground">Pax:</span> {selectedTenant.pax_staying}</div>
+                  <InfoField label="Phone" value={viewingTenant.phone} />
+                  <InfoField label="IC/Passport" value={viewingTenant.ic_passport} />
+                  <InfoField label="Gender" value={viewingTenant.gender} />
+                  <InfoField label="Race" value={viewingTenant.race} />
+                  <InfoField label="Nationality" value={viewingTenant.nationality} />
+                  <InfoField label="Occupation" value={viewingTenant.occupation} />
+                  <InfoField label="Company" value={viewingTenant.company} />
+                  <InfoField label="Position" value={viewingTenant.position} />
+                  <InfoField label="Monthly Salary" value={viewingTenant.monthly_salary ? `RM${viewingTenant.monthly_salary}` : "—"} />
+                  <InfoField label="Car Plate" value={viewingTenant.car_plate} />
                 </div>
+
+                {/* Assigned Rooms */}
+                {getRooms(viewingTenant).length > 0 && (
+                  <div className="border-t pt-3">
+                    <div className="text-sm font-semibold mb-2">Assigned Rooms</div>
+                    <div className="space-y-1.5">
+                      {getRooms(viewingTenant).map(tr => (
+                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
+                          <span className="font-medium">{tr.room?.building} · {tr.room?.unit} · {tr.room?.room}</span>
+                          <span className="text-muted-foreground">RM{tr.room?.rent}</span>
+                          <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
+                            tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
+                          }>{tr.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Assigned Carparks */}
+                {getCarparks(viewingTenant).length > 0 && (
+                  <div className="border-t pt-3">
+                    <div className="text-sm font-semibold mb-2">Assigned Carparks</div>
+                    <div className="space-y-1.5">
+                      {getCarparks(viewingTenant).map(tr => (
+                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
+                          <span className="font-medium">🅿️ {tr.room?.room}</span>
+                          <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
+                            tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
+                          }>{tr.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Emergency Contacts */}
                 <div className="border-t pt-3">
-                  <div className="text-sm font-semibold text-muted-foreground mb-2">Emergency Contacts</div>
+                  <div className="text-sm font-semibold mb-2">Emergency Contacts</div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <div className="font-medium">{selectedTenant.emergency_name || "—"}</div>
-                      <div className="text-muted-foreground">{selectedTenant.emergency_phone || "—"}</div>
-                      <div className="text-muted-foreground">{selectedTenant.emergency_relationship || "—"}</div>
+                      <div className="font-medium">{viewingTenant.emergency_1_name || "—"}</div>
+                      <div className="text-muted-foreground">{viewingTenant.emergency_1_phone || "—"}</div>
+                      <div className="text-muted-foreground">{viewingTenant.emergency_1_relationship || "—"}</div>
                     </div>
                     <div>
-                      <div className="font-medium">{selectedTenant.emergency_contact_2 || "—"}</div>
+                      <div className="font-medium">{viewingTenant.emergency_2_name || "—"}</div>
+                      <div className="text-muted-foreground">{viewingTenant.emergency_2_phone || "—"}</div>
+                      <div className="text-muted-foreground">{viewingTenant.emergency_2_relationship || "—"}</div>
                     </div>
                   </div>
                 </div>
@@ -190,6 +483,143 @@ export function TenantsContent() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingTenant} onOpenChange={(open) => { if (!open) setEditingTenant(null); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Edit Tenant</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-4 pb-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className={lbl}>Full Name</label>
+                  <Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Phone</label>
+                  <Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Email</label>
+                  <Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>IC / Passport</label>
+                  <Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Gender</label>
+                  <Select value={editForm.gender || ""} onValueChange={v => setField("gender", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Couple">Couple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Race</label>
+                  <Input value={editForm.race || ""} onChange={e => setField("race", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Nationality</label>
+                  <Input value={editForm.nationality || ""} onChange={e => setField("nationality", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Occupation</label>
+                  <Input value={editForm.occupation || ""} onChange={e => setField("occupation", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Company</label>
+                  <Input value={editForm.company || ""} onChange={e => setField("company", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Position</label>
+                  <Input value={editForm.position || ""} onChange={e => setField("position", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Monthly Salary</label>
+                  <Input type="number" value={editForm.monthly_salary || ""} onChange={e => setField("monthly_salary", Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Car Plate</label>
+                  <Input value={editForm.car_plate || ""} onChange={e => setField("car_plate", e.target.value)} />
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Emergency Contact 1</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Name</label>
+                    <Input value={editForm.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Phone</label>
+                    <Input value={editForm.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Relationship</label>
+                    <Input value={editForm.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Emergency Contact 2</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Name</label>
+                    <Input value={editForm.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Phone</label>
+                    <Input value={editForm.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Relationship</label>
+                    <Input value={editForm.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTenant(null)}>Cancel</Button>
+            <Button onClick={saveTenant}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tenant? This action cannot be undone. All room assignments will also be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function InfoField({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <span className="text-muted-foreground">{label}:</span>{" "}
+      <span>{value || "—"}</span>
     </div>
   );
 }
