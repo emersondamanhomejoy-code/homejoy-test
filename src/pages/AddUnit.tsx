@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Pencil, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Pencil, Save, ChevronDown, ChevronUp } from "lucide-react";
 
 const bedTypeMaxPax: Record<string, number> = {
   Single: 1, "Super Single": 1, Queen: 2, King: 2,
 };
+
+const OPTIONAL_FEATURES = ["Balcony", "Private Toilet", "Window", "Master Room"];
 
 const getDefaultRoomName = (index: number, naming: "alpha" | "digit") =>
   naming === "alpha" ? `Room ${String.fromCharCode(65 + index)}` : `Room ${index + 1}`;
