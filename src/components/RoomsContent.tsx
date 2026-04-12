@@ -5,7 +5,6 @@ import { useUnits, useDeleteRoom, Room } from "@/hooks/useRooms";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
