@@ -329,10 +329,10 @@ export function RoomsContent() {
                       <TableCell className="text-muted-foreground">{r.tenant_gender || "—"}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex gap-1 justify-center">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => navigate(`/photos/${r.id}`)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingRoom(r)}>
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditUnitId(r.unit_id)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => { setEditUnitId(r.unit_id); setEditFocusRoomId(r.id); }}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
