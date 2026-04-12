@@ -250,6 +250,63 @@ export type Database = {
           },
         ]
       }
+      claim_items: {
+        Row: {
+          amount: number
+          building: string
+          claim_id: string
+          created_at: string
+          id: string
+          room: string
+          room_id: string | null
+          status: string
+          tenant_name: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          building?: string
+          claim_id: string
+          created_at?: string
+          id?: string
+          room?: string
+          room_id?: string | null
+          status?: string
+          tenant_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          building?: string
+          claim_id?: string
+          created_at?: string
+          id?: string
+          room?: string
+          room_id?: string | null
+          status?: string
+          tenant_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_items_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_items_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claims: {
         Row: {
           account_holder: string
@@ -258,9 +315,12 @@ export type Database = {
           bank_account: string
           bank_name: string
           booking_id: string | null
+          cancel_reason: string
           created_at: string
           description: string
+          history: Json
           id: string
+          payout_date: string | null
           reject_reason: string
           reviewed_at: string | null
           reviewed_by: string | null
@@ -274,9 +334,12 @@ export type Database = {
           bank_account?: string
           bank_name?: string
           booking_id?: string | null
+          cancel_reason?: string
           created_at?: string
           description?: string
+          history?: Json
           id?: string
+          payout_date?: string | null
           reject_reason?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -290,9 +353,12 @@ export type Database = {
           bank_account?: string
           bank_name?: string
           booking_id?: string | null
+          cancel_reason?: string
           created_at?: string
           description?: string
+          history?: Json
           id?: string
+          payout_date?: string | null
           reject_reason?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -395,32 +461,119 @@ export type Database = {
         }
         Relationships: []
       }
+      move_ins: {
+        Row: {
+          agent_id: string
+          agreement_signed: boolean
+          booking_id: string | null
+          cancel_reason: string
+          created_at: string
+          history: Json
+          id: string
+          payment_method: string
+          receipt_path: string
+          reject_reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          room_id: string | null
+          status: string
+          tenant_name: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          agreement_signed?: boolean
+          booking_id?: string | null
+          cancel_reason?: string
+          created_at?: string
+          history?: Json
+          id?: string
+          payment_method?: string
+          receipt_path?: string
+          reject_reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string | null
+          status?: string
+          tenant_name?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          agreement_signed?: boolean
+          booking_id?: string | null
+          cancel_reason?: string
+          created_at?: string
+          history?: Json
+          id?: string
+          payment_method?: string
+          receipt_path?: string
+          reject_reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string | null
+          status?: string
+          tenant_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "move_ins_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "move_ins_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string
           created_at: string
+          display_name: string
           email: string
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          ic_document: string
           id: string
           name: string
           phone: string
+          profile_picture_url: string
           user_id: string | null
         }
         Insert: {
           address?: string
           created_at?: string
+          display_name?: string
           email?: string
+          emergency_contact_name?: string
+          emergency_contact_phone?: string
+          ic_document?: string
           id?: string
           name?: string
           phone?: string
+          profile_picture_url?: string
           user_id?: string | null
         }
         Update: {
           address?: string
           created_at?: string
+          display_name?: string
           email?: string
+          emergency_contact_name?: string
+          emergency_contact_phone?: string
+          ic_document?: string
           id?: string
           name?: string
           phone?: string
+          profile_picture_url?: string
           user_id?: string | null
         }
         Relationships: []
