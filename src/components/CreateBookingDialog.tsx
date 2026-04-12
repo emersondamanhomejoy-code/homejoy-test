@@ -61,6 +61,30 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [agentSearch, setAgentSearch] = useState("");
   const [roomSearch, setRoomSearch] = useState("");
   const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [tenantSearch, setTenantSearch] = useState("");
+
+  // Fetch existing tenants
+  const [existingTenants, setExistingTenants] = useState<any[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    supabase.from("tenants").select("*").then(({ data }) => {
+      if (data) setExistingTenants(data);
+    });
+  }, [open]);
+
+  const filteredTenants = useMemo(() => {
+    if (!tenantSearch.trim()) return existingTenants.slice(0, 20);
+    const s = tenantSearch.toLowerCase();
+    return existingTenants.filter(t => 
+      (t.name || "").toLowerCase().includes(s) || 
+      (t.phone || "").toLowerCase().includes(s) ||
+      (t.email || "").toLowerCase().includes(s) ||
+      (t.ic_passport || "").toLowerCase().includes(s)
+    ).slice(0, 20);
+  }, [existingTenants, tenantSearch]);
+
+  const isLinkedTenant = selectedTenantId != null;
 
   const [agents, setAgents] = useState<UserInfo[]>([]);
   useEffect(() => {
