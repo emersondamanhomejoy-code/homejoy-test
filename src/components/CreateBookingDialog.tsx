@@ -707,6 +707,20 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document remove confirmation */}
+      <AlertDialog open={!!docRemoveConfirm} onOpenChange={(open) => { if (!open) setDocRemoveConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove file?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to remove this file? You can upload a new one after removing.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep File</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
