@@ -256,7 +256,7 @@ export function RoomsContent() {
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
-                    <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
+                    
                     <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
                     <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
@@ -269,7 +269,7 @@ export function RoomsContent() {
                     <SortableTableHead sortKey="pax_staying" currentSort={sort} onSort={handleSort} className="text-center">Pax</SortableTableHead>
                     <TableHead>Nationality</TableHead>
                     <TableHead>Gender</TableHead>
-                    <SortableTableHead sortKey="updated_at" currentSort={sort} onSort={handleSort}>Last Updated</SortableTableHead>
+                    
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -277,7 +277,7 @@ export function RoomsContent() {
                   {paged.map(r => (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.room.replace(/^Room\s+/i, "")}</TableCell>
-                      <TableCell className="text-muted-foreground">{r.location}</TableCell>
+                      
                       <TableCell>{r.building}</TableCell>
                       <TableCell>{r.unit}</TableCell>
                       <TableCell>
@@ -308,9 +308,6 @@ export function RoomsContent() {
                       <TableCell className="text-center">{r.pax_staying || 0}</TableCell>
                       <TableCell className="text-muted-foreground">{(r as any).tenant_nationality || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.tenant_gender || "—"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {r.updated_at ? format(new Date(r.updated_at), "dd MMM yyyy") : "—"}
-                      </TableCell>
                       <TableCell className="text-center">
                         <div className="flex gap-1 justify-center">
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => navigate(`/photos/${r.id}`)}>
