@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, X, Pencil, Trash2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 
 interface UnitsTableViewProps {
   units: Unit[];
@@ -47,6 +48,7 @@ export function UnitsTableView({
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
+  const { sort, handleSort, sortData } = useTableSort("building");
 
   const locations = useMemo(() => {
     const set = new Set(units.map(u => u.location).filter(Boolean));
