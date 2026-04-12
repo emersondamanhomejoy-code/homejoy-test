@@ -77,7 +77,7 @@ export default function AddUnit() {
 
     let nextCPs = carParks.slice(0, carParkCount).map((cp, i) => ({ ...cp, room: getDefaultCarParkName(i) }));
     while (nextCPs.length < carParkCount) {
-      nextCPs.push({ room: getDefaultCarParkName(nextCPs.length), bed_type: "", max_pax: 0, rent: 0, room_type: "Car Park" });
+      nextCPs.push({ room: getDefaultCarParkName(nextCPs.length), bed_type: "", max_pax: 0, rent: 150, room_type: "Car Park" });
     }
 
     setRoomConfigs([...nextRooms, ...nextCPs]);
