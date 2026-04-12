@@ -58,6 +58,9 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [agentSearch, setAgentSearch] = useState("");
+  const [roomSearch, setRoomSearch] = useState("");
+  const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
 
   const [agents, setAgents] = useState<UserInfo[]>([]);
   useEffect(() => {
@@ -78,7 +81,20 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const availableRooms = useMemo(() => roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available"), [roomsData]);
+  const filteredAgents = useMemo(() => {
+    if (!agentSearch.trim()) return agents;
+    const s = agentSearch.toLowerCase();
+    return agents.filter(a => (a.name || "").toLowerCase().includes(s) || a.email.toLowerCase().includes(s));
+  }, [agents, agentSearch]);
+
+  const availableRooms = useMemo(() => {
+    let rooms = roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available");
+    if (roomSearch.trim()) {
+      const s = roomSearch.toLowerCase();
+      rooms = rooms.filter(r => `${r.building} ${r.unit} ${r.room}`.toLowerCase().includes(s));
+    }
+    return rooms;
+  }, [roomsData, roomSearch]);
   const selectedRoom = useMemo(() => roomsData.find(r => r.id === form.roomId) || null, [roomsData, form.roomId]);
   const unitCfg = selectedRoom ? unitsData.find(u => u.id === selectedRoom.unit_id) : null;
 
@@ -314,10 +330,14 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 {sectionTitle("👤", "Agent")}
                 <div className="space-y-1">
+                  <label className={lbl}>Search Agent</label>
+                  <input className={ic} placeholder="Search by name or email..." value={agentSearch} onChange={e => setAgentSearch(e.target.value)} />
+                </div>
+                <div className="space-y-1">
                   <label className={lbl}>Select Agent *</label>
                   <select className={ic} value={form.agentId} onChange={e => set("agentId", e.target.value)}>
                     <option value="">— Select Agent —</option>
-                    {agents.map(a => (
+                    {filteredAgents.map(a => (
                       <option key={a.id} value={a.id}>{a.name || a.email}{a.name ? ` (${a.email})` : ""}</option>
                     ))}
                   </select>
@@ -327,6 +347,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
               {/* 2. Room Selection */}
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 {sectionTitle("🏠", "Room")}
+                <div className="space-y-1">
+                  <label className={lbl}>Search Room</label>
+                  <input className={ic} placeholder="Search by building, unit, room..." value={roomSearch} onChange={e => setRoomSearch(e.target.value)} />
+                </div>
                 <div className="space-y-1">
                   <label className={lbl}>Select Room *</label>
                   <select className={ic} value={form.roomId} onChange={e => {
@@ -398,55 +422,66 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
               {selectedRoom && (
                 <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                   {sectionTitle("🅿️", "Parking")}
-                  <div className="space-y-1">
-                    <label className={lbl}>How many parking</label>
-                    <select className={ic} value={form.parkingCount} onChange={e => handleParkingCountChange(e.target.value)}>
-                      <option value="0">0</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
-                  </div>
+                  {availableCarParks.length === 0 ? (
+                    <div className="text-sm text-muted-foreground bg-background rounded-lg border p-3">Sorry, car park is fully rented out for this building.</div>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <label className={lbl}>How many parking</label>
+                        <select className={ic} value={form.parkingCount} onChange={e => handleParkingCountChange(e.target.value)}>
+                          {Array.from({ length: Math.min(availableCarParks.length + 1, 4) }, (_, i) => (
+                            <option key={i} value={String(i)}>{i}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  {Array.from({ length: Number(form.parkingCount) || 0 }, (_, i) => {
-                    const otherSelected = selectedCarParkIds.filter((_, idx) => idx !== i);
-                    const cpOptions = availableCarParks.filter(cp => !otherSelected.includes(cp.id));
-                    const selectedCp = roomsData.find(r => r.id === form.carParkSelections[i]?.roomId);
-                    return (
-                      <div key={i} className="bg-background rounded-lg border p-3 space-y-2">
-                        <div className="text-sm font-semibold">Parking {i + 1}</div>
-                        <div className="grid md:grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className={lbl}>Car Park Lot *</label>
-                            <select className={ic} value={form.carParkSelections[i]?.roomId || ""} onChange={e => updateCarParkSelection(i, "roomId", e.target.value)}>
-                              <option value="">— Select Car Park —</option>
-                              {cpOptions.map(cp => (
-                                <option key={cp.id} value={cp.id}>{cp.room} — RM{cp.rent}/mo</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className={lbl}>Car Plate No *</label>
-                            <input className={ic} placeholder="e.g. ABC1234" value={form.carParkSelections[i]?.carPlate || ""} onChange={e => updateCarParkSelection(i, "carPlate", e.target.value)} />
-                          </div>
-                        </div>
-                        {selectedCp && (
-                          <div className="text-xs text-muted-foreground">Monthly Rental: RM{selectedCp.rent}</div>
-                        )}
+                      {Array.from({ length: Number(form.parkingCount) || 0 }, (_, i) => {
+                        const otherSelected = selectedCarParkIds.filter((_, idx) => idx !== i);
+                        const searchStr = (carParkSearch[i] || "").toLowerCase();
+                        let cpOptions = availableCarParks.filter(cp => !otherSelected.includes(cp.id));
+                        if (searchStr) cpOptions = cpOptions.filter(cp => cp.room.toLowerCase().includes(searchStr));
+                        const selectedCp = roomsData.find(r => r.id === form.carParkSelections[i]?.roomId);
+                        return (
+                          <div key={i} className="bg-background rounded-lg border p-3 space-y-2">
+                            <div className="text-sm font-semibold">Parking {i + 1}</div>
+                            <div className="space-y-1">
+                              <label className={lbl}>Search Car Park</label>
+                              <input className={ic} placeholder="Search..." value={carParkSearch[i] || ""} onChange={e => setCarParkSearch(prev => ({ ...prev, [i]: e.target.value }))} />
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className={lbl}>Car Park Lot *</label>
+                                <select className={ic} value={form.carParkSelections[i]?.roomId || ""} onChange={e => updateCarParkSelection(i, "roomId", e.target.value)}>
+                                  <option value="">— Select Car Park —</option>
+                                  {cpOptions.map(cp => (
+                                    <option key={cp.id} value={cp.id}>{cp.room} — RM{cp.rent}/mo</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Car Plate No *</label>
+                                <input className={ic} placeholder="e.g. ABC1234" value={form.carParkSelections[i]?.carPlate || ""} onChange={e => updateCarParkSelection(i, "carPlate", e.target.value)} />
+                              </div>
+                            </div>
+                            {selectedCp && (
+                              <div className="text-xs text-muted-foreground">Monthly Rental: RM{selectedCp.rent}</div>
+                            )}
                       </div>
                     );
                   })}
 
-                  {chargeableCarpark.length > 0 && Number(form.parkingCount) > 0 && (
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
-                      <div className="font-semibold text-amber-700">Chargeable Car Park Access (Homejoy)</div>
-                      {chargeableCarpark.map((a, i) => (
-                        <div key={i} className="flex justify-between">
-                          <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
-                          <span>RM{a.price} × {form.parkingCount} = <strong>RM{a.price * (Number(form.parkingCount) || 0)}</strong></span>
+                      {chargeableCarpark.length > 0 && Number(form.parkingCount) > 0 && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
+                          <div className="font-semibold text-amber-700">Chargeable Car Park Access (Homejoy)</div>
+                          {chargeableCarpark.map((a, i) => (
+                            <div key={i} className="flex justify-between">
+                              <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
+                              <span>RM{a.price} × {form.parkingCount} = <strong>RM{a.price * (Number(form.parkingCount) || 0)}</strong></span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
