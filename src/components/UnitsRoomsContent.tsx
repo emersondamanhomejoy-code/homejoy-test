@@ -290,28 +290,10 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                           
                           <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                             <div className="flex gap-1 justify-center">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => setViewingUnit(unit)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => navigate(`/admin/view-unit/${unit.id}`)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => onEditUnit({
-                                id: unit.id, building: unit.building, unit: unit.unit, location: unit.location,
-                                unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax,
-                                passcode: unit.passcode || "", access_card: unit.access_card || "",
-                                parking_lot: (unit as any).parking_lot || "",
-                                access_card_source: (unit as any).access_card_source || "Provided by Us",
-                                access_card_deposit: (unit as any).access_card_deposit || 0,
-                                access_info: typeof unit.access_info === 'string' ? unit.access_info : "",
-                                internal_only: (unit as any).internal_only || false,
-                                deposit: (unit as any).deposit || "",
-                                meter_type: (unit as any).meter_type || "Postpaid",
-                                meter_rate: (unit as any).meter_rate || 0,
-                                deposit_multiplier: (unit as any).deposit_multiplier ?? 1.5,
-                                admin_fee: (unit as any).admin_fee ?? 330,
-                                parking_type: (unit as any).parking_type || "None",
-                                parking_card_deposit: (unit as any).parking_card_deposit || 0,
-                                common_photos: (unit as any).common_photos || [],
-                                
-                              })}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete" onClick={() => setDeleteConfirm(unit.id)}>
