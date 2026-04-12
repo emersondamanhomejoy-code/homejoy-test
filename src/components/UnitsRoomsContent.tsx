@@ -145,7 +145,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Units & Rooms</h2>
-        <Button onClick={() => navigate("/admin/add-unit")} size="sm">
+        <Button onClick={() => setAddUnitOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Add Unit
         </Button>
       </div>
