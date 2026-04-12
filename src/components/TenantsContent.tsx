@@ -578,7 +578,6 @@ export function TenantsContent() {
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Couple">Couple</SelectItem>
-                      <SelectItem value="2 Pax">2 Pax</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -601,10 +600,6 @@ export function TenantsContent() {
                 <div className="space-y-1">
                   <label className={lbl}>Monthly Salary</label>
                   <Input type="number" value={editForm.monthly_salary || ""} onChange={e => setField("monthly_salary", Number(e.target.value))} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Car Plate</label>
-                  <Input value={editForm.car_plate || ""} onChange={e => setField("car_plate", e.target.value)} />
                 </div>
               </div>
 
@@ -672,7 +667,7 @@ export function TenantsContent() {
 
       {/* Add Tenant Dialog */}
       <Dialog open={addingTenant} onOpenChange={(open) => { if (!open) setAddingTenant(false); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Add Tenant</DialogTitle>
           </DialogHeader>
@@ -703,7 +698,6 @@ export function TenantsContent() {
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Couple">Couple</SelectItem>
-                      <SelectItem value="2 Pax">2 Pax</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -726,10 +720,6 @@ export function TenantsContent() {
                 <div className="space-y-1">
                   <label className={lbl}>Monthly Salary</label>
                   <Input type="number" value={addForm.monthly_salary || ""} onChange={e => setAddField("monthly_salary", Number(e.target.value))} />
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Car Plate</label>
-                  <Input value={addForm.car_plate || ""} onChange={e => setAddField("car_plate", e.target.value)} />
                 </div>
               </div>
 

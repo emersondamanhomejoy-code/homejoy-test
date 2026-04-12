@@ -496,7 +496,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                   <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} /></div>
                   <div className="space-y-1"><label className={lbl}>Gender *</label>
                     <select className={ic} value={form.gender} onChange={e => set("gender", e.target.value)}>
-                      <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option><option>2 Pax</option>
+                      <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
                     </select>
                   </div>
                   <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
