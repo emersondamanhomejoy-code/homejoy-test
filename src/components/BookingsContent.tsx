@@ -372,7 +372,7 @@ export function BookingsContent() {
     <div className="space-y-4">
       {/* Create Booking Dialog */}
       <Dialog open={showCreateForm} onOpenChange={(open) => { if (!open) handleCreateClose(); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Create Booking</DialogTitle>
           </DialogHeader>
