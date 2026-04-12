@@ -151,7 +151,6 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">No.</TableHead>
-              <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
               <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
               
               <SortableTableHead sortKey="availableUnits" currentSort={sort} onSort={handleSort} className="text-center">Available Units</SortableTableHead>
@@ -162,13 +161,12 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           </TableHeader>
           <TableBody>
             {sortedFiltered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
             ) : sortedFiltered.map((c, i) => {
               const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 };
               return (
                 <TableRow key={c.id}>
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.location?.name || "—"}</TableCell>
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-center font-semibold">
                     <span className={s.availableUnits > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableUnits}</span>
