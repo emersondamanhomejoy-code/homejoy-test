@@ -31,16 +31,18 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [locationFilter, setLocationFilter] = useState("");
 
   const condoStats = useMemo(() => {
-    const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableRooms: number; availableCarparks: number }> = {};
+    const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
     for (const c of condos) {
       const condoUnits = units.filter(u => u.building === c.name);
       const allRooms = condoUnits.flatMap(u => u.rooms || []);
       const rooms = allRooms.filter(r => r.room_type !== "Car Park");
       const carparks = allRooms.filter(r => r.room_type === "Car Park");
+      const availableUnits = condoUnits.filter(u => (u.rooms || []).some(r => r.room_type !== "Car Park" && r.status === "Available")).length;
       map[c.id] = {
         totalUnits: condoUnits.length,
         totalRooms: rooms.length,
         totalCarparks: carparks.length,
+        availableUnits,
         availableRooms: rooms.filter(r => r.status === "Available").length,
         availableCarparks: carparks.filter(r => r.status === "Available").length,
       };
@@ -66,21 +68,19 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   });
 
   const sortedFiltered = sortData(filtered, (c, key: string) => {
-    const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 };
+    const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 };
     const map: Record<string, any> = {
       name: c.name,
       location: c.location?.name || "",
       address: c.address || "",
-      totalUnits: s.totalUnits,
-      totalRooms: s.totalRooms,
-      totalCarparks: s.totalCarparks,
+      availableUnits: s.availableUnits,
       availableRooms: s.availableRooms,
       availableCarparks: s.availableCarparks,
     };
     return map[key];
   });
 
-  const viewStats = viewing ? (condoStats[viewing.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 }) : null;
+  const viewStats = viewing ? (condoStats[viewing.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 }) : null;
 
   /* ── Render access items for View dialog ── */
   const renderViewAccessItems = (items: AccessItem[], showLocations: boolean) => {
@@ -154,9 +154,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
               <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
               
-              <SortableTableHead sortKey="totalUnits" currentSort={sort} onSort={handleSort} className="text-center">Total Units</SortableTableHead>
-              <SortableTableHead sortKey="totalRooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
-              <SortableTableHead sortKey="totalCarparks" currentSort={sort} onSort={handleSort} className="text-center">Total Carparks</SortableTableHead>
+              <SortableTableHead sortKey="availableUnits" currentSort={sort} onSort={handleSort} className="text-center">Available Units</SortableTableHead>
               <SortableTableHead sortKey="availableRooms" currentSort={sort} onSort={handleSort} className="text-center">Available Rooms</SortableTableHead>
               <SortableTableHead sortKey="availableCarparks" currentSort={sort} onSort={handleSort} className="text-center">Available Carparks</SortableTableHead>
               <TableHead className="w-36 text-right">Actions</TableHead>
@@ -164,19 +162,26 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           </TableHeader>
           <TableBody>
             {sortedFiltered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
             ) : sortedFiltered.map((c, i) => {
-              const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 };
+              const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 };
               return (
                 <TableRow key={c.id}>
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="text-muted-foreground">{c.location?.name || "—"}</TableCell>
                   <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-center font-semibold">{s.totalUnits}</TableCell>
-                  <TableCell className="text-center font-semibold">{s.totalRooms}</TableCell>
-                  <TableCell className="text-center font-semibold">{s.totalCarparks}</TableCell>
-                  <TableCell className="text-center font-semibold">{s.availableRooms}</TableCell>
-                  <TableCell className="text-center font-semibold">{s.availableCarparks}</TableCell>
+                  <TableCell className="text-center font-semibold">
+                    <span className={s.availableUnits > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableUnits}</span>
+                    <span className="text-muted-foreground font-normal">/{s.totalUnits}</span>
+                  </TableCell>
+                  <TableCell className="text-center font-semibold">
+                    <span className={s.availableRooms > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableRooms}</span>
+                    <span className="text-muted-foreground font-normal">/{s.totalRooms}</span>
+                  </TableCell>
+                  <TableCell className="text-center font-semibold">
+                    <span className={s.availableCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableCarparks}</span>
+                    <span className="text-muted-foreground font-normal">/{s.totalCarparks}</span>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <button onClick={() => setViewing(c)} className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="View"><Eye className="h-4 w-4" /></button>
@@ -215,16 +220,17 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                 <div className="col-span-2"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{viewing.amenities || "—"}</span></div>
               </div>
               {viewStats && (
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: "Units", value: viewStats.totalUnits },
-                    { label: "Rooms", value: viewStats.totalRooms },
-                    { label: "Carparks", value: viewStats.totalCarparks },
-                    { label: "Avail Rooms", value: viewStats.availableRooms },
-                    { label: "Avail Carparks", value: viewStats.availableCarparks },
+                    { label: "Available Units", available: viewStats.availableUnits, total: viewStats.totalUnits },
+                    { label: "Available Rooms", available: viewStats.availableRooms, total: viewStats.totalRooms },
+                    { label: "Available Carparks", available: viewStats.availableCarparks, total: viewStats.totalCarparks },
                   ].map(item => (
                     <div key={item.label} className="bg-secondary rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold">{item.value}</div>
+                      <div className="text-lg font-bold">
+                        <span className={item.available > 0 ? "text-emerald-600" : ""}>{item.available}</span>
+                        <span className="text-muted-foreground font-normal text-sm">/{item.total}</span>
+                      </div>
                       <div className="text-xs text-muted-foreground">{item.label}</div>
                     </div>
                   ))}
