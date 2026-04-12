@@ -25,6 +25,12 @@ export interface Booking {
   emergency_phone: string;
   emergency_relationship: string;
   emergency_contact_2: string;
+  emergency_1_name: string;
+  emergency_1_phone: string;
+  emergency_1_relationship: string;
+  emergency_2_name: string;
+  emergency_2_phone: string;
+  emergency_2_relationship: string;
   parking: string;
   car_plate: string;
   documents: Record<string, any>;
