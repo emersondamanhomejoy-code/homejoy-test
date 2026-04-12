@@ -487,7 +487,7 @@ function RoomEditDialog({ room, onClose, onSave, isNew }: { room: Room | null; o
   useEffect(() => { if (room) setData({ ...room }); else setData(null); }, [room]);
   if (!data) return null;
   const up = (f: string, v: any) => setData((prev: any) => ({ ...prev, [f]: v }));
-  const isStudio = data.room_category === "Studio";
+  const features = Array.isArray(data.optional_features) ? data.optional_features : [];
 
   return (
     <Dialog open={!!room} onOpenChange={(open) => { if (!open) onClose(); }}>

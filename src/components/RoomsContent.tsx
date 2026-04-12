@@ -102,7 +102,7 @@ export function RoomsContent() {
         building: r.building,
         unit: r.unit,
         unit_type: r.unit_type_val,
-        room_type: r.room_category || r.room_type,
+        
         bed_type: r.bed_type,
         wall_type: r.wall_type || "",
         rent: r.rent,
