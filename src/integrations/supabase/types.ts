@@ -311,8 +311,10 @@ export type Database = {
       }
       condos: {
         Row: {
+          access_items: Json
           address: string
           amenities: string
+          arrival_instruction: string
           created_at: string
           deposit_info: string
           description: string
@@ -323,10 +325,14 @@ export type Database = {
           parking_info: string
           photos: Json
           updated_at: string
+          visitor_car_parking: string
+          visitor_motorcycle_parking: string
         }
         Insert: {
+          access_items?: Json
           address?: string
           amenities?: string
+          arrival_instruction?: string
           created_at?: string
           deposit_info?: string
           description?: string
@@ -337,10 +343,14 @@ export type Database = {
           parking_info?: string
           photos?: Json
           updated_at?: string
+          visitor_car_parking?: string
+          visitor_motorcycle_parking?: string
         }
         Update: {
+          access_items?: Json
           address?: string
           amenities?: string
+          arrival_instruction?: string
           created_at?: string
           deposit_info?: string
           description?: string
@@ -351,6 +361,8 @@ export type Database = {
           parking_info?: string
           photos?: Json
           updated_at?: string
+          visitor_car_parking?: string
+          visitor_motorcycle_parking?: string
         }
         Relationships: [
           {
