@@ -502,7 +502,7 @@ function RoomEditDialog({ room, onClose, onSave, isNew }: { room: Room | null; o
               <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={data.room} readOnly />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Bed Type {!isStudio && "*"}</label>
+              <label className="text-xs text-muted-foreground">Bed Type {!features.includes("Studio") && "*"}</label>
               <select className={`${inputClass} w-full`} value={data.bed_type || ""} onChange={e => {
                 const bt = e.target.value;
                 up("bed_type", bt);
