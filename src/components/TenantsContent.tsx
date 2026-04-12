@@ -12,6 +12,7 @@ import {
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 
 export function TenantsContent() {
   const { data: bookings = [], isLoading } = useBookings();
@@ -21,6 +22,8 @@ export function TenantsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [selectedTenant, setSelectedTenant] = useState<Booking | null>(null);
+
+  const { sort, handleSort, sortData } = useTableSort("tenant_name");
 
   // Only show approved/active bookings as "tenants"
   const tenants = useMemo(() => {
@@ -36,8 +39,19 @@ export function TenantsContent() {
         (b.room?.room || "").toLowerCase().includes(s)
       );
     }
-    return list;
-  }, [bookings, search]);
+    return sortData(list, (b: Booking, key: string) => {
+      const map: Record<string, any> = {
+        tenant_name: b.tenant_name,
+        tenant_phone: b.tenant_phone,
+        tenant_email: b.tenant_email || "",
+        property: b.room?.building || "",
+        room: b.room ? `${b.room.unit} · ${b.room.room}` : "",
+        move_in_date: b.move_in_date,
+        contract_months: b.contract_months,
+      };
+      return map[key];
+    });
+  }, [bookings, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(tenants.length / pageSize));
   const paged = tenants.slice((page - 1) * pageSize, page * pageSize);
@@ -62,13 +76,13 @@ export function TenantsContent() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Property</TableHead>
-              <TableHead>Room</TableHead>
-              <TableHead>Move-in</TableHead>
-              <TableHead>Contract</TableHead>
+              <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Name</SortableTableHead>
+              <SortableTableHead sortKey="tenant_phone" currentSort={sort} onSort={handleSort}>Phone</SortableTableHead>
+              <SortableTableHead sortKey="tenant_email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
+              <SortableTableHead sortKey="property" currentSort={sort} onSort={handleSort}>Property</SortableTableHead>
+              <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+              <SortableTableHead sortKey="move_in_date" currentSort={sort} onSort={handleSort}>Move-in</SortableTableHead>
+              <SortableTableHead sortKey="contract_months" currentSort={sort} onSort={handleSort}>Contract</SortableTableHead>
               <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>

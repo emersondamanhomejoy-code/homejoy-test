@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus, Eye } from "lucide-react";
 import { AccessItem } from "@/components/BuildingForm";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 
 const CHARGEABLE_LABELS: Record<string, string> = {
   none: "Not Chargeable",
@@ -54,12 +55,29 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     try { await deleteCondo.mutateAsync(id); } catch (e: any) { alert(e.message); }
   };
 
+  const { sort, handleSort, sortData } = useTableSort("name");
+
   const filtered = condos.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.location?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.address || "").toLowerCase().includes(search.toLowerCase());
     const matchLocation = !locationFilter || c.location_id === locationFilter;
     return matchSearch && matchLocation;
+  });
+
+  const sortedFiltered = sortData(filtered, (c, key: string) => {
+    const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 };
+    const map: Record<string, any> = {
+      name: c.name,
+      location: c.location?.name || "",
+      address: c.address || "",
+      totalUnits: s.totalUnits,
+      totalRooms: s.totalRooms,
+      totalCarparks: s.totalCarparks,
+      availableRooms: s.availableRooms,
+      availableCarparks: s.availableCarparks,
+    };
+    return map[key];
   });
 
   const viewStats = viewing ? (condoStats[viewing.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 }) : null;
@@ -133,21 +151,21 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">No.</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Building Name</TableHead>
-              <TableHead>Address Preview</TableHead>
-              <TableHead className="text-center">Total Units</TableHead>
-              <TableHead className="text-center">Total Rooms</TableHead>
-              <TableHead className="text-center">Total Carparks</TableHead>
-              <TableHead className="text-center">Available Rooms</TableHead>
-              <TableHead className="text-center">Available Carparks</TableHead>
+              <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
+              <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
+              <SortableTableHead sortKey="address" currentSort={sort} onSort={handleSort}>Address Preview</SortableTableHead>
+              <SortableTableHead sortKey="totalUnits" currentSort={sort} onSort={handleSort} className="text-center">Total Units</SortableTableHead>
+              <SortableTableHead sortKey="totalRooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
+              <SortableTableHead sortKey="totalCarparks" currentSort={sort} onSort={handleSort} className="text-center">Total Carparks</SortableTableHead>
+              <SortableTableHead sortKey="availableRooms" currentSort={sort} onSort={handleSort} className="text-center">Available Rooms</SortableTableHead>
+              <SortableTableHead sortKey="availableCarparks" currentSort={sort} onSort={handleSort} className="text-center">Available Carparks</SortableTableHead>
               <TableHead className="w-36 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {sortedFiltered.length === 0 ? (
               <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
-            ) : filtered.map((c, i) => {
+            ) : sortedFiltered.map((c, i) => {
               const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 };
               return (
                 <TableRow key={c.id}>
