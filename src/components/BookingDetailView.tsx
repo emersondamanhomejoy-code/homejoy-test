@@ -495,6 +495,13 @@ export function BookingDetailView({ booking: b, open, onOpenChange, onEdit, getA
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Approve Confirm Dialog ─── */}
+      {/* (these AlertDialogs are already outside the main content, keep them here) */}
+    </>
   );
 }
