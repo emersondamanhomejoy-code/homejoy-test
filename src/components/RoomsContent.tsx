@@ -388,6 +388,75 @@ export function RoomsContent() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* View Room Dialog */}
+      <Dialog open={!!viewingRoom} onOpenChange={() => setViewingRoom(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Room Details</DialogTitle>
+          </DialogHeader>
+          {viewingRoom && (() => {
+            const feats = [...((viewingRoom as any).optional_features || [])];
+            if (((viewingRoom as any).room_category === "Studio" || viewingRoom.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const photos = Array.isArray(viewingRoom.photos) ? viewingRoom.photos as string[] : [];
+            return (
+              <ScrollArea className="flex-1 -mx-6 px-6">
+                <div className="space-y-4 pb-4">
+                  <div>
+                    <div className="text-lg font-semibold">{viewingRoom.building} · {viewingRoom.unit} · {viewingRoom.room}</div>
+                    <div className="text-sm text-muted-foreground">{viewingRoom.location}</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-muted-foreground">Room Type:</span> {viewingRoom.room_type || "—"}</div>
+                    <div><span className="text-muted-foreground">Unit Type:</span> {viewingRoom.unit_type_val || "—"}</div>
+                    <div><span className="text-muted-foreground">Bed Type:</span> {viewingRoom.bed_type || "—"}</div>
+                    <div><span className="text-muted-foreground">Wall Type:</span> {(viewingRoom as any).wall_type || "—"}</div>
+                    <div><span className="text-muted-foreground">Max Pax:</span> {viewingRoom.max_pax}</div>
+                    <div><span className="text-muted-foreground">Rental:</span> RM{viewingRoom.rent}</div>
+                    <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
+                    <div><span className="text-muted-foreground">Pax Staying:</span> {viewingRoom.pax_staying || 0}</div>
+                    <div><span className="text-muted-foreground">Nationality:</span> {(viewingRoom as any).tenant_nationality || "—"}</div>
+                    <div><span className="text-muted-foreground">Gender:</span> {viewingRoom.tenant_gender || "—"}</div>
+                  </div>
+
+                  {feats.length > 0 && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Features:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {feats.map((f: string) => <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {(viewingRoom as any).special_type && (
+                    <div className="text-sm"><span className="text-muted-foreground">Special Type:</span> {(viewingRoom as any).special_type}</div>
+                  )}
+
+                  {(viewingRoom as any).internal_remark && (
+                    <div className="text-sm"><span className="text-muted-foreground">Internal Remark:</span> {(viewingRoom as any).internal_remark}</div>
+                  )}
+
+                  {/* Room Photos */}
+                  {photos.length > 0 && (
+                    <div className="border-t pt-3">
+                      <div className="text-sm font-semibold mb-2">Room Photos</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {photos.map((p, i) => (
+                          <a key={i} href={`${supabaseUrl}/storage/v1/object/public/room-photos/${p}`} target="_blank" rel="noopener noreferrer">
+                            <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${p}`} alt={`Room photo ${i + 1}`} className="rounded-lg border object-cover h-24 w-full hover:opacity-80 transition-opacity" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Unit Dialog */}
       <Dialog open={!!editUnitId} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
@@ -395,7 +464,7 @@ export function RoomsContent() {
             <DialogTitle>Edit Unit</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {editUnitId && <EditUnit unitIdProp={editUnitId} onClose={() => setEditUnitId(null)} />}
+            {editUnitId && <EditUnit unitIdProp={editUnitId} focusRoomId={editFocusRoomId} onClose={() => { setEditUnitId(null); setEditFocusRoomId(undefined); }} />}
           </div>
         </DialogContent>
       </Dialog>
