@@ -179,7 +179,6 @@ export function UnitsTableView({
                     <TableHead className="text-center">Max Pax</TableHead>
                     <TableHead className="text-center">Rooms</TableHead>
                     <TableHead className="text-center">Available</TableHead>
-                    <TableHead>Info</TableHead>
                     <TableHead className="text-center">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -214,12 +213,6 @@ export function UnitsTableView({
                         <TableCell className="text-center">
                           <span className="text-emerald-600 font-semibold">{availableCount}</span>
                           {carParks.length > 0 && <span className="text-muted-foreground text-xs ml-1">({availableCP}🅿️)</span>}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 flex-wrap">
-                            {unit.passcode && <Badge variant="outline" className="text-[10px]">🔑 {unit.passcode}</Badge>}
-                            {(unit as any).internal_only && <Badge variant="secondary" className="text-[10px] bg-primary/20 text-primary">🔒 Internal</Badge>}
-                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex gap-1 justify-center">
