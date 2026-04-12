@@ -58,6 +58,9 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [agentSearch, setAgentSearch] = useState("");
+  const [roomSearch, setRoomSearch] = useState("");
+  const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
 
   const [agents, setAgents] = useState<UserInfo[]>([]);
   useEffect(() => {
@@ -78,7 +81,20 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const availableRooms = useMemo(() => roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available"), [roomsData]);
+  const filteredAgents = useMemo(() => {
+    if (!agentSearch.trim()) return agents;
+    const s = agentSearch.toLowerCase();
+    return agents.filter(a => (a.name || "").toLowerCase().includes(s) || a.email.toLowerCase().includes(s));
+  }, [agents, agentSearch]);
+
+  const availableRooms = useMemo(() => {
+    let rooms = roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available");
+    if (roomSearch.trim()) {
+      const s = roomSearch.toLowerCase();
+      rooms = rooms.filter(r => `${r.building} ${r.unit} ${r.room}`.toLowerCase().includes(s));
+    }
+    return rooms;
+  }, [roomsData, roomSearch]);
   const selectedRoom = useMemo(() => roomsData.find(r => r.id === form.roomId) || null, [roomsData, form.roomId]);
   const unitCfg = selectedRoom ? unitsData.find(u => u.id === selectedRoom.unit_id) : null;
 
