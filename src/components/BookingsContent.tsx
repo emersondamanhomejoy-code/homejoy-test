@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X, ArrowLeft } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { BookingDetailView } from "@/components/BookingDetailView";
 import { BookingEditView } from "@/components/BookingEditView";
+import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { toast } from "sonner";
 
 interface UserInfo {
@@ -25,22 +26,7 @@ interface UserInfo {
   name: string;
 }
 
-type View = { type: "list" } | { type: "detail"; booking: Booking } | { type: "edit"; booking: Booking } | { type: "create" };
-
-const initialForm = {
-  agentId: "",
-  roomId: "",
-  tenantName: "", phone: "", email: "", icPassport: "",
-  gender: "", race: "", nationality: "", moveInDate: "",
-  occupation: "", tenancyDuration: "12", monthlyRental: "",
-  paxStaying: "1", accessCardCount: "0",
-  tenant2Name: "", tenant2Phone: "", tenant2Email: "", tenant2IcPassport: "",
-  tenant2Race: "", tenant2Nationality: "", tenant2Occupation: "",
-  emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
-  emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
-  parkingCount: "0", carPlates: [""] as string[],
-  advance: "", electricityReload: "",
-};
+type View = { type: "list" } | { type: "detail"; booking: Booking } | { type: "edit"; booking: Booking };
 
 export function BookingsContent() {
   const { user } = useAuth();
@@ -48,9 +34,9 @@ export function BookingsContent() {
   const { data: allBookings = [], isLoading } = useBookings();
   const updateBookingStatus = useUpdateBookingStatus();
   const { data: roomsData = [] } = useRooms();
-  const { data: unitsData = [] } = useUnits();
 
   const [view, setView] = useState<View>({ type: "list" });
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -70,12 +56,6 @@ export function BookingsContent() {
   const [showCancelDialog, setShowCancelDialog] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState<Booking | null>(null);
-
-  // Create booking form
-  const [form, setForm] = useState(initialForm);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
-  const [showCreateCancelConfirm, setShowCreateCancelConfirm] = useState(false);
 
   // Fetch users/agents
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -112,9 +92,6 @@ export function BookingsContent() {
   const roomOptions = useMemo(() => [...new Set(roomsData.map(r => r.room).filter(Boolean))].sort(), [roomsData]);
   const agentOptions = useMemo(() => agents.map(a => a.name || a.email).filter(Boolean).sort(), [agents]);
 
-  const availableRooms = useMemo(() => roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available"), [roomsData]);
-  const selectedRoom = useMemo(() => roomsData.find(r => r.id === form.roomId) || null, [roomsData, form.roomId]);
-
   const getRoomInfo = (booking: Booking) => {
     if (booking.room) return booking.room;
     const r = roomsData.find(rm => rm.id === booking.room_id);
@@ -150,102 +127,6 @@ export function BookingsContent() {
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${cls}`}>{status.toUpperCase()}</span>;
   };
 
-  const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
-
-  const uploadFile = async (file: File, folder: string): Promise<string> => {
-    const ext = file.name.split(".").pop();
-    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from("booking-docs").upload(path, file);
-    if (error) throw error;
-    return path;
-  };
-
-  const handleCreateBooking = async () => {
-    if (!user) return;
-    if (!form.agentId) { toast.error("Please select an agent"); return; }
-    if (!form.roomId) { toast.error("Please select a room"); return; }
-    if (!form.tenantName.trim()) { toast.error("Please fill in tenant name"); return; }
-    if (!form.phone.trim()) { toast.error("Please fill in contact number"); return; }
-    if (!form.moveInDate) { toast.error("Please select move-in date"); return; }
-    if (!form.gender) { toast.error("Please select gender"); return; }
-    if (!form.emergency1Name || !form.emergency1Phone || !form.emergency1Relationship) { toast.error("Please complete Emergency Contact 1"); return; }
-    if (!form.emergency2Name || !form.emergency2Phone || !form.emergency2Relationship) { toast.error("Please complete Emergency Contact 2"); return; }
-
-    setSubmitting(true);
-    try {
-      const passportPaths = await Promise.all(uploadedFiles.passport.map(f => uploadFile(f, "passport")));
-      const offerPaths = await Promise.all(uploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
-      const slipPaths = await Promise.all(uploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
-
-      const room = roomsData.find(r => r.id === form.roomId);
-      const unitCfg = unitsData.find(u => u.id === room?.unit_id);
-      const depMul = unitCfg?.deposit_multiplier ?? 1.5;
-      const unitAdminFee = unitCfg?.admin_fee ?? 330;
-      const perCardCost = unitCfg?.access_card_deposit ?? 0;
-      const cardCount = Number(form.accessCardCount) || 0;
-      const advance = Number(form.advance) || 0;
-      const deposit = Math.round(advance * depMul);
-      const electricityReload = Number(form.electricityReload) || 0;
-      const accessCardDeposit = cardCount * perCardCost;
-      const total = advance + deposit + unitAdminFee + electricityReload + accessCardDeposit;
-
-      const { error: dbErr } = await supabase.from("bookings").insert({
-        room_id: form.roomId,
-        unit_id: room?.unit_id || null,
-        tenant_name: form.tenantName,
-        tenant_phone: form.phone,
-        tenant_email: form.email,
-        tenant_ic_passport: form.icPassport,
-        tenant_gender: form.gender,
-        tenant_race: form.race,
-        tenant_nationality: form.nationality,
-        move_in_date: form.moveInDate,
-        contract_months: Number(form.tenancyDuration) || 12,
-        monthly_salary: Number(form.monthlyRental) || room?.rent || 0,
-        occupation: form.occupation,
-        pax_staying: Number(form.paxStaying) || 1,
-        access_card_count: cardCount,
-        emergency_1_name: form.emergency1Name,
-        emergency_1_phone: form.emergency1Phone,
-        emergency_1_relationship: form.emergency1Relationship,
-        emergency_2_name: form.emergency2Name,
-        emergency_2_phone: form.emergency2Phone,
-        emergency_2_relationship: form.emergency2Relationship,
-        parking: form.parkingCount,
-        car_plate: form.carPlates.slice(0, Number(form.parkingCount)).filter(p => p.trim()).join(", "),
-        submitted_by: form.agentId,
-        submitted_by_type: "agent",
-        move_in_cost: { advance, deposit, adminFee: unitAdminFee, electricityReload, accessCardDeposit, total },
-        doc_passport: passportPaths,
-        doc_offer_letter: offerPaths,
-        doc_transfer_slip: slipPaths,
-        documents: {
-          ...(form.gender === "Couple" || form.gender === "2 Pax" ? {
-            tenant2: {
-              name: form.tenant2Name, phone: form.tenant2Phone, email: form.tenant2Email,
-              icPassport: form.tenant2IcPassport, race: form.tenant2Race,
-              nationality: form.tenant2Nationality, occupation: form.tenant2Occupation,
-            },
-          } : {}),
-        },
-      });
-      if (dbErr) throw dbErr;
-
-      if (form.roomId) await supabase.from("rooms").update({ status: "Pending" }).eq("id", form.roomId);
-
-      toast.success("Booking created successfully!");
-      setForm(initialForm);
-      setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
-      setView({ type: "list" });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
-    } catch (e: any) {
-      toast.error(e.message || "Failed to create booking");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleCancel = async () => {
     if (!user || !showCancelDialog || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
     const b = showCancelDialog;
@@ -275,24 +156,8 @@ export function BookingsContent() {
   const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom || dateTo;
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
-  const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
-  const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
-
-  // Cost calculations for create form
-  const unitCfg = selectedRoom ? unitsData.find(u => u.id === selectedRoom.unit_id) : null;
-  const depMul = unitCfg?.deposit_multiplier ?? 1.5;
-  const unitAdminFee = unitCfg?.admin_fee ?? 330;
-  const perCardCost = unitCfg?.access_card_deposit ?? 0;
-  const cardCount = Number(form.accessCardCount) || 0;
-  const adv = Number(form.advance) || 0;
-  const dep = Math.round(adv * depMul);
-  const elecReload = Number(form.electricityReload) || 0;
-  const accessCardDep = cardCount * perCardCost;
-  const total = adv + dep + unitAdminFee + elecReload + accessCardDep;
-
   // ======================== DETAIL VIEW ========================
   if (view.type === "detail") {
-    // Refresh booking data from latest fetch
     const freshBooking = allBookings.find(b => b.id === view.booking.id) || view.booking;
     return (
       <BookingDetailView
@@ -315,224 +180,12 @@ export function BookingsContent() {
     );
   }
 
-  // ======================== CREATE VIEW ========================
-  if (view.type === "create") {
-    const handleCreateClose = () => {
-      if (form.tenantName.trim() || form.roomId) {
-        setShowCreateCancelConfirm(true);
-      } else {
-        setView({ type: "list" });
-      }
-    };
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <button onClick={handleCreateClose} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Back to Bookings
-          </button>
-          <Button onClick={handleCreateBooking} disabled={submitting}>{submitting ? "Submitting..." : "Create Booking"}</Button>
-        </div>
-
-        <h2 className="text-xl font-bold">Create Booking</h2>
-
-        {/* Agent Selection */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">👤 Agent</div>
-          <div className="space-y-1">
-            <label className={lbl}>Select Agent *</label>
-            <select className={ic + " w-full"} value={form.agentId} onChange={e => set("agentId", e.target.value)}>
-              <option value="">— Select Agent —</option>
-              {agents.map(a => (
-                <option key={a.id} value={a.id}>{a.name || a.email}{a.name ? ` (${a.email})` : ""}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Room Selection */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">🏠 Room</div>
-          <div className="space-y-1">
-            <label className={lbl}>Select Room *</label>
-            <select className={ic + " w-full"} value={form.roomId} onChange={e => {
-              const room = roomsData.find(r => r.id === e.target.value);
-              setForm(prev => ({ ...prev, roomId: e.target.value, monthlyRental: room ? String(room.rent) : "", advance: room ? String(room.rent) : "" }));
-            }}>
-              <option value="">— Select Room —</option>
-              {availableRooms.map(r => (
-                <option key={r.id} value={r.id}>{r.building} · {r.unit} · {r.room} — RM{r.rent}/mo ({r.room_type})</option>
-              ))}
-            </select>
-          </div>
-          {selectedRoom && (
-            <div className="bg-primary/10 rounded-lg p-4 text-sm space-y-1">
-              <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
-              <div>Monthly Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Unit Type: {selectedRoom.unit_type}</div>
-              <div>Max Pax: {selectedRoom.max_pax} · Bed: {selectedRoom.bed_type || "—"}</div>
-            </div>
-          )}
-        </div>
-
-        {/* Tenant Details */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">👤 Tenant Details</div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic + " w-full"} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>NRIC/Passport No *</label><input className={ic + " w-full"} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Email</label><input className={ic + " w-full"} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic + " w-full"} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Gender *</label>
-              <select className={ic + " w-full"} value={form.gender} onChange={e => set("gender", e.target.value)}>
-                <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option><option>2 Pax</option>
-              </select>
-            </div>
-            <div className="space-y-1"><label className={lbl}>Nationality *</label><input className={ic + " w-full"} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Race *</label><input className={ic + " w-full"} placeholder="Race" value={form.race} onChange={e => set("race", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic + " w-full"} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic + " w-full"} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Tenancy Duration (months)</label>
-              <select className={ic + " w-full"} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                  <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 6 ? " (half year)" : ""}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1"><label className={lbl}>Monthly Rental (RM)</label><input className={ic + " w-full"} type="number" placeholder={selectedRoom ? String(selectedRoom.rent) : "0"} value={form.monthlyRental} onChange={e => { set("monthlyRental", e.target.value); set("advance", e.target.value); }} /></div>
-            <div className="space-y-1"><label className={lbl}>How many pax staying</label><input className={ic + " w-full"} type="number" placeholder="1" value={form.paxStaying} onChange={e => set("paxStaying", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>How many access card</label><input className={ic + " w-full"} type="number" placeholder="0" value={form.accessCardCount} onChange={e => set("accessCardCount", e.target.value)} /></div>
-          </div>
-
-          {(form.gender === "Couple" || form.gender === "2 Pax") && (
-            <div className="mt-4 p-4 border border-dashed border-primary/30 rounded-lg space-y-4">
-              <div className="text-base font-bold flex items-center gap-2">👥 Second Tenant Details</div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic + " w-full"} placeholder="Full Name" value={form.tenant2Name} onChange={e => set("tenant2Name", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>NRIC/Passport No *</label><input className={ic + " w-full"} placeholder="NRIC/Passport No" value={form.tenant2IcPassport} onChange={e => set("tenant2IcPassport", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Email</label><input className={ic + " w-full"} type="email" placeholder="Email" value={form.tenant2Email} onChange={e => set("tenant2Email", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic + " w-full"} placeholder="Contact No" value={form.tenant2Phone} onChange={e => set("tenant2Phone", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic + " w-full"} placeholder="Nationality" value={form.tenant2Nationality} onChange={e => set("tenant2Nationality", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Race</label><input className={ic + " w-full"} placeholder="Race" value={form.tenant2Race} onChange={e => set("tenant2Race", e.target.value)} /></div>
-                <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic + " w-full"} placeholder="Occupation" value={form.tenant2Occupation} onChange={e => set("tenant2Occupation", e.target.value)} /></div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Emergency Contact 1 */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact 1 *</div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="space-y-1"><label className={lbl}>Name *</label><input className={ic + " w-full"} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Phone *</label><input className={ic + " w-full"} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Relationship *</label><input className={ic + " w-full"} placeholder="e.g. Father, Mother" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
-          </div>
-        </div>
-
-        {/* Emergency Contact 2 */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">🚨 Emergency Contact 2 *</div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="space-y-1"><label className={lbl}>Name *</label><input className={ic + " w-full"} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Phone *</label><input className={ic + " w-full"} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Relationship *</label><input className={ic + " w-full"} placeholder="e.g. Spouse, Sibling" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
-          </div>
-        </div>
-
-        {/* Parking */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">🅿️ Parking</div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-1"><label className={lbl}>How many parking</label>
-              <select className={ic + " w-full"} value={form.parkingCount} onChange={e => {
-                const count = Number(e.target.value);
-                const plates = [...form.carPlates];
-                while (plates.length < count) plates.push("");
-                setForm(prev => ({ ...prev, parkingCount: e.target.value, carPlates: plates }));
-              }}>
-                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
-              </select>
-            </div>
-            {Array.from({ length: Number(form.parkingCount) }, (_, i) => (
-              <div key={i} className="space-y-1"><label className={lbl}>Car Plate {Number(form.parkingCount) > 1 ? i + 1 : ""} *</label>
-                <input className={ic + " w-full"} placeholder="Car Plate No" value={form.carPlates[i] || ""} onChange={e => {
-                  const plates = [...form.carPlates];
-                  plates[i] = e.target.value;
-                  setForm(prev => ({ ...prev, carPlates: plates }));
-                }} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Documents */}
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-lg font-bold flex items-center gap-2">📎 Documents</div>
-          <div className="space-y-4">
-            {([
-              { key: "passport" as const, label: "Passport / IC" },
-              { key: "offerLetter" as const, label: "Offer Letter" },
-              { key: "transferSlip" as const, label: "Transfer Slip" },
-            ]).map(({ key, label }) => (
-              <div key={key} className="space-y-2">
-                <label className={lbl}>{label}</label>
-                <div className="flex items-center gap-3">
-                  <label className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
-                    Choose Files
-                    <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
-                      if (e.target.files) setUploadedFiles(prev => ({ ...prev, [key]: [...prev[key], ...Array.from(e.target.files!)] }));
-                    }} />
-                  </label>
-                  <span className="text-sm text-muted-foreground">{uploadedFiles[key].length > 0 ? uploadedFiles[key].map(f => f.name).join(", ") : "No file chosen"}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Move-in Cost */}
-        {selectedRoom && (
-          <div className="bg-card rounded-lg border p-5 space-y-4">
-            <div className="text-lg font-bold flex items-center gap-2">💰 Move-in Cost</div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-1"><label className={lbl}>1 Month Advance Rental (RM)</label><input className={ic + " w-full"} type="number" placeholder="0" value={form.advance} onChange={e => set("advance", e.target.value)} /></div>
-              <div className="space-y-1"><label className={lbl}>Rental Deposit (RM) — ×{depMul}</label><input className={`${ic} w-full bg-muted`} type="number" readOnly value={dep} /></div>
-              <div className="space-y-1"><label className={lbl}>Admin Fee (RM)</label><input className={`${ic} w-full bg-muted`} type="number" readOnly value={unitAdminFee} /></div>
-              <div className="space-y-1"><label className={lbl}>Electricity Reload (RM)</label><input className={ic + " w-full"} type="number" placeholder="0" value={form.electricityReload} onChange={e => set("electricityReload", e.target.value)} /></div>
-              <div className="space-y-1"><label className={lbl}>Access Card Deposit — {cardCount} × RM{perCardCost}</label><input className={`${ic} w-full bg-muted`} type="number" readOnly value={accessCardDep} /></div>
-            </div>
-            <div className="bg-secondary rounded-lg p-4 text-right">
-              <span className="text-sm text-muted-foreground">Total: </span>
-              <span className="text-lg font-bold">RM{total}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3 pb-8">
-          <Button variant="outline" onClick={handleCreateClose}>Cancel</Button>
-          <Button onClick={handleCreateBooking} disabled={submitting}>{submitting ? "Submitting..." : "Create Booking"}</Button>
-        </div>
-
-        {/* Discard confirm */}
-        <AlertDialog open={showCreateCancelConfirm} onOpenChange={setShowCreateCancelConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Discard changes?</AlertDialogTitle>
-              <AlertDialogDescription>Are you sure you want to cancel? Your unsaved changes will be lost.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Continue Editing</AlertDialogCancel>
-              <AlertDialogAction onClick={() => { setView({ type: "list" }); setShowCreateCancelConfirm(false); setForm(initialForm); setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] }); }}>Discard</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    );
-  }
-
   // ======================== LIST VIEW ========================
   return (
     <div className="space-y-4">
+      {/* Create Booking Dialog */}
+      <CreateBookingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+
       {/* Cancel Booking Dialog */}
       <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
         <AlertDialogContent>
@@ -567,7 +220,7 @@ export function BookingsContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Bookings</h2>
-        <Button onClick={() => { setForm(initialForm); setUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] }); setView({ type: "create" }); }}>
+        <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4 mr-1" /> Create Booking
         </Button>
       </div>
