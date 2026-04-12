@@ -7,8 +7,11 @@ Each unit has 5 rooms (A-E), rooms independently available/unavailable.
 Lovable Cloud backend. Roles: admin, agent.
 
 ## Memories
-- [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
-- [Building access types](mem://features/building-access) — Pedestrian/CarPark/Motorcycle access configs, chargeable items add to tenant bill
-- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission
-- [Area filter](mem://features/area-filter) — Valid area names for unit locations
+- [Room structure](mem://features/rooms) — Unit → dynamic rooms (default 5, add/remove), tenant info, passcode, parking lot
+- [Tenant selection](mem://features/tenant-selection) — Occupied rooms/carparks select tenant from approved bookings, no manual occupant entry
+- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission types and tiers
+- [Area filter](mem://features/area-filter) — All valid area names used in the system
 - [Bookings](mem://features/bookings) — Agent/customer submit booking requests, admin approves/rejects
+- [Form dialogs](mem://design/form-dialogs) — Design patterns for form dialogs
+- [Building access](mem://features/building-access) — Building access items collapsible pattern
+- [Roles](mem://features/roles) — User role system (admin, agent, boss, manager)

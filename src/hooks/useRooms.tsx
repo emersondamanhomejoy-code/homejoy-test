@@ -89,10 +89,10 @@ export interface RoomConfig {
   bed_type: string;
   max_pax: number;
   rent: number;
-  room_type?: string; // "Car Park" for carparks, undefined for rooms
-  room_category?: string; // "Normal Room" | "Studio"
+  room_type?: string;
+  room_category?: string;
   wall_type?: string;
-  optional_features?: string[]; // Balcony, Private Toilet, Window, Master Room
+  optional_features?: string[];
   status?: string;
   available_date?: string;
   internal_remark?: string;
@@ -101,8 +101,9 @@ export interface RoomConfig {
   tenant_race?: string;
   tenant_nationality?: string;
   pax_staying?: number;
-  assigned_to?: string; // carpark only
+  assigned_to?: string;
   parking_lot?: string;
+  photos?: string[];
 }
 
 export function useCreateUnit() {
