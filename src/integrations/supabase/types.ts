@@ -538,6 +538,89 @@ export type Database = {
           },
         ]
       }
+      tenants: {
+        Row: {
+          booking_id: string | null
+          car_plate: string
+          company: string
+          created_at: string
+          email: string
+          emergency_1_name: string
+          emergency_1_phone: string
+          emergency_1_relationship: string
+          emergency_2_name: string
+          emergency_2_phone: string
+          emergency_2_relationship: string
+          gender: string
+          ic_passport: string
+          id: string
+          monthly_salary: number
+          name: string
+          nationality: string
+          occupation: string
+          phone: string
+          position: string
+          race: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          car_plate?: string
+          company?: string
+          created_at?: string
+          email?: string
+          emergency_1_name?: string
+          emergency_1_phone?: string
+          emergency_1_relationship?: string
+          emergency_2_name?: string
+          emergency_2_phone?: string
+          emergency_2_relationship?: string
+          gender?: string
+          ic_passport?: string
+          id?: string
+          monthly_salary?: number
+          name?: string
+          nationality?: string
+          occupation?: string
+          phone?: string
+          position?: string
+          race?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          car_plate?: string
+          company?: string
+          created_at?: string
+          email?: string
+          emergency_1_name?: string
+          emergency_1_phone?: string
+          emergency_1_relationship?: string
+          emergency_2_name?: string
+          emergency_2_phone?: string
+          emergency_2_relationship?: string
+          gender?: string
+          ic_passport?: string
+          id?: string
+          monthly_salary?: number
+          name?: string
+          nationality?: string
+          occupation?: string
+          phone?: string
+          position?: string
+          race?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenants_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
           access_card: string
