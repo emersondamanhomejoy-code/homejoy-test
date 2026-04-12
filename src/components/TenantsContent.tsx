@@ -475,37 +475,34 @@ export function TenantsContent() {
 
       {/* View Dialog */}
       <Dialog open={!!viewingTenant} onOpenChange={() => setViewingTenant(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>Tenant Details</DialogTitle>
           </DialogHeader>
           {viewingTenant && (
-            <ScrollArea className="flex-1 -mx-6 px-6">
-              <div className="space-y-4 pb-4">
-                <div>
-                  <div className="text-lg font-semibold">{viewingTenant.name}</div>
-                  <div className="text-sm text-muted-foreground">{viewingTenant.email || "—"}</div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <InfoField label="Phone" value={viewingTenant.phone} />
-                  <InfoField label="IC/Passport" value={viewingTenant.ic_passport} />
-                  <InfoField label="Gender" value={viewingTenant.gender} />
-                  <InfoField label="Nationality" value={viewingTenant.nationality} />
-                  <InfoField label="Occupation" value={viewingTenant.occupation} />
-                  <InfoField label="Company" value={viewingTenant.company} />
-                  <InfoField label="Position" value={viewingTenant.position} />
-                  <InfoField label="Monthly Salary" value={viewingTenant.monthly_salary ? `RM${viewingTenant.monthly_salary}` : "—"} />
-                  <InfoField label="Car Plate" value={viewingTenant.car_plate} />
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <div className="space-y-4 py-4">
+                {/* Personal Info */}
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <ViewField label="Full Name" value={viewingTenant.name} />
+                    <ViewField label="NRIC / Passport No" value={viewingTenant.ic_passport} />
+                    <ViewField label="Email" value={viewingTenant.email} />
+                    <ViewField label="Contact No" value={viewingTenant.phone} />
+                    <ViewField label="Gender" value={viewingTenant.gender} />
+                    <ViewField label="Nationality" value={viewingTenant.nationality} />
+                    <ViewField label="Occupation" value={viewingTenant.occupation} />
+                  </div>
                 </div>
 
                 {/* Assigned Rooms */}
                 {getRooms(viewingTenant).length > 0 && (
-                  <div className="border-t pt-3">
-                    <div className="text-sm font-semibold mb-2">Assigned Rooms</div>
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                    <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🏠 Assigned Rooms</div>
                     <div className="space-y-1.5">
                       {getRooms(viewingTenant).map(tr => (
-                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
+                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-background rounded-lg border px-3 py-2">
                           <span className="font-medium">{tr.room?.building} · {tr.room?.unit} · {tr.room?.room}</span>
                           <span className="text-muted-foreground">RM{tr.room?.rent}</span>
                           <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
@@ -519,11 +516,11 @@ export function TenantsContent() {
 
                 {/* Assigned Carparks */}
                 {getCarparks(viewingTenant).length > 0 && (
-                  <div className="border-t pt-3">
-                    <div className="text-sm font-semibold mb-2">Assigned Carparks</div>
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                    <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🅿️ Assigned Carparks</div>
                     <div className="space-y-1.5">
                       {getCarparks(viewingTenant).map(tr => (
-                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
+                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-background rounded-lg border px-3 py-2">
                           <span className="font-medium">🅿️ {tr.room?.room}</span>
                           <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
                             tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
@@ -535,23 +532,51 @@ export function TenantsContent() {
                 )}
 
                 {/* Emergency Contacts */}
-                <div className="border-t pt-3">
-                  <div className="text-sm font-semibold mb-2">Emergency Contacts</div>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <div className="font-medium">{viewingTenant.emergency_1_name || "—"}</div>
-                      <div className="text-muted-foreground">{viewingTenant.emergency_1_phone || "—"}</div>
-                      <div className="text-muted-foreground">{viewingTenant.emergency_1_relationship || "—"}</div>
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold">Contact 1</div>
+                      <ViewField label="Name" value={viewingTenant.emergency_1_name} />
+                      <ViewField label="Phone" value={viewingTenant.emergency_1_phone} />
+                      <ViewField label="Relationship" value={viewingTenant.emergency_1_relationship} />
                     </div>
-                    <div>
-                      <div className="font-medium">{viewingTenant.emergency_2_name || "—"}</div>
-                      <div className="text-muted-foreground">{viewingTenant.emergency_2_phone || "—"}</div>
-                      <div className="text-muted-foreground">{viewingTenant.emergency_2_relationship || "—"}</div>
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold">Contact 2</div>
+                      <ViewField label="Name" value={viewingTenant.emergency_2_name} />
+                      <ViewField label="Phone" value={viewingTenant.emergency_2_phone} />
+                      <ViewField label="Relationship" value={viewingTenant.emergency_2_relationship} />
                     </div>
                   </div>
                 </div>
+
+                {/* Documents */}
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
+                  {([
+                    { label: "Passport / IC", paths: viewingTenant.doc_passport },
+                    { label: "Offer Letter", paths: viewingTenant.doc_offer_letter },
+                    { label: "Transfer Slip", paths: viewingTenant.doc_transfer_slip },
+                  ]).map(({ label, paths }) => {
+                    const arr = Array.isArray(paths) ? paths : [];
+                    return (
+                      <div key={label} className="space-y-1">
+                        <label className={lbl}>{label}</label>
+                        {arr.length > 0 ? (
+                          <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{String(arr[0]).split("/").pop()}</span>
+                            <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/booking-docs/${arr[0]}`}
+                              target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">No file uploaded</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </ScrollArea>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -584,9 +609,6 @@ export function TenantsContent() {
                   </div>
                   <div className="space-y-1"><label className={lbl}>Nationality</label><Input value={editForm.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
                   <div className="space-y-1"><label className={lbl}>Occupation</label><Input value={editForm.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Company</label><Input value={editForm.company || ""} onChange={e => setField("company", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Position</label><Input value={editForm.position || ""} onChange={e => setField("position", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Monthly Salary</label><Input type="number" value={editForm.monthly_salary || ""} onChange={e => setField("monthly_salary", Number(e.target.value))} /></div>
                 </div>
               </div>
 
@@ -607,6 +629,44 @@ export function TenantsContent() {
                   </div>
                 </div>
               </div>
+
+              {/* Documents */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
+                {([
+                  { key: "passport" as const, label: "Passport / IC" },
+                  { key: "offerLetter" as const, label: "Offer Letter" },
+                  { key: "transferSlip" as const, label: "Transfer Slip" },
+                ]).map(({ key, label }) => {
+                  const hasNewFile = editUploadedFiles[key] != null;
+                  const hasExisting = !!editExistingDocs[key];
+                  const hasFile = hasNewFile || hasExisting;
+                  const fileName = hasNewFile ? editUploadedFiles[key]!.name : hasExisting ? editExistingDocs[key].split("/").pop() : null;
+                  return (
+                    <div key={key} className="space-y-1">
+                      <label className={lbl}>{label}</label>
+                      {hasFile ? (
+                        <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                          <span className="text-sm flex-1 truncate">{fileName}</span>
+                          <button type="button" onClick={() => setEditDocRemoveConfirm(key)}
+                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                          <span className="text-muted-foreground">Choose File</span>
+                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) setEditUploadedFiles(prev => ({ ...prev, [key]: file }));
+                            e.target.value = "";
+                          }} />
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <DialogFooter className="px-6 pb-6 pt-2 border-t">
@@ -615,6 +675,26 @@ export function TenantsContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit doc remove confirm */}
+      <AlertDialog open={!!editDocRemoveConfirm} onOpenChange={(open) => { if (!open) setEditDocRemoveConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove file?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to remove this file?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep File</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (editDocRemoveConfirm) {
+                setEditUploadedFiles(prev => ({ ...prev, [editDocRemoveConfirm]: null }));
+                setEditExistingDocs(prev => ({ ...prev, [editDocRemoveConfirm]: "" }));
+              }
+              setEditDocRemoveConfirm(null);
+            }}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
@@ -692,20 +772,32 @@ export function TenantsContent() {
                   { key: "passport" as const, label: "Passport / IC" },
                   { key: "offerLetter" as const, label: "Offer Letter" },
                   { key: "transferSlip" as const, label: "Transfer Slip" },
-                ]).map(({ key, label }) => (
-                  <div key={key} className="space-y-1">
-                    <label className={lbl}>{label}</label>
-                    <div className="flex items-center gap-3">
-                      <label className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
-                        Choose Files
-                        <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
-                          if (e.target.files) setAddUploadedFiles(prev => ({ ...prev, [key]: [...prev[key], ...Array.from(e.target.files!)] }));
-                        }} />
-                      </label>
-                      <span className="text-xs text-muted-foreground">{addUploadedFiles[key].length > 0 ? addUploadedFiles[key].map(f => f.name).join(", ") : "No file chosen"}</span>
+                ]).map(({ key, label }) => {
+                  const hasFile = addUploadedFiles[key] != null;
+                  return (
+                    <div key={key} className="space-y-1">
+                      <label className={lbl}>{label}</label>
+                      {hasFile ? (
+                        <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                          <span className="text-sm flex-1 truncate">{addUploadedFiles[key]!.name}</span>
+                          <button type="button" onClick={() => setAddUploadedFiles(prev => ({ ...prev, [key]: null }))}
+                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                          <span className="text-muted-foreground">Choose File</span>
+                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) setAddUploadedFiles(prev => ({ ...prev, [key]: file }));
+                            e.target.value = "";
+                          }} />
+                        </label>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -719,11 +811,11 @@ export function TenantsContent() {
   );
 }
 
-function InfoField({ label, value }: { label: string; value: string | number }) {
+function ViewField({ label, value }: { label: string; value: string | number }) {
   return (
-    <div>
-      <span className="text-muted-foreground">{label}:</span>{" "}
-      <span>{value || "—"}</span>
+    <div className="space-y-1">
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</div>
+      <div className="text-sm px-3 py-2 rounded-lg bg-background border">{value || "—"}</div>
     </div>
   );
 }
