@@ -652,9 +652,6 @@ export function TenantsContent() {
                   </div>
                   <div className="space-y-1"><label className={lbl}>Nationality</label><Input value={addForm.nationality || ""} onChange={e => setAddField("nationality", e.target.value)} /></div>
                   <div className="space-y-1"><label className={lbl}>Occupation</label><Input value={addForm.occupation || ""} onChange={e => setAddField("occupation", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Company</label><Input value={addForm.company || ""} onChange={e => setAddField("company", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Position</label><Input value={addForm.position || ""} onChange={e => setAddField("position", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Monthly Salary</label><Input type="number" value={addForm.monthly_salary || ""} onChange={e => setAddField("monthly_salary", Number(e.target.value))} /></div>
                 </div>
               </div>
 
