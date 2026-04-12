@@ -348,6 +348,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 {sectionTitle("🏠", "Room")}
                 <div className="space-y-1">
+                  <label className={lbl}>Search Room</label>
+                  <input className={ic} placeholder="Search by building, unit, room..." value={roomSearch} onChange={e => setRoomSearch(e.target.value)} />
+                </div>
+                <div className="space-y-1">
                   <label className={lbl}>Select Room *</label>
                   <select className={ic} value={form.roomId} onChange={e => {
                     const room = roomsData.find(r => r.id === e.target.value);
