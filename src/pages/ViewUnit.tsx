@@ -134,9 +134,6 @@ export default function ViewUnit() {
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="View Room" onClick={() => navigate(`/photos/${room.id}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit Room" onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
