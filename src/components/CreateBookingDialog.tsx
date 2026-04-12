@@ -62,6 +62,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"passport" | "offerLetter" | "transferSlip" | null>(null);
 
   // Fetch existing tenants
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
@@ -440,16 +441,16 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                       </select>
                     </div>
                     <div className="space-y-1">
+                      <label className={lbl}>Move-in Date *</label>
+                      <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
                       <label className={lbl}>Tenancy Duration *</label>
                       <select className={ic} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
                         {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
                           <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : ""}</option>
                         ))}
                       </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className={lbl}>Move-in Date *</label>
-                      <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
                     </div>
                   </div>
                 )}
@@ -616,7 +617,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                       {hasFile ? (
                         <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
                           <span className="text-sm flex-1 truncate">{fileName}</span>
-                          <button type="button" onClick={() => removeDoc(key)}
+                          <button type="button" onClick={() => setDocRemoveConfirm(key)}
                             className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
                             <X className="h-4 w-4" />
                           </button>
@@ -703,6 +704,20 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel>Continue Editing</AlertDialogCancel>
             <AlertDialogAction onClick={() => { onOpenChange(false); setShowDiscardConfirm(false); resetForm(); }}>Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Document remove confirmation */}
+      <AlertDialog open={!!docRemoveConfirm} onOpenChange={(open) => { if (!open) setDocRemoveConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove file?</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to remove this file? You can upload a new one after removing.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep File</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
