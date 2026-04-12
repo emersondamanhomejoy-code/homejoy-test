@@ -287,7 +287,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                           
                           <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                             <div className="flex gap-1 justify-center">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => navigate(`/admin/view-unit/${unit.id}`)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => setViewingUnit(unit)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
