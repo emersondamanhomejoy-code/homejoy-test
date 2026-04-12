@@ -387,9 +387,46 @@ export default function AddUnit() {
                     </button>
                   </div>
 
-                  {/* Photos placeholder */}
-                  <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-2.5 text-center">
-                    📷 Room photos can be uploaded after the unit is created.
+                  {/* Room Photos Upload */}
+                  <div>
+                    <label className="text-xs text-muted-foreground">Room Photos</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {(rc.photos || []).map((path: string, pi: number) => (
+                        <div key={pi} className="relative group">
+                          <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
+                          <button onClick={() => {
+                            const c = [...roomConfigs];
+                            c[i] = { ...c[i], photos: (c[i].photos || []).filter((_: any, idx: number) => idx !== pi) };
+                            setRoomConfigs(c);
+                          }} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                        </div>
+                      ))}
+                      {(rc.photos || []).length < 10 && (
+                        <label className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                          <span className="text-lg text-muted-foreground">+</span>
+                          <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (!files.length) return;
+                            const remaining = 10 - (rc.photos || []).length;
+                            const toUpload = files.slice(0, remaining);
+                            const newPaths: string[] = [];
+                            for (const file of toUpload) {
+                              const ext = file.name.split('.').pop();
+                              const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                              const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                              if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                              newPaths.push(path);
+                            }
+                            if (newPaths.length > 0) {
+                              const c = [...roomConfigs];
+                              c[i] = { ...c[i], photos: [...(c[i].photos || []), ...newPaths] };
+                              setRoomConfigs(c);
+                            }
+                            e.target.value = "";
+                          }} />
+                        </label>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -502,28 +539,14 @@ export default function AddUnit() {
                     <input className={`${inputClass} w-full`} placeholder="Internal notes…" value={rc.internal_remark || ""} onChange={e => updateRC("internal_remark", e.target.value)} />
                   </div>
 
-                  {/* Occupant Snapshot — read-only when Occupied */}
+                  {/* Select Tenant — when Occupied */}
                   {showOccupant && (
-                    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Occupant Snapshot</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <label className="text-xs text-muted-foreground">Pax Staying</label>
-                          <input className={`${inputClass} w-full`} type="number" min={1} value={rc.pax_staying || 1} onChange={e => updateRC("pax_staying", Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Nationality</label>
-                          <input className={`${inputClass} w-full`} value={rc.tenant_nationality || ""} onChange={e => updateRC("tenant_nationality", e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Gender</label>
-                          <select className={`${inputClass} w-full`} value={rc.tenant_gender || ""} onChange={e => updateRC("tenant_gender", e.target.value)}>
-                            <option value="">—</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                          </select>
-                        </div>
-                      </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <label className="text-xs text-muted-foreground">Select Tenant</label>
+                      <select className={`${inputClass} w-full mt-1`} value={rc.tenant_name || ""} onChange={e => updateRC("tenant_name", e.target.value)} disabled>
+                        <option value="">— Select Tenant (coming soon) —</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground mt-1">Tenant list will be populated from approved bookings.</p>
                     </div>
                   )}
                 </div>
@@ -549,6 +572,10 @@ export default function AddUnit() {
           <div className="space-y-2">
             {roomConfigs.map((rc, globalIdx) => {
               if (rc.room_type !== "Car Park") return null;
+              const updateCP = (field: string, value: any) => {
+                const c = [...roomConfigs]; c[globalIdx] = { ...c[globalIdx], [field]: value }; setRoomConfigs(c);
+              };
+              const cpOccupied = rc.status === "Occupied";
               return (
                 <div key={`cp-${globalIdx}`} className="rounded-lg border bg-accent/30 border-border p-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -556,28 +583,35 @@ export default function AddUnit() {
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
+                      <label className="text-xs text-muted-foreground">Lot Number</label>
+                      <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.parking_lot || ""} onChange={e => updateCP("parking_lot", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Rental (RM)</label>
+                      <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateCP("rent", Number(e.target.value))} />
+                    </div>
+                    <div>
                       <label className="text-xs text-muted-foreground">Status</label>
-                      <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => {
-                        const c = [...roomConfigs]; c[globalIdx] = { ...c[globalIdx], status: e.target.value }; setRoomConfigs(c);
-                      }}>
+                      <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateCP("status", e.target.value)}>
                         <option value="Available">Available</option>
                         <option value="Occupied">Occupied</option>
                         <option value="Archived">Archived</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">Assigned To</label>
-                      <input className={`${inputClass} w-full`} placeholder="Occupant name" value={rc.assigned_to || ""} onChange={e => {
-                        const c = [...roomConfigs]; c[globalIdx] = { ...c[globalIdx], assigned_to: e.target.value }; setRoomConfigs(c);
-                      }} />
-                    </div>
-                    <div className="md:col-span-2">
                       <label className="text-xs text-muted-foreground">Remark</label>
-                      <input className={`${inputClass} w-full`} placeholder="Notes…" value={rc.internal_remark || ""} onChange={e => {
-                        const c = [...roomConfigs]; c[globalIdx] = { ...c[globalIdx], internal_remark: e.target.value }; setRoomConfigs(c);
-                      }} />
+                      <input className={`${inputClass} w-full`} placeholder="Notes…" value={rc.internal_remark || ""} onChange={e => updateCP("internal_remark", e.target.value)} />
                     </div>
                   </div>
+                  {cpOccupied && (
+                    <div className="mt-3">
+                      <label className="text-xs text-muted-foreground">Select Tenant</label>
+                      <select className={`${inputClass} w-full mt-1`} value={rc.assigned_to || ""} onChange={e => updateCP("assigned_to", e.target.value)} disabled>
+                        <option value="">— Select Tenant (coming soon) —</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground mt-1">Tenant list will be populated from approved bookings.</p>
+                    </div>
+                  )}
                 </div>
               );
             })}
