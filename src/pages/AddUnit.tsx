@@ -140,7 +140,7 @@ export default function AddUnit() {
     if (hasAnyData) {
       setShowCancelConfirm(true);
     } else {
-      navigate("/admin");
+      navigate("/admin", { state: { adminTab: "units" } });
     }
   };
 
@@ -188,7 +188,7 @@ export default function AddUnit() {
         roomConfigs,
       });
       logActivity("create_unit", "unit", "", { building: form.building, unit: form.unit });
-      navigate("/admin");
+      navigate("/admin", { state: { adminTab: "units" } });
     } catch (e: any) {
       alert(e.message || "Failed to save unit");
     } finally {
@@ -521,7 +521,7 @@ export default function AddUnit() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Editing</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/admin")}>Discard</AlertDialogAction>
+            <AlertDialogAction onClick={() => navigate("/admin", { state: { adminTab: "units" } })}>Discard</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

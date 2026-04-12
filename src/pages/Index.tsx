@@ -63,7 +63,10 @@ export default function Index() {
     return navState?.page || "dashboard";
   });
   const isAdmin = role === "admin" || role === "boss" || role === "manager";
-  const [adminTab, setAdminTab] = useState<string>("dashboard");
+  const [adminTab, setAdminTab] = useState<string>(() => {
+    const navState = location.state as { adminTab?: string } | null;
+    return navState?.adminTab || "dashboard";
+  });
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [buildingFormOpen, setBuildingFormOpen] = useState(false);
   const [buildingFormData, setBuildingFormData] = useState<Condo | undefined>(undefined);
