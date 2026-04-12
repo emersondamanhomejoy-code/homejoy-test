@@ -1,35 +1,32 @@
 ---
 name: Building access types
-description: Buildings have 3 access categories — pedestrian, car park, motorcycle — each with type/provider/chargeable. Chargeable items add to tenant move-in bill.
+description: Buildings have 3 access categories — pedestrian, car park, motorcycle — each supports MULTIPLE items with type/provider/chargeable. Chargeable Homejoy items add to tenant move-in bill.
 type: feature
 ---
 
 ## Building Access Structure
 
-Each building has 3 separate access configurations stored in `access_items` JSONB:
+Each building stores 3 arrays of access items in `access_items` JSONB (key: pedestrian, carpark, motorcycle).
 
-### Pedestrian Access
-- Access Type: Access Card, Face ID, None
-- Access Location (multi-select): Main Entrance, Lift, Guard House, Lobby
-- Provided By: Management Office, Homejoy
-- Chargeable: Yes/No
-- Price (RM)
-- Instruction Notes
+Each category supports **multiple** access items (e.g., a condo may need both Face ID for guard house and Access Card for lift).
 
-### Car Park Access
-- Access Type: RFID, Sticker, ANPR, Access Card, None
-- No access location needed
+### Each Access Item has:
+- Access Type (varies by category)
+- Access Location (multi-select, pedestrian only): Main Entrance, Lift, Guard House, Lobby
 - Provided By: Management Office, Homejoy
-- Chargeable: Yes/No
-- Price (RM)
+- Chargeable Type: Not Chargeable, Deposit, One-time Fee, Processing Fee
+- Price (RM) — shown only when chargeable
 - Instruction Notes
+- When Access Type = "None", all other fields are hidden
 
-### Motorcycle Access
-- Access Type: (same as car park) RFID, Sticker, ANPR, Access Card, None
-- Provided By: Management Office, Homejoy
-- Chargeable: Yes/No
-- Price (RM)
-- Instruction Notes
+### Pedestrian Access Types
+Access Card, Face ID, None
+
+### Car Park Access Types
+RFID, Sticker, ANPR, Access Card, None
+
+### Motorcycle Access Types
+RFID, Sticker, ANPR, Access Card, None
 
 ## Important Business Rule
 If an access item is chargeable and provided by Homejoy, the price must be added to the tenant's move-in cost/bill when booking.
