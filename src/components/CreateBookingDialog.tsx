@@ -62,6 +62,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"passport" | "offerLetter" | "transferSlip" | null>(null);
 
   // Fetch existing tenants
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
