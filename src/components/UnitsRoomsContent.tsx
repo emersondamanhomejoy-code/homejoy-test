@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteUnit, Unit } from "@/hooks/useRooms";
 import { useLocations } from "@/hooks/useLocations";
 import { useCondos } from "@/hooks/useCondos";
+import AddUnit from "@/pages/AddUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
@@ -435,49 +436,129 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
 
       {/* View Details Dialog */}
       <Dialog open={!!viewingUnit} onOpenChange={open => { if (!open) setViewingUnit(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Unit Details — {viewingUnit?.building} · {viewingUnit?.unit}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0 space-y-5 pb-4">
-            {viewingUnit && (
-              <>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground">Location:</span> {viewingUnit.location}</div>
-                  <div><span className="text-muted-foreground">Building:</span> {viewingUnit.building}</div>
-                  <div><span className="text-muted-foreground">Unit:</span> {viewingUnit.unit}</div>
-                  <div><span className="text-muted-foreground">Unit Type:</span> {viewingUnit.unit_type}</div>
-                  <div><span className="text-muted-foreground">Max Occupants:</span> {viewingUnit.unit_max_pax}</div>
-                  
-                  <div><span className="text-muted-foreground">Rental Deposit:</span> {(viewingUnit as any).deposit_multiplier} months</div>
-                  <div><span className="text-muted-foreground">Meter Type:</span> {(viewingUnit as any).meter_type}</div>
-                  <div><span className="text-muted-foreground">Meter Rate:</span> {(viewingUnit as any).meter_rate}</div>
-                  <div><span className="text-muted-foreground">Admin Fee:</span> RM{(viewingUnit as any).admin_fee}</div>
-                  <div><span className="text-muted-foreground">Passcode:</span> {viewingUnit.passcode || "—"}</div>
-                  <div><span className="text-muted-foreground">Parking Type:</span> {(viewingUnit as any).parking_type || "—"}</div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-semibold mb-2">Rooms</div>
-                  {(viewingUnit.rooms || []).length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No rooms.</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {(viewingUnit.rooms || []).map(room => (
-                        <div key={room.id} className="bg-muted/30 rounded-lg p-3 text-sm grid grid-cols-3 gap-2">
-                          <div><span className="text-muted-foreground">Room:</span> {room.room}</div>
-                          <div><span className="text-muted-foreground">Type:</span> {room.room_type}</div>
-                          <div><span className="text-muted-foreground">Bed:</span> {room.bed_type || "—"}</div>
-                          <div><span className="text-muted-foreground">Rent:</span> RM{room.rent}</div>
-                          <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={room.status} /></div>
-                          <div><span className="text-muted-foreground">Max Pax:</span> {room.max_pax}</div>
-                        </div>
+            {viewingUnit && (() => {
+              const unitRooms = (viewingUnit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
+              const unitCarparks = (viewingUnit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
+              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+              return (
+                <>
+                  {((viewingUnit as any).common_photos || []).length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {((viewingUnit as any).common_photos as string[]).map((path: string, i: number) => (
+                        <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
                       ))}
                     </div>
                   )}
-                </div>
-              </>
-            )}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{viewingUnit.location}</span></div>
+                    <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{viewingUnit.building}</span></div>
+                    <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{viewingUnit.unit}</span></div>
+                    <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{viewingUnit.unit_type}</span></div>
+                    <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{viewingUnit.unit_max_pax}</span></div>
+                    <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{(viewingUnit as any).deposit_multiplier} months</span></div>
+                    <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{(viewingUnit as any).admin_fee}</span></div>
+                    <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(viewingUnit as any).meter_type} · RM{(viewingUnit as any).meter_rate}/kWh</span></div>
+                    <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{viewingUnit.passcode || "—"}</span></div>
+                    <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(viewingUnit as any).wifi_name || "—"}</span></div>
+                    <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(viewingUnit as any).wifi_password || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(viewingUnit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
+                  </div>
+
+                  {unitRooms.length > 0 && (
+                    <div>
+                      <div className="text-sm font-semibold mb-2">Rooms</div>
+                      <div className="overflow-x-auto rounded-lg border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Room</TableHead>
+                              <TableHead>Bed Type</TableHead>
+                              <TableHead>Wall Type</TableHead>
+                              <TableHead>Features</TableHead>
+                              <TableHead className="text-center">Max Pax</TableHead>
+                              <TableHead className="text-right">Rental</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Avail. Date</TableHead>
+                              <TableHead className="text-center">Pax</TableHead>
+                              <TableHead>Nationality</TableHead>
+                              <TableHead>Gender</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {unitRooms.map(room => {
+                              const feats = [...((room as any).optional_features || [])];
+                              if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+                              return (
+                                <TableRow key={room.id}>
+                                  <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
+                                  <TableCell>{room.bed_type || "—"}</TableCell>
+                                  <TableCell>{(room as any).wall_type || "—"}</TableCell>
+                                  <TableCell><div className="flex flex-wrap gap-1">{feats.length > 0 ? feats.map((f: string) => <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>) : <span className="text-muted-foreground text-xs">—</span>}</div></TableCell>
+                                  <TableCell className="text-center">{room.max_pax}</TableCell>
+                                  <TableCell className="text-right">RM{room.rent}</TableCell>
+                                  <TableCell><StatusBadge status={room.status} /></TableCell>
+                                  <TableCell>{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</TableCell>
+                                  <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
+                                  <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
+                                  <TableCell>{room.tenant_gender || "—"}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+
+                  {unitCarparks.length > 0 && (
+                    <div>
+                      <div className="text-sm font-semibold mb-2">Carparks</div>
+                      <div className="overflow-x-auto rounded-lg border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Lot</TableHead>
+                              <TableHead className="text-right">Rental</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Remark</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {unitCarparks.map(cp => (
+                              <TableRow key={cp.id}>
+                                <TableCell className="font-medium">🅿️ {cp.room}</TableCell>
+                                <TableCell>{(cp as any).parking_lot || "—"}</TableCell>
+                                <TableCell className="text-right">RM{cp.rent}</TableCell>
+                                <TableCell><StatusBadge status={cp.status} /></TableCell>
+                                <TableCell>{(cp as any).internal_remark || "—"}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Unit Dialog */}
+      <Dialog open={addUnitOpen} onOpenChange={open => { if (!open) setAddUnitOpen(false); }}>
+        <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle>Add Unit</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <AddUnit onClose={() => setAddUnitOpen(false)} />
           </div>
         </DialogContent>
       </Dialog>
