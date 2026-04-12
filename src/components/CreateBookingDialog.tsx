@@ -61,6 +61,30 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [agentSearch, setAgentSearch] = useState("");
   const [roomSearch, setRoomSearch] = useState("");
   const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [tenantSearch, setTenantSearch] = useState("");
+
+  // Fetch existing tenants
+  const [existingTenants, setExistingTenants] = useState<any[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    supabase.from("tenants").select("*").then(({ data }) => {
+      if (data) setExistingTenants(data);
+    });
+  }, [open]);
+
+  const filteredTenants = useMemo(() => {
+    if (!tenantSearch.trim()) return existingTenants.slice(0, 20);
+    const s = tenantSearch.toLowerCase();
+    return existingTenants.filter(t => 
+      (t.name || "").toLowerCase().includes(s) || 
+      (t.phone || "").toLowerCase().includes(s) ||
+      (t.email || "").toLowerCase().includes(s) ||
+      (t.ic_passport || "").toLowerCase().includes(s)
+    ).slice(0, 20);
+  }, [existingTenants, tenantSearch]);
+
+  const isLinkedTenant = selectedTenantId != null;
 
   const [agents, setAgents] = useState<UserInfo[]>([]);
   useEffect(() => {
@@ -489,21 +513,67 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
               {/* 4. Tenant Details */}
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 {sectionTitle("👤", "Tenant Details")}
+
+                {/* Existing tenant selector */}
+                <div className="space-y-1">
+                  <label className={lbl}>Link Existing Tenant (optional)</label>
+                  <input className={ic} placeholder="Search by name, phone, email, IC..." value={tenantSearch} onChange={e => setTenantSearch(e.target.value)} />
+                  {tenantSearch.trim() && !isLinkedTenant && filteredTenants.length > 0 && (
+                    <div className="border rounded-lg bg-background max-h-40 overflow-y-auto divide-y divide-border">
+                      {filteredTenants.map(t => (
+                        <button key={t.id} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                          onClick={() => {
+                            setSelectedTenantId(t.id);
+                            setTenantSearch("");
+                            setForm(prev => ({
+                              ...prev,
+                              tenantName: t.name || "", phone: t.phone || "", email: t.email || "",
+                              icPassport: t.ic_passport || "", gender: t.gender || "",
+                              nationality: t.nationality || "", occupation: t.occupation || "",
+                              emergency1Name: t.emergency_1_name || "", emergency1Phone: t.emergency_1_phone || "",
+                              emergency1Relationship: t.emergency_1_relationship || "",
+                              emergency2Name: t.emergency_2_name || "", emergency2Phone: t.emergency_2_phone || "",
+                              emergency2Relationship: t.emergency_2_relationship || "",
+                            }));
+                          }}>
+                          <span className="font-medium">{t.name}</span>
+                          <span className="text-muted-foreground ml-2">{t.phone} · {t.email || t.ic_passport || ""}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {tenantSearch.trim() && !isLinkedTenant && filteredTenants.length === 0 && (
+                    <div className="text-xs text-muted-foreground py-1">No matching tenants found</div>
+                  )}
+                </div>
+
+                {isLinkedTenant && (
+                  <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">
+                    <span className="font-semibold">Linked to existing tenant:</span> {form.tenantName}
+                    <button type="button" className="ml-auto text-xs underline hover:no-underline" onClick={() => {
+                      setSelectedTenantId(null);
+                      setForm(prev => ({ ...prev, tenantName: "", phone: "", email: "", icPassport: "", gender: "", nationality: "", occupation: "",
+                        emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
+                        emergency2Name: "", emergency2Phone: "", emergency2Relationship: "" }));
+                    }}>Unlink</button>
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={ic} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={ic} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
                   <div className="space-y-1"><label className={lbl}>Gender *</label>
-                    <select className={ic} value={form.gender} onChange={e => set("gender", e.target.value)}>
+                    <select className={ic} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
                       <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
                     </select>
                   </div>
-                  <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
                 </div>
 
-                {(form.gender === "Couple" || form.gender === "2 Pax") && (
+                {form.gender === "Couple" && (
                   <div className="mt-3 p-3 border border-dashed border-primary/30 rounded-lg space-y-3">
                     <div className="text-sm font-bold flex items-center gap-2">👥 Second Tenant Details</div>
                     <div className="grid md:grid-cols-2 gap-3">
@@ -524,15 +594,15 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="text-sm font-semibold">Contact 1 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm font-semibold">Contact 2 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
                   </div>
                 </div>
               </div>
