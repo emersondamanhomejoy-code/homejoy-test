@@ -13,17 +13,19 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Pencil, FileText, ExternalLink } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Pencil, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
   booking: Booking;
-  onBack: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onEdit: (b: Booking) => void;
   getAgentName: (id: string | null) => string;
 }
 
-export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: Props) {
+export function BookingDetailView({ booking: b, open, onOpenChange, onEdit, getAgentName }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const updateBookingStatus = useUpdateBookingStatus();
@@ -82,7 +84,7 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     });
     toast.success("Booking approved");
     setShowApproveDialog(false);
-    onBack();
+    onOpenChange(false);
   };
 
   const handleReject = async () => {
@@ -91,7 +93,6 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     if (b.room_id) {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
     }
-    // Release car parks
     for (const sel of carParkSelections) {
       if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
     }
@@ -103,7 +104,7 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     });
     toast.success("Booking rejected");
     setShowRejectDialog(false);
-    onBack();
+    onOpenChange(false);
   };
 
   const handleCancel = async () => {
@@ -123,7 +124,7 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     });
     toast.success("Booking cancelled");
     setShowCancelDialog(false);
-    onBack();
+    onOpenChange(false);
   };
 
   const handleDelete = async () => {
@@ -144,7 +145,7 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
     toast.success("Booking deleted");
     setShowDeleteDialog(false);
-    onBack();
+    onOpenChange(false);
   };
 
   const canEdit = b.status === "pending" || b.status === "rejected";
@@ -187,18 +188,19 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
   const carparkRental = moveInCost?.carparkRental || 0;
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Bookings
-        </button>
-        {canEdit && (
-          <Button variant="outline" onClick={() => onEdit(b)}>
-            <Pencil className="h-4 w-4 mr-1" /> Edit Booking
-          </Button>
-        )}
-      </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" hideClose>
+          <DialogHeader className="px-6 pt-6 pb-0 flex flex-row items-center justify-between">
+            <DialogTitle>View Booking</DialogTitle>
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={() => { onOpenChange(false); onEdit(b); }}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            )}
+          </DialogHeader>
+          <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
+            <div className="space-y-5 py-4">
 
       {/* 1. Booking Summary */}
       {sectionCard("📋", "Booking Summary", (
@@ -420,6 +422,10 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
           </Button>
         </div>
       )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── Approve Confirm Dialog ─── */}
       <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
@@ -493,6 +499,6 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

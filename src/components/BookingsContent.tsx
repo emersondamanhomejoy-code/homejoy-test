@@ -36,6 +36,7 @@ export function BookingsContent() {
   const { data: roomsData = [] } = useRooms();
 
   const [view, setView] = useState<View>({ type: "list" });
+  const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filters
@@ -156,18 +157,9 @@ export function BookingsContent() {
   const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom || dateTo;
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
-  // ======================== DETAIL VIEW ========================
-  if (view.type === "detail") {
-    const freshBooking = allBookings.find(b => b.id === view.booking.id) || view.booking;
-    return (
-      <BookingDetailView
-        booking={freshBooking}
-        onBack={() => setView({ type: "list" })}
-        onEdit={(b) => setView({ type: "edit", booking: b })}
-        getAgentName={getAgentName}
-      />
-    );
-  }
+  // ======================== DETAIL VIEW (now a dialog, rendered alongside list) ========================
+
+  // ======================== EDIT VIEW ========================
 
   // ======================== EDIT VIEW ========================
   if (view.type === "edit") {
@@ -175,7 +167,7 @@ export function BookingsContent() {
     return (
       <BookingEditView
         booking={freshBooking}
-        onBack={() => setView({ type: "detail", booking: view.booking })}
+        onBack={() => { setViewBooking(view.booking); setView({ type: "list" }); }}
       />
     );
   }
@@ -185,6 +177,17 @@ export function BookingsContent() {
     <div className="space-y-4">
       {/* Create Booking Dialog */}
       <CreateBookingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+
+      {/* View Booking Dialog */}
+      {viewBooking && (
+        <BookingDetailView
+          booking={allBookings.find(bk => bk.id === viewBooking.id) || viewBooking}
+          open={!!viewBooking}
+          onOpenChange={(open) => { if (!open) setViewBooking(null); }}
+          onEdit={(b) => { setViewBooking(null); setView({ type: "edit", booking: b }); }}
+          getAgentName={getAgentName}
+        />
+      )}
 
       {/* Cancel Booking Dialog */}
       <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
@@ -299,7 +302,7 @@ export function BookingsContent() {
                       <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-center">
-                          <Button variant="ghost" size="icon" onClick={() => setView({ type: "detail", booking: b })} title="View">
+                          <Button variant="ghost" size="icon" onClick={() => setViewBooking(b)} title="View">
                             <Eye className="h-4 w-4" />
                           </Button>
                           {(b.status === "pending" || b.status === "rejected") && (
