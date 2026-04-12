@@ -236,6 +236,7 @@ export function UnitsTableView({
                                 admin_fee: (unit as any).admin_fee ?? 330,
                                 parking_type: (unit as any).parking_type || "None",
                                 parking_card_deposit: (unit as any).parking_card_deposit || 0,
+                                common_photos: (unit as any).common_photos || [],
                               });
                             }}>
                               <Pencil className="h-4 w-4" />
