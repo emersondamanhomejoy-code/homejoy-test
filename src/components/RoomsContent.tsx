@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import EditUnit from "@/pages/EditUnit";
 import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteRoom, Room } from "@/hooks/useRooms";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
@@ -15,6 +16,9 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +44,7 @@ export function RoomsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editUnitId, setEditUnitId] = useState<string | null>(null);
 
   const { sort, handleSort, sortData } = useTableSort("building");
 
@@ -311,7 +316,7 @@ export function RoomsContent() {
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => navigate(`/photos/${r.id}`)}>
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => navigate(`/admin/edit-unit/${r.unit_id}`)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditUnitId(r.unit_id)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
@@ -366,6 +371,18 @@ export function RoomsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Unit Dialog */}
+      <Dialog open={!!editUnitId} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle>Edit Unit</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {editUnitId && <EditUnit unitIdProp={editUnitId} onClose={() => setEditUnitId(null)} />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

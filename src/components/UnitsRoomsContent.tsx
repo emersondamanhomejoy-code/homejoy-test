@@ -4,6 +4,7 @@ import { useUnits, useDeleteUnit, Unit } from "@/hooks/useRooms";
 import { useLocations } from "@/hooks/useLocations";
 import { useCondos } from "@/hooks/useCondos";
 import AddUnit from "@/pages/AddUnit";
+import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
@@ -43,7 +44,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
   const [addUnitOpen, setAddUnitOpen] = useState(false);
-
+  const [editUnitId, setEditUnitId] = useState<string | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
 
   // Derive filter options
@@ -291,7 +292,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                               <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => setViewingUnit(unit)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => setEditUnitId(unit.id)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete" onClick={() => setDeleteConfirm(unit.id)}>
@@ -559,6 +560,18 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
             <AddUnit onClose={() => setAddUnitOpen(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Unit Dialog */}
+      <Dialog open={!!editUnitId} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle>Edit Unit</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {editUnitId && <EditUnit unitIdProp={editUnitId} onClose={() => setEditUnitId(null)} />}
           </div>
         </DialogContent>
       </Dialog>
