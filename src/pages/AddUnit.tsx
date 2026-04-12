@@ -42,7 +42,7 @@ export default function AddUnit() {
   const [form, setForm] = useState({
     building: "", location: "", unit: "", unit_type: "Mix Unit",
     unit_max_pax: 6, deposit_multiplier: 1.5, admin_fee: 330,
-    meter_type: "Postpaid", meter_rate: 0, passcode: "",
+    meter_type: "Postpaid", meter_rate: 0.65, passcode: "",
     wifi_name: "", wifi_password: "", internal_only: false,
     common_photos: [] as string[],
   });
@@ -259,7 +259,7 @@ export default function AddUnit() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs text-muted-foreground">Choose Building *</Label>
+              <Label className="text-xs text-muted-foreground">Building *</Label>
               <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
                 const condo = condosList.find(c => c.name === e.target.value);
                 setForm(prev => ({ ...prev, building: e.target.value, location: condo?.location?.name || "" }));
@@ -269,7 +269,7 @@ export default function AddUnit() {
               </select>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Location (auto-filled) *</Label>
+              <Label className="text-xs text-muted-foreground">Location *</Label>
               <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly placeholder="Select a building above" />
             </div>
             <div>
@@ -289,7 +289,7 @@ export default function AddUnit() {
               <input className={`${inputClass} w-full`} type="number" min={1} value={form.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Rental Deposit Multiplier *</Label>
+              <Label className="text-xs text-muted-foreground">Rental Deposit (Months) *</Label>
               <input className={`${inputClass} w-full`} type="number" step="0.1" placeholder="e.g. 1.5" value={form.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
             </div>
             <div>
@@ -308,7 +308,7 @@ export default function AddUnit() {
               <input className={`${inputClass} w-full`} type="number" step="0.01" placeholder="e.g. 0.65" value={form.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Maintenance Passcode</Label>
+              <Label className="text-xs text-muted-foreground">Main Door Passcode</Label>
               <input className={`${inputClass} w-full`} placeholder="Passcode" value={form.passcode} onChange={e => updateField("passcode", e.target.value)} />
             </div>
             <div>
