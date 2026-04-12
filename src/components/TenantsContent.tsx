@@ -213,6 +213,11 @@ export function TenantsContent() {
   const saveTenant = async () => {
     if (!editingTenant) return;
     try {
+      // Upload new files
+      const passportPath = editUploadedFiles.passport ? await uploadFile(editUploadedFiles.passport, "passport") : editExistingDocs.passport;
+      const offerPath = editUploadedFiles.offerLetter ? await uploadFile(editUploadedFiles.offerLetter, "offer-letter") : editExistingDocs.offerLetter;
+      const slipPath = editUploadedFiles.transferSlip ? await uploadFile(editUploadedFiles.transferSlip, "transfer-slip") : editExistingDocs.transferSlip;
+
       const { error } = await supabase.from("tenants").update({
         name: editForm.name || "",
         phone: editForm.phone || "",
@@ -221,16 +226,15 @@ export function TenantsContent() {
         gender: editForm.gender || "",
         nationality: editForm.nationality || "",
         occupation: editForm.occupation || "",
-        company: editForm.company || "",
-        position: editForm.position || "",
-        monthly_salary: editForm.monthly_salary || 0,
         emergency_1_name: editForm.emergency_1_name || "",
         emergency_1_phone: editForm.emergency_1_phone || "",
         emergency_1_relationship: editForm.emergency_1_relationship || "",
         emergency_2_name: editForm.emergency_2_name || "",
         emergency_2_phone: editForm.emergency_2_phone || "",
         emergency_2_relationship: editForm.emergency_2_relationship || "",
-        car_plate: editForm.car_plate || "",
+        doc_passport: passportPath ? [passportPath] : [],
+        doc_offer_letter: offerPath ? [offerPath] : [],
+        doc_transfer_slip: slipPath ? [slipPath] : [],
       }).eq("id", editingTenant.id);
       if (error) throw error;
       toast.success("Tenant updated.");
