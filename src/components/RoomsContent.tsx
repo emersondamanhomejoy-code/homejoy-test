@@ -130,14 +130,20 @@ export function RoomsContent() {
   };
 
   const handleExport = () => {
-    const headers = ["Room Name","Location","Building","Unit Number","Unit Type","Room Type","Bed Type","Wall Type","Monthly Rental","Status","Available Date","Pax Staying","Nationality","Gender","Last Updated"];
-    const rows = filtered.map(r => [
-      r.room, r.location, r.building, r.unit, r.unit_type_val,
-      (r as any).room_category || r.room_type, r.bed_type || "", (r as any).wall_type || "",
-      r.rent, r.status, r.available_date || "", r.pax_staying || 0,
-      (r as any).tenant_nationality || "", r.tenant_gender || "",
-      r.updated_at ? format(new Date(r.updated_at), "yyyy-MM-dd HH:mm") : "",
-    ]);
+    const headers = ["Room Name","Location","Building","Unit Number","Unit Type","Bed Type","Wall Type","Features","Monthly Rental","Status","Available Date","Pax Staying","Nationality","Gender","Last Updated"];
+    const rows = filtered.map(r => {
+      const feats = [...((r as any).optional_features || [])];
+      if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+      return [
+        r.room, r.location, r.building, r.unit, r.unit_type_val,
+        r.bed_type || "", (r as any).wall_type || "", feats.join(", "),
+        r.rent, r.status,
+        (r.status === "Available Soon" || r.status === "Pending") ? (r.available_date || "") : "",
+        r.pax_staying || 0,
+        (r as any).tenant_nationality || "", r.tenant_gender || "",
+        r.updated_at ? format(new Date(r.updated_at), "yyyy-MM-dd HH:mm") : "",
+      ];
+    });
     const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
