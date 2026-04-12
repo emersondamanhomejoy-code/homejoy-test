@@ -479,7 +479,7 @@ export function TenantsContent() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoField label="Phone" value={viewingTenant.phone} />
                   <InfoField label="IC/Passport" value={viewingTenant.ic_passport} />
-                  <InfoField label="Race" value={viewingTenant.race} />
+                  <InfoField label="Gender" value={viewingTenant.gender} />
                   <InfoField label="Nationality" value={viewingTenant.nationality} />
                   <InfoField label="Occupation" value={viewingTenant.occupation} />
                   <InfoField label="Company" value={viewingTenant.company} />
