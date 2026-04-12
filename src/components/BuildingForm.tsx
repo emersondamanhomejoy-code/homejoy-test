@@ -341,8 +341,8 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
             </div>
           )}
 
-          {/* Instruction */}
-          {!isNone && (
+          {/* Instruction — always shown */}
+          {(
             <div className="md:col-span-2">
               <label className={labelClass}>Instruction Notes</label>
               <textarea className={`${inputClass} w-full h-16`} placeholder="Special instructions..." value={item.instruction} onChange={e => updateItem(items, setItems, item.id, "instruction", e.target.value)} />
