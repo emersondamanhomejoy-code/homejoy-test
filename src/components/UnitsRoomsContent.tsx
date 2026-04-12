@@ -82,12 +82,12 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
         unit: u.unit,
         unit_type: u.unit_type,
         max_pax: u.unit_max_pax,
-        max_pets: (u as any).max_pets ?? 0,
+        
         total_rooms: rooms.length,
         total_carparks: carparks.length,
         remaining_rooms: rooms.filter(r => r.status === "Available").length,
         remaining_carparks: carparks.filter(r => r.status === "Available").length,
-        remaining_pets: (u as any).max_pets ?? 0, // placeholder
+        
       };
       return map[key];
     });
@@ -237,12 +237,12 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit Number</SortableTableHead>
                     <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
                     <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Occupants</SortableTableHead>
-                    <SortableTableHead sortKey="max_pets" currentSort={sort} onSort={handleSort} className="text-center">Max Pets</SortableTableHead>
+                    
                     <SortableTableHead sortKey="total_rooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
                     <SortableTableHead sortKey="total_carparks" currentSort={sort} onSort={handleSort} className="text-center">Total Carparks</SortableTableHead>
                     <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Remaining Rooms</SortableTableHead>
                     <SortableTableHead sortKey="remaining_carparks" currentSort={sort} onSort={handleSort} className="text-center">Remaining Carparks</SortableTableHead>
-                    <SortableTableHead sortKey="remaining_pets" currentSort={sort} onSort={handleSort} className="text-center">Remaining Pets</SortableTableHead>
+                    
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -252,10 +252,6 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                     const carparks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
                     const availableRooms = rooms.filter(r => r.status === "Available").length;
                     const availableCarparks = carparks.filter(r => r.status === "Available").length;
-                    const maxPets = (unit as any).max_pets ?? 0;
-                    // Remaining pets = max_pets - count of occupied rooms with pets (placeholder: same as max for now)
-                    const occupiedPets = rooms.filter(r => r.status === "Occupied").reduce((sum) => sum, 0); // no pet tracking per room yet
-                    const remainingPets = maxPets;
                     const isExpanded = expandedRows.has(unit.id);
 
                     return (
@@ -282,7 +278,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
-                          <TableCell className="text-center">{maxPets}</TableCell>
+                          
                           <TableCell className="text-center">{rooms.length}</TableCell>
                           <TableCell className="text-center">{carparks.length}</TableCell>
                           <TableCell className="text-center">
@@ -291,7 +287,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                           <TableCell className="text-center">
                             <span className={availableCarparks > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{availableCarparks}</span>
                           </TableCell>
-                          <TableCell className="text-center">{remainingPets}</TableCell>
+                          
                           <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                             <div className="flex gap-1 justify-center">
                               <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => setViewingUnit(unit)}>
@@ -314,7 +310,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                                 parking_type: (unit as any).parking_type || "None",
                                 parking_card_deposit: (unit as any).parking_card_deposit || 0,
                                 common_photos: (unit as any).common_photos || [],
-                                max_pets: (unit as any).max_pets ?? 0,
+                                
                               })}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -433,7 +429,7 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                   <div><span className="text-muted-foreground">Unit:</span> {viewingUnit.unit}</div>
                   <div><span className="text-muted-foreground">Unit Type:</span> {viewingUnit.unit_type}</div>
                   <div><span className="text-muted-foreground">Max Occupants:</span> {viewingUnit.unit_max_pax}</div>
-                  <div><span className="text-muted-foreground">Max Pets:</span> {(viewingUnit as any).max_pets ?? 0}</div>
+                  
                   <div><span className="text-muted-foreground">Rental Deposit:</span> {(viewingUnit as any).deposit_multiplier} months</div>
                   <div><span className="text-muted-foreground">Meter Type:</span> {(viewingUnit as any).meter_type}</div>
                   <div><span className="text-muted-foreground">Meter Rate:</span> {(viewingUnit as any).meter_rate}</div>
