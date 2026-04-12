@@ -38,6 +38,7 @@ export function RoomsContent() {
   const [selectedUnitTypes, setSelectedUnitTypes] = useState<string[]>([]);
   const [selectedBedTypes, setSelectedBedTypes] = useState<string[]>([]);
   const [selectedWallTypes, setSelectedWallTypes] = useState<string[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
