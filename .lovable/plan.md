@@ -1,41 +1,21 @@
 
 
-## Plan: Redesign Room/Carpark Cards with Collapsible Pattern
+## Problem
 
-### Problem
-1. Car park default rent should be RM150
-2. Car park cards don't need "More Details" — they're simple enough to show inline
-3. Room cards look bulky and ugly — too many large cards open at once
-4. User wants the same collapsible pattern as Building Form's access items (fill → save/collapse → compact summary)
+The accordion expanded view in Units & Rooms uses a CSS grid with fixed pixel widths (`grid-cols-[60px_80px_80px_120px_60px_70px_140px_60px_80px_70px]`), causing text to be cramped and overlapping. It looks very different from the clean `<Table>` used in View Unit.
 
-### Design Decision
-Use the **fill-then-collapse** pattern from BuildingForm access items:
-- Each room/carpark starts **expanded** (editable) with ALL fields visible inline — no "More Details" dialog
-- After filling, user clicks a **Save/Collapse button** (💾) to collapse it into a compact one-line summary
-- Collapsed state shows: Room name, Bed Type, Rent, Status — with Edit (✏️) and Delete (🗑️) icons
-- User can re-expand any item to edit
-- Remove the "More Details" dialog entirely
+## Solution
 
-### Changes
+Replace the custom CSS grid layout in the accordion expanded section with a proper `<Table>` component — matching the exact same design used in the View Unit dialog/page.
 
-**`src/pages/AddUnit.tsx`**:
+### Changes in `src/components/UnitsRoomsContent.tsx` (lines ~318–376)
 
-1. **Car park default rent = RM150** — update `rebuildConfigs` and initial state to set `rent: 150` for car park entries
+**Rooms sub-section:** Replace the `<div className="grid ...">` structure with a `<Table>` using the same columns as View Unit:
+- Room, Bed Type, Wall Type, Features, Max Pax, Rental (RM), Status, Pax Staying, Nationality, Gender
 
-2. **Room card redesign — collapsible pattern**:
-   - Add `collapsedRooms` state (`Record<number, boolean>`) to track which cards are collapsed
-   - **Expanded room card** shows ALL fields inline (bed type, rent, max pax, status, wall type, special type, available date) — no dialog needed
-   - **Expanded car park card** shows: parking lot, rent (default 150), status — all inline, no "More Details"
-   - **Collapse button** (Save icon) on each card to collapse after filling
-   - **Collapsed state** renders a compact single-line summary: `Room A · Queen · RM650 · Available` with Edit/Delete buttons
-   - Car park collapsed: `🅿️ Car Park · B1-23 · RM150 · Available`
+Use `<TableHeader>`, `<TableRow>`, `<TableHead>`, `<TableCell>` — identical markup to `ViewUnit.tsx` lines 91–139.
 
-3. **Remove the "More Details" Dialog** entirely — all fields are now inline in the expanded card
+**Carparks sub-section:** Same treatment — replace grid with `<Table>` matching ViewUnit's carpark table (lines 152–172).
 
-4. **Remove `editingRoomConfigIndex` state** and the Dialog component for room details
-
-### Technical Details
-- Reuse the same visual pattern as `BuildingForm`'s `renderAccessItem`: collapsed = summary bar with Pencil/Trash icons, expanded = bordered card with Save/Trash icons
-- Room fields in expanded state arranged in a 2-column or 3-column grid
-- Car park fields in expanded state: 3 fields (Parking Lot, Rent, Status) in a single row
+This ensures consistent, readable formatting with proper spacing, alignment, and responsive overflow scrolling via the `<Table>` wrapper's built-in `overflow-auto`.
 
