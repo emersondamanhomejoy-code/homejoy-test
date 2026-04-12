@@ -617,7 +617,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                       {hasFile ? (
                         <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
                           <span className="text-sm flex-1 truncate">{fileName}</span>
-                          <button type="button" onClick={() => removeDoc(key)}
+                          <button type="button" onClick={() => setDocRemoveConfirm(key)}
                             className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
                             <X className="h-4 w-4" />
                           </button>
