@@ -25,7 +25,7 @@ export function SortableTableHead({ children, sortKey, currentSort, onSort, clas
       className={cn("cursor-pointer select-none hover:text-foreground transition-colors", className)}
       onClick={() => onSort(sortKey)}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <span>{children}</span>
         {isActive ? (
           currentSort.direction === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
