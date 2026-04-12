@@ -1196,7 +1196,7 @@ export default function Index() {
   }
 
   return (
-    <OldDashboardLayout activeTab={adminTab} onTabChange={(t) => { setAdminTab(t); setPage("dashboard"); }}>
+    <OldDashboardLayout activeTab={adminTab} onTabChange={(t) => { setAdminTab(t); setPage("dashboard"); setBuildingFormOpen(false); setBuildingFormData(undefined); }}>
       <div className="flex-1 overflow-auto text-foreground">
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
         {/* Admin Content for non-dashboard tabs */}
