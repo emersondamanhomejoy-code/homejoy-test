@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 
 interface UserInfo {
   id: string;
@@ -44,6 +45,7 @@ export function BookingsContent() {
   const { data: unitsData = [] } = useUnits();
 
   const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -109,8 +111,18 @@ export function BookingsContent() {
         (b.room?.building || "").toLowerCase().includes(s)
       );
     }
-    return list;
-  }, [allBookings, statusFilter, search]);
+    return sortData(list, (b: Booking, key: string) => {
+      const map: Record<string, any> = {
+        id: b.id,
+        building: b.room?.building || "",
+        tenant_name: b.tenant_name,
+        agent: b.submitted_by || "",
+        created_at: b.created_at,
+        status: b.status,
+      };
+      return map[key];
+    });
+  }, [allBookings, statusFilter, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
@@ -603,12 +615,12 @@ export function BookingsContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Booking ID</TableHead>
-                <TableHead>Condo</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Agent</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableTableHead sortKey="id" currentSort={sort} onSort={handleSort}>Booking ID</SortableTableHead>
+                <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Condo</SortableTableHead>
+                <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant</SortableTableHead>
+                <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
+                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted</SortableTableHead>
+                <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
