@@ -129,10 +129,14 @@ export function useCreateUnit() {
         location: unit.location,
         rent: rc.rent,
         bed_type: rc.room_type === "Car Park" ? "" : (rc.bed_type || ""),
-        room_type: rc.room_type === "Car Park" ? "Car Park" : (rc.bed_type || "Medium Room"),
+        room_type: rc.room_type === "Car Park" ? "Car Park" : (rc.room_category || "Normal Room"),
+        room_category: rc.room_type === "Car Park" ? "Car Park" : (rc.room_category || "Normal Room"),
+        wall_type: rc.wall_type || "",
+        special_type: "", // legacy field
+        optional_features: rc.optional_features || [],
         unit_type: unit.unit_type,
         status: rc.status || "Available",
-        available_date: "Available Now",
+        available_date: rc.available_date || "Available Now",
         max_pax: rc.room_type === "Car Park" ? 0 : rc.max_pax,
         occupied_pax: rc.status === "Occupied" ? (rc.pax_staying || 1) : 0,
         pax_staying: rc.status === "Occupied" ? (rc.pax_staying || 1) : 0,
@@ -145,6 +149,8 @@ export function useCreateUnit() {
         tenant_gender: rc.status === "Occupied" ? (rc.tenant_gender || "") : "",
         tenant_race: rc.status === "Occupied" ? (rc.tenant_race || "") : "",
         internal_only: unit.internal_only || false,
+        internal_remark: rc.internal_remark || "",
+        assigned_to: rc.assigned_to || "",
       }));
       const { error: rErr } = await supabase.from("rooms").insert(rooms);
       if (rErr) throw rErr;
