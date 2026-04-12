@@ -25,10 +25,12 @@ const getDefaultCarParkName = (index: number) => `Carpark ${index + 1}`;
 
 const hasMeaningfulData = (rc: RoomConfig, index: number, naming: "alpha" | "digit", isCarPark: boolean) => {
   if (isCarPark) {
-    return Boolean(rc.bed_type?.trim()) || Number(rc.rent) > 150;
+    return Boolean(rc.parking_lot?.trim()) || Number(rc.rent) !== 150 ||
+      (rc.status && rc.status !== "Available") || Boolean(rc.assigned_to?.trim()) || Boolean(rc.internal_remark?.trim());
   }
   return Boolean(rc.bed_type?.trim()) || Number(rc.rent) > 0 || Number(rc.max_pax) !== 1 ||
-    (rc.status && rc.status !== "Available") || Boolean(rc.tenant_name?.trim());
+    (rc.status && rc.status !== "Available") || Boolean(rc.tenant_name?.trim()) ||
+    Boolean(rc.internal_remark?.trim()) || (rc.photos && rc.photos.length > 0);
 };
 
 const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
