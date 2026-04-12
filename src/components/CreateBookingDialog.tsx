@@ -58,13 +58,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
+  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
+  const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-  const [agentSearch, setAgentSearch] = useState("");
-  const [roomSearch, setRoomSearch] = useState("");
-  const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [tenantSearch, setTenantSearch] = useState("");
 
   // Fetch existing tenants
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
