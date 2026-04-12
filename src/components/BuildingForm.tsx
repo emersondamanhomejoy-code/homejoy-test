@@ -70,7 +70,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     return [];
   };
 
-  const [form, setForm] = useState({
+  const initialForm = {
     name: building?.name || "",
     address: building?.address || "",
     description: building?.description || "",
@@ -83,11 +83,17 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     visitor_car_parking: (building as any)?.visitor_car_parking || "",
     visitor_motorcycle_parking: (building as any)?.visitor_motorcycle_parking || "",
     arrival_instruction: (building as any)?.arrival_instruction || "",
-  });
+  };
 
-  const [pedestrianItems, setPedestrianItems] = useState<AccessItem[]>(parseItems("pedestrian", "Access Card"));
-  const [carparkItems, setCarparkItems] = useState<AccessItem[]>(parseItems("carpark", "RFID"));
-  const [motorcycleItems, setMotorcycleItems] = useState<AccessItem[]>(parseItems("motorcycle", "RFID"));
+  const [form, setForm] = useState(initialForm);
+
+  const initialPedestrian = parseItems("pedestrian", "Access Card");
+  const initialCarpark = parseItems("carpark", "RFID");
+  const initialMotorcycle = parseItems("motorcycle", "RFID");
+
+  const [pedestrianItems, setPedestrianItems] = useState<AccessItem[]>(initialPedestrian);
+  const [carparkItems, setCarparkItems] = useState<AccessItem[]>(initialCarpark);
+  const [motorcycleItems, setMotorcycleItems] = useState<AccessItem[]>(initialMotorcycle);
 
   const [uploading, setUploading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -99,7 +105,10 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
 
   const updateField = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const isDirty = form.name.trim() || form.address.trim() || form.description.trim() || form.photos.length > 0;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm) ||
+    JSON.stringify(pedestrianItems) !== JSON.stringify(initialPedestrian) ||
+    JSON.stringify(carparkItems) !== JSON.stringify(initialCarpark) ||
+    JSON.stringify(motorcycleItems) !== JSON.stringify(initialMotorcycle);
 
   const handleCancel = () => {
     if (isDirty) setShowCancelConfirm(true);

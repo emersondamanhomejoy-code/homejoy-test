@@ -7,5 +7,5 @@ All "Add" and "Edit" forms across the admin panel use Dialog (modal) overlays in
 - Small forms (Location): Dialog sm:max-w-md
 - Medium forms (Building): Dialog sm:max-w-2xl with ScrollArea
 - Large forms (Unit, Booking): Dialog sm:max-w-3xl with ScrollArea
-- Cancel/close triggers AlertDialog asking "Discard changes?" if form has unsaved data
+- Cancel/close triggers AlertDialog asking "Discard changes?" ONLY if form has actual changes (compare current vs initial values). If no fields were modified, close immediately without confirmation.
 - Uses shadcn Dialog + AlertDialog + ScrollArea components
