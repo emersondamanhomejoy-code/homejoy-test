@@ -16,6 +16,9 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
