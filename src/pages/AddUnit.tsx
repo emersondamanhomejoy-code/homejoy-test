@@ -35,7 +35,7 @@ const hasMeaningfulData = (rc: RoomConfig, index: number, naming: "alpha" | "dig
 
 const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
-export default function AddUnit() {
+export default function AddUnit({ onClose }: { onClose?: () => void } = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: condosList = [] } = useCondos();
