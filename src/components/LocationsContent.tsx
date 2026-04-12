@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 
 export function LocationsContent() {
   const { data: locations = [], isLoading } = useLocations();
@@ -64,8 +65,20 @@ export function LocationsContent() {
     try { await deleteLocation.mutateAsync(id); } catch (e: any) { alert(e.message || "Failed to delete location"); }
   };
 
+  const { sort, handleSort, sortData } = useTableSort("name");
+
   const filtered = locations.filter(l => l.name.toLowerCase().includes(search.toLowerCase()));
 
+  const sortedFiltered = sortData(filtered, (loc: any, key: string) => {
+    const s = locationStats[loc.id] || {};
+    const map: Record<string, any> = {
+      name: loc.name,
+      buildings: s.buildings || 0,
+      units: s.units || 0,
+      rooms: s.rooms || 0,
+    };
+    return map[key];
+  });
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
@@ -116,17 +129,17 @@ export function LocationsContent() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Location Name</TableHead>
-              <TableHead className="text-center">Total Buildings</TableHead>
-              <TableHead className="text-center">Total Units</TableHead>
-              <TableHead className="text-center">Total Rooms</TableHead>
+              <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Location Name</SortableTableHead>
+              <SortableTableHead sortKey="buildings" currentSort={sort} onSort={handleSort} className="text-center">Total Buildings</SortableTableHead>
+              <SortableTableHead sortKey="units" currentSort={sort} onSort={handleSort} className="text-center">Total Units</SortableTableHead>
+              <SortableTableHead sortKey="rooms" currentSort={sort} onSort={handleSort} className="text-center">Total Rooms</SortableTableHead>
               <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {sortedFiltered.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No locations found</TableCell></TableRow>
-            ) : filtered.map((loc, i) => {
+            ) : sortedFiltered.map((loc, i) => {
                const s = locationStats[loc.id] || { buildings: 0, units: 0, rooms: 0 };
                return (
                  <TableRow key={loc.id}>
