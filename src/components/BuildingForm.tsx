@@ -36,7 +36,6 @@ const PROVIDED_BY_OPTIONS = ["Management Office", "Homejoy"];
 const CHARGEABLE_TYPES = [
   { value: "none", label: "Not Chargeable" },
   { value: "deposit", label: "Deposit" },
-  { value: "one_time_fee", label: "One-time Fee" },
   { value: "processing_fee", label: "Processing Fee" },
 ];
 
