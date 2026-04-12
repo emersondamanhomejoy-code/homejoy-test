@@ -538,6 +538,137 @@ export type Database = {
           },
         ]
       }
+      tenant_rooms: {
+        Row: {
+          contract_months: number
+          created_at: string
+          id: string
+          move_in_date: string | null
+          room_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          contract_months?: number
+          created_at?: string
+          id?: string
+          move_in_date?: string | null
+          room_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          contract_months?: number
+          created_at?: string
+          id?: string
+          move_in_date?: string | null
+          room_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_rooms_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_rooms_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          booking_id: string | null
+          car_plate: string
+          company: string
+          created_at: string
+          email: string
+          emergency_1_name: string
+          emergency_1_phone: string
+          emergency_1_relationship: string
+          emergency_2_name: string
+          emergency_2_phone: string
+          emergency_2_relationship: string
+          gender: string
+          ic_passport: string
+          id: string
+          monthly_salary: number
+          name: string
+          nationality: string
+          occupation: string
+          phone: string
+          position: string
+          race: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          car_plate?: string
+          company?: string
+          created_at?: string
+          email?: string
+          emergency_1_name?: string
+          emergency_1_phone?: string
+          emergency_1_relationship?: string
+          emergency_2_name?: string
+          emergency_2_phone?: string
+          emergency_2_relationship?: string
+          gender?: string
+          ic_passport?: string
+          id?: string
+          monthly_salary?: number
+          name?: string
+          nationality?: string
+          occupation?: string
+          phone?: string
+          position?: string
+          race?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          car_plate?: string
+          company?: string
+          created_at?: string
+          email?: string
+          emergency_1_name?: string
+          emergency_1_phone?: string
+          emergency_1_relationship?: string
+          emergency_2_name?: string
+          emergency_2_phone?: string
+          emergency_2_relationship?: string
+          gender?: string
+          ic_passport?: string
+          id?: string
+          monthly_salary?: number
+          name?: string
+          nationality?: string
+          occupation?: string
+          phone?: string
+          position?: string
+          race?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenants_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
           access_card: string
