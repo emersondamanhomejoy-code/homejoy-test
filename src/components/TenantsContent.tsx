@@ -66,6 +66,9 @@ interface Tenant {
   booking_id: string | null;
   created_at: string;
   updated_at: string;
+  doc_passport: any;
+  doc_offer_letter: any;
+  doc_transfer_slip: any;
   tenant_rooms?: TenantRoom[];
 }
 
