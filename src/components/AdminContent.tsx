@@ -1474,7 +1474,6 @@ export function AdminContent({ tab }: AdminContentProps) {
       {/* UNITS TAB */}
       {tab === "units" && <UnitsRoomsContent
         onEditUnit={setEditingUnit}
-        onAddUnit={openCreateRoom2}
       />}
 
       {/* BOOKINGS TAB */}

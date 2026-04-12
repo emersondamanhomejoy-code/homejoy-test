@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteUnit, Unit } from "@/hooks/useRooms";
 import { useLocations } from "@/hooks/useLocations";
 import { useCondos } from "@/hooks/useCondos";
@@ -24,10 +25,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 interface UnitsRoomsContentProps {
   onEditUnit: (unit: any) => void;
-  onAddUnit: () => void;
 }
 
-export function UnitsRoomsContent({ onEditUnit, onAddUnit }: UnitsRoomsContentProps) {
+export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
+  const navigate = useNavigate();
   const { data: units = [], isLoading } = useUnits();
   const deleteUnit = useDeleteUnit();
 
@@ -144,7 +145,7 @@ export function UnitsRoomsContent({ onEditUnit, onAddUnit }: UnitsRoomsContentPr
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Units & Rooms</h2>
-        <Button onClick={onAddUnit} size="sm">
+        <Button onClick={() => navigate("/admin/add-unit")} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Add Unit
         </Button>
       </div>
