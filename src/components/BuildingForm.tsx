@@ -4,22 +4,26 @@ import { useCreateCondo, useUpdateCondo, Condo, CondoInput } from "@/hooks/useCo
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 
 /* ── Access data shapes ── */
-export interface AccessConfig {
+export interface AccessItem {
+  id: string;
   access_type: string;
   locations?: string[]; // only for pedestrian
   provided_by: string;
-  chargeable: boolean;
+  chargeable_type: string; // "none" | "deposit" | "one_time_fee" | "processing_fee"
   price: number;
   instruction: string;
 }
 
-const emptyAccess = (type?: string): AccessConfig => ({
-  access_type: type || "None",
+const generateId = () => Math.random().toString(36).slice(2, 10);
+
+const createAccessItem = (type: string): AccessItem => ({
+  id: generateId(),
+  access_type: type,
   provided_by: "Management Office",
-  chargeable: false,
+  chargeable_type: "none",
   price: 0,
   instruction: "",
 });
@@ -29,6 +33,12 @@ const PEDESTRIAN_LOCATIONS = ["Main Entrance", "Lift", "Guard House", "Lobby"];
 const CARPARK_ACCESS_TYPES = ["RFID", "Sticker", "ANPR", "Access Card", "None"];
 const MOTORCYCLE_ACCESS_TYPES = ["RFID", "Sticker", "ANPR", "Access Card", "None"];
 const PROVIDED_BY_OPTIONS = ["Management Office", "Homejoy"];
+const CHARGEABLE_TYPES = [
+  { value: "none", label: "Not Chargeable" },
+  { value: "deposit", label: "Deposit" },
+  { value: "one_time_fee", label: "One-time Fee" },
+  { value: "processing_fee", label: "Processing Fee" },
+];
 
 interface BuildingFormProps {
   building?: Condo | null;
@@ -41,14 +51,25 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   const updateCondo = useUpdateCondo();
   const isEdit = !!building;
 
-  // Parse existing access_items
+  // Parse existing access_items — migrate from old single-item format
   const existingAccess = (building as any)?.access_items || {};
-  const parsedPedestrian: AccessConfig = existingAccess.pedestrian || emptyAccess("None");
-  const parsedCarpark: AccessConfig = existingAccess.carpark || emptyAccess("None");
-  const parsedMotorcycle: AccessConfig = existingAccess.motorcycle || emptyAccess("None");
-
-  // Ensure locations is always an array
-  if (!parsedPedestrian.locations) parsedPedestrian.locations = [];
+  const parseItems = (key: string, defaultType: string): AccessItem[] => {
+    const raw = existingAccess[key];
+    if (Array.isArray(raw)) return raw.map((r: any) => ({ ...createAccessItem(defaultType), ...r, id: r.id || generateId() }));
+    if (raw && typeof raw === "object" && raw.access_type) {
+      // migrate old single-object format
+      return [{
+        id: generateId(),
+        access_type: raw.access_type,
+        locations: raw.locations,
+        provided_by: raw.provided_by || "Management Office",
+        chargeable_type: raw.chargeable ? "one_time_fee" : "none",
+        price: raw.price || 0,
+        instruction: raw.instruction || "",
+      }];
+    }
+    return [];
+  };
 
   const [form, setForm] = useState({
     name: building?.name || "",
@@ -65,9 +86,9 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     arrival_instruction: (building as any)?.arrival_instruction || "",
   });
 
-  const [pedestrian, setPedestrian] = useState<AccessConfig>({ ...parsedPedestrian });
-  const [carpark, setCarpark] = useState<AccessConfig>({ ...parsedCarpark });
-  const [motorcycle, setMotorcycle] = useState<AccessConfig>({ ...parsedMotorcycle });
+  const [pedestrianItems, setPedestrianItems] = useState<AccessItem[]>(parseItems("pedestrian", "Access Card"));
+  const [carparkItems, setCarparkItems] = useState<AccessItem[]>(parseItems("carpark", "RFID"));
+  const [motorcycleItems, setMotorcycleItems] = useState<AccessItem[]>(parseItems("motorcycle", "RFID"));
 
   const [uploading, setUploading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -92,9 +113,9 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       const payload: any = {
         ...form,
         access_items: {
-          pedestrian: { ...pedestrian, locations: pedestrian.locations || [] },
-          carpark: { ...carpark },
-          motorcycle: { ...motorcycle },
+          pedestrian: pedestrianItems,
+          carpark: carparkItems,
+          motorcycle: motorcycleItems,
         },
       };
       if (isEdit && building) {
@@ -135,92 +156,160 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   };
   const handleDragEnd = () => { setDragIndex(null); setDragOverIndex(null); };
 
-  // Toggle pedestrian location
-  const togglePedestrianLocation = (loc: string) => {
-    setPedestrian(prev => {
-      const locs = prev.locations || [];
-      return {
-        ...prev,
-        locations: locs.includes(loc) ? locs.filter(l => l !== loc) : [...locs, loc],
-      };
-    });
+  /* ── Helpers for multi-item access sections ── */
+  const updateItem = (
+    items: AccessItem[],
+    setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
+    id: string,
+    field: string,
+    value: any,
+  ) => {
+    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
-  /* ── Render a generic access section ── */
+  const toggleLocation = (
+    items: AccessItem[],
+    setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
+    itemId: string,
+    loc: string,
+  ) => {
+    setItems(items.map(item => {
+      if (item.id !== itemId) return item;
+      const locs = item.locations || [];
+      return { ...item, locations: locs.includes(loc) ? locs.filter(l => l !== loc) : [...locs, loc] };
+    }));
+  };
+
+  const addItem = (
+    setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
+    defaultType: string,
+  ) => {
+    setItems(prev => [...prev, createAccessItem(defaultType)]);
+  };
+
+  const removeItem = (
+    setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
+    id: string,
+  ) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  /* ── Render a single access item card ── */
+  const renderAccessItem = (
+    item: AccessItem,
+    items: AccessItem[],
+    setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
+    accessTypes: string[],
+    showLocations: boolean,
+    index: number,
+  ) => {
+    const isNone = item.access_type === "None";
+    return (
+      <div key={item.id} className="border rounded-lg p-4 space-y-4 bg-secondary/30">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold">#{index + 1}</span>
+          <button type="button" onClick={() => removeItem(setItems, item.id)} className="text-destructive hover:text-destructive/80 transition-colors p-1">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Access Type */}
+          <div>
+            <label className={labelClass}>Access Type</label>
+            <select className={`${inputClass} w-full`} value={item.access_type} onChange={e => updateItem(items, setItems, item.id, "access_type", e.target.value)}>
+              {accessTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+
+          {/* Access Location — only for pedestrian, multi-select chips */}
+          {showLocations && !isNone && (
+            <div>
+              <label className={labelClass}>Access Location</label>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {PEDESTRIAN_LOCATIONS.map(loc => {
+                  const selected = (item.locations || []).includes(loc);
+                  return (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => toggleLocation(items, setItems, item.id, loc)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        selected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-secondary-foreground border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {loc}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Provided By — hidden when None */}
+          {!isNone && (
+            <div>
+              <label className={labelClass}>Provided By</label>
+              <select className={`${inputClass} w-full`} value={item.provided_by} onChange={e => updateItem(items, setItems, item.id, "provided_by", e.target.value)}>
+                {PROVIDED_BY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Chargeable Type — hidden when None */}
+          {!isNone && (
+            <div>
+              <label className={labelClass}>Chargeable</label>
+              <select className={`${inputClass} w-full`} value={item.chargeable_type} onChange={e => updateItem(items, setItems, item.id, "chargeable_type", e.target.value)}>
+                {CHARGEABLE_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Price — only when chargeable */}
+          {!isNone && item.chargeable_type !== "none" && (
+            <div>
+              <label className={labelClass}>Price (RM)</label>
+              <input type="number" className={`${inputClass} w-full`} placeholder="0" value={item.price || ""} onChange={e => updateItem(items, setItems, item.id, "price", Number(e.target.value))} />
+            </div>
+          )}
+
+          {/* Instruction */}
+          {!isNone && (
+            <div className="md:col-span-2">
+              <label className={labelClass}>Instruction Notes</label>
+              <textarea className={`${inputClass} w-full h-16`} placeholder="Special instructions..." value={item.instruction} onChange={e => updateItem(items, setItems, item.id, "instruction", e.target.value)} />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Render a full access section with multiple items ── */
   const renderAccessSection = (
     title: string,
     accessTypes: string[],
-    config: AccessConfig,
-    setConfig: React.Dispatch<React.SetStateAction<AccessConfig>>,
-    showLocations?: boolean,
+    items: AccessItem[],
+    setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
+    defaultType: string,
+    showLocations: boolean = false,
   ) => (
     <div className="bg-card rounded-lg border p-6 space-y-5">
-      <h2 className="text-lg font-bold">{title}</h2>
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Access Type */}
-        <div>
-          <label className={labelClass}>Access Type</label>
-          <select className={`${inputClass} w-full`} value={config.access_type} onChange={e => setConfig(prev => ({ ...prev, access_type: e.target.value }))}>
-            {accessTypes.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">{title}</h2>
+        <Button type="button" variant="outline" size="sm" onClick={() => addItem(setItems, defaultType)}>
+          <Plus className="h-4 w-4 mr-1" /> Add
+        </Button>
+      </div>
+      {items.length === 0 && (
+        <div className="text-sm text-muted-foreground text-center py-6 border-2 border-dashed rounded-lg">
+          No access items added. Click "Add" to configure access.
         </div>
-
-        {/* Access Location — only for pedestrian, multi-select chips */}
-        {showLocations && (
-          <div>
-            <label className={labelClass}>Access Location</label>
-            <div className="flex flex-wrap gap-2 mt-1.5">
-              {PEDESTRIAN_LOCATIONS.map(loc => {
-                const selected = (config.locations || []).includes(loc);
-                return (
-                  <button
-                    key={loc}
-                    type="button"
-                    onClick={() => togglePedestrianLocation(loc)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                      selected
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary text-secondary-foreground border-border hover:border-primary/50"
-                    }`}
-                  >
-                    {loc}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Provided By */}
-        <div>
-          <label className={labelClass}>Provided By</label>
-          <select className={`${inputClass} w-full`} value={config.provided_by} onChange={e => setConfig(prev => ({ ...prev, provided_by: e.target.value }))}>
-            {PROVIDED_BY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-
-        {/* Chargeable */}
-        <div>
-          <label className={labelClass}>Chargeable</label>
-          <select className={`${inputClass} w-full`} value={config.chargeable ? "yes" : "no"} onChange={e => setConfig(prev => ({ ...prev, chargeable: e.target.value === "yes" }))}>
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
-        </div>
-
-        {/* Price — only when chargeable */}
-        {config.chargeable && (
-          <div>
-            <label className={labelClass}>Price (RM)</label>
-            <input type="number" className={`${inputClass} w-full`} placeholder="0" value={config.price || ""} onChange={e => setConfig(prev => ({ ...prev, price: Number(e.target.value) }))} />
-          </div>
-        )}
-
-        {/* Instruction */}
-        <div className={config.chargeable ? "" : "md:col-span-2"}>
-          <label className={labelClass}>Instruction Notes</label>
-          <textarea className={`${inputClass} w-full h-16`} placeholder="Special instructions..." value={config.instruction} onChange={e => setConfig(prev => ({ ...prev, instruction: e.target.value }))} />
-        </div>
+      )}
+      <div className="space-y-4">
+        {items.map((item, i) => renderAccessItem(item, items, setItems, accessTypes, showLocations, i))}
       </div>
     </div>
   );
@@ -241,8 +330,6 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       {/* Section 1: Basic Information */}
       <div className="bg-card rounded-lg border p-6 space-y-5">
         <h2 className="text-lg font-bold">Basic Information</h2>
-
-        {/* Photos */}
         <div>
           <div className="flex items-center justify-between">
             <label className={labelClass}>Building Photos ({form.photos.length}/{MAX_PHOTOS})</label>
@@ -273,7 +360,6 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
             )}
           </div>
         </div>
-
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Building Name *</label>
@@ -306,13 +392,13 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       </div>
 
       {/* Section 2: Pedestrian Access */}
-      {renderAccessSection("Pedestrian Access", PEDESTRIAN_ACCESS_TYPES, pedestrian, setPedestrian, true)}
+      {renderAccessSection("Pedestrian Access", PEDESTRIAN_ACCESS_TYPES, pedestrianItems, setPedestrianItems, "Access Card", true)}
 
       {/* Section 3: Car Park Access */}
-      {renderAccessSection("Car Park Access", CARPARK_ACCESS_TYPES, carpark, setCarpark)}
+      {renderAccessSection("Car Park Access", CARPARK_ACCESS_TYPES, carparkItems, setCarparkItems, "RFID")}
 
       {/* Section 4: Motorcycle Access */}
-      {renderAccessSection("Motorcycle Access", MOTORCYCLE_ACCESS_TYPES, motorcycle, setMotorcycle)}
+      {renderAccessSection("Motorcycle Access", MOTORCYCLE_ACCESS_TYPES, motorcycleItems, setMotorcycleItems, "RFID")}
 
       {/* Section 5: Visitor / Parking Info */}
       <div className="bg-card rounded-lg border p-6 space-y-5">
