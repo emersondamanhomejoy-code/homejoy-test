@@ -4,7 +4,7 @@ import { useCreateCondo, useUpdateCondo, Condo, CondoInput } from "@/hooks/useCo
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2, Pencil, ChevronDown, ChevronUp, Save } from "lucide-react";
 
 /* ── Access data shapes ── */
 export interface AccessItem {
@@ -194,6 +194,35 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
+  /* ── Collapsed states for access items ── */
+  const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>(() => {
+    // Pre-collapse existing items on edit
+    const map: Record<string, boolean> = {};
+    [...parseItems("pedestrian", "Access Card"), ...parseItems("carpark", "RFID"), ...parseItems("motorcycle", "RFID")].forEach(item => {
+      if (item.access_type !== "Access Card" || item.provided_by || item.instruction) {
+        map[item.id] = true;
+      }
+    });
+    return map;
+  });
+
+  const toggleCollapse = (id: string) => setCollapsedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  const collapseItem = (id: string) => setCollapsedItems(prev => ({ ...prev, [id]: true }));
+
+  /* ── Summary line for collapsed access item ── */
+  const renderAccessSummary = (item: AccessItem, showLocations: boolean) => {
+    const parts: string[] = [item.access_type];
+    if (showLocations && item.locations?.length) parts.push(`@ ${item.locations.join(", ")}`);
+    if (item.access_type !== "None") {
+      parts.push(`· ${item.provided_by}`);
+      if (item.chargeable_type !== "none") {
+        const label = CHARGEABLE_TYPES.find(c => c.value === item.chargeable_type)?.label || item.chargeable_type;
+        parts.push(`· ${label}${item.price ? ` RM${item.price}` : ""}`);
+      }
+    }
+    return parts.join(" ");
+  };
+
   /* ── Render a single access item card ── */
   const renderAccessItem = (
     item: AccessItem,
@@ -204,13 +233,42 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     index: number,
   ) => {
     const isNone = item.access_type === "None";
+    const isCollapsed = !!collapsedItems[item.id];
+
+    if (isCollapsed) {
+      return (
+        <div key={item.id} className="border rounded-lg p-3 bg-secondary/30 flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-semibold mr-2">#{index + 1}</span>
+            <span className="text-sm text-foreground truncate">{renderAccessSummary(item, showLocations)}</span>
+            {item.instruction && !isNone && (
+              <p className="text-xs text-muted-foreground mt-1 truncate">📝 {item.instruction}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button type="button" onClick={() => toggleCollapse(item.id)} className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="Edit">
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" onClick={() => removeItem(setItems, item.id)} className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive" title="Delete">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div key={item.id} className="border rounded-lg p-4 space-y-4 bg-secondary/30">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">#{index + 1}</span>
-          <button type="button" onClick={() => removeItem(setItems, item.id)} className="text-destructive hover:text-destructive/80 transition-colors p-1">
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => collapseItem(item.id)} className="p-1.5 rounded-md hover:bg-primary/10 transition-colors text-primary" title="Save & Collapse">
+              <Save className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => removeItem(setItems, item.id)} className="text-destructive hover:text-destructive/80 transition-colors p-1">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           {/* Access Type */}
@@ -308,7 +366,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
           No access items added. Click "Add" to configure access.
         </div>
       )}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {items.map((item, i) => renderAccessItem(item, items, setItems, accessTypes, showLocations, i))}
       </div>
     </div>

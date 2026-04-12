@@ -6,6 +6,14 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus, Eye } from "lucide-react";
+import { AccessItem } from "@/components/BuildingForm";
+
+const CHARGEABLE_LABELS: Record<string, string> = {
+  none: "Not Chargeable",
+  deposit: "Deposit",
+  one_time_fee: "One-time Fee",
+  processing_fee: "Processing Fee",
+};
 
 interface CondosContentProps {
   onOpenForm: (building?: Condo) => void;
@@ -55,6 +63,49 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   });
 
   const viewStats = viewing ? (condoStats[viewing.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 }) : null;
+
+  /* ── Render access items for View dialog ── */
+  const renderViewAccessItems = (items: AccessItem[], showLocations: boolean) => {
+    if (!items || items.length === 0) return <span className="text-muted-foreground text-sm">None configured</span>;
+    return (
+      <div className="space-y-2">
+        {items.map((item, i) => {
+          const isNone = item.access_type === "None";
+          return (
+            <div key={item.id || i} className="bg-secondary/50 rounded-lg p-3 text-sm space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{item.access_type}</span>
+                {showLocations && item.locations?.length > 0 && (
+                  <span className="text-muted-foreground">@ {item.locations.join(", ")}</span>
+                )}
+              </div>
+              {!isNone && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>Provided by: <span className="text-foreground">{item.provided_by}</span></span>
+                  <span>Chargeable: <span className="text-foreground">{CHARGEABLE_LABELS[item.chargeable_type] || "Not Chargeable"}</span></span>
+                  {item.chargeable_type !== "none" && item.price > 0 && (
+                    <span>Price: <span className="text-foreground">RM{item.price}</span></span>
+                  )}
+                </div>
+              )}
+              {!isNone && item.instruction && (
+                <p className="text-xs text-muted-foreground">📝 {item.instruction}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const getAccessItems = (condo: Condo, key: string): AccessItem[] => {
+    const access = (condo as any)?.access_items;
+    if (!access) return [];
+    const raw = access[key];
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === "object" && raw.access_type) return [raw];
+    return [];
+  };
 
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
@@ -127,12 +178,12 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
 
       {/* View Dialog */}
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Building Details</DialogTitle>
           </DialogHeader>
           {viewing && (
-            <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-4 pb-4">
+            <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-5 pb-4">
               {viewing.photos && viewing.photos.length > 0 && (
                 <div className="grid grid-cols-4 gap-3">
                   {viewing.photos.map((path, i) => (
@@ -149,7 +200,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                 <div className="col-span-2"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{viewing.amenities || "—"}</span></div>
               </div>
               {viewStats && (
-                <div className="grid grid-cols-5 gap-3 pt-2">
+                <div className="grid grid-cols-5 gap-3">
                   {[
                     { label: "Units", value: viewStats.totalUnits },
                     { label: "Rooms", value: viewStats.totalRooms },
@@ -164,6 +215,28 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   ))}
                 </div>
               )}
+
+              {/* Access Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-foreground border-b pb-2">Pedestrian Access</h3>
+                {renderViewAccessItems(getAccessItems(viewing, "pedestrian"), true)}
+
+                <h3 className="text-sm font-bold text-foreground border-b pb-2">Car Park Access</h3>
+                {renderViewAccessItems(getAccessItems(viewing, "carpark"), false)}
+
+                <h3 className="text-sm font-bold text-foreground border-b pb-2">Motorcycle Access</h3>
+                {renderViewAccessItems(getAccessItems(viewing, "motorcycle"), false)}
+              </div>
+
+              {/* Visitor / Parking Info */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-foreground border-b pb-2">Visitor / Parking Info</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div><span className="text-muted-foreground">Visitor Car Parking:</span> <span className="font-medium">{(viewing as any).visitor_car_parking || "—"}</span></div>
+                  <div><span className="text-muted-foreground">Visitor Motorcycle Parking:</span> <span className="font-medium">{(viewing as any).visitor_motorcycle_parking || "—"}</span></div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Arrival Instruction:</span> <span className="font-medium whitespace-pre-wrap">{(viewing as any).arrival_instruction || "—"}</span></div>
+                </div>
+              </div>
             </div>
           )}
           <DialogFooter>
