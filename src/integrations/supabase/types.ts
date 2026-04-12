@@ -450,6 +450,8 @@ export type Database = {
           room_type: string
           special_type: string
           status: string
+          tenancy_end_date: string | null
+          tenancy_start_date: string | null
           tenant_gender: string
           tenant_race: string
           unit: string
@@ -484,6 +486,8 @@ export type Database = {
           room_type?: string
           special_type?: string
           status?: string
+          tenancy_end_date?: string | null
+          tenancy_start_date?: string | null
           tenant_gender?: string
           tenant_race?: string
           unit: string
@@ -518,6 +522,8 @@ export type Database = {
           room_type?: string
           special_type?: string
           status?: string
+          tenancy_end_date?: string | null
+          tenancy_start_date?: string | null
           tenant_gender?: string
           tenant_race?: string
           unit?: string
@@ -592,6 +598,9 @@ export type Database = {
           car_plate: string
           company: string
           created_at: string
+          doc_offer_letter: Json
+          doc_passport: Json
+          doc_transfer_slip: Json
           email: string
           emergency_1_name: string
           emergency_1_phone: string
@@ -616,6 +625,9 @@ export type Database = {
           car_plate?: string
           company?: string
           created_at?: string
+          doc_offer_letter?: Json
+          doc_passport?: Json
+          doc_transfer_slip?: Json
           email?: string
           emergency_1_name?: string
           emergency_1_phone?: string
@@ -640,6 +652,9 @@ export type Database = {
           car_plate?: string
           company?: string
           created_at?: string
+          doc_offer_letter?: Json
+          doc_passport?: Json
+          doc_transfer_slip?: Json
           email?: string
           emergency_1_name?: string
           emergency_1_phone?: string

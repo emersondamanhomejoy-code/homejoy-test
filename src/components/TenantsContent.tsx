@@ -108,6 +108,7 @@ export function TenantsContent() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
   const [addForm, setAddForm] = useState<Partial<Tenant>>({});
+  const [addUploadedFiles, setAddUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
@@ -207,7 +208,6 @@ export function TenantsContent() {
         email: editForm.email || "",
         ic_passport: editForm.ic_passport || "",
         gender: editForm.gender || "",
-        race: editForm.race || "",
         nationality: editForm.nationality || "",
         occupation: editForm.occupation || "",
         company: editForm.company || "",
@@ -233,20 +233,33 @@ export function TenantsContent() {
   // Add
   const openAdd = () => {
     setAddForm({});
+    setAddUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
     setAddingTenant(true);
   };
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
+
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("booking-docs").upload(path, file);
+    if (error) throw error;
+    return path;
+  };
+
   const saveNewTenant = async () => {
     if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
     if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
     try {
+      const passportPaths = await Promise.all(addUploadedFiles.passport.map(f => uploadFile(f, "passport")));
+      const offerPaths = await Promise.all(addUploadedFiles.offerLetter.map(f => uploadFile(f, "offer-letter")));
+      const slipPaths = await Promise.all(addUploadedFiles.transferSlip.map(f => uploadFile(f, "transfer-slip")));
+
       const { error } = await supabase.from("tenants").insert({
         name: addForm.name || "",
         phone: addForm.phone || "",
         email: addForm.email || "",
         ic_passport: addForm.ic_passport || "",
         gender: addForm.gender || "",
-        race: addForm.race || "",
         nationality: addForm.nationality || "",
         occupation: addForm.occupation || "",
         company: addForm.company || "",
@@ -259,7 +272,10 @@ export function TenantsContent() {
         emergency_2_phone: addForm.emergency_2_phone || "",
         emergency_2_relationship: addForm.emergency_2_relationship || "",
         car_plate: addForm.car_plate || "",
-      });
+        doc_passport: passportPaths,
+        doc_offer_letter: offerPaths,
+        doc_transfer_slip: slipPaths,
+      } as any);
       if (error) throw error;
       toast.success("Tenant added.");
       setAddingTenant(false);
@@ -464,7 +480,6 @@ export function TenantsContent() {
                   <InfoField label="Phone" value={viewingTenant.phone} />
                   <InfoField label="IC/Passport" value={viewingTenant.ic_passport} />
                   <InfoField label="Gender" value={viewingTenant.gender} />
-                  <InfoField label="Race" value={viewingTenant.race} />
                   <InfoField label="Nationality" value={viewingTenant.nationality} />
                   <InfoField label="Occupation" value={viewingTenant.occupation} />
                   <InfoField label="Company" value={viewingTenant.company} />
@@ -544,16 +559,16 @@ export function TenantsContent() {
                   <Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className={lbl}>Phone</label>
-                  <Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} />
+                  <label className={lbl}>NRIC / Passport No</label>
+                  <Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Email</label>
                   <Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className={lbl}>IC / Passport</label>
-                  <Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} />
+                  <label className={lbl}>Contact No</label>
+                  <Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Gender</label>
@@ -563,12 +578,9 @@ export function TenantsContent() {
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Couple">Couple</SelectItem>
+                      <SelectItem value="2 Pax">2 Pax</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Race</label>
-                  <Input value={editForm.race || ""} onChange={e => setField("race", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Nationality</label>
@@ -672,16 +684,16 @@ export function TenantsContent() {
                   <Input value={addForm.name || ""} onChange={e => setAddField("name", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className={lbl}>Phone *</label>
-                  <Input value={addForm.phone || ""} onChange={e => setAddField("phone", e.target.value)} />
+                  <label className={lbl}>NRIC / Passport No</label>
+                  <Input value={addForm.ic_passport || ""} onChange={e => setAddField("ic_passport", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Email</label>
                   <Input value={addForm.email || ""} onChange={e => setAddField("email", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className={lbl}>IC / Passport</label>
-                  <Input value={addForm.ic_passport || ""} onChange={e => setAddField("ic_passport", e.target.value)} />
+                  <label className={lbl}>Contact No *</label>
+                  <Input value={addForm.phone || ""} onChange={e => setAddField("phone", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Gender</label>
@@ -691,12 +703,9 @@ export function TenantsContent() {
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Couple">Couple</SelectItem>
+                      <SelectItem value="2 Pax">2 Pax</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Race</label>
-                  <Input value={addForm.race || ""} onChange={e => setAddField("race", e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Nationality</label>
@@ -758,6 +767,29 @@ export function TenantsContent() {
                     <Input value={addForm.emergency_2_relationship || ""} onChange={e => setAddField("emergency_2_relationship", e.target.value)} />
                   </div>
                 </div>
+              </div>
+
+              {/* Documents */}
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Documents</div>
+                {([
+                  { key: "passport" as const, label: "Passport / IC" },
+                  { key: "offerLetter" as const, label: "Offer Letter" },
+                  { key: "transferSlip" as const, label: "Transfer Slip" },
+                ]).map(({ key, label }) => (
+                  <div key={key} className="space-y-1 mb-3">
+                    <label className={lbl}>{label}</label>
+                    <div className="flex items-center gap-3">
+                      <label className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                        Choose Files
+                        <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
+                          if (e.target.files) setAddUploadedFiles(prev => ({ ...prev, [key]: [...prev[key], ...Array.from(e.target.files!)] }));
+                        }} />
+                      </label>
+                      <span className="text-xs text-muted-foreground">{addUploadedFiles[key].length > 0 ? addUploadedFiles[key].map(f => f.name).join(", ") : "No file chosen"}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </ScrollArea>

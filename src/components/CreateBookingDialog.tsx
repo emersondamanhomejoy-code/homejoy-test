@@ -365,6 +365,18 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                         ))}
                       </select>
                     </div>
+                    <div className="space-y-1">
+                      <label className={lbl}>Tenancy Duration *</label>
+                      <select className={ic} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
+                        {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
+                          <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : m === 6 ? " (half year)" : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className={lbl}>Move-in Date *</label>
+                      <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                    </div>
                   </div>
                 )}
 
@@ -453,15 +465,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                     </select>
                   </div>
                   <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Move-in Date *</label><input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} /></div>
                   <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Tenancy Duration *</label>
-                    <select className={ic} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
-                      {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
-                        <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : m === 6 ? " (half year)" : ""}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 {(form.gender === "Couple" || form.gender === "2 Pax") && (
