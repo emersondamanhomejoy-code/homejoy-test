@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
 import Login from "./pages/Login.tsx";
 import Rooms from "./pages/Rooms.tsx";
+import AddUnit from "./pages/AddUnit.tsx";
 
 const queryClient = new QueryClient();
 
