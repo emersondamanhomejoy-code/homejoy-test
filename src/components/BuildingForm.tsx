@@ -70,7 +70,6 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     return [];
   };
 
-  const [form, setForm] = useState({
   const initialForm = {
     name: building?.name || "",
     address: building?.address || "",
