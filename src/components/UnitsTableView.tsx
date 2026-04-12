@@ -69,8 +69,20 @@ export function UnitsTableView({
     if (selectedLocations.length) list = list.filter(u => selectedLocations.includes(u.location));
     if (selectedBuildings.length) list = list.filter(u => selectedBuildings.includes(u.building));
     if (selectedUnitType !== "all") list = list.filter(u => u.unit_type?.toLowerCase().includes(selectedUnitType));
-    return list;
-  }, [units, selectedLocations, selectedBuildings, selectedUnitType]);
+    return sortData(list, (u: Unit, key: string) => {
+      const regularRooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
+      const map: Record<string, any> = {
+        location: u.location,
+        building: u.building,
+        unit: u.unit,
+        unit_type: u.unit_type,
+        max_pax: u.unit_max_pax,
+        rooms: regularRooms.length,
+        available: regularRooms.filter(r => r.status === "Available").length,
+      };
+      return map[key];
+    });
+  }, [units, selectedLocations, selectedBuildings, selectedUnitType, sort]);
 
   useEffect(() => { setCurrentPage(1); }, [selectedLocations, selectedBuildings, selectedUnitType, pageSize]);
 
@@ -173,14 +185,14 @@ export function UnitsTableView({
             <div className="overflow-x-auto">
               <Table>
                  <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <TableHead>Location</TableHead>
-                    <TableHead>Building</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Unit Type</TableHead>
-                    <TableHead className="text-center">Max Pax</TableHead>
-                    <TableHead className="text-center">Rooms</TableHead>
-                    <TableHead className="text-center">Available</TableHead>
+                   <TableRow className="bg-muted/30">
+                    <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
+                    <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+                    <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+                    <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
+                    <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Pax</SortableTableHead>
+                    <SortableTableHead sortKey="rooms" currentSort={sort} onSort={handleSort} className="text-center">Rooms</SortableTableHead>
+                    <SortableTableHead sortKey="available" currentSort={sort} onSort={handleSort} className="text-center">Available</SortableTableHead>
                     <TableHead className="text-center">Action</TableHead>
                   </TableRow>
                 </TableHeader>
