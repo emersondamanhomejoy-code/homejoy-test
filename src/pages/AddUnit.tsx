@@ -144,7 +144,7 @@ export default function AddUnit({ onClose }: { onClose?: () => void } = {}) {
     if (hasAnyData) {
       setShowCancelConfirm(true);
     } else {
-      navigate("/admin", { state: { adminTab: "units" } });
+      onClose ? onClose() : navigate("/admin", { state: { adminTab: "units" } });
     }
   };
 
@@ -187,7 +187,7 @@ export default function AddUnit({ onClose }: { onClose?: () => void } = {}) {
         roomConfigs,
       });
       logActivity("create_unit", "unit", "", { building: form.building, unit: form.unit });
-      navigate("/admin", { state: { adminTab: "units" } });
+      onClose ? onClose() : navigate("/admin", { state: { adminTab: "units" } });
     } catch (e: any) {
       alert(e.message || "Failed to save unit");
     } finally {
@@ -638,7 +638,7 @@ export default function AddUnit({ onClose }: { onClose?: () => void } = {}) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Editing</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/admin", { state: { adminTab: "units" } })}>Discard</AlertDialogAction>
+            <AlertDialogAction onClick={() => onClose ? onClose() : navigate("/admin", { state: { adminTab: "units" } })}>Discard</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
