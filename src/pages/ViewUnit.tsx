@@ -95,7 +95,6 @@ export default function ViewUnit() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Room</TableHead>
-                    <TableHead>Room Type</TableHead>
                     <TableHead>Bed Type</TableHead>
                     <TableHead>Wall Type</TableHead>
                     <TableHead>Features</TableHead>
@@ -112,22 +111,24 @@ export default function ViewUnit() {
                 <TableBody>
                   {rooms.map(room => (
                     <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.room}</TableCell>
-                      <TableCell>{(room as any).room_category || room.room_type || "—"}</TableCell>
+                      <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
                       <TableCell>{room.bed_type || "—"}</TableCell>
                       <TableCell>{(room as any).wall_type || "—"}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {((room as any).optional_features || []).map((f: string) => (
-                            <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
-                          ))}
-                          {((room as any).optional_features || []).length === 0 && <span className="text-muted-foreground">—</span>}
+                          {(() => {
+                            const feats = [...((room as any).optional_features || [])];
+                            if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+                            return feats.length > 0 ? feats.map((f: string) => (
+                              <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
+                            )) : <span className="text-muted-foreground">—</span>;
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">{room.max_pax}</TableCell>
                       <TableCell className="text-right">{room.rent}</TableCell>
                       <TableCell><StatusBadge status={room.status} /></TableCell>
-                      <TableCell>{room.available_date || "—"}</TableCell>
+                      <TableCell>{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</TableCell>
                       <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
                       <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
                       <TableCell>{room.tenant_gender || "—"}</TableCell>
