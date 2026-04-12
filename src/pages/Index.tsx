@@ -1207,11 +1207,16 @@ export default function Index() {
           <div className="max-w-5xl mx-auto">
             {adminTab === "locations" ? <LocationsContent /> :
              adminTab === "condos" ? (
-               buildingFormOpen ? (
-                 <BuildingForm building={buildingFormData} onClose={() => { setBuildingFormOpen(false); setBuildingFormData(undefined); }} />
-               ) : (
+               <>
                  <CondosContent onOpenForm={(building?: Condo) => { setBuildingFormData(building); setBuildingFormOpen(true); }} />
-               )
+                 <Dialog open={buildingFormOpen} onOpenChange={(open) => { if (!open) { setBuildingFormOpen(false); setBuildingFormData(undefined); } }}>
+                   <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+                     <div className="flex-1 overflow-y-auto p-6">
+                       <BuildingForm building={buildingFormData} onClose={() => { setBuildingFormOpen(false); setBuildingFormData(undefined); }} />
+                     </div>
+                   </DialogContent>
+                 </Dialog>
+               </>
              ) :
              adminTab === "rooms" ? <RoomsContent /> :
              adminTab === "tenants" ? <TenantsContent /> :
