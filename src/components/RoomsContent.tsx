@@ -32,7 +32,6 @@ export function RoomsContent() {
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [selectedUnitTypes, setSelectedUnitTypes] = useState<string[]>([]);
-  const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
   const [selectedBedTypes, setSelectedBedTypes] = useState<string[]>([]);
   const [selectedWallTypes, setSelectedWallTypes] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -69,7 +68,7 @@ export function RoomsContent() {
     return Array.from(new Set(source.map(r => r.unit).filter(Boolean))).sort();
   }, [allRooms, selectedLocations, selectedBuildings]);
   const unitTypes = useMemo(() => Array.from(new Set(allRooms.map(r => r.unit_type_val).filter(Boolean))).sort(), [allRooms]);
-  const roomTypes = useMemo(() => Array.from(new Set(allRooms.map(r => (r as any).room_category || r.room_type).filter(Boolean))).sort(), [allRooms]);
+  
   const bedTypes = useMemo(() => Array.from(new Set(allRooms.map(r => r.bed_type).filter(Boolean))).sort(), [allRooms]);
   const wallTypes = useMemo(() => Array.from(new Set(allRooms.map(r => (r as any).wall_type).filter(Boolean))).sort(), [allRooms]);
 
@@ -80,7 +79,7 @@ export function RoomsContent() {
     if (selectedBuildings.length) list = list.filter(r => selectedBuildings.includes(r.building));
     if (selectedUnits.length) list = list.filter(r => selectedUnits.includes(r.unit));
     if (selectedUnitTypes.length) list = list.filter(r => selectedUnitTypes.includes(r.unit_type_val));
-    if (selectedRoomTypes.length) list = list.filter(r => selectedRoomTypes.includes((r as any).room_category || r.room_type));
+    
     if (selectedBedTypes.length) list = list.filter(r => selectedBedTypes.includes(r.bed_type));
     if (selectedWallTypes.length) list = list.filter(r => selectedWallTypes.includes((r as any).wall_type));
     if (statusFilter !== "all") list = list.filter(r => r.status === statusFilter);
@@ -120,12 +119,12 @@ export function RoomsContent() {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
-    selectedUnitTypes.length > 0 || selectedRoomTypes.length > 0 || selectedBedTypes.length > 0 ||
+    selectedUnitTypes.length > 0 || selectedBedTypes.length > 0 ||
     selectedWallTypes.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
 
   const clearFilters = () => {
     setSelectedLocations([]); setSelectedBuildings([]); setSelectedUnits([]);
-    setSelectedUnitTypes([]); setSelectedRoomTypes([]); setSelectedBedTypes([]);
+    setSelectedUnitTypes([]); setSelectedBedTypes([]);
     setSelectedWallTypes([]); setStatusFilter("all"); setMinPrice(""); setMaxPrice("");
     setSearch(""); setPage(1);
   };
@@ -192,8 +191,6 @@ export function RoomsContent() {
             onApply={v => { setSelectedUnits(v); setPage(1); }} />
           <MultiSelectFilter label="Unit Type" placeholder="All Unit Types" options={unitTypes} selected={selectedUnitTypes}
             onApply={v => { setSelectedUnitTypes(v); setPage(1); }} />
-          <MultiSelectFilter label="Room Type" placeholder="All Room Types" options={roomTypes} selected={selectedRoomTypes}
-            onApply={v => { setSelectedRoomTypes(v); setPage(1); }} />
           <MultiSelectFilter label="Bed Type" placeholder="All Bed Types" options={bedTypes} selected={selectedBedTypes}
             onApply={v => { setSelectedBedTypes(v); setPage(1); }} />
           <MultiSelectFilter label="Wall Type" placeholder="All Wall Types" options={wallTypes} selected={selectedWallTypes}
@@ -252,9 +249,9 @@ export function RoomsContent() {
                     <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
                     <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
-                    <SortableTableHead sortKey="room_type" currentSort={sort} onSort={handleSort}>Room Type</SortableTableHead>
                     <SortableTableHead sortKey="bed_type" currentSort={sort} onSort={handleSort}>Bed Type</SortableTableHead>
                     <SortableTableHead sortKey="wall_type" currentSort={sort} onSort={handleSort}>Wall Type</SortableTableHead>
+                    <TableHead>Features</TableHead>
                     <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Rental (RM)</SortableTableHead>
                     <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                     <SortableTableHead sortKey="available_date" currentSort={sort} onSort={handleSort}>Available Date</SortableTableHead>
@@ -268,7 +265,7 @@ export function RoomsContent() {
                 <TableBody>
                   {paged.map(r => (
                     <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.room}</TableCell>
+                      <TableCell className="font-medium">{r.room.replace(/^Room\s+/i, "")}</TableCell>
                       <TableCell className="text-muted-foreground">{r.location}</TableCell>
                       <TableCell>{r.building}</TableCell>
                       <TableCell>{r.unit}</TableCell>
@@ -281,12 +278,22 @@ export function RoomsContent() {
                             : ""
                         }>{r.unit_type_val}</Badge>
                       </TableCell>
-                      <TableCell>{(r as any).room_category || r.room_type || "—"}</TableCell>
                       <TableCell>{r.bed_type || "—"}</TableCell>
                       <TableCell>{(r as any).wall_type || "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {(() => {
+                            const feats = [...((r as any).optional_features || [])];
+                            if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+                            return feats.length > 0 ? feats.map((f: string) => (
+                              <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
+                            )) : <span className="text-muted-foreground text-xs">—</span>;
+                          })()}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right font-medium">RM{r.rent}</TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
-                      <TableCell className="text-muted-foreground">{r.available_date || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{(r.status === "Available Soon" || r.status === "Pending") ? (r.available_date || "—") : ""}</TableCell>
                       <TableCell className="text-center">{r.pax_staying || 0}</TableCell>
                       <TableCell className="text-muted-foreground">{(r as any).tenant_nationality || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.tenant_gender || "—"}</TableCell>

@@ -302,41 +302,81 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                         {isExpanded && (
                           <TableRow key={`${unit.id}-expand`} className="bg-muted/10">
                             <TableCell colSpan={11} className="p-0">
-                              <div className="px-8 py-3 space-y-1">
-                                {(unit.rooms || []).length === 0 ? (
-                                  <div className="text-sm text-muted-foreground py-2">No rooms configured.</div>
-                                ) : (
-                                  <div className="grid gap-1">
-                                    <div className="grid grid-cols-[140px_120px_100px_80px_100px_120px_120px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
-                                      <span>Room</span>
-                                      <span>Type</span>
-                                      <span>Bed Type</span>
-                                      <span>Rent</span>
-                                      <span>Status</span>
-                                      <span>Tenant</span>
-                                      <span>Gender / Race</span>
-                                    </div>
-                                    {(unit.rooms || []).map(room => (
-                                      <div key={room.id} className="grid grid-cols-[140px_120px_100px_80px_100px_120px_120px] text-sm py-1.5 items-center">
-                                        <span className="font-medium">{room.room}</span>
-                                        <span className="text-muted-foreground">{room.room_type || "—"}</span>
-                                        <span className="text-muted-foreground">{room.bed_type || "—"}</span>
-                                        <span>RM{room.rent}</span>
-                                        <span><StatusBadge status={room.status} /></span>
-                                        <span className="text-muted-foreground truncate">
-                                          {room.status === "Occupied" && room.housemates?.length
-                                            ? (room.housemates as string[]).join(", ")
-                                            : "—"}
-                                        </span>
-                                        <span className="text-muted-foreground">
-                                          {room.status === "Occupied"
-                                            ? [room.tenant_gender, room.tenant_race].filter(Boolean).join(" / ") || "—"
-                                            : "—"}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                               <div className="px-8 py-3 space-y-4">
+                                 {/* Rooms sub-table */}
+                                 {(() => {
+                                   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
+                                   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
+                                   return (
+                                     <>
+                                       {unitRooms.length === 0 && unitCarparks.length === 0 && (
+                                         <div className="text-sm text-muted-foreground py-2">No rooms configured.</div>
+                                       )}
+                                       {unitRooms.length > 0 && (
+                                         <div>
+                                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Rooms</div>
+                                           <div className="grid gap-1">
+                                             <div className="grid grid-cols-[60px_80px_80px_120px_60px_70px_100px_90px_60px_80px_70px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
+                                               <span>Room</span>
+                                               <span>Bed</span>
+                                               <span>Wall</span>
+                                               <span>Features</span>
+                                               <span>Pax</span>
+                                               <span>Rent</span>
+                                               <span>Status</span>
+                                               <span>Avail. Date</span>
+                                               <span>Stay</span>
+                                               <span>Nationality</span>
+                                               <span>Gender</span>
+                                             </div>
+                                             {unitRooms.map(room => {
+                                               const feats = [...((room as any).optional_features || [])];
+                                               if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
+                                               return (
+                                                 <div key={room.id} className="grid grid-cols-[60px_80px_80px_120px_60px_70px_100px_90px_60px_80px_70px] text-sm py-1.5 items-center">
+                                                   <span className="font-medium">{room.room.replace(/^Room\s+/i, "")}</span>
+                                                   <span className="text-muted-foreground">{room.bed_type || "—"}</span>
+                                                   <span className="text-muted-foreground">{(room as any).wall_type || "—"}</span>
+                                                   <span className="text-muted-foreground text-xs truncate">{feats.length > 0 ? feats.join(", ") : "—"}</span>
+                                                   <span>{room.max_pax}</span>
+                                                   <span>RM{room.rent}</span>
+                                                   <span><StatusBadge status={room.status} /></span>
+                                                   <span className="text-muted-foreground">{(room.status === "Available Soon" || room.status === "Pending") ? (room.available_date || "—") : ""}</span>
+                                                   <span>{room.pax_staying || 0}</span>
+                                                   <span className="text-muted-foreground truncate">{(room as any).tenant_nationality || "—"}</span>
+                                                   <span className="text-muted-foreground">{room.tenant_gender || "—"}</span>
+                                                 </div>
+                                               );
+                                             })}
+                                           </div>
+                                         </div>
+                                       )}
+                                       {unitCarparks.length > 0 && (
+                                         <div>
+                                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Carparks</div>
+                                           <div className="grid gap-1">
+                                             <div className="grid grid-cols-[120px_100px_80px_100px_1fr] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-1 border-b border-border/50">
+                                               <span>Name</span>
+                                               <span>Lot</span>
+                                               <span>Rent</span>
+                                               <span>Status</span>
+                                               <span>Remark</span>
+                                             </div>
+                                             {unitCarparks.map(cp => (
+                                               <div key={cp.id} className="grid grid-cols-[120px_100px_80px_100px_1fr] text-sm py-1.5 items-center">
+                                                 <span className="font-medium">🅿️ {cp.room}</span>
+                                                 <span className="text-muted-foreground">{(cp as any).parking_lot || "—"}</span>
+                                                 <span>RM{cp.rent}</span>
+                                                 <span><StatusBadge status={cp.status} /></span>
+                                                 <span className="text-muted-foreground truncate">{(cp as any).internal_remark || "—"}</span>
+                                               </div>
+                                             ))}
+                                           </div>
+                                         </div>
+                                       )}
+                                     </>
+                                   );
+                                 })()}
                               </div>
                             </TableCell>
                           </TableRow>
