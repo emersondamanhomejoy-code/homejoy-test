@@ -57,11 +57,8 @@ export function BookingsContent() {
   const [cancelReason, setCancelReason] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState<Booking | null>(null);
 
-  // Create booking form
-  const [form, setForm] = useState(initialForm);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File[]; offerLetter: File[]; transferSlip: File[] }>({ passport: [], offerLetter: [], transferSlip: [] });
-  const [showCreateCancelConfirm, setShowCreateCancelConfirm] = useState(false);
+  // Create booking dialog
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Fetch users/agents
   const [users, setUsers] = useState<UserInfo[]>([]);
