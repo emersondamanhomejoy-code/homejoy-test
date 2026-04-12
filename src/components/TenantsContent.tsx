@@ -244,7 +244,7 @@ export function TenantsContent() {
   // Add
   const openAdd = () => {
     setAddForm({});
-    setAddUploadedFiles({ passport: [], offerLetter: [], transferSlip: [] });
+    setAddUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
     setAddingTenant(true);
   };
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
