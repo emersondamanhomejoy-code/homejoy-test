@@ -657,6 +657,116 @@ export function TenantsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Tenant Dialog */}
+      <Dialog open={addingTenant} onOpenChange={(open) => { if (!open) setAddingTenant(false); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Add Tenant</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-4 pb-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className={lbl}>Full Name *</label>
+                  <Input value={addForm.name || ""} onChange={e => setAddField("name", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Phone *</label>
+                  <Input value={addForm.phone || ""} onChange={e => setAddField("phone", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Email</label>
+                  <Input value={addForm.email || ""} onChange={e => setAddField("email", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>IC / Passport</label>
+                  <Input value={addForm.ic_passport || ""} onChange={e => setAddField("ic_passport", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Gender</label>
+                  <Select value={addForm.gender || ""} onValueChange={v => setAddField("gender", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Couple">Couple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Race</label>
+                  <Input value={addForm.race || ""} onChange={e => setAddField("race", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Nationality</label>
+                  <Input value={addForm.nationality || ""} onChange={e => setAddField("nationality", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Occupation</label>
+                  <Input value={addForm.occupation || ""} onChange={e => setAddField("occupation", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Company</label>
+                  <Input value={addForm.company || ""} onChange={e => setAddField("company", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Position</label>
+                  <Input value={addForm.position || ""} onChange={e => setAddField("position", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Monthly Salary</label>
+                  <Input type="number" value={addForm.monthly_salary || ""} onChange={e => setAddField("monthly_salary", Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <label className={lbl}>Car Plate</label>
+                  <Input value={addForm.car_plate || ""} onChange={e => setAddField("car_plate", e.target.value)} />
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Emergency Contact 1</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Name</label>
+                    <Input value={addForm.emergency_1_name || ""} onChange={e => setAddField("emergency_1_name", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Phone</label>
+                    <Input value={addForm.emergency_1_phone || ""} onChange={e => setAddField("emergency_1_phone", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Relationship</label>
+                    <Input value={addForm.emergency_1_relationship || ""} onChange={e => setAddField("emergency_1_relationship", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">Emergency Contact 2</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Name</label>
+                    <Input value={addForm.emergency_2_name || ""} onChange={e => setAddField("emergency_2_name", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Phone</label>
+                    <Input value={addForm.emergency_2_phone || ""} onChange={e => setAddField("emergency_2_phone", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Relationship</label>
+                    <Input value={addForm.emergency_2_relationship || ""} onChange={e => setAddField("emergency_2_relationship", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddingTenant(false)}>Cancel</Button>
+            <Button onClick={saveNewTenant}>Add Tenant</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
