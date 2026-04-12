@@ -1199,6 +1199,10 @@ export default function Index() {
           <div className="max-w-5xl mx-auto">
             {adminTab === "locations" ? <LocationsContent /> :
              adminTab === "condos" ? <CondosContent /> :
+             adminTab === "rooms" ? <RoomsContent /> :
+             adminTab === "tenants" ? <TenantsContent /> :
+             adminTab === "movein" ? <MoveInContent /> :
+             adminTab === "bookings" ? <BookingsContent /> :
              <AdminContent tab={adminTab as any} />}
           </div>
         )}
