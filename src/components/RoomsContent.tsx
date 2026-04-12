@@ -114,7 +114,6 @@ export function RoomsContent() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Location</TableHead>
               <TableHead>Building</TableHead>
               <TableHead>Unit</TableHead>
               <TableHead>Room</TableHead>
@@ -128,14 +127,13 @@ export function RoomsContent() {
           <TableBody>
             {paged.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No rooms found
                 </TableCell>
               </TableRow>
             ) : (
               paged.map(r => (
                 <TableRow key={r.id}>
-                  <TableCell className="text-sm">{r.location}</TableCell>
                   <TableCell className="text-sm font-medium">{r.building}</TableCell>
                   <TableCell className="text-sm">{r.unit}</TableCell>
                   <TableCell className="text-sm font-medium">{r.room}</TableCell>

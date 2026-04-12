@@ -232,7 +232,6 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <TableHead className="w-10" /> {/* expand toggle */}
-                    <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
                     <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit Number</SortableTableHead>
                     <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
@@ -258,7 +257,6 @@ export function UnitsRoomsContent({ onEditUnit }: UnitsRoomsContentProps) {
                           <TableCell className="w-10 px-2">
                             {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                           </TableCell>
-                          <TableCell className="capitalize text-muted-foreground">{unit.location || "—"}</TableCell>
                           <TableCell className="font-medium text-foreground">{unit.building || "—"}</TableCell>
                           <TableCell>{unit.unit}</TableCell>
                           <TableCell>
