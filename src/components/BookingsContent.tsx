@@ -291,7 +291,7 @@ export function BookingsContent() {
                       <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-center">
-                          <Button variant="ghost" size="icon" onClick={() => setView({ type: "detail", booking: b })} title="View">
+                          <Button variant="ghost" size="icon" onClick={() => setViewBooking(b)} title="View">
                             <Eye className="h-4 w-4" />
                           </Button>
                           {(b.status === "pending" || b.status === "rejected") && (
