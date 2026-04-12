@@ -14,18 +14,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Pencil, FileText, ExternalLink } from "lucide-react";
+import { FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
   booking: Booking;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEdit: (b: Booking) => void;
   getAgentName: (id: string | null) => string;
 }
 
-export function BookingDetailView({ booking: b, open, onOpenChange, onEdit, getAgentName }: Props) {
+export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const updateBookingStatus = useUpdateBookingStatus();
@@ -148,8 +147,6 @@ export function BookingDetailView({ booking: b, open, onOpenChange, onEdit, getA
     onOpenChange(false);
   };
 
-  const canEdit = b.status === "pending" || b.status === "rejected";
-
   const docSection = (label: string, paths: any) => {
     const arr = Array.isArray(paths) ? paths : [];
     if (arr.length === 0) return null;
@@ -190,14 +187,13 @@ export function BookingDetailView({ booking: b, open, onOpenChange, onEdit, getA
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" hideClose>
-          <DialogHeader className="px-6 pt-6 pb-0 flex flex-row items-center justify-between">
+        <DialogContent
+          className="sm:max-w-3xl max-h-[90vh] p-0"
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
+          <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>View Booking</DialogTitle>
-            {canEdit && (
-              <Button variant="outline" size="sm" onClick={() => { onOpenChange(false); onEdit(b); }}>
-                <Pencil className="h-4 w-4 mr-1" /> Edit
-              </Button>
-            )}
           </DialogHeader>
           <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
             <div className="space-y-5 py-4">

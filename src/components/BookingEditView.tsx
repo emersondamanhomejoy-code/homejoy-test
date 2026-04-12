@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Booking } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits } from "@/hooks/useRooms";
@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface AccessItem {
@@ -20,10 +20,11 @@ interface AccessItem {
 
 interface Props {
   booking: Booking;
-  onBack: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function BookingEditView({ booking, onBack }: Props) {
+export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: roomsData = [] } = useRooms();
@@ -221,7 +222,7 @@ export function BookingEditView({ booking, onBack }: Props) {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       toast.success("Booking updated");
-      onBack();
+      onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message || "Failed to update booking");
     } finally {
@@ -236,16 +237,17 @@ export function BookingEditView({ booking, onBack }: Props) {
   );
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </button>
-        <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-      </div>
-
-      <h2 className="text-xl font-bold">Edit Booking — {booking.tenant_name}</h2>
-
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!saving) onOpenChange(nextOpen); }}>
+      <DialogContent
+        className="sm:max-w-3xl max-h-[90vh] p-0"
+        onPointerDownOutside={(event) => event.preventDefault()}
+        onInteractOutside={(event) => event.preventDefault()}
+      >
+        <DialogHeader className="px-6 pt-6 pb-0">
+          <DialogTitle>Edit Booking — {booking.tenant_name}</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
+          <div className="space-y-5 py-4">
       {/* Room */}
       <div className="bg-muted/50 rounded-lg p-4 space-y-3">
         {sectionTitle("🏠", "Room")}
@@ -442,10 +444,13 @@ export function BookingEditView({ booking, onBack }: Props) {
         </div>
       )}
 
-      <div className="flex justify-end gap-3 pb-8">
-        <Button variant="outline" onClick={onBack}>Cancel</Button>
+      <DialogFooter className="gap-3 pb-2">
+        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
         <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-      </div>
-    </div>
+      </DialogFooter>
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }
