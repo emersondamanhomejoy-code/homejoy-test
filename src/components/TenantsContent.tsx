@@ -202,6 +202,11 @@ export function TenantsContent() {
   const openEdit = (t: Tenant) => {
     setEditingTenant(t);
     setEditForm({ ...t });
+    const docP = Array.isArray(t.doc_passport) && t.doc_passport.length > 0 ? t.doc_passport[0] : "";
+    const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
+    const docS = Array.isArray(t.doc_transfer_slip) && t.doc_transfer_slip.length > 0 ? t.doc_transfer_slip[0] : "";
+    setEditExistingDocs({ passport: docP, offerLetter: docO, transferSlip: docS });
+    setEditUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
   };
   const setField = (key: keyof Tenant, value: any) => setEditForm(prev => ({ ...prev, [key]: value }));
 
