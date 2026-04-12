@@ -75,7 +75,7 @@ export default function AddUnit() {
 
     let nextRooms = regularRooms.slice(0, roomCount).map((room, i) => ({ ...room, room: getDefaultRoomName(i, naming) }));
     while (nextRooms.length < roomCount) {
-      nextRooms.push({ room: getDefaultRoomName(nextRooms.length, naming), bed_type: "", max_pax: 1, rent: 0, status: "Available" });
+      nextRooms.push({ room: getDefaultRoomName(nextRooms.length, naming), bed_type: "", max_pax: 1, rent: 0, status: "Available", room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "", available_date: "" });
     }
 
     let nextCPs = carParks.slice(0, carParkCount).map((cp, i) => ({ ...cp, room: getDefaultCarParkName(i) }));
