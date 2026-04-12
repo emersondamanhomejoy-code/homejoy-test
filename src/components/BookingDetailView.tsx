@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Booking, useUpdateBookingStatus } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
-import { useRooms } from "@/hooks/useRooms";
+import { useRooms, useUnits } from "@/hooks/useRooms";
+import { useCondos } from "@/hooks/useCondos";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Pencil, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,42 +28,60 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
   const queryClient = useQueryClient();
   const updateBookingStatus = useUpdateBookingStatus();
   const { data: roomsData = [] } = useRooms();
+  const { data: unitsData = [] } = useUnits();
+  const { data: condosData = [] } = useCondos();
 
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
-  const [cancelReason, setCancelReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const room = roomsData.find(r => r.id === b.room_id);
   const info = b.room || (room ? { room: room.room, building: room.building, unit: room.unit } : null);
-  const moveInCost = b.move_in_cost as Record<string, number> | null;
+  const unitCfg = room ? unitsData.find(u => u.id === room.unit_id) : null;
+
+  // Parse move_in_cost — new format from CreateBookingDialog
+  const moveInCost = b.move_in_cost as any;
+
+  // Car park selections from documents
+  const carParkSelections: { roomId: string; carPlate: string }[] = useMemo(() => {
+    const docs = b.documents as any;
+    return docs?.carParkSelections || [];
+  }, [b.documents]);
+
+  const carParkRooms = useMemo(() => {
+    return carParkSelections.map(sel => {
+      const cp = roomsData.find(r => r.id === sel.roomId);
+      return { ...sel, room: cp };
+    });
+  }, [carParkSelections, roomsData]);
 
   const statusBadge = (status: string) => {
-    const cls = status === "pending"
-      ? "bg-yellow-500/20 text-yellow-600"
-      : status === "approved"
-        ? "bg-green-500/20 text-green-600"
-        : status === "cancelled"
-          ? "bg-gray-500/20 text-gray-500"
+    const cls = status === "pending" ? "bg-yellow-500/20 text-yellow-600"
+      : status === "approved" ? "bg-green-500/20 text-green-600"
+        : status === "cancelled" ? "bg-gray-500/20 text-gray-500"
           : "bg-red-500/20 text-red-600";
     return <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${cls}`}>{status.toUpperCase()}</span>;
   };
 
   const handleApprove = async () => {
     if (!user) return;
+    const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
     await updateBookingStatus.mutateAsync({
       id: b.id, status: "approved", reviewed_by: user.id,
       room_id: b.room_id, tenant_name: b.tenant_name,
       tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
-      pax_staying: b.pax_staying,
+      pax_staying: b.pax_staying, carParkIds,
     });
-    // Log activity
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "approve_booking", entity_type: "booking", entity_id: b.id,
       details: { tenant_name: b.tenant_name, room: info ? `${info.building} ${info.unit} ${info.room}` : "" },
     });
     toast.success("Booking approved");
+    setShowApproveDialog(false);
     onBack();
   };
 
@@ -67,26 +90,32 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
     if (b.room_id) {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     }
+    // Release car parks
+    for (const sel of carParkSelections) {
+      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
+    }
+    queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "reject_booking", entity_type: "booking", entity_id: b.id,
       details: { tenant_name: b.tenant_name, reason: rejectReason },
     });
     toast.success("Booking rejected");
+    setShowRejectDialog(false);
     onBack();
   };
 
   const handleCancel = async () => {
     if (!user || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
-    await updateBookingStatus.mutateAsync({
-      id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason,
-    });
+    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason });
     if (b.room_id) {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     }
+    for (const sel of carParkSelections) {
+      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
+    }
+    queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "cancel_booking", entity_type: "booking", entity_id: b.id,
@@ -101,6 +130,9 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     if (!user) return;
     if (b.room_id && b.status === "pending") {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
+    }
+    for (const sel of carParkSelections) {
+      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
     }
     await supabase.from("bookings").delete().eq("id", b.id);
     await supabase.from("activity_logs").insert({
@@ -135,38 +167,41 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
     );
   };
 
-  const sectionCard = (title: string, children: React.ReactNode) => (
-    <div className="bg-card rounded-lg border p-5 space-y-3">
-      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</div>
+  const sectionCard = (emoji: string, title: string, children: React.ReactNode) => (
+    <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+      <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">{emoji} {title}</div>
       {children}
     </div>
   );
 
   const infoRow = (label: string, value: React.ReactNode) => (
-    <div className="flex justify-between text-sm py-1">
+    <div className="flex justify-between text-sm py-1.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-right">{value || "—"}</span>
     </div>
   );
 
+  // Build cost breakdown from move_in_cost
+  const accessFees: { label: string; unitPrice: number; qty: number; total: number }[] = moveInCost?.accessFees || [];
+  const carparkFees: { label: string; unitPrice: number; qty: number; total: number }[] = moveInCost?.carparkFees || [];
+  const carparkRental = moveInCost?.carparkRental || 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to Bookings
         </button>
-        <div className="flex gap-2">
-          {canEdit && (
-            <Button variant="outline" onClick={() => onEdit(b)}>
-              <Pencil className="h-4 w-4 mr-1" /> Edit Booking
-            </Button>
-          )}
-        </div>
+        {canEdit && (
+          <Button variant="outline" onClick={() => onEdit(b)}>
+            <Pencil className="h-4 w-4 mr-1" /> Edit Booking
+          </Button>
+        )}
       </div>
 
       {/* 1. Booking Summary */}
-      {sectionCard("Booking Summary", (
+      {sectionCard("📋", "Booking Summary", (
         <div>
           {infoRow("Booking ID", <span className="font-mono text-xs">{b.id}</span>)}
           {infoRow("Status", statusBadge(b.status))}
@@ -177,43 +212,74 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
       ))}
 
       {/* 2. Room Summary */}
-      {sectionCard("Room Summary", (
+      {sectionCard("🏠", "Room Summary", (
         <div>
           {infoRow("Building", info?.building)}
           {infoRow("Unit", info?.unit)}
           {infoRow("Room", info?.room)}
           {infoRow("Room Status", room?.status)}
-          {infoRow("Final Rental", `RM${b.monthly_salary || 0}`)}
+          {infoRow("Exact Rental", `RM${moveInCost?.advance || b.monthly_salary || 0}`)}
+          {infoRow("Pax Staying", b.pax_staying)}
+          {infoRow("Tenancy Duration", `${b.contract_months} months`)}
+          {infoRow("Move-in Date", b.move_in_date)}
         </div>
       ))}
 
-      {/* 3. Tenant Profile Summary */}
-      {sectionCard("Tenant Profile", (
+      {/* 3. Parking */}
+      {carParkRooms.length > 0 && sectionCard("🅿️", "Parking", (
+        <div className="space-y-2">
+          {carParkRooms.map((cp, i) => (
+            <div key={i} className="bg-background rounded-lg border p-3 text-sm">
+              <div className="flex justify-between">
+                <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "—"}</span>
+                <span>RM{cp.room?.rent || 0}/mo</span>
+              </div>
+              <div className="text-muted-foreground">Car Plate: {cp.carPlate || "—"}</div>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      {/* 4. Tenant Profile */}
+      {sectionCard("👤", "Tenant Profile", (
         <div className="grid md:grid-cols-2 gap-x-8">
           <div>
-            {infoRow("Tenant Name", b.tenant_name)}
-            {infoRow("Phone", b.tenant_phone)}
+            {infoRow("Full Name", b.tenant_name)}
+            {infoRow("NRIC/Passport", b.tenant_ic_passport)}
             {infoRow("Email", b.tenant_email)}
-            {infoRow("IC/Passport", b.tenant_ic_passport)}
-            {infoRow("Nationality", b.tenant_nationality)}
-            {infoRow("Gender", b.tenant_gender)}
-            {infoRow("Race", b.tenant_race)}
+            {infoRow("Contact No", b.tenant_phone)}
           </div>
           <div>
-            {infoRow("Pax Staying", b.pax_staying)}
+            {infoRow("Gender", b.tenant_gender)}
+            {infoRow("Nationality", b.tenant_nationality)}
             {infoRow("Occupation", b.occupation)}
-            {infoRow("Company", b.company)}
-            {infoRow("Position", b.position)}
-            {infoRow("Move-in Date", b.move_in_date)}
-            {infoRow("Contract", `${b.contract_months} months`)}
-            {infoRow("Access Cards", b.access_card_count)}
-            {infoRow("Parking", `${b.parking || "0"} ${b.car_plate ? `(${b.car_plate})` : ""}`)}
           </div>
         </div>
       ))}
 
-      {/* Emergency Contacts */}
-      {sectionCard("Emergency Contacts", (
+      {/* Second tenant if exists */}
+      {(() => {
+        const docs = b.documents as any;
+        const t2 = docs?.tenant2;
+        if (!t2?.name) return null;
+        return sectionCard("👥", "Second Tenant", (
+          <div className="grid md:grid-cols-2 gap-x-8">
+            <div>
+              {infoRow("Full Name", t2.name)}
+              {infoRow("NRIC/Passport", t2.icPassport)}
+              {infoRow("Email", t2.email)}
+            </div>
+            <div>
+              {infoRow("Contact No", t2.phone)}
+              {infoRow("Nationality", t2.nationality)}
+              {infoRow("Occupation", t2.occupation)}
+            </div>
+          </div>
+        ));
+      })()}
+
+      {/* 5. Emergency Contacts */}
+      {sectionCard("🚨", "Emergency Contacts", (
         <div className="grid md:grid-cols-2 gap-x-8">
           <div>
             <div className="text-xs font-semibold text-muted-foreground mb-1">Contact 1</div>
@@ -230,23 +296,73 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
         </div>
       ))}
 
-      {/* 4. Cost Breakdown */}
-      {moveInCost && Object.keys(moveInCost).length > 0 && sectionCard("Cost Breakdown", (
-        <div className="max-w-md">
-          {moveInCost.advance != null && infoRow("1 Month Advance Rental", `RM${moveInCost.advance}`)}
-          {moveInCost.deposit != null && infoRow("Rental Deposit", `RM${moveInCost.deposit}`)}
-          {moveInCost.adminFee != null && infoRow("Admin Fee", `RM${moveInCost.adminFee}`)}
-          {moveInCost.accessCardDeposit != null && infoRow("Access Card Deposit", `RM${moveInCost.accessCardDeposit}`)}
-          {moveInCost.electricityReload != null && infoRow("Electricity Reload", `RM${moveInCost.electricityReload}`)}
-          <div className="flex justify-between text-sm py-2 border-t border-border mt-2 font-bold">
-            <span>Total</span>
-            <span>RM{moveInCost.total}</span>
+      {/* 6. Cost Breakdown — Bill style */}
+      {moveInCost && sectionCard("💰", "Move-in Cost", (
+        <div className="bg-background rounded-lg border divide-y divide-border">
+          <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+            <span>Description</span>
+            <span className="text-right">Amount (RM)</span>
+          </div>
+
+          {moveInCost.advance != null && (
+            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>1 Month Advance Rental</span>
+              <span className="text-right font-medium">{Number(moveInCost.advance).toLocaleString()}</span>
+            </div>
+          )}
+
+          {moveInCost.deposit != null && (
+            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>Rental Deposit {unitCfg ? `(×${unitCfg.deposit_multiplier})` : ""}</span>
+              <span className="text-right font-medium">{Number(moveInCost.deposit).toLocaleString()}</span>
+            </div>
+          )}
+
+          {moveInCost.adminFee != null && (
+            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>Admin Fee</span>
+              <span className="text-right font-medium">{Number(moveInCost.adminFee).toLocaleString()}</span>
+            </div>
+          )}
+
+          {accessFees.map((f, i) => (
+            <div key={`access-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+              <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+            </div>
+          ))}
+
+          {carparkFees.map((f, i) => (
+            <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+              <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+            </div>
+          ))}
+
+          {carparkRental > 0 && (
+            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>1 Month Advance Car Park Rental</span>
+              <span className="text-right font-medium">{carparkRental.toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Legacy fields fallback */}
+          {moveInCost.accessCardDeposit > 0 && !accessFees.length && (
+            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+              <span>Access Card Deposit</span>
+              <span className="text-right font-medium">{Number(moveInCost.accessCardDeposit).toLocaleString()}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
+            <span className="font-bold">Total Move-in Cost</span>
+            <span className="text-right font-bold text-lg">RM {Number(moveInCost.total || 0).toLocaleString()}</span>
           </div>
         </div>
       ))}
 
-      {/* 5. Uploaded Documents */}
-      {sectionCard("Uploaded Documents", (
+      {/* 7. Uploaded Documents */}
+      {sectionCard("📎", "Uploaded Documents", (
         <div className="space-y-3">
           {docSection("Passport / IC", b.doc_passport)}
           {docSection("Offer Letter", b.doc_offer_letter)}
@@ -269,20 +385,17 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
         </div>
       )}
 
-      {/* Actions */}
+      {/* ─── Actions Section ─── */}
       {b.status === "pending" && (
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actions</div>
-          <div className="flex flex-col gap-3">
-            <Button onClick={handleApprove} disabled={updateBookingStatus.isPending} className="bg-green-600 hover:bg-green-700 text-white">
+        <div className="bg-card rounded-lg border p-5 space-y-3">
+          <div className="text-base font-bold border-b border-border pb-2">⚡ Actions</div>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setShowApproveDialog(true)} className="bg-green-600 hover:bg-green-700 text-white">
               ✅ Approve Booking
             </Button>
-            <div className="flex gap-2">
-              <Input placeholder="Reject reason (required)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="flex-1" />
-              <Button onClick={handleReject} disabled={updateBookingStatus.isPending} variant="destructive">
-                ❌ Reject Booking
-              </Button>
-            </div>
+            <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
+              ❌ Reject Booking
+            </Button>
             <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>
               🚫 Cancel Booking
             </Button>
@@ -291,8 +404,8 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
       )}
 
       {b.status === "approved" && (
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actions</div>
+        <div className="bg-card rounded-lg border p-5 space-y-3">
+          <div className="text-base font-bold border-b border-border pb-2">⚡ Actions</div>
           <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>
             🚫 Cancel Booking
           </Button>
@@ -300,36 +413,72 @@ export function BookingDetailView({ booking: b, onBack, onEdit, getAgentName }: 
       )}
 
       {(b.status === "rejected" || b.status === "cancelled") && (
-        <div className="bg-card rounded-lg border p-5 space-y-4">
-          <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actions</div>
+        <div className="bg-card rounded-lg border p-5 space-y-3">
+          <div className="text-base font-bold border-b border-border pb-2">⚡ Actions</div>
           <Button variant="outline" className="text-destructive" onClick={() => setShowDeleteDialog(true)}>
             🗑️ Delete Booking
           </Button>
         </div>
       )}
 
-      {/* Cancel Dialog */}
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+      {/* ─── Approve Confirm Dialog ─── */}
+      <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
+            <AlertDialogTitle>Approve Booking?</AlertDialogTitle>
             <AlertDialogDescription>
-              ⚠️ Booking fee is <strong>non-refundable</strong> once paid. This action will be logged.
+              Are you sure you want to approve this booking for <strong>{b.tenant_name}</strong>?
+              The room will be marked as Occupied.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="px-6 pb-2">
-            <Input placeholder="Cancel reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} />
-          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>
-              Cancel Booking
+            <AlertDialogCancel>No, Go Back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+              Yes, Approve
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Dialog */}
+      {/* ─── Reject Dialog ─── */}
+      <Dialog open={showRejectDialog} onOpenChange={(open) => { if (!open) { setShowRejectDialog(false); setRejectReason(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Booking</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">Please enter the reason for rejecting this booking. This is required.</p>
+            <Textarea placeholder="Enter reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowRejectDialog(false); setRejectReason(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>
+              Reject Booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Cancel Dialog ─── */}
+      <Dialog open={showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(false); setCancelReason(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">Please enter the reason for cancelling this booking. This is required.</p>
+            <Textarea placeholder="Enter cancel reason..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowCancelDialog(false); setCancelReason(""); }}>Go Back</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim()}>
+              Cancel Booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete Dialog ─── */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
