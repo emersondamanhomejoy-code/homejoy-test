@@ -15,6 +15,7 @@ import { RoomsContent } from "@/components/RoomsContent";
 import { TenantsContent } from "@/components/TenantsContent";
 import { MoveInContent } from "@/components/MoveInContent";
 import { BookingsContent } from "@/components/BookingsContent";
+import { AdminDashboardContent } from "@/components/AdminDashboardContent";
 
 const rankingData = {
   internal: [
