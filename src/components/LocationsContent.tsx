@@ -69,13 +69,13 @@ export function LocationsContent() {
 
   const filtered = locations.filter(l => l.name.toLowerCase().includes(search.toLowerCase()));
 
-  const sortedFiltered = sortData(filtered, (loc: any, key: string) => {
-    const s = locationStats[loc.id] || {};
+  const sortedFiltered = sortData(filtered, (loc, key: string) => {
+    const s = locationStats[loc.id] || { buildings: 0, units: 0, rooms: 0 };
     const map: Record<string, any> = {
       name: loc.name,
-      buildings: s.buildings || 0,
-      units: s.units || 0,
-      rooms: s.rooms || 0,
+      buildings: s.buildings,
+      units: s.units,
+      rooms: s.rooms,
     };
     return map[key];
   });

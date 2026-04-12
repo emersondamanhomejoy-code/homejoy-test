@@ -65,17 +65,17 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     return matchSearch && matchLocation;
   });
 
-  const sortedFiltered = sortData(filtered, (c: any, key: string) => {
-    const s = condoStats[c.id] || {};
+  const sortedFiltered = sortData(filtered, (c, key: string) => {
+    const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableRooms: 0, availableCarparks: 0 };
     const map: Record<string, any> = {
       name: c.name,
       location: c.location?.name || "",
       address: c.address || "",
-      totalUnits: s.totalUnits || 0,
-      totalRooms: s.totalRooms || 0,
-      totalCarparks: s.totalCarparks || 0,
-      availableRooms: s.availableRooms || 0,
-      availableCarparks: s.availableCarparks || 0,
+      totalUnits: s.totalUnits,
+      totalRooms: s.totalRooms,
+      totalCarparks: s.totalCarparks,
+      availableRooms: s.availableRooms,
+      availableCarparks: s.availableCarparks,
     };
     return map[key];
   });
