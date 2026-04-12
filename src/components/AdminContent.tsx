@@ -926,7 +926,7 @@ export function AdminContent({ tab }: AdminContentProps) {
 
             {/* More Details dialog for room config */}
             <Dialog open={editingRoomConfigIndex !== null} onOpenChange={(open) => { if (!open) setEditingRoomConfigIndex(null); }}>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                 <DialogHeader>
                   <DialogTitle>{editingRoomConfigIndex !== null ? roomConfigs[editingRoomConfigIndex]?.room : ""} — More Details</DialogTitle>
                 </DialogHeader>
