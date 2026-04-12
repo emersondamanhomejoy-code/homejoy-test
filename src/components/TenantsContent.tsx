@@ -230,6 +230,45 @@ export function TenantsContent() {
     }
   };
 
+  // Add
+  const openAdd = () => {
+    setAddForm({});
+    setAddingTenant(true);
+  };
+  const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
+  const saveNewTenant = async () => {
+    if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
+    if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
+    try {
+      const { error } = await supabase.from("tenants").insert({
+        name: addForm.name || "",
+        phone: addForm.phone || "",
+        email: addForm.email || "",
+        ic_passport: addForm.ic_passport || "",
+        gender: addForm.gender || "",
+        race: addForm.race || "",
+        nationality: addForm.nationality || "",
+        occupation: addForm.occupation || "",
+        company: addForm.company || "",
+        position: addForm.position || "",
+        monthly_salary: addForm.monthly_salary || 0,
+        emergency_1_name: addForm.emergency_1_name || "",
+        emergency_1_phone: addForm.emergency_1_phone || "",
+        emergency_1_relationship: addForm.emergency_1_relationship || "",
+        emergency_2_name: addForm.emergency_2_name || "",
+        emergency_2_phone: addForm.emergency_2_phone || "",
+        emergency_2_relationship: addForm.emergency_2_relationship || "",
+        car_plate: addForm.car_plate || "",
+      });
+      if (error) throw error;
+      toast.success("Tenant added.");
+      setAddingTenant(false);
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to add tenant");
+    }
+  };
+
   // Delete
   const handleDelete = async () => {
     if (!deleteConfirm) return;
