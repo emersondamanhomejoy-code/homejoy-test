@@ -538,6 +538,54 @@ export type Database = {
           },
         ]
       }
+      tenant_rooms: {
+        Row: {
+          contract_months: number
+          created_at: string
+          id: string
+          move_in_date: string | null
+          room_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          contract_months?: number
+          created_at?: string
+          id?: string
+          move_in_date?: string | null
+          room_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          contract_months?: number
+          created_at?: string
+          id?: string
+          move_in_date?: string | null
+          room_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_rooms_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_rooms_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           booking_id: string | null
