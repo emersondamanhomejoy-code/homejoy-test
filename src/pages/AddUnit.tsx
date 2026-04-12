@@ -21,7 +21,7 @@ const OPTIONAL_FEATURES = ["Balcony", "Private Toilet", "Window", "Master Room"]
 const getDefaultRoomName = (index: number, naming: "alpha" | "digit") =>
   naming === "alpha" ? `Room ${String.fromCharCode(65 + index)}` : `Room ${index + 1}`;
 
-const getDefaultCarParkName = (index: number) => index === 0 ? "Car Park" : `Car Park ${index + 1}`;
+const getDefaultCarParkName = (index: number) => `Carpark ${index + 1}`;
 
 const hasMeaningfulData = (rc: RoomConfig, index: number, naming: "alpha" | "digit", isCarPark: boolean) => {
   if (isCarPark) {
