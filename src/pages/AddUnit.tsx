@@ -35,7 +35,7 @@ const hasMeaningfulData = (rc: RoomConfig, index: number, naming: "alpha" | "dig
 
 const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
 
-export default function AddUnit() {
+export default function AddUnit({ onClose }: { onClose?: () => void } = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: condosList = [] } = useCondos();
@@ -144,7 +144,7 @@ export default function AddUnit() {
     if (hasAnyData) {
       setShowCancelConfirm(true);
     } else {
-      navigate("/admin", { state: { adminTab: "units" } });
+      onClose ? onClose() : navigate("/admin", { state: { adminTab: "units" } });
     }
   };
 
@@ -187,7 +187,7 @@ export default function AddUnit() {
         roomConfigs,
       });
       logActivity("create_unit", "unit", "", { building: form.building, unit: form.unit });
-      navigate("/admin", { state: { adminTab: "units" } });
+      onClose ? onClose() : navigate("/admin", { state: { adminTab: "units" } });
     } catch (e: any) {
       alert(e.message || "Failed to save unit");
     } finally {
@@ -195,27 +195,9 @@ export default function AddUnit() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={handleCancel}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold">Add Unit</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-            <Button onClick={saveUnit} disabled={saving}>
-              {saving ? "Saving..." : "Save Unit & Rooms"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+  const content = (
+    <>
+      <div className="space-y-8">
         {/* ── Unit Information ── */}
         <section className="space-y-5">
           <h2 className="text-lg font-semibold border-b border-border pb-2">Unit Information</h2>
@@ -638,7 +620,7 @@ export default function AddUnit() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Editing</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/admin", { state: { adminTab: "units" } })}>Discard</AlertDialogAction>
+            <AlertDialogAction onClick={() => onClose ? onClose() : navigate("/admin", { state: { adminTab: "units" } })}>Discard</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -658,6 +640,32 @@ export default function AddUnit() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  if (onClose) return content;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={handleCancel}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold">Add Unit</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleCancel}>Cancel</Button>
+            <Button onClick={saveUnit} disabled={saving}>
+              {saving ? "Saving..." : "Save Unit & Rooms"}
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        {content}
+      </div>
     </div>
   );
 }

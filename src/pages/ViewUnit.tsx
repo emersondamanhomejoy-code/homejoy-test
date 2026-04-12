@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ArrowLeft, Pencil, Eye } from "lucide-react";
+import { ArrowLeft, Eye } from "lucide-react";
 
 export default function ViewUnit() {
   const { unitId } = useParams<{ unitId: string }>();
@@ -41,9 +41,6 @@ export default function ViewUnit() {
             </Button>
             <h1 className="text-xl font-bold">Unit Details</h1>
           </div>
-          <Button onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
-            <Pencil className="h-4 w-4 mr-2" /> Edit Unit
-          </Button>
         </div>
       </div>
 
@@ -136,9 +133,6 @@ export default function ViewUnit() {
                         <div className="flex gap-1 justify-center">
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="View Room" onClick={() => navigate(`/photos/${room.id}`)}>
                             <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit Room" onClick={() => navigate(`/admin/edit-unit/${unit.id}`)}>
-                            <Pencil className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
