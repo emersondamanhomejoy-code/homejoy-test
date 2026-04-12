@@ -208,7 +208,6 @@ export function TenantsContent() {
         email: editForm.email || "",
         ic_passport: editForm.ic_passport || "",
         gender: editForm.gender || "",
-        race: editForm.race || "",
         nationality: editForm.nationality || "",
         occupation: editForm.occupation || "",
         company: editForm.company || "",
@@ -480,7 +479,6 @@ export function TenantsContent() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoField label="Phone" value={viewingTenant.phone} />
                   <InfoField label="IC/Passport" value={viewingTenant.ic_passport} />
-                  <InfoField label="Gender" value={viewingTenant.gender} />
                   <InfoField label="Race" value={viewingTenant.race} />
                   <InfoField label="Nationality" value={viewingTenant.nationality} />
                   <InfoField label="Occupation" value={viewingTenant.occupation} />
