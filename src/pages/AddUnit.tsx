@@ -550,7 +550,7 @@ export default function AddUnit() {
             {roomConfigs.map((rc, globalIdx) => {
               if (rc.room_type !== "Car Park") return null;
               return (
-                <div key={`cp-${idx}`} className="rounded-lg border bg-sky-500/5 border-sky-500/20 p-4">
+                <div key={`cp-${globalIdx}`} className="rounded-lg border bg-accent/30 border-border p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="font-semibold text-sm">🅿️ {rc.room}</span>
                   </div>
