@@ -162,14 +162,12 @@ export function TenantsContent() {
                   <div className="text-sm font-semibold text-muted-foreground mb-2">Emergency Contacts</div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <div className="font-medium">{selectedTenant.emergency_1_name || selectedTenant.emergency_name || "—"}</div>
-                      <div className="text-muted-foreground">{selectedTenant.emergency_1_phone || selectedTenant.emergency_phone || "—"}</div>
-                      <div className="text-muted-foreground">{selectedTenant.emergency_1_relationship || selectedTenant.emergency_relationship || "—"}</div>
+                      <div className="font-medium">{selectedTenant.emergency_name || "—"}</div>
+                      <div className="text-muted-foreground">{selectedTenant.emergency_phone || "—"}</div>
+                      <div className="text-muted-foreground">{selectedTenant.emergency_relationship || "—"}</div>
                     </div>
                     <div>
-                      <div className="font-medium">{selectedTenant.emergency_2_name || "—"}</div>
-                      <div className="text-muted-foreground">{selectedTenant.emergency_2_phone || "—"}</div>
-                      <div className="text-muted-foreground">{selectedTenant.emergency_2_relationship || "—"}</div>
+                      <div className="font-medium">{selectedTenant.emergency_contact_2 || "—"}</div>
                     </div>
                   </div>
                 </div>

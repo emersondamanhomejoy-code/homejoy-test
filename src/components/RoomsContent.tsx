@@ -81,12 +81,14 @@ export function RoomsContent() {
         />
         <MultiSelectFilter
           label="Location"
+          placeholder="All Locations"
           options={locations}
           selected={selectedLocations}
           onApply={v => { setSelectedLocations(v); setPage(1); }}
         />
         <MultiSelectFilter
           label="Building"
+          placeholder="All Buildings"
           options={buildings}
           selected={selectedBuildings}
           onApply={v => { setSelectedBuildings(v); setPage(1); }}
