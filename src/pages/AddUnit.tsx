@@ -547,8 +547,8 @@ export default function AddUnit() {
 
           {/* Carpark items */}
           <div className="space-y-2">
-            {roomConfigs.filter(r => r.room_type === "Car Park").map((rc, idx) => {
-              const globalIdx = roomConfigs.findIndex((r, gi) => r.room_type === "Car Park" && roomConfigs.filter((x, xi) => x.room_type === "Car Park" && xi < gi).length === idx);
+            {roomConfigs.map((rc, globalIdx) => {
+              if (rc.room_type !== "Car Park") return null;
               return (
                 <div key={`cp-${idx}`} className="rounded-lg border bg-sky-500/5 border-sky-500/20 p-4">
                   <div className="flex items-center gap-2 mb-3">
