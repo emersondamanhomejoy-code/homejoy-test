@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 
 export default function Rooms() {
   const { user, role, loading } = useAuth();
@@ -36,6 +37,7 @@ export default function Rooms() {
   const [selectedStatus, setSelectedStatus] = useState<string>("Available");
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const { sort, handleSort, sortData } = useTableSort("building");
 
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
@@ -76,8 +78,21 @@ export default function Rooms() {
     if (selectedGender !== "mix") {
       list = list.filter((r) => r.unit_type?.toLowerCase().includes(selectedGender));
     }
-    return list;
-  }, [allRooms, selectedLocations, selectedBuildings, selectedGender, selectedStatus]);
+    return sortData(list, (r: any, key: string) => {
+      const map: Record<string, any> = {
+        location: r.location,
+        building: r.building,
+        unit: r.unit,
+        room: r.room,
+        room_type: r.room_type,
+        unit_type: r.unit_type,
+        rent: r.rent,
+        max_pax: r.max_pax,
+        status: r.status,
+      };
+      return map[key];
+    });
+  }, [allRooms, selectedLocations, selectedBuildings, selectedGender, selectedStatus, sort]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -239,15 +254,15 @@ export default function Rooms() {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/30">
-                            <TableHead>Location</TableHead>
-                            <TableHead>Building</TableHead>
-                            <TableHead>Unit</TableHead>
-                            <TableHead>Room</TableHead>
-                            <TableHead>Room Type</TableHead>
-                            <TableHead>Unit Type</TableHead>
-                            <TableHead className="text-right">Rent (RM)</TableHead>
-                            <TableHead className="text-center">Max Pax</TableHead>
-                            <TableHead>Status</TableHead>
+                            <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
+                            <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+                            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+                            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+                            <SortableTableHead sortKey="room_type" currentSort={sort} onSort={handleSort}>Room Type</SortableTableHead>
+                            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
+                            <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Rent (RM)</SortableTableHead>
+                            <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Pax</SortableTableHead>
+                            <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                             <TableHead className="text-center">Action</TableHead>
                           </TableRow>
                         </TableHeader>
