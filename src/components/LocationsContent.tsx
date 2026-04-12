@@ -117,9 +117,9 @@ export function LocationsContent() {
             <TableRow>
               <TableHead className="w-12">#</TableHead>
               <TableHead>Location Name</TableHead>
-              <TableHead className="text-center">Buildings</TableHead>
-              <TableHead className="text-center">Units</TableHead>
-              <TableHead className="text-center">Rooms</TableHead>
+              <TableHead className="text-center">Total Buildings</TableHead>
+              <TableHead className="text-center">Total Units</TableHead>
+              <TableHead className="text-center">Total Rooms</TableHead>
               <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
