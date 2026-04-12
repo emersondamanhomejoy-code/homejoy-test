@@ -113,7 +113,7 @@ export function RoomsContent() {
       };
       return map[key];
     });
-  }, [allRooms, selectedLocations, selectedBuildings, selectedUnits, selectedUnitTypes, selectedRoomTypes, selectedBedTypes, selectedWallTypes, statusFilter, minPrice, maxPrice, search, sort]);
+  }, [allRooms, selectedLocations, selectedBuildings, selectedUnits, selectedUnitTypes, selectedBedTypes, selectedWallTypes, statusFilter, minPrice, maxPrice, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
