@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, DollarSign, FileText, LogOut,
   PanelLeftClose, PanelLeft, Sparkles, Building2, ClipboardList,
-  MapPin, Building
+  MapPin, Building, BedDouble, UserCheck, LogIn
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -24,10 +24,13 @@ const adminMenuItems = [
   { title: "Locations", icon: MapPin, tab: "locations" },
   { title: "Buildings", icon: Building, tab: "condos" },
   { title: "Units & Rooms", icon: Building2, tab: "units" },
+  { title: "Rooms", icon: BedDouble, tab: "rooms" },
+  { title: "Tenants", icon: UserCheck, tab: "tenants" },
   { title: "Bookings", icon: ClipboardList, tab: "bookings" },
+  { title: "Move In", icon: LogIn, tab: "movein" },
   { title: "Claims", icon: DollarSign, tab: "claims" },
   { title: "Users", icon: Users, tab: "users" },
-  { title: "Activity Log", icon: FileText, tab: "activity", bossOnly: true },
+  { title: "Activity Log", icon: FileText, tab: "activity", bossManagerOnly: true },
 ];
 
 interface AdminSidebarProps {
@@ -48,7 +51,7 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
   };
 
   const visibleItems = adminMenuItems.filter(
-    (item) => !item.bossOnly || canViewActivityLog
+    (item) => !item.bossManagerOnly || canViewActivityLog
   );
 
   return (

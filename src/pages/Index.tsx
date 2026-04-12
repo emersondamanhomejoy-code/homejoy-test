@@ -11,6 +11,10 @@ import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
 import { LocationsContent } from "@/components/LocationsContent";
 import { CondosContent } from "@/components/CondosContent";
+import { RoomsContent } from "@/components/RoomsContent";
+import { TenantsContent } from "@/components/TenantsContent";
+import { MoveInContent } from "@/components/MoveInContent";
+import { BookingsContent } from "@/components/BookingsContent";
 
 const rankingData = {
   internal: [
@@ -1195,6 +1199,10 @@ export default function Index() {
           <div className="max-w-5xl mx-auto">
             {adminTab === "locations" ? <LocationsContent /> :
              adminTab === "condos" ? <CondosContent /> :
+             adminTab === "rooms" ? <RoomsContent /> :
+             adminTab === "tenants" ? <TenantsContent /> :
+             adminTab === "movein" ? <MoveInContent /> :
+             adminTab === "bookings" ? <BookingsContent /> :
              <AdminContent tab={adminTab as any} />}
           </div>
         )}
