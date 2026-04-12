@@ -65,6 +65,8 @@ export default function Index() {
   const isAdmin = role === "admin" || role === "boss" || role === "manager";
   const [adminTab, setAdminTab] = useState<string>("dashboard");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  const [buildingFormOpen, setBuildingFormOpen] = useState(false);
+  const [buildingFormData, setBuildingFormData] = useState<Condo | undefined>(undefined);
   const [agentType, setAgentType] = useState("External");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
