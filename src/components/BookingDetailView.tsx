@@ -188,18 +188,19 @@ export function BookingDetailView({ booking: b, open, onOpenChange, onEdit, getA
   const carparkRental = moveInCost?.carparkRental || 0;
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Bookings
-        </button>
-        {canEdit && (
-          <Button variant="outline" onClick={() => onEdit(b)}>
-            <Pencil className="h-4 w-4 mr-1" /> Edit Booking
-          </Button>
-        )}
-      </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" hideClose>
+          <DialogHeader className="px-6 pt-6 pb-0 flex flex-row items-center justify-between">
+            <DialogTitle>View Booking</DialogTitle>
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={() => { onOpenChange(false); onEdit(b); }}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            )}
+          </DialogHeader>
+          <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
+            <div className="space-y-5 py-4">
 
       {/* 1. Booking Summary */}
       {sectionCard("📋", "Booking Summary", (
