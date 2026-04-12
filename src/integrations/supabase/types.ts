@@ -552,6 +552,8 @@ export type Database = {
           unit_max_pax: number
           unit_type: string
           updated_at: string
+          wifi_name: string
+          wifi_password: string
         }
         Insert: {
           access_card?: string
@@ -578,6 +580,8 @@ export type Database = {
           unit_max_pax?: number
           unit_type?: string
           updated_at?: string
+          wifi_name?: string
+          wifi_password?: string
         }
         Update: {
           access_card?: string
@@ -604,6 +608,8 @@ export type Database = {
           unit_max_pax?: number
           unit_type?: string
           updated_at?: string
+          wifi_name?: string
+          wifi_password?: string
         }
         Relationships: []
       }
