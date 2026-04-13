@@ -129,6 +129,7 @@ export function useCreateUnit() {
         building: unit.building,
         unit: unit.unit,
         room: rc.room,
+        room_title: rc.room_title || "",
         location: unit.location,
         rent: rc.rent,
         bed_type: rc.room_type === "Car Park" ? "" : (rc.bed_type || ""),
