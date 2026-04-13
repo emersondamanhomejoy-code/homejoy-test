@@ -1,41 +1,56 @@
 
 
-## Phase 6 — Bookings UI Standardization
+## Plan: Refactor Unit Create/Edit to Record-by-Record Pattern
 
 ### Problem
-The bookings module (1,984 lines across 4 files) is fully functional but uses raw `Dialog`, inline filters, and manual pagination instead of the shared UI components from Phase 2:
-- `BookingsContent.tsx` (318 lines) — uses raw `Table`, inline filters/pagination instead of `StandardFilterBar` + `StandardTable`
-- `BookingDetailView.tsx` (517 lines) — uses raw `Dialog` instead of `StandardModal`
-- `BookingEditView.tsx` (456 lines) — uses raw `Dialog`, local `ic`/`lbl` class definitions instead of `StandardModal` + shared `inputClass`/`labelClass`
-- `CreateBookingDialog.tsx` (693 lines) — already uses `StandardModal` + shared classes ✅
+Current AddUnit pre-generates 5 room cards + 1 carpark card based on count inputs. This makes the form large, heavy, and inconsistent with the Building access record pattern.
 
-### Plan
+### New Design
 
-**Step 1 — Migrate BookingsContent to StandardFilterBar + StandardTable**
-- Replace the inline search/status bar + advanced filters grid with `StandardFilterBar`
-- Replace raw `Table` + manual pagination with `StandardTable`
-- Keep all existing filter logic (location, building, unit, room, agent, date range)
-- Remove manual pagination controls (handled by StandardTable)
+**Unit Details Section** — no change, stays as-is (text fields, dropdowns, checkbox, uploads).
 
-**Step 2 — Convert BookingDetailView to StandardModal**
-- Replace raw `Dialog` + `ScrollArea` with `StandardModal` (size `lg`)
-- Keep all existing sections (summary, room, parking, tenant profile, emergency, cost breakdown, documents, history)
-- Move action buttons (approve/reject/cancel/delete) to `StandardModal` footer
-- Keep the nested AlertDialogs for confirm actions
+**Rooms Section:**
+- Starts empty with a header "Rooms" and an "Add Room" button
+- Clicking "Add Room" opens an inline card/form for one room
+- User fills in: Room Label, Room Type (Room/Studio), Bed Type, Wall Type, Max Pax, Listed Rental, Status, Available Date, Features, Remark
+- "Save" collapses it into a compact summary row showing: Room Label | Bed Type | Rent | Status
+- Each saved row has View / Edit / Delete actions
+- Edit re-opens the inline form for that room
+- Delete removes with confirmation
 
-**Step 3 — Convert BookingEditView to StandardModal**
-- Replace raw `Dialog` + `ScrollArea` with `StandardModal` (size `lg`)
-- Replace local `ic`/`lbl` classes with shared `inputClass`/`labelClass` from `ui-constants.ts`
-- Add `isDirty` discard confirmation
-- Move save button to sticky footer
+**Carparks Section:**
+- Same pattern — starts empty, "Add Carpark" button
+- Each carpark record: Label, Rent, Status, Assigned To, Remark
+- Saved rows show: Label | Rent | Status
+- View / Edit / Delete actions
 
-### Files to Modify
-- **Modify**: `src/components/BookingsContent.tsx` — StandardFilterBar + StandardTable
-- **Modify**: `src/components/BookingDetailView.tsx` — StandardModal
-- **Modify**: `src/components/BookingEditView.tsx` — StandardModal + shared classes
+### Technical Changes
 
-### What stays the same
-- `CreateBookingDialog.tsx` — already standardized
-- All booking business logic (approve/reject/cancel/delete, room status updates, cost calculation)
-- `useBookings.tsx` hook — no changes needed
-- Database schema — no changes
+**File: `src/pages/AddUnit.tsx` (~599 lines) — major rewrite**
+- Remove room/carpark count inputs, naming convention selector, rebuildConfigs logic
+- Remove collapsible card pattern and bulk generation
+- Add local state array for room records and carpark records
+- Each record has an `editing` flag — when true, show the inline form; when false, show summary row
+- "Add Room" pushes a new blank record in editing mode
+- "Save" on inline form validates and sets editing=false
+- On final "Save Unit & Rooms", submit all records together (same mutation)
+
+**File: `src/pages/EditUnit.tsx` (~636 lines) — major rewrite**
+- Same record-by-record pattern
+- Existing rooms from DB are displayed as summary rows
+- "Add Room" / "Add Carpark" adds new records inline
+- Edit opens inline form for existing room
+- Delete calls useDeleteRoom with confirmation
+- Save updates changed rooms via useUpdateRoom, creates new ones via useCreateRoom
+
+**File: `src/components/UnitsRoomsContent.tsx`** — View modal already works, no change needed.
+
+**No database changes** — rooms/units tables already support this pattern since rooms are individual DB rows.
+
+### Consistency
+This matches the Building access items pattern: empty list → add one at a time → compact saved rows → view/edit/delete each.
+
+### Summary Row Format
+| Room Label | Type | Bed Type | Rent | Status | Actions |
+Each row is compact — one line per room, no accordion, no expand/collapse.
+
