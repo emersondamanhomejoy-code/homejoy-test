@@ -101,7 +101,18 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     sublabel: a.name ? a.email : undefined,
   })), [agents]);
 
-  const availableRooms = useMemo(() => roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available"), [roomsData]);
+  const selectedAgent = useMemo(() => agents.find(a => a.id === form.agentId) || null, [agents, form.agentId]);
+  const isExternalAgent = selectedAgent?.commissionType === "external";
+
+  const availableRooms = useMemo(() => {
+    let rooms = roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available");
+    // External agents cannot see internal-only units
+    if (isExternalAgent) {
+      const internalUnitIds = new Set(unitsData.filter(u => u.internal_only).map(u => u.id));
+      rooms = rooms.filter(r => !r.unit_id || !internalUnitIds.has(r.unit_id));
+    }
+    return rooms;
+  }, [roomsData, unitsData, isExternalAgent]);
   const roomOptions = useMemo(() => availableRooms.map(r => ({
     value: r.id,
     label: `${r.building} · ${r.unit} · ${r.room}${(r as any).room_title ? ` — ${(r as any).room_title}` : ""}`,
