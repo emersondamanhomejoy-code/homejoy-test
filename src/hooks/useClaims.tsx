@@ -33,7 +33,6 @@ export interface Claim {
   payout_date: string | null;
   created_at: string;
   updated_at: string;
-  // joined
   claim_items?: ClaimItem[];
 }
 
@@ -72,15 +71,30 @@ export function useCreateClaim() {
   return useMutation({
     mutationFn: async (claim: {
       agent_id: string;
-      booking_id?: string;
+      booking_id?: string | null;
       amount: number;
       description: string;
       bank_name: string;
       bank_account: string;
       account_holder: string;
+      history?: any[];
     }) => {
-      const { error } = await supabase.from("claims").insert(claim);
+      const { data, error } = await supabase
+        .from("claims")
+        .insert({
+          agent_id: claim.agent_id,
+          booking_id: claim.booking_id ?? null,
+          amount: claim.amount,
+          description: claim.description,
+          bank_name: claim.bank_name,
+          bank_account: claim.bank_account,
+          account_holder: claim.account_holder,
+          history: claim.history ?? [],
+        })
+        .select("*")
+        .single();
       if (error) throw error;
+      return data as unknown as Claim;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["claims"] }),
   });
