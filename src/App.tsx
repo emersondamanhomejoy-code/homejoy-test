@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
 import Login from "./pages/Login.tsx";
 import Rooms from "./pages/Rooms.tsx";
+import PublicUnitView from "./pages/PublicUnitView.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,8 +33,10 @@ const App = () => (
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sign/:token" element={<Sign />} />
-          <Route path="/photos/:roomId" element={<RoomPhotos />} />
-          <Route path="/common/:unitId" element={<CommonPhotos />} />
+           <Route path="/photos/:roomId" element={<RoomPhotos />} />
+           <Route path="/common/:unitId" element={<CommonPhotos />} />
+           <Route path="/view/:unitId" element={<PublicUnitView />} />
+            <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

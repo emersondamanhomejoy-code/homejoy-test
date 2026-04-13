@@ -10,7 +10,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus, Copy, ChevronDown } from "lucide-react";
+import { Plus, Copy, ChevronDown, Link2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
@@ -490,14 +491,52 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     copyToClipboard(lines.join("\n"), "Cost breakdown");
   };
 
-  const CopyBtn = ({ onClick }: { onClick: () => void }) => (
-    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={onClick}>
-      <Copy className="h-3.5 w-3.5" />
-    </Button>
+  const CopyBtn = ({ onClick, tooltip }: { onClick: () => void; tooltip: string }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          onClick={(e) => { e.stopPropagation(); onClick(); }}
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
+
+  const LinkBtn = ({ url, tooltip }: { url: string; tooltip: string }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+
+  const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
 
   return (
     <div className="space-y-4">
+      {/* Top share link */}
+      <div className="flex items-center justify-end gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(baseShareUrl, "Share link")}>
+              <Link2 className="h-3.5 w-3.5" /> Copy Share Link
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copy public link for customers</TooltipContent>
+        </Tooltip>
+      </div>
+
       {/* Occupant Summary — compact fractions */}
       <div className="flex items-center gap-6 px-1">
         <div className="flex items-center gap-2">
@@ -522,11 +561,12 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-sm font-semibold">Building Details</span>
               <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
             </div>
+            <div className="flex items-center gap-1 mr-2">
+              <CopyBtn onClick={copyBuildingDetails} tooltip="Copy Building Details" />
+              <LinkBtn url={`${baseShareUrl}?section=condo`} tooltip="Copy Common Area Link" />
+            </div>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="flex items-center justify-end mb-2">
-              <CopyBtn onClick={copyBuildingDetails} />
-            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
               <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>
@@ -557,11 +597,12 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-sm font-semibold">Unit Details</span>
               <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
             </div>
+            <div className="flex items-center gap-1 mr-2">
+              <CopyBtn onClick={copyUnitDetails} tooltip="Copy Unit Details" />
+              <LinkBtn url={`${baseShareUrl}?section=unit`} tooltip="Copy Unit Link" />
+            </div>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="flex items-center justify-end mb-2">
-              <CopyBtn onClick={copyUnitDetails} />
-            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
               <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{unit.unit_type}</span></div>
@@ -585,11 +626,12 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
                 <span className="text-sm font-semibold">Room Summary</span>
                 <span className="text-xs text-muted-foreground">— {unitRooms.length} rooms</span>
               </div>
+              <div className="flex items-center gap-1 mr-2">
+                <CopyBtn onClick={copyRoomSummary} tooltip="Copy Housemate Details" />
+                <LinkBtn url={`${baseShareUrl}?section=room`} tooltip="Copy Room Photos Link" />
+              </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="flex items-center justify-end mb-2">
-                <CopyBtn onClick={copyRoomSummary} />
-              </div>
               <div className="overflow-x-auto rounded-lg border">
                 <Table>
                   <TableHeader>
@@ -673,7 +715,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       <section className="border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Move-In Cost Calculator</h3>
-          {calcRoom && <CopyBtn onClick={copyCostBreakdown} />}
+          {calcRoom && <CopyBtn onClick={copyCostBreakdown} tooltip="Copy Cost Breakdown" />}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
