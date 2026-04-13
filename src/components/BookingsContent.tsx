@@ -17,7 +17,6 @@ import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButtons } from "@/components/ui/action-buttons";
-import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { BookingDetailView } from "@/components/BookingDetailView";
 import { BookingEditView } from "@/components/BookingEditView";
 import { CreateBookingDialog } from "@/components/CreateBookingDialog";
