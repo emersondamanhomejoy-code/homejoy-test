@@ -62,7 +62,7 @@ export default function Index() {
     const navState = location.state as { page?: string } | null;
     return navState?.page || "dashboard";
   });
-  const isAdmin = role === "admin" || role === "boss" || role === "manager";
+  const isAdmin = role === "admin" || role === "super_admin";
   const [adminTab, setAdminTab] = useState<string>(() => {
     const navState = location.state as { adminTab?: string } | null;
     return navState?.adminTab || "dashboard";

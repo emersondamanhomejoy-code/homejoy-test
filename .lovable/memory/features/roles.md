@@ -1,17 +1,15 @@
 ---
 name: Role hierarchy and permissions
-description: Boss > Manager > Admin > Agent with different access levels and user creation rights
+description: Super Admin > Admin > Agent with different access levels and user creation rights
 type: feature
 ---
 ## Role Hierarchy
-- **Boss**: Full access + activity log, can create manager/admin/agent
-- **Manager**: Same as boss, can create admin/agent (NOT manager)
-- **Admin**: Manage rooms/bookings/users/claims, can create agent only (NOT manager)
-- **Agent**: Submit bookings and claims only, no admin panel
+- **Super Admin**: Full access + activity log, can create admin/agent
+- **Admin**: Manage rooms/bookings/users/move-ins/payouts, can create agent only
+- **Agent**: Submit bookings, move-ins, view deals/earnings only
 
 ## Key Rules
-- Admin cannot create manager accounts
-- Manager can create admin accounts
-- Boss is the only one who can create manager accounts
-- Activity log visible only to boss and manager
-- All 4 roles stored in app_role enum: boss, manager, admin, agent
+- Admin cannot create Super Admin accounts
+- Super Admin is the only one who can view Activity Log
+- All 3 roles stored in app_role enum: super_admin, admin, agent
+- Old roles (boss, manager) migrated to super_admin

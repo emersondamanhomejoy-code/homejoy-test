@@ -45,8 +45,8 @@ interface CreateClaimForm {
 
 export function ClaimsPage() {
   const { user, role } = useAuth();
-  const canCreate = role === "admin" || role === "manager" || role === "boss";
-  const isBossManager = role === "boss" || role === "manager";
+  const canCreate = role === "admin" || role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
   const queryClient = useQueryClient();
 
   const { data: allClaims = [], isLoading } = useClaims();
@@ -546,12 +546,12 @@ export function ClaimsPage() {
 
         {sectionCard("📦", `Claim Items (${items.length})`, (
           <div className="space-y-3">
-            {renderClaimItems(items, claim.status === "approved" && isBossManager)}
+            {renderClaimItems(items, claim.status === "approved" && isSuperAdmin)}
             <div className="flex justify-between border-t border-border pt-2 text-sm font-semibold">
               <span>Total ({items.length} items)</span>
               <span>RM{items.reduce((sum, item) => sum + Number(item.amount), 0).toLocaleString()}</span>
             </div>
-            {claim.status === "approved" && isBossManager && selectedUndoItems.length > 0 && (
+            {claim.status === "approved" && isSuperAdmin && selectedUndoItems.length > 0 && (
               <Button variant="outline" size="sm" onClick={() => setShowUndoDialog(true)}>
                 <Undo2 className="mr-1 h-3 w-3" /> Undo {selectedUndoItems.length} Selected Item(s)
               </Button>
@@ -603,7 +603,7 @@ export function ClaimsPage() {
             <Trash2 className="mr-1 h-3 w-3" /> Delete
           </Button>
         )}
-        {claim.status === "approved" && isBossManager && (
+        {claim.status === "approved" && isSuperAdmin && (
           <Button variant="outline" size="sm" onClick={() => setShowCancelDialog(claim)}>
             <Undo2 className="mr-1 h-3 w-3" /> Adjust / Cancel (Override)
           </Button>

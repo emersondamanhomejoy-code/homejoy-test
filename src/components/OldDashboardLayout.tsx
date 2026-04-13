@@ -11,7 +11,7 @@ interface OldDashboardLayoutProps {
 
 export function OldDashboardLayout({ children, activeTab, onTabChange }: OldDashboardLayoutProps) {
   const { role } = useAuth();
-  const isAdmin = role === "admin" || role === "boss" || role === "manager";
+  const isAdmin = role === "admin" || role === "super_admin";
 
   return (
     <SidebarProvider>

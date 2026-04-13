@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "boss" | "manager" | "admin" | "agent";
+type AppRole = "super_admin" | "admin" | "agent";
 
 interface AuthContextType {
   session: Session | null;
@@ -49,9 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const roles = (data ?? []).map((r: { role: string }) => r.role);
-      // Priority: boss > manager > admin > agent
-      if (roles.includes("boss")) setRole("boss");
-      else if (roles.includes("manager")) setRole("manager");
+      // Priority: super_admin > admin > agent
+      if (roles.includes("super_admin")) setRole("super_admin");
       else if (roles.includes("admin")) setRole("admin");
       else setRole(roles[0] as AppRole ?? "agent");
     } catch (e) {

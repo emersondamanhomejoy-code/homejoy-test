@@ -28,7 +28,7 @@ interface UserInfo {
 
 export function MoveInPage() {
   const { user, role } = useAuth();
-  const canCreate = role === "admin" || role === "manager" || role === "boss";
+  const canCreate = role === "admin" || role === "super_admin";
   const { data: moveIns = [], isLoading } = useMoveIns();
   const updateMoveIn = useUpdateMoveIn();
   const createMoveIn = useCreateMoveIn();
