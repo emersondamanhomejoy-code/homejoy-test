@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { useBookings, useUpdateBookingStatus, Booking, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
+import { useBookings, Booking, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { useQueryClient } from "@tanstack/react-query";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
@@ -14,15 +14,11 @@ import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ActionButtons } from "@/components/ui/action-buttons";
 import { BookingDetailView } from "@/components/BookingDetailView";
-import { BookingEditView } from "@/components/BookingEditView";
 import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { labelClass } from "@/lib/ui-constants";
-import { toast } from "sonner";
 
 const STATUS_TABS = ["all", "submitted", "approved", "rejected", "cancelled"] as const;
 
