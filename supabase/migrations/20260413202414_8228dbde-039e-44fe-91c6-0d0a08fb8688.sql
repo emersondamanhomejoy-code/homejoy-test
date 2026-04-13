@@ -1,0 +1,1 @@
+CREATE POLICY "Public can read condos" ON public.condos FOR SELECT TO anon USING (true);
