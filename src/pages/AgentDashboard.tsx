@@ -122,7 +122,7 @@ export default function AgentDashboard() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AgentSidebar />
+        <AgentSidebar activeTab="dashboard" onTabChange={(tab) => navigate("/admin", { state: { page: tab } })} />
         <div className="flex-1 flex flex-col">
 
           {/* Announcement Banner */}
