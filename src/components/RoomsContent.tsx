@@ -191,7 +191,7 @@ export function RoomsContent() {
   };
 
   const handleExport = () => {
-    const headers = ["Building", "Unit", "Room", "Unit Type", "Bed Type", "Wall Type", "Features", "Listed Rental", "Status", "Available On", "Effective Remaining"];
+    const headers = ["Building", "Unit", "Room", "Unit Type", "Bed Type", "Wall Type", "Features", "Listed Rental", "Status", "Effective Remaining"];
     const rows = filtered.map(r => {
       const feats = [...((r as any).optional_features || [])];
       if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
@@ -199,7 +199,6 @@ export function RoomsContent() {
         r.building, r.unit, r.room, r.unit_type_val,
         r.bed_type || "", (r as any).wall_type || "", feats.join(", "),
         r.rent, r.status,
-        r.available_date || "",
         r.effectiveRemaining,
       ];
     });
@@ -368,7 +367,7 @@ export function RoomsContent() {
                     <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>
                     <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Listed Rental</SortableTableHead>
                     <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                    <SortableTableHead sortKey="available_date" currentSort={sort} onSort={handleSort}>Available On</SortableTableHead>
+                    
                     <SortableTableHead sortKey="effectiveRemaining" currentSort={sort} onSort={handleSort} className="text-center">Capacity</SortableTableHead>
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
@@ -383,9 +382,6 @@ export function RoomsContent() {
                         <TableCell className="font-medium">{(r as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
                         <TableCell className="text-right font-medium">RM{r.rent}</TableCell>
                         <TableCell><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {r.status === "Available Soon" || r.status === "Pending" ? (r.available_date || "—") : "—"}
-                        </TableCell>
                         <TableCell className="text-center">
                           <span className={r.effectiveRemaining === 0 ? "text-destructive font-medium" : "font-medium"}>
                             {r.effectiveRemaining}
