@@ -159,17 +159,19 @@ export function ClaimsPage() {
     [availableCreateMoveIns, createForm.selectedMoveInIds],
   );
 
-  const calculateCommission = (booking: Booking, agentId: string) => {
+  const calculateCommission = (moveIn: MoveIn, agentId: string) => {
     const config = agentConfigs[agentId];
     const commissionType = config?.commission_type || "internal_basic";
     const commissionConfig = config?.commission_config || null;
-    const rent = booking.monthly_salary || 0;
-    const duration = booking.contract_months || 12;
+    // Get rent from the linked booking if available
+    const booking = approvedBookings.find(b => b.id === moveIn.booking_id);
+    const rent = booking?.monthly_salary || 0;
+    const duration = moveIn.booking?.contract_months || booking?.contract_months || 12;
     const durationMultiplier = duration / 12;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthlyDeals = approvedBookings.filter(
-      (item) => item.submitted_by === agentId && new Date(item.created_at) >= monthStart,
+    const monthlyDeals = approvedMoveIns.filter(
+      (item) => item.agent_id === agentId && new Date(item.created_at) >= monthStart,
     ).length;
 
     let base = 0;
@@ -205,39 +207,39 @@ export function ClaimsPage() {
     return "Internal Basic";
   };
 
-  const buildClaimDescription = (bookings: Booking[]) => {
-    if (bookings.length === 0) return "";
-    const summary = bookings
-      .map((booking) => `${booking.room?.building || ""} ${booking.room?.unit || ""} ${booking.room?.room || ""} (${booking.tenant_name})`)
+  const buildClaimDescription = (moveIns: MoveIn[]) => {
+    if (moveIns.length === 0) return "";
+    const summary = moveIns
+      .map((m) => `${m.room?.building || ""} ${m.room?.unit || ""} ${m.room?.room || ""} (${m.tenant_name})`)
       .join(", ");
     return `Commission - ${summary}`;
   };
 
-  const toggleCreateBooking = (bookingId: string, checked: boolean) => {
+  const toggleCreateBooking = (moveInId: string, checked: boolean) => {
     const nextIds = checked
-      ? [...createForm.selectedMoveInIds, bookingId]
-      : createForm.selectedMoveInIds.filter((id) => id !== bookingId);
-    const nextBookings = availableCreateMoveIns.filter((booking) => nextIds.includes(booking.id));
+      ? [...createForm.selectedMoveInIds, moveInId]
+      : createForm.selectedMoveInIds.filter((id) => id !== moveInId);
+    const nextMoveIns = availableCreateMoveIns.filter((m) => nextIds.includes(m.id));
     setCreateForm((current) => ({
       ...current,
       selectedMoveInIds: nextIds,
-      description: buildClaimDescription(nextBookings),
+      description: buildClaimDescription(nextMoveIns),
     }));
   };
 
   const toggleAllCreateBookings = (checked: boolean) => {
-    const nextIds = checked ? availableCreateMoveIns.map((booking) => booking.id) : [];
-    const nextBookings = checked ? availableCreateMoveIns : [];
+    const nextIds = checked ? availableCreateMoveIns.map((m) => m.id) : [];
+    const nextMoveIns = checked ? availableCreateMoveIns : [];
     setCreateForm((current) => ({
       ...current,
       selectedMoveInIds: nextIds,
-      description: buildClaimDescription(nextBookings),
+      description: buildClaimDescription(nextMoveIns),
     }));
   };
 
   const totalCreateAmount = useMemo(
-    () => selectedCreateMoveIns.reduce((sum, booking) => sum + calculateCommission(booking, createForm.agent_id), 0),
-    [selectedCreateMoveIns, createForm.agent_id, agentConfigs, approvedBookings],
+    () => selectedCreateMoveIns.reduce((sum, m) => sum + calculateCommission(m, createForm.agent_id), 0),
+    [selectedCreateMoveIns, createForm.agent_id, agentConfigs, approvedMoveIns],
   );
 
   const filtered = useMemo(() => {
