@@ -550,9 +550,6 @@ function CarparkInlineForm({ carpark, onChange, onSave, onCancel }: {
           <input className={`${inputClass} w-full`} type="number" value={carpark.rent || ""} onChange={e => onChange("rent", Number(e.target.value))} />
         </div>
         {/* Status is always "Available" for new carparks — no manual override */}
-            <option value="Archived">Archived</option>
-          </select>
-        </div>
       </div>
       <div>
         <label className="text-xs text-muted-foreground">Remark</label>
