@@ -18,6 +18,7 @@ const bedTypeMaxPax: Record<string, number> = {
 const OPTIONAL_FEATURES = ["Balcony", "Private Bathroom", "Window"];
 
 interface LocalRoom extends RoomConfig {
+  room_title: string;
   _editing: boolean;
   _key: number;
 }
@@ -71,7 +72,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
 
   const addRoom = () => {
     setRoomRecords(prev => [...prev, {
-      room: getNextRoomLabel(), bed_type: "", max_pax: 1, rent: 0, status: "Available",
+      room: getNextRoomLabel(), room_title: "", bed_type: "", max_pax: 1, rent: 0, status: "Available",
       room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "",
       available_date: "", photos: [],
       _editing: true, _key: ++keyCounter,
@@ -167,7 +168,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
     try {
       const { common_photos, wifi_name, wifi_password, ...unitData } = form;
       const allConfigs: RoomConfig[] = [
-        ...roomRecords.map(({ _editing, _key, ...r }) => r),
+        ...roomRecords.map(({ _editing, _key, room_title, ...r }) => ({ ...r, room_title })),
         ...carparkRecords.map(({ _editing, _key, ...c }) => ({
           room: c.room, bed_type: "", max_pax: 0, rent: c.rent,
           room_type: "Car Park" as const, status: c.status,
