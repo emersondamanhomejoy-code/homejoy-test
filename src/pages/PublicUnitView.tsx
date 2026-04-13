@@ -202,6 +202,14 @@ export default function PublicUnitView() {
         {/* Section 1: Condo / Common Area */}
         <section id="section-condo" className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground border-b pb-2">Building & Common Area</h2>
+          {/* Condo photos — above text details */}
+          {Array.isArray(condo?.photos) && condo.photos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {(condo.photos as string[]).map((path, i) => (
+                <img key={i} src={photoUrl(path)} alt={`Condo ${i + 1}`} className="w-full aspect-[4/3] object-cover rounded-lg border" />
+              ))}
+            </div>
+          )}
           {condo && (
             <div className="space-y-3 text-sm">
               {condo.address && <div><span className="text-muted-foreground">Address:</span> <span className="font-medium">{condo.address}</span></div>}
@@ -212,14 +220,6 @@ export default function PublicUnitView() {
               {condo.visitor_motorcycle_parking && <div><span className="text-muted-foreground">Visitor Motorcycle Parking:</span> <span className="font-medium">{condo.visitor_motorcycle_parking}</span></div>}
               {condo.arrival_instruction && <div><span className="text-muted-foreground">Arrival Instructions:</span> <span className="font-medium">{condo.arrival_instruction}</span></div>}
               {condo.description && <div><span className="text-muted-foreground">Description:</span> <span className="font-medium">{condo.description}</span></div>}
-            </div>
-          )}
-          {/* Condo photos */}
-          {Array.isArray(condo?.photos) && condo.photos.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {(condo.photos as string[]).map((path, i) => (
-                <img key={i} src={photoUrl(path)} alt={`Condo ${i + 1}`} className="w-full aspect-[4/3] object-cover rounded-lg border" />
-              ))}
             </div>
           )}
           {/* Common area photos */}
