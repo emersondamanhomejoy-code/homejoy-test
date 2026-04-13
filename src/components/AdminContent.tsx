@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { MoveInPage } from "@/components/MoveInPage";
-import { ClaimsPage } from "@/components/ClaimsPage";
 import { UsersPage } from "@/components/UsersPage";
 import { ActivityLogPage } from "@/components/ActivityLogPage";
 import { useAuth } from "@/hooks/useAuth";
@@ -127,7 +126,7 @@ const emptyUnit = {
 };
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "bookings" | "movein" | "claims" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "movein" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
@@ -179,10 +178,6 @@ export function AdminContent({ tab }: AdminContentProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // Claims state
-  const { data: allClaims = [] } = useClaims();
-  const updateClaimStatus = useUpdateClaimStatus();
-  const [claimRejectReason, setClaimRejectReason] = useState("");
 
   // Commission report state
   const [reportMonth, setReportMonth] = useState(new Date().getMonth());
@@ -1461,9 +1456,6 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* MOVE IN TAB */}
       {tab === "movein" && <MoveInPage />}
-
-      {/* CLAIMS TAB */}
-      {tab === "claims" && <ClaimsPage />}
 
       {/* USERS TAB */}
       {tab === "users" && <UsersPage />}
