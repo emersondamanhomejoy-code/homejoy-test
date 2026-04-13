@@ -471,38 +471,26 @@ export function UnitsRoomsContent() {
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Rooms Summary</h3>
                   <div className="overflow-x-auto rounded-lg border">
-                    <Table>
+                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Room</TableHead>
-                          <TableHead>Bed Type</TableHead>
-                          <TableHead>Wall Type</TableHead>
-                          <TableHead>Features</TableHead>
-                          <TableHead className="text-center">Max Pax</TableHead>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Room Title</TableHead>
                           <TableHead className="text-right">Rental</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-center">Pax</TableHead>
-                          <TableHead>Gender</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {unitRooms.map(room => {
-                          const feats = [...((room as any).optional_features || [])];
-                          if (((room as any).room_category === "Studio" || room.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
-                          return (
-                            <TableRow key={room.id}>
-                              <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
-                              <TableCell>{room.bed_type || "—"}</TableCell>
-                              <TableCell>{(room as any).wall_type || "—"}</TableCell>
-                              <TableCell><div className="flex flex-wrap gap-1">{feats.length > 0 ? feats.map((f: string) => <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>) : <span className="text-muted-foreground text-xs">—</span>}</div></TableCell>
-                              <TableCell className="text-center">{room.max_pax}</TableCell>
-                              <TableCell className="text-right">RM{room.rent}</TableCell>
-                              <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
-                              <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
-                              <TableCell>{room.tenant_gender || "—"}</TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {unitRooms.map(room => (
+                          <TableRow key={room.id}>
+                            <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
+                            <TableCell>{(room as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
+                            <TableCell className="text-right">RM{room.rent}</TableCell>
+                            <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
+                            <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>

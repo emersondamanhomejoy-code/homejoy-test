@@ -609,6 +609,7 @@ export type Database = {
           rent: number
           room: string
           room_category: string
+          room_title: string
           room_type: string
           special_type: string
           status: string
@@ -645,6 +646,7 @@ export type Database = {
           rent?: number
           room: string
           room_category?: string
+          room_title?: string
           room_type?: string
           special_type?: string
           status?: string
@@ -681,6 +683,7 @@ export type Database = {
           rent?: number
           room?: string
           room_category?: string
+          room_title?: string
           room_type?: string
           special_type?: string
           status?: string

@@ -29,6 +29,7 @@ export interface Room {
   building: string;
   unit: string;
   room: string;
+  room_title: string;
   location: string;
   rent: number;
   room_type: string;
@@ -86,6 +87,7 @@ export function useUnits() {
 
 export interface RoomConfig {
   room: string;
+  room_title?: string;
   bed_type: string;
   max_pax: number;
   rent: number;
@@ -127,6 +129,7 @@ export function useCreateUnit() {
         building: unit.building,
         unit: unit.unit,
         room: rc.room,
+        room_title: rc.room_title || "",
         location: unit.location,
         rent: rc.rent,
         bed_type: rc.room_type === "Car Park" ? "" : (rc.bed_type || ""),

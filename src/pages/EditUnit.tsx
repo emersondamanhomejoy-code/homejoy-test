@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -160,7 +161,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const handleAddRoom = async () => {
     try {
       await createRoom.mutateAsync({
-        room: getNextRoomName(), unit_id: unit.id, building: unit.building, unit: unit.unit,
+        room: getNextRoomName(), room_title: "", unit_id: unit.id, building: unit.building, unit: unit.unit,
         location: unit.location, rent: 0, room_type: "Normal Room", room_category: "Normal Room",
         unit_type: unit.unit_type, status: "Available", available_date: "", max_pax: 1,
         occupied_pax: 0, unit_max_pax: unit.unit_max_pax, unit_occupied_pax: 0,
@@ -328,8 +329,8 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                     return (
                       <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
                         <div className="flex items-center gap-3 text-sm">
-                          <span className="font-medium">{rc.room}</span>
-                          <span className="text-muted-foreground">{(rc as any).bed_type || "—"}</span>
+                          <Badge variant="outline" className="font-mono">{rc.room}</Badge>
+                          <span className="font-medium">{(rc as any).room_title || <span className="text-muted-foreground italic">No title</span>}</span>
                           <span className="font-medium">RM{rc.rent || 0}</span>
                           <StatusBadge status={rc.status || "Available"} />
                         </div>
@@ -388,6 +389,14 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Room Code</label>
+                          <input className={`${inputClass} w-full`} value={rc.room} onChange={e => upRoom("room", e.target.value)} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="text-xs text-muted-foreground">Room Title</label>
+                          <input className={`${inputClass} w-full`} placeholder="e.g. Balcony Queen Room" value={(rc as any).room_title || ""} onChange={e => upRoom("room_title", e.target.value)} />
+                        </div>
                         <div>
                           <label className="text-xs text-muted-foreground">Room Type</label>
                           <select className={`${inputClass} w-full`} value={(rc as any).room_category || "Normal Room"} onChange={e => {

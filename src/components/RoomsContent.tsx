@@ -159,7 +159,8 @@ export function RoomsContent() {
       list = list.filter(r =>
         r.building.toLowerCase().includes(s) ||
         r.unit.toLowerCase().includes(s) ||
-        r.room.toLowerCase().includes(s)
+        r.room.toLowerCase().includes(s) ||
+        ((r as any).room_title || "").toLowerCase().includes(s)
       );
     }
     return sortData(list, (r: any, key: string) => {
@@ -363,11 +364,8 @@ export function RoomsContent() {
                   <TableRow className="bg-muted/30">
                     <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                    <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
-                    <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
-                    <SortableTableHead sortKey="bed_type" currentSort={sort} onSort={handleSort}>Bed Type</SortableTableHead>
-                    <SortableTableHead sortKey="wall_type" currentSort={sort} onSort={handleSort}>Wall Type</SortableTableHead>
-                    <TableHead>Features</TableHead>
+                    <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
+                    <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>
                     <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Listed Rental</SortableTableHead>
                     <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                     <SortableTableHead sortKey="available_date" currentSort={sort} onSort={handleSort}>Available On</SortableTableHead>
@@ -377,31 +375,12 @@ export function RoomsContent() {
                 </TableHeader>
                 <TableBody>
                   {paged.map(r => {
-                    const feats = [...((r as any).optional_features || [])];
-                    if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
                     return (
                       <TableRow key={r.id}>
                         <TableCell className="font-medium">{r.building}</TableCell>
                         <TableCell>{r.unit}</TableCell>
                         <TableCell><Badge variant="outline" className="font-mono">{r.room.replace(/^Room\s+/i, "")}</Badge></TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={
-                            r.unit_type_val?.toLowerCase().includes("female")
-                              ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
-                              : r.unit_type_val?.toLowerCase().includes("male") && !r.unit_type_val?.toLowerCase().includes("female")
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                              : ""
-                          }>{r.unit_type_val}</Badge>
-                        </TableCell>
-                        <TableCell>{r.bed_type || "—"}</TableCell>
-                        <TableCell>{(r as any).wall_type || "—"}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {feats.length > 0 ? feats.map((f: string) => (
-                              <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
-                            )) : <span className="text-muted-foreground text-xs">—</span>}
-                          </div>
-                        </TableCell>
+                        <TableCell className="font-medium">{(r as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
                         <TableCell className="text-right font-medium">RM{r.rent}</TableCell>
                         <TableCell><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
                         <TableCell className="text-muted-foreground text-sm">
@@ -491,6 +470,7 @@ export function RoomsContent() {
               {/* Header */}
               <div>
                 <div className="text-lg font-semibold">{viewingRoom.building} · {viewingRoom.unit} · {viewingRoom.room}</div>
+                {(viewingRoom as any).room_title && <div className="text-base font-medium mt-0.5">{(viewingRoom as any).room_title}</div>}
                 <div className="text-sm text-muted-foreground">{viewingRoom.location}</div>
               </div>
 

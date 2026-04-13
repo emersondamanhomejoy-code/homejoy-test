@@ -4,6 +4,7 @@ import { useCreateUnit, RoomConfig } from "@/hooks/useRooms";
 import { logActivity } from "@/hooks/useActivityLog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StandardModal } from "@/components/ui/standard-modal";
@@ -18,6 +19,7 @@ const bedTypeMaxPax: Record<string, number> = {
 const OPTIONAL_FEATURES = ["Balcony", "Private Bathroom", "Window"];
 
 interface LocalRoom extends RoomConfig {
+  room_title: string;
   _editing: boolean;
   _key: number;
 }
@@ -71,7 +73,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
 
   const addRoom = () => {
     setRoomRecords(prev => [...prev, {
-      room: getNextRoomLabel(), bed_type: "", max_pax: 1, rent: 0, status: "Available",
+      room: getNextRoomLabel(), room_title: "", bed_type: "", max_pax: 1, rent: 0, status: "Available",
       room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "",
       available_date: "", photos: [],
       _editing: true, _key: ++keyCounter,
@@ -167,7 +169,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
     try {
       const { common_photos, wifi_name, wifi_password, ...unitData } = form;
       const allConfigs: RoomConfig[] = [
-        ...roomRecords.map(({ _editing, _key, ...r }) => r),
+        ...roomRecords.map(({ _editing, _key, room_title, ...r }) => ({ ...r, room_title })),
         ...carparkRecords.map(({ _editing, _key, ...c }) => ({
           room: c.room, bed_type: "", max_pax: 0, rent: c.rent,
           room_type: "Car Park" as const, status: c.status,
@@ -425,8 +427,12 @@ function RoomInlineForm({ room, onChange, onSave, onCancel }: {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div>
-          <label className="text-xs text-muted-foreground">Room Label</label>
+          <label className="text-xs text-muted-foreground">Room Code</label>
           <input className={`${inputClass} w-full`} value={room.room} onChange={e => onChange("room", e.target.value)} />
+        </div>
+        <div className="md:col-span-2">
+          <label className="text-xs text-muted-foreground">Room Title *</label>
+          <input className={`${inputClass} w-full`} placeholder="e.g. Balcony Queen Room" value={room.room_title || ""} onChange={e => onChange("room_title", e.target.value)} />
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Room Type</label>
@@ -516,9 +522,8 @@ function RoomSummaryRow({ room, onEdit, onDelete }: { room: LocalRoom; onEdit: (
   return (
     <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
       <div className="flex items-center gap-3 text-sm">
-        <span className="font-medium">{room.room}</span>
-        <span className="text-muted-foreground">{room.room_category === "Studio" ? "Studio" : "Room"}</span>
-        <span className="text-muted-foreground">{room.bed_type || "—"}</span>
+        <Badge variant="outline" className="font-mono">{room.room}</Badge>
+        <span className="font-medium">{room.room_title || <span className="text-muted-foreground italic">No title</span>}</span>
         <span className="font-medium">RM{room.rent}</span>
         <StatusBadge status={room.status || "Available"} />
       </div>
