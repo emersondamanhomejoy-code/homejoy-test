@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { Badge } from "@/components/ui/badge";
 import { Eye, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 interface ActivityLog {
@@ -26,6 +27,17 @@ interface ActivityLog {
 
 const MODULE_OPTIONS = ["booking", "move_in", "claim", "user", "unit", "room", "building", "location"];
 const ACTION_OPTIONS = ["create", "edit", "approve", "reject", "cancel", "delete", "undo"];
+const ROLE_OPTIONS = ["boss", "manager", "admin", "agent"];
+
+const ACTION_COLORS: Record<string, string> = {
+  create: "bg-emerald-100 text-emerald-800",
+  edit: "bg-blue-100 text-blue-800",
+  approve: "bg-green-100 text-green-800",
+  reject: "bg-red-100 text-red-800",
+  cancel: "bg-orange-100 text-orange-800",
+  delete: "bg-red-200 text-red-900",
+  undo: "bg-yellow-100 text-yellow-800",
+};
 
 export function ActivityLogPage() {
   const { role } = useAuth();
@@ -34,6 +46,8 @@ export function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [userFilter, setUserFilter] = useState<string[]>([]);
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
   const [moduleFilter, setModuleFilter] = useState<string[]>([]);
   const [actionFilter, setActionFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
@@ -42,6 +56,12 @@ export function ActivityLogPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [viewLog, setViewLog] = useState<ActivityLog | null>(null);
+
+  // Derived unique users from logs for filter
+  const uniqueUsers = useMemo(() => {
+    const emails = [...new Set(logs.map(l => l.actor_email).filter(Boolean))];
+    return emails.sort();
+  }, [logs]);
 
   useEffect(() => {
     if (!canView) return;
@@ -62,23 +82,45 @@ export function ActivityLogPage() {
     let list = logs;
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(l => l.actor_email.toLowerCase().includes(s) || l.action.toLowerCase().includes(s) || l.entity_id.toLowerCase().includes(s) || JSON.stringify(l.details).toLowerCase().includes(s));
+      list = list.filter(l =>
+        l.actor_email.toLowerCase().includes(s) ||
+        l.action.toLowerCase().includes(s) ||
+        l.entity_id.toLowerCase().includes(s) ||
+        (l.details?.tenant_name || "").toLowerCase().includes(s) ||
+        (l.details?.reason || "").toLowerCase().includes(s) ||
+        JSON.stringify(l.details).toLowerCase().includes(s)
+      );
     }
+    if (userFilter.length) list = list.filter(l => userFilter.includes(l.actor_email));
+    if (roleFilter.length) list = list.filter(l => roleFilter.includes(l.details?.actor_role || ""));
     if (moduleFilter.length) list = list.filter(l => moduleFilter.includes(l.entity_type));
-    if (actionFilter.length) list = list.filter(l => actionFilter.some(a => l.action.includes(a)));
+    if (actionFilter.length) list = list.filter(l => actionFilter.some(a => l.action.toLowerCase().includes(a)));
     if (dateFrom) list = list.filter(l => l.created_at >= dateFrom);
     if (dateTo) list = list.filter(l => l.created_at <= dateTo + "T23:59:59");
     return sortData(list, (l: ActivityLog, key: string) => {
-      const map: Record<string, any> = { created_at: l.created_at, actor_email: l.actor_email, action: l.action, entity_type: l.entity_type, entity_id: l.entity_id };
+      const map: Record<string, any> = {
+        created_at: l.created_at,
+        actor_email: l.actor_email,
+        action: l.action,
+        entity_type: l.entity_type,
+        entity_id: l.entity_id,
+      };
       return map[key];
     });
-  }, [logs, search, moduleFilter, actionFilter, dateFrom, dateTo, sort]);
+  }, [logs, search, userFilter, roleFilter, moduleFilter, actionFilter, dateFrom, dateTo, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  const hasActiveFilters = moduleFilter.length > 0 || actionFilter.length > 0 || dateFrom || dateTo;
-  const clearFilters = () => { setModuleFilter([]); setActionFilter([]); setDateFrom(""); setDateTo(""); };
+  const hasActiveFilters = userFilter.length > 0 || roleFilter.length > 0 || moduleFilter.length > 0 || actionFilter.length > 0 || dateFrom || dateTo;
+  const clearFilters = () => {
+    setUserFilter([]);
+    setRoleFilter([]);
+    setModuleFilter([]);
+    setActionFilter([]);
+    setDateFrom("");
+    setDateTo("");
+  };
 
   const detailSummary = (log: ActivityLog) => {
     const d = log.details;
@@ -88,8 +130,21 @@ export function ActivityLogPage() {
     if (d.email) parts.push(d.email);
     if (d.building) parts.push(d.building);
     if (d.unit) parts.push(d.unit);
-    if (d.reason) parts.push(`Reason: ${d.reason}`);
+    if (d.room) parts.push(d.room);
+    if (d.display_name) parts.push(d.display_name);
     return parts.join(" · ");
+  };
+
+  const detailReason = (log: ActivityLog) => {
+    const d = log.details;
+    if (!d || typeof d !== "object") return "";
+    return d.reason || d.reject_reason || d.cancel_reason || "";
+  };
+
+  const getActionBadge = (action: string) => {
+    const key = ACTION_OPTIONS.find(a => action.toLowerCase().includes(a)) || "";
+    const colorClass = ACTION_COLORS[key] || "bg-muted text-muted-foreground";
+    return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}>{action}</span>;
   };
 
   if (!canView) return <div className="text-center py-10 text-muted-foreground">Access denied. Manager or Boss role required.</div>;
@@ -106,13 +161,21 @@ export function ActivityLogPage() {
                 <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date/Time</span><span className="font-medium">{format(new Date(viewLog.created_at), "dd MMM yyyy, HH:mm:ss")}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">User</span><span className="font-medium">{viewLog.actor_email}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Action</span><span className="font-medium">{viewLog.action}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Module</span><span className="font-medium capitalize">{viewLog.entity_type}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Role</span><span className="font-medium capitalize">{viewLog.details?.actor_role || "—"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Action</span><span className="font-medium">{getActionBadge(viewLog.action)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Module</span><span className="font-medium capitalize">{viewLog.entity_type.replace("_", " ")}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Target ID</span><span className="font-mono text-xs">{viewLog.entity_id || "—"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Target Name / Summary</span><span className="font-medium">{detailSummary(viewLog) || "—"}</span></div>
+                  {detailReason(viewLog) && (
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Reason / Notes</span><span className="font-medium text-destructive">{detailReason(viewLog)}</span></div>
+                  )}
+                  {viewLog.ip_address && (
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">IP Address</span><span className="font-mono text-xs">{viewLog.ip_address}</span></div>
+                  )}
                 </div>
                 <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="text-sm font-bold mb-2">Details</div>
-                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap">{JSON.stringify(viewLog.details, null, 2)}</pre>
+                  <div className="text-sm font-bold mb-2">Full Details</div>
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all">{JSON.stringify(viewLog.details, null, 2)}</pre>
                 </div>
               </div>
             </ScrollArea>
@@ -125,13 +188,15 @@ export function ActivityLogPage() {
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
-        <Input placeholder="Search user, action, ID..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
-        {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground"><X className="h-3 w-3 mr-1" /> Clear</Button>}
+        <Input placeholder="Search user, action, tenant, reason..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+        {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground"><X className="h-3 w-3 mr-1" /> Clear Filters</Button>}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <MultiSelectFilter label="User" placeholder="All" options={uniqueUsers} selected={userFilter} onApply={v => { setUserFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Role" placeholder="All" options={ROLE_OPTIONS} selected={roleFilter} onApply={v => { setRoleFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Module" placeholder="All" options={MODULE_OPTIONS} selected={moduleFilter} onApply={v => { setModuleFilter(v); setPage(0); }} />
-        <MultiSelectFilter label="Action" placeholder="All" options={ACTION_OPTIONS} selected={actionFilter} onApply={v => { setActionFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Action Type" placeholder="All" options={ACTION_OPTIONS} selected={actionFilter} onApply={v => { setActionFilter(v); setPage(0); }} />
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date From</label>
           <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
@@ -149,27 +214,33 @@ export function ActivityLogPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Date/Time</SortableTableHead>
+                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Date / Time</SortableTableHead>
                 <SortableTableHead sortKey="actor_email" currentSort={sort} onSort={handleSort}>User</SortableTableHead>
+                <TableHead>Role</TableHead>
                 <SortableTableHead sortKey="entity_type" currentSort={sort} onSort={handleSort}>Module</SortableTableHead>
                 <SortableTableHead sortKey="action" currentSort={sort} onSort={handleSort}>Action</SortableTableHead>
                 <SortableTableHead sortKey="entity_id" currentSort={sort} onSort={handleSort}>Target ID</SortableTableHead>
-                <TableHead>Summary</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Target Name / Summary</TableHead>
+                <TableHead>Reason / Notes</TableHead>
+                <TableHead>Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-muted-foreground py-8 text-center">No logs found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-muted-foreground py-8 text-center">No logs found</TableCell></TableRow>
               ) : paged.map(l => (
                 <TableRow key={l.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setViewLog(l)}>
-                  <TableCell className="text-sm text-muted-foreground">{format(new Date(l.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{format(new Date(l.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
                   <TableCell className="text-sm">{l.actor_email}</TableCell>
-                  <TableCell className="text-sm capitalize">{l.entity_type}</TableCell>
-                  <TableCell className="text-sm">{l.action}</TableCell>
+                  <TableCell className="text-sm capitalize">{l.details?.actor_role || "—"}</TableCell>
+                  <TableCell className="text-sm capitalize">{l.entity_type.replace("_", " ")}</TableCell>
+                  <TableCell>{getActionBadge(l.action)}</TableCell>
                   <TableCell className="font-mono text-xs">{l.entity_id ? l.entity_id.slice(0, 8) : "—"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{detailSummary(l)}</TableCell>
-                  <TableCell><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setViewLog(l); }}><Eye className="h-4 w-4" /></Button></TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">{detailReason(l) || "—"}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setViewLog(l); }}><Eye className="h-4 w-4" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
