@@ -1,98 +1,67 @@
-## Plan: Redesign Unit View Modal
 
-This is a significant restructure of the Unit View modal in `UnitsRoomsContent.tsx`. The changes are UI-only — no database migrations needed.
 
-### What Changes
+## Plan: Reposition Copy Buttons + Add Share Links
 
-**1. Simplify Occupant Summary**
+### Changes
 
-- Replace the 4 stat cards with 2 compact fraction displays:
-  - **Remaining Pax**: `4/6` (colored green if available, red if over)
-  - **Remaining Carpark**: `1/2`
-- Remove the separate "Current Housemates" table entirely — merge that info into Room Summary
+**1. Move Copy buttons into Accordion headers**
 
-**2. Redesign Room Summary Table**
+Currently copy buttons are inside the expanded accordion content (right-aligned). Move them to the accordion trigger row, positioned to the left of the chevron icon. Add `Tooltip` on hover showing what gets copied (e.g., "Copy Building Details", "Copy Housemate Details").
 
-- Columns: Code, Room Title, Rental, Status, Pax, Gender, Nationality, Tenant (admin-only)
-- Remove Occupation from display
-- "Tenant" column only visible for admin/super_admin users, hidden for agents
-- Pax shows actual pax_staying count
+This requires customizing the `AccordionTrigger` layout so the copy button sits inline in the header bar, always visible regardless of expand/collapse state. Click on the copy button will use `e.stopPropagation()` to prevent toggling the accordion.
 
-**3. Redesign Carpark Summary Table**
+**2. Top-right "Copy Link" button for public sharing**
 
-- Remove "Remark" column
-- Rename "Assigned To" → "Tenant" (admin-only, hidden for agents)
-- Keep: Name, Lot, Rental, Status, Tenant
+Add a button at the top of the modal (next to the title area) that copies a shareable public link. This link opens a read-only page showing:
+- Section 1: Condo/Common Area photos + building details
+- Section 2: Unit common area photos + unit details
+- Section 3: Room photos + room details
 
-**4. Collapsible Accordion Sections**
+This requires:
+- A new public route (e.g., `/view/:unitId/:roomId`) that does NOT require login
+- The page fetches unit + room + condo data and displays photos and details in a clean read-only layout
+- The copy button generates this URL and copies it to clipboard
 
-- Wrap each section in an accordion: Building Details, Unit Details, Room Summary, Carpark Summary
-- When collapsed, show a one-line summary (e.g., building name + location, unit type + max pax)
-- Default state: all expanded (or Unit Details collapsed since less critical)
+**3. Per-section photo links**
 
-**5. Cost Breakdown Calculator**
-
-- Add a new section at the bottom with inputs: number of pax, number of carparks
-- Auto-calculate: 1 month advance rental, deposit (× multiplier), admin fee, access card fees, carpark rental
-- Uses same logic as the Create Booking cost breakdown
-- User selects a room from a dropdown to base calculation on
-
-**6. Copy Buttons (per section)**
-
-- Each section header gets a small "Copy" icon button
-- Copies formatted text to clipboard:
-  - **Copy Condo/Building Details** — building name, address, GPS link, amenities, access info
-  - **Copy Unit Details** — unit, type, passcode, wifi, etc.
-  - **Copy Room Summary / Housemate Details** — table formatted as text
-  - **Copy Cost Breakdown** — the calculated cost as text
-- Copies a link which can be opened to view Room Photo + details, Unit Photo + details, Condo Photo + details (has 3 section). This is for agent sending the link to customer to view the Room and the unit and its surround to understand more and increase chance of renting.
-- No copy for Carpark section (per user request)
-
-**7. Agent vs Admin Visibility**
-
-- Room Summary and Carpark Summary: "Tenant" column hidden for agent role
-- Uses existing `useAuth` hook to check role
+In the accordion headers, add additional copy-link buttons:
+- Building section: "Copy Common Area Link" — links to the public page scrolled to condo photos section
+- Room Summary section: "Copy Room Photos Link" — or per-room links
 
 ### Technical Details
 
-**File: `src/components/UnitsRoomsContent.tsx**` — Major rewrite of the View modal section (lines ~330–542):
+**File: `src/components/UnitsRoomsContent.tsx`**
+- Restructure each `AccordionTrigger` to include copy icon button with tooltip, left of chevron
+- Add share link button in modal header area
+- Import `Tooltip` components
 
-- Import `useAuth` and `Accordion` components
-- Replace stat cards with fraction display
-- Remove Current Housemates table
-- Add tenant/gender/nationality columns to Room Summary
-- Remove Remark from Carpark, rename Assigned To → Tenant
-- Wrap sections in Accordion
-- Add Cost Breakdown section with room selector + pax/carpark inputs + auto-calc
-- Add copy-to-clipboard buttons per section header
-- Conditionally hide tenant columns based on user role
+**New file: `src/pages/PublicUnitView.tsx`**
+- Public read-only page at `/view/:unitId` (optionally `?room=roomId`)
+- Fetches unit, rooms, condo data from Supabase (requires RLS policy for public read on these tables, or an edge function)
+- Displays 3 sections: Condo Photos + Details, Unit Photos + Details, Room Photos + Details
+- Clean, mobile-friendly layout for customers
 
-**File: `src/hooks/useAuth.tsx**` — Read only, to check how role is exposed (likely `user.role` or similar)
+**File: `src/App.tsx`**
+- Add public route `/view/:unitId`
 
-No other files need changes — this is contained to the View modal.
+**Database: RLS consideration**
+- Need a way for unauthenticated users to read specific unit/room/condo data
+- Option A: Add a public RLS select policy on units/rooms/condos tables
+- Option B: Create an edge function that returns the data without auth
+- Option B is safer — avoids exposing all data publicly
 
-### Section Layout (top to bottom)
+### Layout Change (Accordion Header)
 
 ```text
-┌─ Building Details (accordion) ──────────────────┐
-│  Summary: "Condo Name · Location"    [📋 Copy]  │
-│  Expanded: full building info + common photos    │
-├─ Unit Details (accordion) ──────────────────────┤
-│  Summary: "Unit A-12-3 · Mix Unit · 6 pax"      │
-│  [📋 Copy]                                       │
-│  Expanded: all unit fields                       │
-├─ Occupant Summary ──────────────────────────────┤
-│  Remaining Pax: 4/6    Remaining Carpark: 1/2   │
-├─ Room Summary (accordion) ──────────────────────┤
-│  [📋 Copy Housemate Details]                     │
-│  Code | Title | Rental | Status | Pax | Gender  │
-│       | Nationality | Tenant*                    │
-├─ Carpark Summary (accordion) ───────────────────┤
-│  Name | Lot | Rental | Status | Tenant*          │
-├─ Cost Breakdown Calculator ─────────────────────┤
-│  Select Room: [dropdown]                         │
-│  Pax: [input]  Carparks: [input]                │
-│  --- auto-calculated table ---        [📋 Copy] │
+┌─────────────────────────────────────────────────┐
+│ Building Details — Condo · Location  [📋] [🔗] ▾│
 └─────────────────────────────────────────────────┘
-* Tenant column: admin-only, hidden for agents
+  📋 = Copy text (tooltip: "Copy Building Details")
+  🔗 = Copy shareable link (tooltip: "Copy Common Area Link")
+  ▾  = Accordion expand/collapse chevron
 ```
+
+### Summary
+- 4 files touched: `UnitsRoomsContent.tsx` (button repositioning), `PublicUnitView.tsx` (new), `App.tsx` (route), edge function or RLS for public access
+- 1 migration if using RLS approach
+
