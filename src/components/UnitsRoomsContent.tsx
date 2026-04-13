@@ -502,15 +502,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     </button>
   );
 
-  const TextLinkBtn = ({ url, label }: { url: string; label: string }) => (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
-      onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
-    >
-      <Link2 className="h-3 w-3" /> {label}
-    </button>
-  );
 
   const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
 
@@ -554,7 +545,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
-              <TextLinkBtn url={`${baseShareUrl}?section=condo`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -590,7 +580,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
-              <TextLinkBtn url={`${baseShareUrl}?section=unit`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -619,7 +608,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               </div>
               <div className="flex items-center gap-1 mr-2">
                 <TextCopyBtn onClick={copyRoomSummary} label="Copy Housemates" />
-                <TextLinkBtn url={`${baseShareUrl}?section=room`} label="Copy Link" />
               </div>
             </AccordionTrigger>
             <AccordionContent>
@@ -710,22 +698,22 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className={labelClass}>Room</label>
-            <select className={inputClass} value={calcRoomId} onChange={e => setCalcRoomId(e.target.value)}>
+            <select className={`${inputClass} w-full`} value={calcRoomId} onChange={e => setCalcRoomId(e.target.value)}>
               <option value="">Select room</option>
               {unitRooms.map(r => (
                 <option key={r.id} value={r.id}>{r.room.replace(/^Room\s+/i, "")} — RM{r.rent}</option>
               ))}
             </select>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className={labelClass}>Pax</label>
-            <input type="number" min="1" className={inputClass} value={calcPax} onChange={e => setCalcPax(e.target.value)} />
+            <input type="number" min="1" className={`${inputClass} w-full`} value={calcPax} onChange={e => setCalcPax(e.target.value)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className={labelClass}>Carparks</label>
-            <input type="number" min="0" className={inputClass} value={calcCarparks} onChange={e => setCalcCarparks(e.target.value)} />
+            <input type="number" min="0" className={`${inputClass} w-full`} value={calcCarparks} onChange={e => setCalcCarparks(e.target.value)} />
           </div>
         </div>
 

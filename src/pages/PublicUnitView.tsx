@@ -187,7 +187,7 @@ export default function PublicUnitView() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Room {room.room.replace(/^Room\s+/i, "")} {room.room_title ? `— ${room.room_title}` : ""}</h3>
                 <span className={`text-sm px-2 py-0.5 rounded-full ${room.status === "Available" ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
-                  {room.status}
+                  {room.status}{room.status === "Available Soon" && room.available_date ? ` — ${room.available_date}` : ""}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">

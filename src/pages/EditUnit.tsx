@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUnits, useUpdateUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Room, Unit } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
 import { logActivity } from "@/hooks/useActivityLog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -197,367 +198,383 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
         size="xl" isDirty={isDirty}
         footer={<Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</Button>}
       >
-        <div className="space-y-8">
+        <Accordion type="multiple" defaultValue={["unit-info", "rooms", "carparks"]} className="space-y-2">
           {/* ── Unit Information ── */}
-          <section className="space-y-5">
-            <h2 className="text-lg font-semibold border-b border-border pb-2">Unit Information</h2>
-
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Common Area Photos</Label>
-              <div className="flex flex-wrap gap-3 mt-2">
-                {(form.common_photos || []).map((path: string, i: number) => (
-                  <div key={i} className="relative group">
-                    <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg" />
-                    <button onClick={() => updateField("common_photos", form.common_photos.filter((_: any, idx: number) => idx !== i))}
-                      className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+          <AccordionItem value="unit-info" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">Unit Information</span>
+                <span className="text-xs text-muted-foreground">— {form.building} · {form.unit}</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-5 pb-2">
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Common Area Photos</Label>
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {(form.common_photos || []).map((path: string, i: number) => (
+                      <div key={i} className="relative group">
+                        <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg" />
+                        <button onClick={() => updateField("common_photos", form.common_photos.filter((_: any, idx: number) => idx !== i))}
+                          className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                      </div>
+                    ))}
+                    {(form.common_photos || []).length < 10 && (
+                      <label className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                        <span className="text-xl text-muted-foreground">+</span>
+                        <span className="text-[10px] text-muted-foreground">Add</span>
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (!files.length) return;
+                          const remaining = 10 - (form.common_photos || []).length;
+                          const toUpload = files.slice(0, remaining);
+                          const newPaths: string[] = [];
+                          for (const file of toUpload) {
+                            const ext = file.name.split('.').pop();
+                            const path = `common/${unit.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                            const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                            if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
+                            newPaths.push(path);
+                          }
+                          if (newPaths.length > 0) updateField("common_photos", [...(form.common_photos || []), ...newPaths]);
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    )}
                   </div>
-                ))}
-                {(form.common_photos || []).length < 10 && (
-                  <label className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                    <span className="text-xl text-muted-foreground">+</span>
-                    <span className="text-[10px] text-muted-foreground">Add</span>
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (!files.length) return;
-                      const remaining = 10 - (form.common_photos || []).length;
-                      const toUpload = files.slice(0, remaining);
-                      const newPaths: string[] = [];
-                      for (const file of toUpload) {
-                        const ext = file.name.split('.').pop();
-                        const path = `common/${unit.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                        const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                        if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
-                        newPaths.push(path);
-                      }
-                      if (newPaths.length > 0) updateField("common_photos", [...(form.common_photos || []), ...newPaths]);
-                      e.target.value = "";
-                    }} />
-                  </label>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Building *</Label>
-                <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
-                  const condo = condosList.find(c => c.name === e.target.value);
-                  setForm((prev: any) => ({ ...prev, building: e.target.value, location: condo?.location?.name || prev.location }));
-                }}>
-                  <option value="">— Select Building —</option>
-                  {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Location</Label>
-                <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Unit Number *</Label>
-                <input className={`${inputClass} w-full`} value={form.unit} onChange={e => updateField("unit", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Unit Type *</Label>
-                <select className={`${inputClass} w-full`} value={form.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
-                  <option value="Mix Unit">Mixed</option>
-                  <option value="Female Unit">Female</option>
-                  <option value="Male Unit">Male</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Maximum Occupants *</Label>
-                <input className={`${inputClass} w-full`} type="number" min={1} value={form.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Rental Deposit (Months)</Label>
-                <input className={`${inputClass} w-full`} type="number" step="0.1" value={form.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Admin Fee (RM)</Label>
-                <input className={`${inputClass} w-full`} type="number" value={form.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Meter Type</Label>
-                <select className={`${inputClass} w-full`} value={form.meter_type} onChange={e => updateField("meter_type", e.target.value)}>
-                  <option value="Prepaid">Prepaid</option>
-                  <option value="Postpaid">Postpaid</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Meter Rate (RM per kWh)</Label>
-                <input className={`${inputClass} w-full`} type="number" step="0.01" value={form.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Main Door Passcode</Label>
-                <input className={`${inputClass} w-full`} value={form.passcode} onChange={e => updateField("passcode", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">WiFi Name</Label>
-                <input className={`${inputClass} w-full`} value={form.wifi_name} onChange={e => updateField("wifi_name", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">WiFi Password</Label>
-                <input className={`${inputClass} w-full`} value={form.wifi_password} onChange={e => updateField("wifi_password", e.target.value)} />
-              </div>
-            </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Building *</Label>
+                    <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
+                      const condo = condosList.find(c => c.name === e.target.value);
+                      setForm((prev: any) => ({ ...prev, building: e.target.value, location: condo?.location?.name || prev.location }));
+                    }}>
+                      <option value="">— Select Building —</option>
+                      {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Location</Label>
+                    <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Unit Number *</Label>
+                    <input className={`${inputClass} w-full`} value={form.unit} onChange={e => updateField("unit", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Unit Type *</Label>
+                    <select className={`${inputClass} w-full`} value={form.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
+                      <option value="Mix Unit">Mixed</option>
+                      <option value="Female Unit">Female</option>
+                      <option value="Male Unit">Male</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Maximum Occupants *</Label>
+                    <input className={`${inputClass} w-full`} type="number" min={1} value={form.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Rental Deposit (Months)</Label>
+                    <input className={`${inputClass} w-full`} type="number" step="0.1" value={form.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Admin Fee (RM)</Label>
+                    <input className={`${inputClass} w-full`} type="number" value={form.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Meter Type</Label>
+                    <select className={`${inputClass} w-full`} value={form.meter_type} onChange={e => updateField("meter_type", e.target.value)}>
+                      <option value="Prepaid">Prepaid</option>
+                      <option value="Postpaid">Postpaid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Meter Rate (RM per kWh)</Label>
+                    <input className={`${inputClass} w-full`} type="number" step="0.01" value={form.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Main Door Passcode</Label>
+                    <input className={`${inputClass} w-full`} value={form.passcode} onChange={e => updateField("passcode", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">WiFi Name</Label>
+                    <input className={`${inputClass} w-full`} value={form.wifi_name} onChange={e => updateField("wifi_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">WiFi Password</Label>
+                    <input className={`${inputClass} w-full`} value={form.wifi_password} onChange={e => updateField("wifi_password", e.target.value)} />
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-3 pt-1">
-              <Checkbox id="editInternalOnly" checked={form.internal_only} onCheckedChange={(checked) => updateField("internal_only", !!checked)} />
-              <label htmlFor="editInternalOnly" className="text-sm font-medium cursor-pointer">🔒 Internal Only — Hidden from External Agent</label>
-            </div>
-          </section>
+                <div className="flex items-center gap-3 pt-1">
+                  <Checkbox id="editInternalOnly" checked={form.internal_only} onCheckedChange={(checked) => updateField("internal_only", !!checked)} />
+                  <label htmlFor="editInternalOnly" className="text-sm font-medium cursor-pointer">🔒 Internal Only — Hidden from External Agent</label>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
           {/* ── Rooms ── */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <h2 className="text-lg font-semibold">Rooms</h2>
-              <Button size="sm" onClick={handleAddRoom}><Plus className="h-4 w-4 mr-1" /> Add Room</Button>
-            </div>
+          <AccordionItem value="rooms" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Rooms</span>
+                <span className="text-xs text-muted-foreground">— {rooms.length} rooms</span>
+              </div>
+              <Button size="sm" className="mr-2" onClick={(e) => { e.stopPropagation(); handleAddRoom(); }}><Plus className="h-4 w-4 mr-1" /> Add Room</Button>
+            </AccordionTrigger>
+            <AccordionContent>
+              {rooms.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No rooms configured.</p>
+              ) : (
+                <div className="space-y-2 pb-2">
+                  {rooms.map(room => {
+                    const rc = getRoomData(room);
+                    const isEditing = editingRoomId === room.id;
+                    const upRoom = (field: string, value: any) => updateRoomField(room.id, field, value);
+                    const features = Array.isArray((rc as any).optional_features) ? (rc as any).optional_features : [];
+                    const showAvailDate = rc.status === "Available Soon";
 
-            {rooms.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No rooms configured.</p>
-            ) : (
-              <div className="space-y-2">
-                {rooms.map(room => {
-                  const rc = getRoomData(room);
-                  const isEditing = editingRoomId === room.id;
-                  const upRoom = (field: string, value: any) => updateRoomField(room.id, field, value);
-                  const features = Array.isArray((rc as any).optional_features) ? (rc as any).optional_features : [];
-                  const showAvailDate = rc.status === "Available Soon";
+                    if (!isEditing) {
+                      return (
+                        <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
+                          <div className="flex items-center gap-3 text-sm">
+                            <Badge variant="outline" className="font-mono">{rc.room}</Badge>
+                            <span className="font-medium">{(rc as any).room_title || <span className="text-muted-foreground italic">No title</span>}</span>
+                            <span className="font-medium">RM{rc.rent || 0}</span>
+                            <StatusBadge status={rc.status || "Available"} />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Photos" onClick={() => navigate(`/photos/${room.id}`)}><Eye className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(room.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(room.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </div>
+                      );
+                    }
 
-                  if (!isEditing) {
                     return (
-                      <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
-                        <div className="flex items-center gap-3 text-sm">
-                          <Badge variant="outline" className="font-mono">{rc.room}</Badge>
-                          <span className="font-medium">{(rc as any).room_title || <span className="text-muted-foreground italic">No title</span>}</span>
-                          <span className="font-medium">RM{rc.rent || 0}</span>
-                          <StatusBadge status={rc.status || "Available"} />
+                      <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card p-4 space-y-3 border-primary/30">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm">{rc.room}</span>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => cancelInlineRoom(room.id)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+                            <Button size="sm" onClick={() => saveInlineRoom(room.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Photos" onClick={() => navigate(`/photos/${room.id}`)}><Eye className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(room.id)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(room.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                        </div>
-                      </div>
-                    );
-                  }
 
-                  return (
-                    <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card p-4 space-y-3 border-primary/30">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">{rc.room}</span>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => cancelInlineRoom(room.id)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
-                          <Button size="sm" onClick={() => saveInlineRoom(room.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
+                        {/* Room Photos */}
+                        <div>
+                          <label className="text-xs text-muted-foreground">Room Photos</label>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {((rc as any).photos || []).map((path: string, pi: number) => (
+                              <div key={pi} className="relative group">
+                                <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
+                                <button onClick={() => upRoom("photos", ((rc as any).photos || []).filter((_: any, idx: number) => idx !== pi))}
+                                  className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                              </div>
+                            ))}
+                            {((rc as any).photos || []).length < 10 && (
+                              <label className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                                <span className="text-lg text-muted-foreground">+</span>
+                                <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (!files.length) return;
+                                  const remaining = 10 - ((rc as any).photos || []).length;
+                                  const toUpload = files.slice(0, remaining);
+                                  const newPaths: string[] = [];
+                                  for (const file of toUpload) {
+                                    const ext = file.name.split('.').pop();
+                                    const path = `rooms/${room.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                                    const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                                    if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
+                                    newPaths.push(path);
+                                  }
+                                  if (newPaths.length > 0) upRoom("photos", [...((rc as any).photos || []), ...newPaths]);
+                                  e.target.value = "";
+                                }} />
+                              </label>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Room Photos */}
-                      <div>
-                        <label className="text-xs text-muted-foreground">Room Photos</label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {((rc as any).photos || []).map((path: string, pi: number) => (
-                            <div key={pi} className="relative group">
-                              <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
-                              <button onClick={() => upRoom("photos", ((rc as any).photos || []).filter((_: any, idx: number) => idx !== pi))}
-                                className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Room Code</label>
+                            <input className={`${inputClass} w-full`} value={rc.room} onChange={e => upRoom("room", e.target.value)} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs text-muted-foreground">Room Title</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. Balcony Queen Room" value={(rc as any).room_title || ""} onChange={e => upRoom("room_title", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Room Type</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).room_category || "Normal Room"} onChange={e => {
+                              upRoom("room_category", e.target.value);
+                              if (e.target.value === "Studio") upRoom("bed_type", "None");
+                              else if ((rc as any).bed_type === "None") upRoom("bed_type", "");
+                            }}>
+                              <option value="Normal Room">Room</option>
+                              <option value="Studio">Studio</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Bed Type</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).bed_type || ""} onChange={e => {
+                              const bt = e.target.value;
+                              upRoom("bed_type", bt);
+                              if (bt !== "None" && bedTypeMaxPax[bt]) upRoom("max_pax", bedTypeMaxPax[bt]);
+                            }}>
+                              <option value="">—</option>
+                              <option value="None">None</option>
+                              <option value="Single">Single</option>
+                              <option value="Super Single">Super Single</option>
+                              <option value="Queen">Queen</option>
+                              <option value="King">King</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Wall Type</label>
+                            <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => upRoom("wall_type", e.target.value)}>
+                              <option value="">—</option>
+                              <option value="Original">Original</option>
+                              <option value="Partition">Partition</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Max Pax *</label>
+                            <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => upRoom("max_pax", Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Listed Rental (RM) *</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => upRoom("rent", Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Status</label>
+                            <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upRoom("status", e.target.value)}
+                              disabled={rc.status === "Occupied"}>
+                              {rc.status === "Occupied" && <option value="Occupied">Occupied (managed by workflow)</option>}
+                              <option value="Available">Available</option>
+                              <option value="Available Soon">Available Soon</option>
+                              <option value="Pending">Pending</option>
+                              <option value="Archived">Archived</option>
+                            </select>
+                            {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Status managed by Booking & Move-in workflow</p>}
+                          </div>
+                          {showAvailDate && (
+                            <div>
+                              <label className="text-xs text-muted-foreground">Available Date</label>
+                              <input className={`${inputClass} w-full`} type="date" value={rc.available_date || ""} onChange={e => upRoom("available_date", e.target.value)} />
                             </div>
-                          ))}
-                          {((rc as any).photos || []).length < 10 && (
-                            <label className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                              <span className="text-lg text-muted-foreground">+</span>
-                              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                                const files = Array.from(e.target.files || []);
-                                if (!files.length) return;
-                                const remaining = 10 - ((rc as any).photos || []).length;
-                                const toUpload = files.slice(0, remaining);
-                                const newPaths: string[] = [];
-                                for (const file of toUpload) {
-                                  const ext = file.name.split('.').pop();
-                                  const path = `rooms/${room.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                                  const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                                  if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
-                                  newPaths.push(path);
-                                }
-                                if (newPaths.length > 0) upRoom("photos", [...((rc as any).photos || []), ...newPaths]);
-                                e.target.value = "";
-                              }} />
-                            </label>
                           )}
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         <div>
-                          <label className="text-xs text-muted-foreground">Room Code</label>
-                          <input className={`${inputClass} w-full`} value={rc.room} onChange={e => upRoom("room", e.target.value)} />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="text-xs text-muted-foreground">Room Title</label>
-                          <input className={`${inputClass} w-full`} placeholder="e.g. Balcony Queen Room" value={(rc as any).room_title || ""} onChange={e => upRoom("room_title", e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Room Type</label>
-                          <select className={`${inputClass} w-full`} value={(rc as any).room_category || "Normal Room"} onChange={e => {
-                            upRoom("room_category", e.target.value);
-                            if (e.target.value === "Studio") upRoom("bed_type", "None");
-                            else if ((rc as any).bed_type === "None") upRoom("bed_type", "");
-                          }}>
-                            <option value="Normal Room">Room</option>
-                            <option value="Studio">Studio</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Bed Type</label>
-                          <select className={`${inputClass} w-full`} value={(rc as any).bed_type || ""} onChange={e => {
-                            const bt = e.target.value;
-                            upRoom("bed_type", bt);
-                            if (bt !== "None" && bedTypeMaxPax[bt]) upRoom("max_pax", bedTypeMaxPax[bt]);
-                          }}>
-                            <option value="">—</option>
-                            <option value="None">None</option>
-                            <option value="Single">Single</option>
-                            <option value="Super Single">Super Single</option>
-                            <option value="Queen">Queen</option>
-                            <option value="King">King</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Wall Type</label>
-                          <select className={`${inputClass} w-full`} value={(rc as any).wall_type || ""} onChange={e => upRoom("wall_type", e.target.value)}>
-                            <option value="">—</option>
-                            <option value="Original">Original</option>
-                            <option value="Partition">Partition</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Max Pax *</label>
-                          <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => upRoom("max_pax", Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Listed Rental (RM) *</label>
-                          <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => upRoom("rent", Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Status</label>
-                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upRoom("status", e.target.value)}
-                            disabled={rc.status === "Occupied"}>
-                            {rc.status === "Occupied" && <option value="Occupied">Occupied (managed by workflow)</option>}
-                            <option value="Available">Available</option>
-                            <option value="Available Soon">Available Soon</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Archived">Archived</option>
-                          </select>
-                          {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Status managed by Booking & Move-in workflow</p>}
-                        </div>
-                        {showAvailDate && (
-                          <div>
-                            <label className="text-xs text-muted-foreground">Available Date</label>
-                            <input className={`${inputClass} w-full`} type="date" value={rc.available_date || ""} onChange={e => upRoom("available_date", e.target.value)} />
+                          <label className="text-xs text-muted-foreground block mb-1.5">Features</label>
+                          <div className="flex flex-wrap gap-2">
+                            {OPTIONAL_FEATURES.map(feat => {
+                              const selected = features.includes(feat);
+                              return (
+                                <button key={feat} type="button"
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-secondary-foreground border-border hover:bg-accent"}`}
+                                  onClick={() => upRoom("optional_features", selected ? features.filter((f: string) => f !== feat) : [...features, feat])}
+                                >{feat}</button>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="text-xs text-muted-foreground block mb-1.5">Features</label>
-                        <div className="flex flex-wrap gap-2">
-                          {OPTIONAL_FEATURES.map(feat => {
-                            const selected = features.includes(feat);
-                            return (
-                              <button key={feat} type="button"
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-secondary-foreground border-border hover:bg-accent"}`}
-                                onClick={() => upRoom("optional_features", selected ? features.filter((f: string) => f !== feat) : [...features, feat])}
-                              >{feat}</button>
-                            );
-                          })}
                         </div>
-                      </div>
 
-                      <div>
-                        <label className="text-xs text-muted-foreground">Remark</label>
-                        <input className={`${inputClass} w-full`} placeholder="Internal notes…" value={(rc as any).internal_remark || ""} onChange={e => upRoom("internal_remark", e.target.value)} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* ── Carparks ── */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <h2 className="text-lg font-semibold">Carparks</h2>
-              <Button size="sm" onClick={handleAddCarpark}><Plus className="h-4 w-4 mr-1" /> Add Carpark</Button>
-            </div>
-
-            {carparks.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No carparks configured.</p>
-            ) : (
-              <div className="space-y-2">
-                {carparks.map(cp => {
-                  const rc = getRoomData(cp);
-                  const isEditing = editingRoomId === cp.id;
-                  const upCP = (field: string, value: any) => updateRoomField(cp.id, field, value);
-
-                  if (!isEditing) {
-                    return (
-                      <div key={cp.id} className="rounded-lg border bg-accent/30 px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors">
-                        <div className="flex items-center gap-3 text-sm">
-                          <span className="font-medium">🅿️ {rc.room}</span>
-                          {(rc as any).parking_lot && <span className="text-muted-foreground">{(rc as any).parking_lot}</span>}
-                          <span className="font-medium">RM{rc.rent || 0}</span>
-                          <StatusBadge status={rc.status || "Available"} />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(cp.id)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(cp.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Remark</label>
+                          <input className={`${inputClass} w-full`} placeholder="Internal notes…" value={(rc as any).internal_remark || ""} onChange={e => upRoom("internal_remark", e.target.value)} />
                         </div>
                       </div>
                     );
-                  }
+                  })}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
-                  return (
-                    <div key={cp.id} className="rounded-lg border bg-accent/30 border-primary/30 p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">🅿️ {rc.room}</span>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => cancelInlineRoom(cp.id)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
-                          <Button size="sm" onClick={() => saveInlineRoom(cp.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div>
-                          <label className="text-xs text-muted-foreground">Lot Number</label>
-                          <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={(rc as any).parking_lot || ""} onChange={e => upCP("parking_lot", e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Rental (RM)</label>
-                          <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => upCP("rent", Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Status</label>
-                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upCP("status", e.target.value)}
-                            disabled={rc.status === "Occupied"}>
-                            {rc.status === "Occupied" && <option value="Occupied">Occupied (managed by workflow)</option>}
-                            <option value="Available">Available</option>
-                            <option value="Archived">Archived</option>
-                          </select>
-                          {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Status managed by Booking & Move-in workflow</p>}
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Remark</label>
-                          <input className={`${inputClass} w-full`} placeholder="Notes…" value={(rc as any).internal_remark || ""} onChange={e => upCP("internal_remark", e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* ── Carparks ── */}
+          <AccordionItem value="carparks" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Carparks</span>
+                <span className="text-xs text-muted-foreground">— {carparks.length} carparks</span>
               </div>
-            )}
-          </section>
-        </div>
+              <Button size="sm" className="mr-2" onClick={(e) => { e.stopPropagation(); handleAddCarpark(); }}><Plus className="h-4 w-4 mr-1" /> Add Carpark</Button>
+            </AccordionTrigger>
+            <AccordionContent>
+              {carparks.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No carparks configured.</p>
+              ) : (
+                <div className="space-y-2 pb-2">
+                  {carparks.map(cp => {
+                    const rc = getRoomData(cp);
+                    const isEditing = editingRoomId === cp.id;
+                    const upCP = (field: string, value: any) => updateRoomField(cp.id, field, value);
+
+                    if (!isEditing) {
+                      return (
+                        <div key={cp.id} className="rounded-lg border bg-accent/30 px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors">
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="font-medium">🅿️ {rc.room}</span>
+                            {(rc as any).parking_lot && <span className="text-muted-foreground">{(rc as any).parking_lot}</span>}
+                            <span className="font-medium">RM{rc.rent || 0}</span>
+                            <StatusBadge status={rc.status || "Available"} />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(cp.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(cp.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={cp.id} className="rounded-lg border bg-accent/30 border-primary/30 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm">🅿️ {rc.room}</span>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => cancelInlineRoom(cp.id)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+                            <Button size="sm" onClick={() => saveInlineRoom(cp.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Lot Number</label>
+                            <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={(rc as any).parking_lot || ""} onChange={e => upCP("parking_lot", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Rental (RM)</label>
+                            <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => upCP("rent", Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Status</label>
+                            <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upCP("status", e.target.value)}
+                              disabled={rc.status === "Occupied"}>
+                              {rc.status === "Occupied" && <option value="Occupied">Occupied (managed by workflow)</option>}
+                              <option value="Available">Available</option>
+                              <option value="Archived">Archived</option>
+                            </select>
+                            {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Status managed by Booking & Move-in workflow</p>}
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Remark</label>
+                            <input className={`${inputClass} w-full`} placeholder="Notes…" value={(rc as any).internal_remark || ""} onChange={e => upCP("internal_remark", e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </StandardModal>
 
       <ConfirmDialog
