@@ -160,7 +160,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const handleAddRoom = async () => {
     try {
       await createRoom.mutateAsync({
-        room: getNextRoomName(), unit_id: unit.id, building: unit.building, unit: unit.unit,
+        room: getNextRoomName(), room_title: "", unit_id: unit.id, building: unit.building, unit: unit.unit,
         location: unit.location, rent: 0, room_type: "Normal Room", room_category: "Normal Room",
         unit_type: unit.unit_type, status: "Available", available_date: "", max_pax: 1,
         occupied_pax: 0, unit_max_pax: unit.unit_max_pax, unit_occupied_pax: 0,
