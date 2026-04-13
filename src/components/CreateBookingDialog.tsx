@@ -60,10 +60,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ bookingFeeReceipt: File | null }>({ bookingFeeReceipt: null });
+  const [uploadedFiles, setUploadedFiles] = useState<{ bookingFeeReceipt: File | null; passport: File | null; offerLetter: File | null }>({ bookingFeeReceipt: null, passport: null, offerLetter: null });
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string }>({ passport: "", offerLetter: "" });
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | null>(null);
+  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | "passport" | "offerLetter" | null>(null);
 
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
   useEffect(() => {
@@ -246,13 +246,13 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
     const docS = Array.isArray(t.doc_transfer_slip) && t.doc_transfer_slip.length > 0 ? t.doc_transfer_slip[0] : "";
     setLinkedTenantDocs({ passport: docP, offerLetter: docO });
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles(prev => ({ ...prev, bookingFeeReceipt: null, passport: null, offerLetter: null }));
   };
 
   const handleUnlinkTenant = () => {
     setSelectedTenantId(null);
     setLinkedTenantDocs({ passport: "", offerLetter: "" });
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles({ bookingFeeReceipt: null, passport: null, offerLetter: null });
     setForm(prev => ({ ...prev, tenantName: "", phone: "", email: "", icPassport: "", gender: "", nationality: "", occupation: "",
       emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
       emergency2Name: "", emergency2Phone: "", emergency2Relationship: "" }));
@@ -278,8 +278,8 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
     setSubmitting(true);
     try {
-      const passportPath = linkedTenantDocs.passport;
-      const offerPath = linkedTenantDocs.offerLetter;
+      const passportPath = linkedTenantDocs.passport || (uploadedFiles.passport ? await uploadFile(uploadedFiles.passport, "passport") : "");
+      const offerPath = linkedTenantDocs.offerLetter || (uploadedFiles.offerLetter ? await uploadFile(uploadedFiles.offerLetter, "offer-letter") : "");
       const receiptPath = uploadedFiles.bookingFeeReceipt ? await uploadFile(uploadedFiles.bookingFeeReceipt, "booking-fee-receipt") : "";
 
       const moveInCost = {
@@ -356,7 +356,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const resetForm = () => {
     setForm(initialForm);
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles({ bookingFeeReceipt: null, passport: null, offerLetter: null });
     setLinkedTenantDocs({ passport: "", offerLetter: "" });
     setSelectedTenantId(null);
   };
@@ -371,8 +371,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const receiptFileName = uploadedFiles.bookingFeeReceipt?.name || null;
   const hasReceipt = uploadedFiles.bookingFeeReceipt != null;
 
-  const removeReceipt = () => {
-    setUploadedFiles({ bookingFeeReceipt: null });
+  const removeDoc = (key: "bookingFeeReceipt" | "passport" | "offerLetter") => {
+    setUploadedFiles(prev => ({ ...prev, [key]: null }));
+    if (key === "passport") setLinkedTenantDocs(prev => ({ ...prev, passport: "" }));
+    if (key === "offerLetter") setLinkedTenantDocs(prev => ({ ...prev, offerLetter: "" }));
   };
 
   const formIsDirty = !!(form.tenantName.trim() || form.roomId || form.agentId);
@@ -574,6 +576,56 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                   <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
                 </div>
 
+                {/* Document uploads */}
+                <div className="grid md:grid-cols-2 gap-3 mt-3">
+                  <div className="space-y-1">
+                    <label className={lbl}>Upload Passport / IC</label>
+                    {(linkedTenantDocs.passport || uploadedFiles.passport) ? (
+                      <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                        <span className="text-sm flex-1 truncate">{linkedTenantDocs.passport ? linkedTenantDocs.passport.split("/").pop() : uploadedFiles.passport?.name}</span>
+                        {!isLinkedTenant && (
+                          <button type="button" onClick={() => setDocRemoveConfirm("passport")}
+                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove">
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                        <span className="text-muted-foreground">Choose File</span>
+                        <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) setUploadedFiles(prev => ({ ...prev, passport: file }));
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Upload Offer Letter</label>
+                    {(linkedTenantDocs.offerLetter || uploadedFiles.offerLetter) ? (
+                      <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                        <span className="text-sm flex-1 truncate">{linkedTenantDocs.offerLetter ? linkedTenantDocs.offerLetter.split("/").pop() : uploadedFiles.offerLetter?.name}</span>
+                        {!isLinkedTenant && (
+                          <button type="button" onClick={() => setDocRemoveConfirm("offerLetter")}
+                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove">
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                        <span className="text-muted-foreground">Choose File</span>
+                        <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) setUploadedFiles(prev => ({ ...prev, offerLetter: file }));
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
                 {form.gender === "Couple" && (
                   <div className="mt-3 p-3 border border-dashed border-primary/30 rounded-lg space-y-3">
                     <div className="text-sm font-bold flex items-center gap-2">👥 Second Tenant Details</div>
@@ -631,7 +683,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                   <span className="text-muted-foreground">Choose File</span>
                   <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
                     const file = e.target.files?.[0];
-                    if (file) setUploadedFiles({ bookingFeeReceipt: file });
+                    if (file) setUploadedFiles(prev => ({ ...prev, bookingFeeReceipt: file }));
                     e.target.value = "";
                   }} />
                 </label>
@@ -697,7 +749,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
         description="Are you sure you want to remove this file? You can upload a new one after removing."
         confirmLabel="Remove"
         variant="destructive"
-        onConfirm={() => { if (docRemoveConfirm) removeReceipt(); setDocRemoveConfirm(null); }}
+        onConfirm={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}
       />
     </>
   );
