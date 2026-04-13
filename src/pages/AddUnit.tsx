@@ -379,7 +379,7 @@ function RoomInlineForm({ room, onChange, onSave, onCancel }: {
   onSave: () => void;
   onCancel: () => void;
 }) {
-  const showAvailDate = room.status === "Available Soon";
+  
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3 border-primary/30">
       <div className="flex items-center justify-between">
