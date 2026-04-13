@@ -642,7 +642,7 @@ function TenantDetailView({ tenant, isAdmin }: { tenant: Tenant; isAdmin: boolea
 
   return (
     <div className="space-y-4">
-      <Accordion type="multiple" defaultValue={["personal", "emergency", "documents", "occupancy", "bookings"]} className="space-y-2">
+      <Accordion type="multiple" defaultValue={["personal", "emergency", "occupancy", "bookings"]} className="space-y-2">
         {/* Personal Info */}
         <AccordionItem value="personal" className="border rounded-lg px-4">
           <AccordionTrigger className="py-3 hover:no-underline">
@@ -657,6 +657,29 @@ function TenantDetailView({ tenant, isAdmin }: { tenant: Tenant; isAdmin: boolea
               <ViewField label="Gender" value={tenant.gender} />
               <ViewField label="Nationality" value={tenant.nationality} />
               <ViewField label="Occupation" value={tenant.occupation} />
+            </div>
+            {/* Documents inline */}
+            <div className="grid md:grid-cols-2 gap-3 pt-2 pb-2">
+              {([
+                { label: "Passport / IC", paths: tenant.doc_passport },
+                { label: "Offer Letter", paths: tenant.doc_offer_letter },
+              ]).map(({ label, paths }) => {
+                const arr = Array.isArray(paths) ? paths : [];
+                return (
+                  <div key={label} className="space-y-1">
+                    <div className="text-xs text-muted-foreground">{label}</div>
+                    {arr.length > 0 ? (
+                      <div className="flex items-center gap-2 bg-muted/30 rounded-lg border px-3 py-2">
+                        <span className="text-sm flex-1 truncate">{String(arr[0]).split("/").pop()}</span>
+                        <a href={`${supabaseUrl}/storage/v1/object/public/booking-docs/${arr[0]}`}
+                          target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No file uploaded</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -680,38 +703,6 @@ function TenantDetailView({ tenant, isAdmin }: { tenant: Tenant; isAdmin: boolea
                 <ViewField label="Phone" value={tenant.emergency_2_phone} />
                 <ViewField label="Relationship" value={tenant.emergency_2_relationship} />
               </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Documents */}
-        <AccordionItem value="documents" className="border rounded-lg px-4">
-          <AccordionTrigger className="py-3 hover:no-underline">
-            <span className="text-sm font-semibold">📎 Documents</span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-2 pb-2">
-              {([
-                { label: "Passport / IC", paths: tenant.doc_passport },
-                { label: "Offer Letter", paths: tenant.doc_offer_letter },
-                { label: "Transfer Slip", paths: tenant.doc_transfer_slip },
-              ]).map(({ label, paths }) => {
-                const arr = Array.isArray(paths) ? paths : [];
-                return (
-                  <div key={label} className="space-y-1">
-                    <label className="text-xs text-muted-foreground">{label}</label>
-                    {arr.length > 0 ? (
-                      <div className="flex items-center gap-2 bg-muted/30 rounded-lg border px-3 py-2">
-                        <span className="text-sm flex-1 truncate">{String(arr[0]).split("/").pop()}</span>
-                        <a href={`${supabaseUrl}/storage/v1/object/public/booking-docs/${arr[0]}`}
-                          target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">No file uploaded</div>
-                    )}
-                  </div>
-                );
-              })}
             </div>
           </AccordionContent>
         </AccordionItem>
