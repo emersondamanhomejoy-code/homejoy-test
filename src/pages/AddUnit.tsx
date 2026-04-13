@@ -4,6 +4,7 @@ import { useCreateUnit, RoomConfig } from "@/hooks/useRooms";
 import { logActivity } from "@/hooks/useActivityLog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StandardModal } from "@/components/ui/standard-modal";
@@ -521,9 +522,8 @@ function RoomSummaryRow({ room, onEdit, onDelete }: { room: LocalRoom; onEdit: (
   return (
     <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
       <div className="flex items-center gap-3 text-sm">
-        <span className="font-medium">{room.room}</span>
-        <span className="text-muted-foreground">{room.room_category === "Studio" ? "Studio" : "Room"}</span>
-        <span className="text-muted-foreground">{room.bed_type || "—"}</span>
+        <Badge variant="outline" className="font-mono">{room.room}</Badge>
+        <span className="font-medium">{room.room_title || <span className="text-muted-foreground italic">No title</span>}</span>
         <span className="font-medium">RM{room.rent}</span>
         <StatusBadge status={room.status || "Available"} />
       </div>
