@@ -553,8 +553,8 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
-              <CopyBtn onClick={copyBuildingDetails} tooltip="Copy Building Details" />
-              <LinkBtn url={`${baseShareUrl}?section=condo`} tooltip="Copy Common Area Link" />
+              <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
+              <TextLinkBtn url={`${baseShareUrl}?section=condo`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -589,8 +589,8 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
-              <CopyBtn onClick={copyUnitDetails} tooltip="Copy Unit Details" />
-              <LinkBtn url={`${baseShareUrl}?section=unit`} tooltip="Copy Unit Link" />
+              <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
+              <TextLinkBtn url={`${baseShareUrl}?section=unit`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -618,8 +618,8 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
                 <span className="text-xs text-muted-foreground">— {unitRooms.length} rooms</span>
               </div>
               <div className="flex items-center gap-1 mr-2">
-                <CopyBtn onClick={copyRoomSummary} tooltip="Copy Housemate Details" />
-                <LinkBtn url={`${baseShareUrl}?section=room`} tooltip="Copy Room Photos Link" />
+                <TextCopyBtn onClick={copyRoomSummary} label="Copy Housemates" />
+                <TextLinkBtn url={`${baseShareUrl}?section=room`} label="Copy Link" />
               </div>
             </AccordionTrigger>
             <AccordionContent>
@@ -706,7 +706,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       <section className="border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Move-In Cost Calculator</h3>
-          {calcRoom && <CopyBtn onClick={copyCostBreakdown} tooltip="Copy Cost Breakdown" />}
+          {calcRoom && <TextCopyBtn onClick={copyCostBreakdown} label="Copy Cost" />}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
