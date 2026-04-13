@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { useUnits, useDeleteUnit, Unit } from "@/hooks/useRooms";
+import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
+import { useCondos } from "@/hooks/useCondos";
+import { useAuth } from "@/hooks/useAuth";
 import AddUnit from "@/pages/AddUnit";
 import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +10,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus } from "lucide-react";
+import { Plus, Copy, ChevronDown } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
@@ -16,6 +18,8 @@ import { StandardModal } from "@/components/ui/standard-modal";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { labelClass, inputClass } from "@/lib/ui-constants";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { toast } from "sonner";
 
 export function UnitsRoomsContent() {
   const { data: units = [], isLoading } = useUnits();
