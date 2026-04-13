@@ -5,9 +5,9 @@ import { useRooms, useUnits } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { StandardModal } from "@/components/ui/standard-modal";
+import { inputClass, labelClass } from "@/lib/ui-constants";
 import { toast } from "sonner";
 
 interface AccessItem {
@@ -62,6 +62,35 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
 
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+
+  // Track dirty state
+  const initialFormRef = useMemo(() => ({
+    roomId: booking.room_id || "",
+    exactRental: String((booking.move_in_cost as any)?.advance || booking.monthly_salary || 0),
+    paxStaying: String(booking.pax_staying || 1),
+    tenancyDuration: String(booking.contract_months || 12),
+    moveInDate: booking.move_in_date || "",
+    parkingCount: String(existingCarParks.length),
+    tenantName: booking.tenant_name || "",
+    phone: booking.tenant_phone || "",
+    email: booking.tenant_email || "",
+    icPassport: booking.tenant_ic_passport || "",
+    gender: booking.tenant_gender || "",
+    nationality: booking.tenant_nationality || "",
+    occupation: booking.occupation || "",
+    emergency1Name: booking.emergency_1_name || "",
+    emergency1Phone: booking.emergency_1_phone || "",
+    emergency1Relationship: booking.emergency_1_relationship || "",
+    emergency2Name: booking.emergency_2_name || "",
+    emergency2Phone: booking.emergency_2_phone || "",
+    emergency2Relationship: booking.emergency_2_relationship || "",
+  }), [booking]);
+
+  const isDirty = useMemo(() => {
+    const { carParkSelections, ...rest } = form;
+    const { parkingCount: _, ...initial } = initialFormRef;
+    return JSON.stringify(rest) !== JSON.stringify({ ...initial, parkingCount: form.parkingCount });
+  }, [form, initialFormRef]);
 
   const availableRooms = useMemo(() => {
     let rooms = roomsData.filter(r => r.room_type !== "Car Park" && (r.status === "Available" || r.id === booking.room_id));
@@ -230,227 +259,220 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
     }
   };
 
-  const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full text-sm";
-  const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
   const sectionTitle = (emoji: string, title: string) => (
     <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">{emoji} {title}</div>
   );
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => { if (!saving) onOpenChange(nextOpen); }}>
-      <DialogContent
-        className="sm:max-w-3xl max-h-[90vh] p-0"
-        onPointerDownOutside={(event) => event.preventDefault()}
-        onInteractOutside={(event) => event.preventDefault()}
-      >
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>Edit Booking — {booking.tenant_name}</DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
-          <div className="space-y-5 py-4">
-      {/* Room */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        {sectionTitle("🏠", "Room")}
-        <div className="space-y-1">
-          <label className={lbl}>Search Room</label>
-          <input className={ic} placeholder="Search by building, unit, room..." value={roomSearch} onChange={e => setRoomSearch(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <label className={lbl}>Select Room *</label>
-          <select className={ic} value={form.roomId} onChange={e => {
-            const room = roomsData.find(r => r.id === e.target.value);
-            setForm(prev => ({ ...prev, roomId: e.target.value, exactRental: room ? String(room.rent) : prev.exactRental, parkingCount: "0", carParkSelections: [] }));
-          }}>
-            <option value="">— Select Room —</option>
-            {availableRooms.map(r => (
-              <option key={r.id} value={r.id}>{r.building} · {r.unit} · {r.room} — RM{r.rent}/mo ({r.room_type})</option>
-            ))}
-          </select>
-        </div>
-        {selectedRoom && (
-          <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
-            <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
-            <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
-          </div>
-        )}
-        {selectedRoom && (
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className={lbl}>Exact Rental (RM) *</label>
-              <input className={ic} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className={lbl}>How many pax staying *</label>
-              <select className={ic} value={form.paxStaying} onChange={e => set("paxStaying", e.target.value)}>
-                {Array.from({ length: selectedRoom.max_pax || 4 }, (_, i) => i + 1).map(n => (
-                  <option key={n} value={String(n)}>{n} pax</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className={lbl}>Tenancy Duration *</label>
-              <select className={ic} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
-                {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
-                  <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : ""}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className={lbl}>Move-in Date *</label>
-              <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
-            </div>
-          </div>
-        )}
-        {selectedRoom && chargeableAccess.length > 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
-            <div className="font-semibold text-amber-700">Chargeable Access Items (Homejoy)</div>
-            {chargeableAccess.map((a, i) => (
-              <div key={i} className="flex justify-between">
-                <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
-                <span>RM{a.price} × {pax} pax = <strong>RM{a.price * pax}</strong></span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Parking */}
-      {selectedRoom && (
+    <StandardModal
+      open={open}
+      onOpenChange={(nextOpen) => { if (!saving) onOpenChange(nextOpen); }}
+      title={`Edit Booking — ${booking.tenant_name}`}
+      size="lg"
+      isDirty={isDirty}
+      footer={
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+      }
+    >
+      <div className="space-y-5">
+        {/* Room */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-          {sectionTitle("🅿️", "Parking")}
-          {availableCarParks.length === 0 ? (
-            <div className="text-sm text-muted-foreground bg-background rounded-lg border p-3">Sorry, car park is fully rented out for this building.</div>
-          ) : (
-            <>
+          {sectionTitle("🏠", "Room")}
+          <div className="space-y-1">
+            <label className={labelClass}>Search Room</label>
+            <input className={inputClass} placeholder="Search by building, unit, room..." value={roomSearch} onChange={e => setRoomSearch(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className={labelClass}>Select Room *</label>
+            <select className={inputClass} value={form.roomId} onChange={e => {
+              const room = roomsData.find(r => r.id === e.target.value);
+              setForm(prev => ({ ...prev, roomId: e.target.value, exactRental: room ? String(room.rent) : prev.exactRental, parkingCount: "0", carParkSelections: [] }));
+            }}>
+              <option value="">— Select Room —</option>
+              {availableRooms.map(r => (
+                <option key={r.id} value={r.id}>{r.building} · {r.unit} · {r.room} — RM{r.rent}/mo ({r.room_type})</option>
+              ))}
+            </select>
+          </div>
+          {selectedRoom && (
+            <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
+              <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
+              <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
+            </div>
+          )}
+          {selectedRoom && (
+            <div className="grid md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className={lbl}>How many parking</label>
-                <select className={ic} value={form.parkingCount} onChange={e => handleParkingCountChange(e.target.value)}>
-                  {Array.from({ length: Math.min(availableCarParks.length + 1, 4) }, (_, i) => (
-                    <option key={i} value={String(i)}>{i}</option>
+                <label className={labelClass}>Exact Rental (RM) *</label>
+                <input className={inputClass} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>How many pax staying *</label>
+                <select className={inputClass} value={form.paxStaying} onChange={e => set("paxStaying", e.target.value)}>
+                  {Array.from({ length: selectedRoom.max_pax || 4 }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={String(n)}>{n} pax</option>
                   ))}
                 </select>
               </div>
-              {Array.from({ length: Number(form.parkingCount) || 0 }, (_, i) => {
-                const otherSelected = selectedCarParkIds.filter((_, idx) => idx !== i);
-                const searchStr = (carParkSearch[i] || "").toLowerCase();
-                let cpOptions = availableCarParks.filter(cp => !otherSelected.includes(cp.id));
-                if (searchStr) cpOptions = cpOptions.filter(cp => cp.room.toLowerCase().includes(searchStr));
-                const selectedCp = roomsData.find(r => r.id === form.carParkSelections[i]?.roomId);
-                return (
-                  <div key={i} className="bg-background rounded-lg border p-3 space-y-2">
-                    <div className="text-sm font-semibold">Parking {i + 1}</div>
-                    <div className="space-y-1">
-                      <label className={lbl}>Search Car Park</label>
-                      <input className={ic} placeholder="Search..." value={carParkSearch[i] || ""} onChange={e => setCarParkSearch(prev => ({ ...prev, [i]: e.target.value }))} />
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className={lbl}>Car Park Lot *</label>
-                        <select className={ic} value={form.carParkSelections[i]?.roomId || ""} onChange={e => updateCarParkSelection(i, "roomId", e.target.value)}>
-                          <option value="">— Select —</option>
-                          {cpOptions.map(cp => (<option key={cp.id} value={cp.id}>{cp.room} — RM{cp.rent}/mo</option>))}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className={lbl}>Car Plate No *</label>
-                        <input className={ic} placeholder="e.g. ABC1234" value={form.carParkSelections[i]?.carPlate || ""} onChange={e => updateCarParkSelection(i, "carPlate", e.target.value)} />
-                      </div>
-                    </div>
-                    {selectedCp && <div className="text-xs text-muted-foreground">Monthly Rental: RM{selectedCp.rent}</div>}
-                  </div>
-                );
-              })}
-            </>
+              <div className="space-y-1">
+                <label className={labelClass}>Tenancy Duration *</label>
+                <select className={inputClass} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
+                  {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
+                    <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : ""}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>Move-in Date *</label>
+                <input className={inputClass} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+              </div>
+            </div>
+          )}
+          {selectedRoom && chargeableAccess.length > 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
+              <div className="font-semibold text-amber-700">Chargeable Access Items (Homejoy)</div>
+              {chargeableAccess.map((a, i) => (
+                <div key={i} className="flex justify-between">
+                  <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
+                  <span>RM{a.price} × {pax} pax = <strong>RM{a.price * pax}</strong></span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      )}
 
-      {/* Tenant Details */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        {sectionTitle("👤", "Tenant Details")}
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} value={form.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
-          <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={ic} value={form.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
-          <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
-          <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} value={form.phone} onChange={e => set("phone", e.target.value)} /></div>
-          <div className="space-y-1"><label className={lbl}>Gender *</label>
-            <select className={ic} value={form.gender} onChange={e => set("gender", e.target.value)}>
-              <option value="">Select</option><option>Male</option><option>Female</option><option>Couple</option>
-            </select>
-          </div>
-          <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
-          <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} value={form.occupation} onChange={e => set("occupation", e.target.value)} /></div>
-        </div>
-      </div>
-
-      {/* Emergency Contacts */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        {sectionTitle("🚨", "Emergency Contacts")}
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Contact 1 *</div>
-            <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Contact 2 *</div>
-            <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Move-in Cost — Bill style */}
-      {selectedRoom && (
-        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-          {sectionTitle("💰", "Move-in Cost")}
-          <div className="bg-background rounded-lg border divide-y divide-border">
-            <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
-              <span>Description</span><span className="text-right">Amount (RM)</span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-              <span>1 Month Advance Rental</span><span className="text-right font-medium">{exactRental.toLocaleString()}</span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-              <span>Rental Deposit (×{depMul})</span><span className="text-right font-medium">{deposit.toLocaleString()}</span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-              <span>Admin Fee</span><span className="text-right font-medium">{adminFee.toLocaleString()}</span>
-            </div>
-            {accessFeesBreakdown.map((f, i) => (
-              <div key={`a-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
-                <span className="text-right font-medium">{f.total.toLocaleString()}</span>
-              </div>
-            ))}
-            {carparkFeesBreakdown.map((f, i) => (
-              <div key={`c-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
-                <span className="text-right font-medium">{f.total.toLocaleString()}</span>
-              </div>
-            ))}
-            {carparkRentalTotal > 0 && (
-              <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                <span>1 Month Advance Car Park Rental</span><span className="text-right font-medium">{carparkRentalTotal.toLocaleString()}</span>
-              </div>
+        {/* Parking */}
+        {selectedRoom && (
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("🅿️", "Parking")}
+            {availableCarParks.length === 0 ? (
+              <div className="text-sm text-muted-foreground bg-background rounded-lg border p-3">Sorry, car park is fully rented out for this building.</div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label className={labelClass}>How many parking</label>
+                  <select className={inputClass} value={form.parkingCount} onChange={e => handleParkingCountChange(e.target.value)}>
+                    {Array.from({ length: Math.min(availableCarParks.length + 1, 4) }, (_, i) => (
+                      <option key={i} value={String(i)}>{i}</option>
+                    ))}
+                  </select>
+                </div>
+                {Array.from({ length: Number(form.parkingCount) || 0 }, (_, i) => {
+                  const otherSelected = selectedCarParkIds.filter((_, idx) => idx !== i);
+                  const searchStr = (carParkSearch[i] || "").toLowerCase();
+                  let cpOptions = availableCarParks.filter(cp => !otherSelected.includes(cp.id));
+                  if (searchStr) cpOptions = cpOptions.filter(cp => cp.room.toLowerCase().includes(searchStr));
+                  const selectedCp = roomsData.find(r => r.id === form.carParkSelections[i]?.roomId);
+                  return (
+                    <div key={i} className="bg-background rounded-lg border p-3 space-y-2">
+                      <div className="text-sm font-semibold">Parking {i + 1}</div>
+                      <div className="space-y-1">
+                        <label className={labelClass}>Search Car Park</label>
+                        <input className={inputClass} placeholder="Search..." value={carParkSearch[i] || ""} onChange={e => setCarParkSearch(prev => ({ ...prev, [i]: e.target.value }))} />
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className={labelClass}>Car Park Lot *</label>
+                          <select className={inputClass} value={form.carParkSelections[i]?.roomId || ""} onChange={e => updateCarParkSelection(i, "roomId", e.target.value)}>
+                            <option value="">— Select —</option>
+                            {cpOptions.map(cp => (<option key={cp.id} value={cp.id}>{cp.room} — RM{cp.rent}/mo</option>))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className={labelClass}>Car Plate No *</label>
+                          <input className={inputClass} placeholder="e.g. ABC1234" value={form.carParkSelections[i]?.carPlate || ""} onChange={e => updateCarParkSelection(i, "carPlate", e.target.value)} />
+                        </div>
+                      </div>
+                      {selectedCp && <div className="text-xs text-muted-foreground">Monthly Rental: RM{selectedCp.rent}</div>}
+                    </div>
+                  );
+                })}
+              </>
             )}
-            <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
-              <span className="font-bold">Total Move-in Cost</span>
-              <span className="text-right font-bold text-lg">RM {grandTotal.toLocaleString()}</span>
+          </div>
+        )}
+
+        {/* Tenant Details */}
+        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+          {sectionTitle("👤", "Tenant Details")}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="space-y-1"><label className={labelClass}>Full Name *</label><input className={inputClass} value={form.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
+            <div className="space-y-1"><label className={labelClass}>NRIC/Passport No</label><input className={inputClass} value={form.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
+            <div className="space-y-1"><label className={labelClass}>Email</label><input className={inputClass} type="email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
+            <div className="space-y-1"><label className={labelClass}>Contact No *</label><input className={inputClass} value={form.phone} onChange={e => set("phone", e.target.value)} /></div>
+            <div className="space-y-1"><label className={labelClass}>Gender *</label>
+              <select className={inputClass} value={form.gender} onChange={e => set("gender", e.target.value)}>
+                <option value="">Select</option><option>Male</option><option>Female</option><option>Couple</option>
+              </select>
+            </div>
+            <div className="space-y-1"><label className={labelClass}>Nationality</label><input className={inputClass} value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
+            <div className="space-y-1"><label className={labelClass}>Occupation</label><input className={inputClass} value={form.occupation} onChange={e => set("occupation", e.target.value)} /></div>
+          </div>
+        </div>
+
+        {/* Emergency Contacts */}
+        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+          {sectionTitle("🚨", "Emergency Contacts")}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">Contact 1 *</div>
+              <div className="space-y-1"><label className={labelClass}>Name</label><input className={inputClass} value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Phone</label><input className={inputClass} value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Relationship</label><input className={inputClass} value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">Contact 2 *</div>
+              <div className="space-y-1"><label className={labelClass}>Name</label><input className={inputClass} value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Phone</label><input className={inputClass} value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Relationship</label><input className={inputClass} value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
             </div>
           </div>
         </div>
-      )}
 
-      <DialogFooter className="gap-3 pb-2">
-        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-      </DialogFooter>
+        {/* Move-in Cost */}
+        {selectedRoom && (
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("💰", "Move-in Cost")}
+            <div className="bg-background rounded-lg border divide-y divide-border">
+              <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+                <span>Description</span><span className="text-right">Amount (RM)</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                <span>1 Month Advance Rental</span><span className="text-right font-medium">{exactRental.toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                <span>Rental Deposit (×{depMul})</span><span className="text-right font-medium">{deposit.toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                <span>Admin Fee</span><span className="text-right font-medium">{adminFee.toLocaleString()}</span>
+              </div>
+              {accessFeesBreakdown.map((f, i) => (
+                <div key={`a-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                  <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+                  <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+                </div>
+              ))}
+              {carparkFeesBreakdown.map((f, i) => (
+                <div key={`c-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                  <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+                  <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+                </div>
+              ))}
+              {carparkRentalTotal > 0 && (
+                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                  <span>1 Month Advance Car Park Rental</span><span className="text-right font-medium">{carparkRentalTotal.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
+                <span className="font-bold">Total Move-in Cost</span>
+                <span className="text-right font-bold text-lg">RM {grandTotal.toLocaleString()}</span>
+              </div>
+            </div>
           </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        )}
+      </div>
+    </StandardModal>
   );
 }
