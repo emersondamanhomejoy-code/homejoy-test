@@ -6,11 +6,12 @@ import AddUnit from "@/pages/AddUnit";
 import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus, Copy, ChevronDown, Link2, ArrowLeft, Eye } from "lucide-react";
+import { Plus, Copy, ChevronDown, Link2, ArrowLeft, Eye, Image } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
