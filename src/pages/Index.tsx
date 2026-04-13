@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { AgentBookingsContent } from "@/components/AgentBookingsContent";
+import { MyDealsContent } from "@/components/MyDealsContent";
+import { AgentMoveInsContent } from "@/components/AgentMoveInsContent";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
