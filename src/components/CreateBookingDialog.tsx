@@ -4,13 +4,13 @@ import { useRooms, useUnits } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { X } from "lucide-react";
 import { toast } from "sonner";
+import { StandardModal } from "@/components/ui/standard-modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
 
 interface AccessItem {
   id: string;
@@ -60,11 +60,9 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [docRemoveConfirm, setDocRemoveConfirm] = useState<"passport" | "offerLetter" | "transferSlip" | null>(null);
 
-  // Fetch existing tenants
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
   useEffect(() => {
     if (!open) return;
@@ -223,7 +221,6 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
       emergency2Name: t.emergency_2_name || "", emergency2Phone: t.emergency_2_phone || "",
       emergency2Relationship: t.emergency_2_relationship || "",
     }));
-    // Load tenant docs
     const docP = Array.isArray(t.doc_passport) && t.doc_passport.length > 0 ? t.doc_passport[0] : "";
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
     const docS = Array.isArray(t.doc_transfer_slip) && t.doc_transfer_slip.length > 0 ? t.doc_transfer_slip[0] : "";
@@ -260,7 +257,6 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
     setSubmitting(true);
     try {
-      // Upload new files or use linked tenant docs
       const passportPath = uploadedFiles.passport ? await uploadFile(uploadedFiles.passport, "passport") : linkedTenantDocs.passport;
       const offerPath = uploadedFiles.offerLetter ? await uploadFile(uploadedFiles.offerLetter, "offer-letter") : linkedTenantDocs.offerLetter;
       const slipPath = uploadedFiles.transferSlip ? await uploadFile(uploadedFiles.transferSlip, "transfer-slip") : linkedTenantDocs.transferSlip;
@@ -344,22 +340,13 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     setSelectedTenantId(null);
   };
 
-  const handleClose = () => {
-    if (form.tenantName.trim() || form.roomId || form.agentId) {
-      setShowDiscardConfirm(true);
-    } else {
-      onOpenChange(false);
-    }
-  };
-
-  const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full text-sm";
-  const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+  const ic = sharedInputClass;
+  const lbl = sharedLabelClass;
 
   const sectionTitle = (emoji: string, title: string) => (
     <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">{emoji} {title}</div>
   );
 
-  // Document helper: get current file name (uploaded file > linked tenant doc)
   const getDocDisplay = (key: "passport" | "offerLetter" | "transferSlip") => {
     if (uploadedFiles[key]) return uploadedFiles[key]!.name;
     const linked = linkedTenantDocs[key];
@@ -376,351 +363,331 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     setLinkedTenantDocs(prev => ({ ...prev, [key]: "" }));
   };
 
+  const formIsDirty = !!(form.tenantName.trim() || form.roomId || form.agentId);
+
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" hideClose>
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>Create Booking</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-120px)]">
-            <div className="space-y-5 py-4">
-              {/* 1. Agent Selection */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                {sectionTitle("👤", "Agent")}
-                <div className="space-y-1">
-                  <label className={lbl}>Select Agent *</label>
-                  <SearchableSelect
-                    options={agentOptions}
-                    value={form.agentId}
-                    onChange={v => set("agentId", v)}
-                    placeholder="— Select Agent —"
-                    searchPlaceholder="Search by name or email..."
-                  />
-                </div>
-              </div>
+      <StandardModal
+        open={open}
+        onOpenChange={(o) => { if (!o) onOpenChange(false); }}
+        title="Create Booking"
+        size="lg"
+        isDirty={formIsDirty}
+        footer={
+          <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Submitting..." : "Create Booking"}</Button>
+        }
+      >
+        <div className="space-y-5">
+          {/* 1. Agent Selection */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("👤", "Agent")}
+            <div className="space-y-1">
+              <label className={lbl}>Select Agent *</label>
+              <SearchableSelect
+                options={agentOptions}
+                value={form.agentId}
+                onChange={v => set("agentId", v)}
+                placeholder="— Select Agent —"
+                searchPlaceholder="Search by name or email..."
+              />
+            </div>
+          </div>
 
-              {/* 2. Room Selection */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                {sectionTitle("🏠", "Room")}
+          {/* 2. Room Selection */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("🏠", "Room")}
+            <div className="space-y-1">
+              <label className={lbl}>Select Room *</label>
+              <SearchableSelect
+                options={roomOptions}
+                value={form.roomId}
+                onChange={v => {
+                  const room = roomsData.find(r => r.id === v);
+                  setForm(prev => ({
+                    ...prev, roomId: v,
+                    exactRental: room ? String(room.rent) : "",
+                    parkingCount: "0", carParkSelections: [],
+                  }));
+                }}
+                placeholder="— Select Room —"
+                searchPlaceholder="Search by building, unit, room..."
+              />
+            </div>
+            {selectedRoom && (
+              <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
+                <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
+                <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
+              </div>
+            )}
+            {selectedRoom && (
+              <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className={lbl}>Select Room *</label>
-                  <SearchableSelect
-                    options={roomOptions}
-                    value={form.roomId}
-                    onChange={v => {
-                      const room = roomsData.find(r => r.id === v);
-                      setForm(prev => ({
-                        ...prev, roomId: v,
-                        exactRental: room ? String(room.rent) : "",
-                        parkingCount: "0", carParkSelections: [],
-                      }));
-                    }}
-                    placeholder="— Select Room —"
-                    searchPlaceholder="Search by building, unit, room..."
-                  />
+                  <label className={lbl}>Exact Rental (RM) *</label>
+                  <input className={`${ic} w-full`} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
                 </div>
-                {selectedRoom && (
-                  <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
-                    <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
-                    <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
-                  </div>
-                )}
-                {selectedRoom && (
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className={lbl}>Exact Rental (RM) *</label>
-                      <input className={ic} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <label className={lbl}>How many pax staying *</label>
-                      <select className={ic} value={form.paxStaying} onChange={e => set("paxStaying", e.target.value)}>
-                        {Array.from({ length: selectedRoom.max_pax || 4 }, (_, i) => i + 1).map(n => (
-                          <option key={n} value={String(n)}>{n} pax</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className={lbl}>Move-in Date *</label>
-                      <input className={ic} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <label className={lbl}>Tenancy Duration *</label>
-                      <select className={ic} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
-                        {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
-                          <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : ""}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-                {selectedRoom && chargeableAccess.length > 0 && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
-                    <div className="font-semibold text-amber-700">Chargeable Access Items (Homejoy)</div>
-                    {chargeableAccess.map((a, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
-                        <span>RM{a.price} × {pax} pax = <strong>RM{a.price * pax}</strong></span>
-                      </div>
+                <div className="space-y-1">
+                  <label className={lbl}>How many pax staying *</label>
+                  <select className={`${ic} w-full`} value={form.paxStaying} onChange={e => set("paxStaying", e.target.value)}>
+                    {Array.from({ length: selectedRoom.max_pax || 4 }, (_, i) => i + 1).map(n => (
+                      <option key={n} value={String(n)}>{n} pax</option>
                     ))}
-                  </div>
-                )}
-              </div>
-
-              {/* 3. Parking */}
-              {selectedRoom && (
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  {sectionTitle("🅿️", "Parking")}
-                  {availableCarParks.length === 0 ? (
-                    <div className="text-sm text-muted-foreground bg-background rounded-lg border p-3">Sorry, car park is fully rented out for this building.</div>
-                  ) : (
-                    <>
-                      <div className="space-y-1">
-                        <label className={lbl}>How many parking</label>
-                        <select className={ic} value={form.parkingCount} onChange={e => handleParkingCountChange(e.target.value)}>
-                          {Array.from({ length: Math.min(availableCarParks.length + 1, 4) }, (_, i) => (
-                            <option key={i} value={String(i)}>{i}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {Array.from({ length: Number(form.parkingCount) || 0 }, (_, i) => {
-                        const otherSelected = selectedCarParkIds.filter((_, idx) => idx !== i);
-                        const cpOpts = carParkOptions.filter(cp => !otherSelected.includes(cp.value));
-                        const selectedCp = roomsData.find(r => r.id === form.carParkSelections[i]?.roomId);
-                        return (
-                          <div key={i} className="bg-background rounded-lg border p-3 space-y-2">
-                            <div className="text-sm font-semibold">Parking {i + 1}</div>
-                            <div className="grid md:grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <label className={lbl}>Car Park Lot *</label>
-                                <SearchableSelect
-                                  options={cpOpts}
-                                  value={form.carParkSelections[i]?.roomId || ""}
-                                  onChange={v => updateCarParkSelection(i, "roomId", v)}
-                                  placeholder="— Select Car Park —"
-                                  searchPlaceholder="Search car park..."
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className={lbl}>Car Plate No *</label>
-                                <input className={ic} placeholder="e.g. ABC1234" value={form.carParkSelections[i]?.carPlate || ""} onChange={e => updateCarParkSelection(i, "carPlate", e.target.value)} />
-                              </div>
-                            </div>
-                            {selectedCp && (
-                              <div className="text-xs text-muted-foreground">Monthly Rental: RM{selectedCp.rent}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {chargeableCarpark.length > 0 && Number(form.parkingCount) > 0 && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
-                          <div className="font-semibold text-amber-700">Chargeable Car Park Access (Homejoy)</div>
-                          {chargeableCarpark.map((a, i) => (
-                            <div key={i} className="flex justify-between">
-                              <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
-                              <span>RM{a.price} × {form.parkingCount} = <strong>RM{a.price * (Number(form.parkingCount) || 0)}</strong></span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
+                  </select>
                 </div>
-              )}
-
-              {/* 4. Tenant Details */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                {sectionTitle("👤", "Tenant Details")}
-
-                {/* Link existing tenant */}
                 <div className="space-y-1">
-                  <label className={lbl}>Link Existing Tenant (optional)</label>
-                  <SearchableSelect
-                    options={tenantOptions}
-                    value={selectedTenantId || ""}
-                    onChange={v => { if (v) handleLinkTenant(v); else handleUnlinkTenant(); }}
-                    placeholder="— Select Existing Tenant —"
-                    searchPlaceholder="Search by name, phone, email, IC..."
-                  />
+                  <label className={lbl}>Move-in Date *</label>
+                  <input className={`${ic} w-full`} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
                 </div>
-
-                {isLinkedTenant && (
-                  <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">
-                    <span className="font-semibold">Linked:</span> {form.tenantName}
-                    <button type="button" className="ml-auto text-xs underline hover:no-underline" onClick={handleUnlinkTenant}>Unlink</button>
+                <div className="space-y-1">
+                  <label className={lbl}>Tenancy Duration *</label>
+                  <select className={`${ic} w-full`} value={form.tenancyDuration} onChange={e => set("tenancyDuration", e.target.value)}>
+                    {Array.from({ length: 24 }, (_, i) => i + 1).map(m => (
+                      <option key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}{m === 12 ? " (1 year)" : m === 24 ? " (2 years)" : ""}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+            {selectedRoom && chargeableAccess.length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
+                <div className="font-semibold text-amber-700">Chargeable Access Items (Homejoy)</div>
+                {chargeableAccess.map((a, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
+                    <span>RM{a.price} × {pax} pax = <strong>RM{a.price * pax}</strong></span>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
+          </div>
 
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={ic} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={ic} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Gender *</label>
-                    <select className={ic} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
-                      <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
+          {/* 3. Parking */}
+          {selectedRoom && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              {sectionTitle("🅿️", "Parking")}
+              {availableCarParks.length === 0 ? (
+                <div className="text-sm text-muted-foreground bg-background rounded-lg border p-3">Sorry, car park is fully rented out for this building.</div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <label className={lbl}>How many parking</label>
+                    <select className={`${ic} w-full`} value={form.parkingCount} onChange={e => handleParkingCountChange(e.target.value)}>
+                      {Array.from({ length: Math.min(availableCarParks.length + 1, 4) }, (_, i) => (
+                        <option key={i} value={String(i)}>{i}</option>
+                      ))}
                     </select>
                   </div>
-                  <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
-                </div>
 
-                {form.gender === "Couple" && (
-                  <div className="mt-3 p-3 border border-dashed border-primary/30 rounded-lg space-y-3">
-                    <div className="text-sm font-bold flex items-center gap-2">👥 Second Tenant Details</div>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <div className="space-y-1"><label className={lbl}>Full Name</label><input className={ic} placeholder="Full Name" value={form.tenant2Name} onChange={e => set("tenant2Name", e.target.value)} /></div>
-                      <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={ic} placeholder="NRIC/Passport No" value={form.tenant2IcPassport} onChange={e => set("tenant2IcPassport", e.target.value)} /></div>
-                      <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} type="email" placeholder="Email" value={form.tenant2Email} onChange={e => set("tenant2Email", e.target.value)} /></div>
-                      <div className="space-y-1"><label className={lbl}>Contact No</label><input className={ic} placeholder="Contact No" value={form.tenant2Phone} onChange={e => set("tenant2Phone", e.target.value)} /></div>
-                      <div className="space-y-1"><label className={lbl}>Nationality</label><input className={ic} placeholder="Nationality" value={form.tenant2Nationality} onChange={e => set("tenant2Nationality", e.target.value)} /></div>
-                      <div className="space-y-1"><label className={lbl}>Occupation</label><input className={ic} placeholder="Occupation" value={form.tenant2Occupation} onChange={e => set("tenant2Occupation", e.target.value)} /></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 5. Emergency Contacts */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                {sectionTitle("🚨", "Emergency Contacts")}
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">Contact 1 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">Contact 2 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={ic} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 6. Documents — single file per slot, delete before replace */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                {sectionTitle("📎", "Documents")}
-                {([
-                  { key: "passport" as const, label: "Passport / IC" },
-                  { key: "offerLetter" as const, label: "Offer Letter" },
-                  { key: "transferSlip" as const, label: "Transfer Slip" },
-                ]).map(({ key, label }) => {
-                  const fileName = getDocDisplay(key);
-                  const hasFile = docHasFile(key);
-                  return (
-                    <div key={key} className="space-y-1">
-                      <label className={lbl}>{label}</label>
-                      {hasFile ? (
-                        <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
-                          <span className="text-sm flex-1 truncate">{fileName}</span>
-                          <button type="button" onClick={() => setDocRemoveConfirm(key)}
-                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
-                            <X className="h-4 w-4" />
-                          </button>
+                  {Array.from({ length: Number(form.parkingCount) || 0 }, (_, i) => {
+                    const otherSelected = selectedCarParkIds.filter((_, idx) => idx !== i);
+                    const cpOpts = carParkOptions.filter(cp => !otherSelected.includes(cp.value));
+                    const selectedCp = roomsData.find(r => r.id === form.carParkSelections[i]?.roomId);
+                    return (
+                      <div key={i} className="bg-background rounded-lg border p-3 space-y-2">
+                        <div className="text-sm font-semibold">Parking {i + 1}</div>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className={lbl}>Car Park Lot *</label>
+                            <SearchableSelect
+                              options={cpOpts}
+                              value={form.carParkSelections[i]?.roomId || ""}
+                              onChange={v => updateCarParkSelection(i, "roomId", v)}
+                              placeholder="— Select Car Park —"
+                              searchPlaceholder="Search car park..."
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className={lbl}>Car Plate No *</label>
+                            <input className={`${ic} w-full`} placeholder="e.g. ABC1234" value={form.carParkSelections[i]?.carPlate || ""} onChange={e => updateCarParkSelection(i, "carPlate", e.target.value)} />
+                          </div>
                         </div>
-                      ) : (
-                        <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
-                          <span className="text-muted-foreground">Choose File</span>
-                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (file) setUploadedFiles(prev => ({ ...prev, [key]: file }));
-                            e.target.value = "";
-                          }} />
-                        </label>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        {selectedCp && (
+                          <div className="text-xs text-muted-foreground">Monthly Rental: RM{selectedCp.rent}</div>
+                        )}
+                      </div>
+                    );
+                  })}
 
-              {/* 7. Move-in Cost — Bill style */}
-              {selectedRoom && (
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  {sectionTitle("💰", "Move-in Cost")}
-                  <div className="bg-background rounded-lg border divide-y divide-border">
-                    <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
-                      <span>Description</span>
-                      <span className="text-right">Amount (RM)</span>
+                  {chargeableCarpark.length > 0 && Number(form.parkingCount) > 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm space-y-1">
+                      <div className="font-semibold text-amber-700">Chargeable Car Park Access (Homejoy)</div>
+                      {chargeableCarpark.map((a, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span>{a.access_type} — {a.chargeable_type === "deposit" ? "Deposit" : "Fee"}</span>
+                          <span>RM{a.price} × {form.parkingCount} = <strong>RM{a.price * (Number(form.parkingCount) || 0)}</strong></span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                      <span>1 Month Advance Rental</span>
-                      <span className="text-right font-medium">{exactRental.toLocaleString()}</span>
-                    </div>
-                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                      <span>Rental Deposit (×{depMul})</span>
-                      <span className="text-right font-medium">{deposit.toLocaleString()}</span>
-                    </div>
-                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                      <span>Admin Fee</span>
-                      <span className="text-right font-medium">{adminFee.toLocaleString()}</span>
-                    </div>
-                    {accessFeesBreakdown.map((f, i) => (
-                      <div key={`access-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                        <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
-                        <span className="text-right font-medium">{f.total.toLocaleString()}</span>
-                      </div>
-                    ))}
-                    {carparkFeesBreakdown.map((f, i) => (
-                      <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                        <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
-                        <span className="text-right font-medium">{f.total.toLocaleString()}</span>
-                      </div>
-                    ))}
-                    {carparkRentalTotal > 0 && (
-                      <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                        <span>1 Month Advance Car Park Rental</span>
-                        <span className="text-right font-medium">{carparkRentalTotal.toLocaleString()}</span>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
-                      <span className="font-bold">Total Move-in Cost</span>
-                      <span className="text-right font-bold text-lg">RM {grandTotal.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
+            </div>
+          )}
 
-              {/* Submit buttons */}
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={handleClose}>Cancel</Button>
-                <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Submitting..." : "Create Booking"}</Button>
+          {/* 4. Tenant Details */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("👤", "Tenant Details")}
+
+            <div className="space-y-1">
+              <label className={lbl}>Link Existing Tenant (optional)</label>
+              <SearchableSelect
+                options={tenantOptions}
+                value={selectedTenantId || ""}
+                onChange={v => { if (v) handleLinkTenant(v); else handleUnlinkTenant(); }}
+                placeholder="— Select Existing Tenant —"
+                searchPlaceholder="Search by name, phone, email, IC..."
+              />
+            </div>
+
+            {isLinkedTenant && (
+              <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">
+                <span className="font-semibold">Linked:</span> {form.tenantName}
+                <button type="button" className="ml-auto text-xs underline hover:no-underline" onClick={handleUnlinkTenant}>Unlink</button>
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
+              <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
+              <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
+              <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
+              <div className="space-y-1"><label className={lbl}>Gender *</label>
+                <select className={`${ic} w-full`} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
+                  <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
+                </select>
+              </div>
+              <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
+              <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
+            </div>
+
+            {form.gender === "Couple" && (
+              <div className="mt-3 p-3 border border-dashed border-primary/30 rounded-lg space-y-3">
+                <div className="text-sm font-bold flex items-center gap-2">👥 Second Tenant Details</div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="space-y-1"><label className={lbl}>Full Name</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenant2Name} onChange={e => set("tenant2Name", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.tenant2IcPassport} onChange={e => set("tenant2IcPassport", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.tenant2Email} onChange={e => set("tenant2Email", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Contact No</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.tenant2Phone} onChange={e => set("tenant2Phone", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.tenant2Nationality} onChange={e => set("tenant2Nationality", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.tenant2Occupation} onChange={e => set("tenant2Occupation", e.target.value)} /></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 5. Emergency Contacts */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("🚨", "Emergency Contacts")}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 1 *</div>
+                <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 2 *</div>
+                <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
               </div>
             </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+          </div>
 
-      {/* Discard confirm */}
-      <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to cancel? Your unsaved changes will be lost.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { onOpenChange(false); setShowDiscardConfirm(false); resetForm(); }}>Discard</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          {/* 6. Documents */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("📎", "Documents")}
+            {([
+              { key: "passport" as const, label: "Passport / IC" },
+              { key: "offerLetter" as const, label: "Offer Letter" },
+              { key: "transferSlip" as const, label: "Transfer Slip" },
+            ]).map(({ key, label }) => {
+              const fileName = getDocDisplay(key);
+              const hasFile = docHasFile(key);
+              return (
+                <div key={key} className="space-y-1">
+                  <label className={lbl}>{label}</label>
+                  {hasFile ? (
+                    <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                      <span className="text-sm flex-1 truncate">{fileName}</span>
+                      <button type="button" onClick={() => setDocRemoveConfirm(key)}
+                        className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                      <span className="text-muted-foreground">Choose File</span>
+                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) setUploadedFiles(prev => ({ ...prev, [key]: file }));
+                        e.target.value = "";
+                      }} />
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 7. Move-in Cost */}
+          {selectedRoom && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              {sectionTitle("💰", "Move-in Cost")}
+              <div className="bg-background rounded-lg border divide-y divide-border">
+                <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+                  <span>Description</span>
+                  <span className="text-right">Amount (RM)</span>
+                </div>
+                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                  <span>1 Month Advance Rental</span>
+                  <span className="text-right font-medium">{exactRental.toLocaleString()}</span>
+                </div>
+                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                  <span>Rental Deposit (×{depMul})</span>
+                  <span className="text-right font-medium">{deposit.toLocaleString()}</span>
+                </div>
+                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                  <span>Admin Fee</span>
+                  <span className="text-right font-medium">{adminFee.toLocaleString()}</span>
+                </div>
+                {accessFeesBreakdown.map((f, i) => (
+                  <div key={`access-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                    <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+                    <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+                  </div>
+                ))}
+                {carparkFeesBreakdown.map((f, i) => (
+                  <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                    <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+                    <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+                  </div>
+                ))}
+                {carparkRentalTotal > 0 && (
+                  <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                    <span>1 Month Advance Car Park Rental</span>
+                    <span className="text-right font-medium">{carparkRentalTotal.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
+                  <span className="font-bold">Total Move-in Cost</span>
+                  <span className="text-right font-bold text-lg">RM {grandTotal.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </StandardModal>
 
       {/* Document remove confirmation */}
-      <AlertDialog open={!!docRemoveConfirm} onOpenChange={(open) => { if (!open) setDocRemoveConfirm(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove file?</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to remove this file? You can upload a new one after removing.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep File</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}>Remove</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!docRemoveConfirm}
+        onOpenChange={(open) => { if (!open) setDocRemoveConfirm(null); }}
+        title="Remove file?"
+        description="Are you sure you want to remove this file? You can upload a new one after removing."
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}
+      />
     </>
   );
 }

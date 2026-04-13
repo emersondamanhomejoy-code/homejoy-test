@@ -6,23 +6,15 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, X, Pencil, Trash2, Eye } from "lucide-react";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
+import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { StandardTable } from "@/components/ui/standard-table";
+import { ActionButtons } from "@/components/ui/action-buttons";
+import { labelClass } from "@/lib/ui-constants";
 
 interface UnitsTableViewProps {
   units: Unit[];
@@ -46,7 +38,7 @@ export function UnitsTableView({
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedUnitType, setSelectedUnitType] = useState<string>("all");
   const [pageSize, setPageSize] = useState<number>(10);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useState<number>(0);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
 
@@ -63,7 +55,6 @@ export function UnitsTableView({
     return Array.from(set).sort();
   }, [units, selectedLocations]);
 
-  // Flatten units → rooms for table display
   const allRows = useMemo(() => {
     let list = units;
     if (selectedLocations.length) list = list.filter(u => selectedLocations.includes(u.location));
@@ -84,11 +75,10 @@ export function UnitsTableView({
     });
   }, [units, selectedLocations, selectedBuildings, selectedUnitType, sort]);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedLocations, selectedBuildings, selectedUnitType, pageSize]);
+  useEffect(() => { setCurrentPage(0); }, [selectedLocations, selectedBuildings, selectedUnitType, pageSize]);
 
-  const totalPages = Math.max(1, Math.ceil(allRows.length / pageSize));
   const paginatedUnits = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
+    const start = currentPage * pageSize;
     return allRows.slice(start, start + pageSize);
   }, [allRows, currentPage, pageSize]);
 
@@ -132,7 +122,7 @@ export function UnitsTableView({
             className="min-w-[200px]"
           />
           <div className="space-y-1.5 min-w-[160px]">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unit Type</label>
+            <label className={labelClass}>Unit Type</label>
             <Select onValueChange={setSelectedUnitType} value={selectedUnitType}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -168,134 +158,91 @@ export function UnitsTableView({
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-          <h3 className="font-semibold text-foreground">
-            Units & Rooms <span className="text-muted-foreground font-normal text-sm ml-2">({allRows.length} units)</span>
-          </h3>
-          <Button onClick={openCreateRoom2} size="sm">+ Add Unit and Rooms</Button>
-        </div>
+      <StandardTable
+        columns={
+          <TableRow className="bg-muted/30">
+            <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
+            <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
+            <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Pax</SortableTableHead>
+            <SortableTableHead sortKey="rooms" currentSort={sort} onSort={handleSort} className="text-center">Rooms</SortableTableHead>
+            <SortableTableHead sortKey="available" currentSort={sort} onSort={handleSort} className="text-center">Available</SortableTableHead>
+            <TableHead className="text-center">Action</TableHead>
+          </TableRow>
+        }
+        isEmpty={allRows.length === 0}
+        emptyMessage="No units match your filters."
+        total={allRows.length}
+        page={currentPage}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        isLoading={unitsLoading}
+        showCount
+        countLabel="units"
+      >
+        {paginatedUnits.map((unit) => {
+          const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
+          const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+          const availableCount = regularRooms.filter(r => r.status === "Available").length;
+          const availableCP = carParks.filter(r => r.status === "Available").length;
 
-        {unitsLoading ? (
-          <div className="p-12 text-center text-muted-foreground">Loading units…</div>
-        ) : allRows.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">No units match your filters.</div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                 <TableHeader>
-                   <TableRow className="bg-muted/30">
-                    <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
-                    <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
-                    <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                    <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
-                    <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Pax</SortableTableHead>
-                    <SortableTableHead sortKey="rooms" currentSort={sort} onSort={handleSort} className="text-center">Rooms</SortableTableHead>
-                    <SortableTableHead sortKey="available" currentSort={sort} onSort={handleSort} className="text-center">Available</SortableTableHead>
-                    <TableHead className="text-center">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedUnits.map((unit) => {
-                    const regularRooms = unit.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
-                    const carParks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
-                    const availableCount = regularRooms.filter(r => r.status === "Available").length;
-                    const availableCP = carParks.filter(r => r.status === "Available").length;
-
-                    return (
-                      <TableRow key={unit.id} className="hover:bg-muted/30">
-                        <TableCell className="capitalize text-muted-foreground">{unit.location || "—"}</TableCell>
-                        <TableCell className="font-medium text-foreground">{unit.building || "—"}</TableCell>
-                        <TableCell>{unit.unit}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="secondary"
-                            className={
-                              unit.unit_type?.toLowerCase().includes("female")
-                                ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
-                                : unit.unit_type?.toLowerCase().includes("male") && !unit.unit_type?.toLowerCase().includes("female")
-                                ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                : ""
-                            }
-                          >
-                            {unit.unit_type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
-                        <TableCell className="text-center">{regularRooms.length}{carParks.length > 0 && ` + ${carParks.length}🅿️`}</TableCell>
-                        <TableCell className="text-center">
-                          <span className="text-emerald-600 font-semibold">{availableCount}</span>
-                          {carParks.length > 0 && <span className="text-muted-foreground text-xs ml-1">({availableCP}🅿️)</span>}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex gap-1 justify-center">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title="View Details" onClick={() => setViewingUnit(unit)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                              setEditingUnit({
-                                id: unit.id, building: unit.building, unit: unit.unit, location: unit.location,
-                                unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax,
-                                passcode: unit.passcode || "", access_card: unit.access_card || "",
-                                parking_lot: unit.parking_lot || "",
-                                access_card_source: (unit as any).access_card_source || "Provided by Us",
-                                access_card_deposit: (unit as any).access_card_deposit || 0,
-                                access_info: typeof unit.access_info === 'string' ? unit.access_info : "",
-                                internal_only: (unit as any).internal_only || false,
-                                deposit: (unit as any).deposit || "",
-                                meter_type: (unit as any).meter_type || "Postpaid",
-                                meter_rate: (unit as any).meter_rate || 0,
-                                deposit_multiplier: (unit as any).deposit_multiplier ?? 1.5,
-                                admin_fee: (unit as any).admin_fee ?? 330,
-                                parking_type: (unit as any).parking_type || "None",
-                                parking_card_deposit: (unit as any).parking_card_deposit || 0,
-                                common_photos: (unit as any).common_photos || [],
-                              });
-                            }}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteUnit(unit.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Show</span>
-                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-                  <SelectTrigger className="w-[70px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span>per page</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Page {currentPage} of {totalPages}</span>
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+          return (
+            <TableRow key={unit.id} className="hover:bg-muted/30">
+              <TableCell className="capitalize text-muted-foreground">{unit.location || "—"}</TableCell>
+              <TableCell className="font-medium text-foreground">{unit.building || "—"}</TableCell>
+              <TableCell>{unit.unit}</TableCell>
+              <TableCell>
+                <Badge
+                  variant="secondary"
+                  className={
+                    unit.unit_type?.toLowerCase().includes("female")
+                      ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
+                      : unit.unit_type?.toLowerCase().includes("male") && !unit.unit_type?.toLowerCase().includes("female")
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      : ""
+                  }
+                >
+                  {unit.unit_type}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
+              <TableCell className="text-center">{regularRooms.length}{carParks.length > 0 && ` + ${carParks.length}🅿️`}</TableCell>
+              <TableCell className="text-center">
+                <span className="text-emerald-600 font-semibold">{availableCount}</span>
+                {carParks.length > 0 && <span className="text-muted-foreground text-xs ml-1">({availableCP}🅿️)</span>}
+              </TableCell>
+              <TableCell className="text-center">
+                <ActionButtons actions={[
+                  { type: "view", onClick: () => setViewingUnit(unit) },
+                  { type: "edit", onClick: () => {
+                    setEditingUnit({
+                      id: unit.id, building: unit.building, unit: unit.unit, location: unit.location,
+                      unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax,
+                      passcode: unit.passcode || "", access_card: unit.access_card || "",
+                      parking_lot: unit.parking_lot || "",
+                      access_card_source: (unit as any).access_card_source || "Provided by Us",
+                      access_card_deposit: (unit as any).access_card_deposit || 0,
+                      access_info: typeof unit.access_info === 'string' ? unit.access_info : "",
+                      internal_only: (unit as any).internal_only || false,
+                      deposit: (unit as any).deposit || "",
+                      meter_type: (unit as any).meter_type || "Postpaid",
+                      meter_rate: (unit as any).meter_rate || 0,
+                      deposit_multiplier: (unit as any).deposit_multiplier ?? 1.5,
+                      admin_fee: (unit as any).admin_fee ?? 330,
+                      parking_type: (unit as any).parking_type || "None",
+                      parking_card_deposit: (unit as any).parking_card_deposit || 0,
+                      common_photos: (unit as any).common_photos || [],
+                    });
+                  }},
+                  { type: "delete", onClick: () => handleDeleteUnit(unit.id) },
+                ]} />
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </StandardTable>
 
       {/* View Details Dialog */}
       <Dialog open={!!viewingUnit} onOpenChange={(open) => { if (!open) setViewingUnit(null); }}>
@@ -306,7 +253,6 @@ export function UnitsTableView({
           <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0 space-y-5 pb-4">
             {viewingUnit && (
               <>
-                {/* Common Area Photos */}
                 <div>
                   <div className="text-sm font-semibold mb-2">🏠 Common Area Photos</div>
                   {((viewingUnit as any).common_photos as string[] || []).length === 0 ? (
@@ -330,7 +276,6 @@ export function UnitsTableView({
                   )}
                 </div>
 
-                {/* Unit Info */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><span className="text-muted-foreground">Location:</span> {viewingUnit.location}</div>
                   <div><span className="text-muted-foreground">Building:</span> {viewingUnit.building}</div>
@@ -345,7 +290,6 @@ export function UnitsTableView({
                   {(viewingUnit as any).internal_only && <div className="col-span-2"><Badge variant="secondary" className="bg-primary/20 text-primary">🔒 Internal Only</Badge></div>}
                 </div>
 
-                {/* Rooms summary */}
                 <div>
                   <div className="text-sm font-semibold mb-2">Rooms ({viewingUnit.rooms?.length || 0})</div>
                   <div className="space-y-1 text-sm">
