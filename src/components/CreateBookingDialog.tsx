@@ -101,7 +101,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const availableRooms = useMemo(() => roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available"), [roomsData]);
   const roomOptions = useMemo(() => availableRooms.map(r => ({
     value: r.id,
-    label: `${r.building} · ${r.unit} · ${r.room}`,
+    label: `${r.building} · ${r.unit} · ${r.room}${(r as any).room_title ? ` — ${(r as any).room_title}` : ""}`,
     sublabel: `RM${r.rent}/mo · ${r.room_type}`,
   })), [availableRooms]);
 
@@ -415,7 +415,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
             </div>
             {selectedRoom && (
               <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
-                <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}</div>
+                <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}{(selectedRoom as any).room_title ? ` — ${(selectedRoom as any).room_title}` : ""}</div>
                 <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
               </div>
             )}

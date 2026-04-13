@@ -257,11 +257,9 @@ export default function Rooms() {
                             <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
                             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                             <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
-                            <SortableTableHead sortKey="room_type" currentSort={sort} onSort={handleSort}>Room Type</SortableTableHead>
-                            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
+                            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
+                            <TableHead>Room Title</TableHead>
                             <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Rent (RM)</SortableTableHead>
-                            <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Pax</SortableTableHead>
                             <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                             <TableHead className="text-center">Action</TableHead>
                           </TableRow>
@@ -275,23 +273,8 @@ export default function Rooms() {
                               <TableCell>
                                 <Badge variant="outline" className="font-mono">{room.room}</Badge>
                               </TableCell>
-                              <TableCell>{room.room_type || room.bed_type || "—"}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="secondary"
-                                  className={
-                                    room.unit_type?.toLowerCase().includes("female")
-                                      ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
-                                      : room.unit_type?.toLowerCase().includes("male") && !room.unit_type?.toLowerCase().includes("female")
-                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                      : ""
-                                  }
-                                >
-                                  {room.unit_type}
-                                </Badge>
-                              </TableCell>
+                              <TableCell className="font-medium">{(room as any).room_title || "—"}</TableCell>
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
-                              <TableCell className="text-center">{room.max_pax}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
                                 <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
