@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { MoveInPage } from "@/components/MoveInPage";
-import { ClaimsPage } from "@/components/ClaimsPage";
 import { UsersPage } from "@/components/UsersPage";
 import { ActivityLogPage } from "@/components/ActivityLogPage";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
-import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
 import { logActivity } from "@/hooks/useActivityLog";
 import { useCondos } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
@@ -127,7 +125,7 @@ const emptyUnit = {
 };
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "bookings" | "movein" | "claims" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "movein" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
@@ -179,135 +177,6 @@ export function AdminContent({ tab }: AdminContentProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // Claims state
-  const { data: allClaims = [] } = useClaims();
-  const updateClaimStatus = useUpdateClaimStatus();
-  const [claimRejectReason, setClaimRejectReason] = useState("");
-
-  // Commission report state
-  const [reportMonth, setReportMonth] = useState(new Date().getMonth());
-  const [reportYear, setReportYear] = useState(new Date().getFullYear());
-  const [showReport, setShowReport] = useState(false);
-  const [generatingClaims, setGeneratingClaims] = useState(false);
-
-  interface CommissionLine {
-    agentId: string;
-    agentEmail: string;
-    agentName: string;
-    bookings: Booking[];
-    commissionPerBooking: number[];
-    totalCommission: number;
-    commissionType: string;
-    bankName: string;
-    bankAccount: string;
-    accountHolder: string;
-  }
-
-  const calculateAgentCommission = (booking: Booking, agentConfig: { commission_type: string; commission_config: CommissionConfig | null }, monthlyDeals: number): number => {
-    const rent = (booking as any).monthly_salary || (booking.room as any)?.rent || 0;
-    const duration = booking.contract_months || 12;
-    const durationMultiplier = duration / 12;
-    const config = agentConfig.commission_config;
-
-    let base = 0;
-    if (agentConfig.commission_type === "external") {
-      const pct = config?.percentage ?? 100;
-      base = Math.round(Number(rent) * pct / 100);
-    } else if (agentConfig.commission_type === "internal_full") {
-      const tiers = config?.tiers || [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }];
-      const tier = tiers.find(t => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
-      const pct = tier?.percentage ?? 70;
-      base = Math.round(Number(rent) * pct / 100);
-    } else {
-      const tiers = config?.tiers || [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }];
-      const tier = tiers.find(t => monthlyDeals >= t.min && (t.max === null || monthlyDeals <= t.max));
-      base = tier?.amount ?? 200;
-    }
-    return Math.round(base * durationMultiplier);
-  };
-
-  const generateReport = (): CommissionLine[] => {
-    const monthStart = new Date(reportYear, reportMonth, 1);
-    const monthEnd = new Date(reportYear, reportMonth + 1, 0, 23, 59, 59);
-    const monthBookings = allBookings.filter(b =>
-      b.status === "approved" &&
-      new Date(b.reviewed_at || b.created_at) >= monthStart &&
-      new Date(b.reviewed_at || b.created_at) <= monthEnd
-    );
-    const agentGroups: Record<string, Booking[]> = {};
-    for (const b of monthBookings) {
-      const agentId = b.submitted_by || "";
-      if (!agentId) continue;
-      if (!agentGroups[agentId]) agentGroups[agentId] = [];
-      agentGroups[agentId].push(b);
-    }
-    const lines: CommissionLine[] = [];
-    for (const [agentId, bookings] of Object.entries(agentGroups)) {
-      const agentUser = users.find(u => u.id === agentId);
-      const agentConfig = {
-        commission_type: agentUser?.commission_type || "internal_basic",
-        commission_config: agentUser?.commission_config || defaultConfigs.internal_basic,
-      };
-      const monthlyDeals = bookings.length;
-      const commissionPerBooking = bookings.map(b => calculateAgentCommission(b, agentConfig, monthlyDeals));
-      const totalCommission = commissionPerBooking.reduce((s, c) => s + c, 0);
-      lines.push({
-        agentId,
-        agentEmail: agentUser?.email || agentId.slice(0, 8),
-        agentName: agentUser?.name || agentUser?.email || agentId.slice(0, 8),
-        bookings,
-        commissionPerBooking,
-        totalCommission,
-        commissionType: agentConfig.commission_type,
-        bankName: "",
-        bankAccount: "",
-        accountHolder: "",
-      });
-    }
-    return lines.sort((a, b) => b.totalCommission - a.totalCommission);
-  };
-
-  const generateClaimsForReport = async (lines: CommissionLine[]) => {
-    if (!user) return;
-    setGeneratingClaims(true);
-    try {
-      const existingClaimBookingIds = new Set(allClaims.map(c => c.booking_id).filter(Boolean));
-      let created = 0;
-      for (const line of lines) {
-        const newBookings = line.bookings.filter(b => !existingClaimBookingIds.has(b.id));
-        if (newBookings.length === 0) continue;
-        const newCommissions = newBookings.map((b) => {
-          const idx = line.bookings.indexOf(b);
-          return line.commissionPerBooking[idx];
-        });
-        const totalAmount = newCommissions.reduce((s, c) => s + c, 0);
-        const desc = newBookings.map(b => `${b.room?.building || ""} ${b.room?.unit || ""} ${b.room?.room || ""} (${b.tenant_name})`).join(", ");
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        await supabase.from("claims").insert({
-          agent_id: line.agentId,
-          booking_id: newBookings.length === 1 ? newBookings[0].id : null,
-          amount: totalAmount,
-          description: `Commission ${monthNames[reportMonth]} ${reportYear} — ${desc}`,
-          bank_name: "",
-          bank_account: "",
-          account_holder: "",
-        });
-        created++;
-      }
-      await logActivity("generate_commission_report", "claims", "", {
-        month: reportMonth + 1,
-        year: reportYear,
-        agents: lines.length,
-        claims_created: created,
-      });
-      alert(`✅ ${created} commission claim(s) generated!`);
-      window.location.reload();
-    } catch (e: any) {
-      alert(e.message || "Failed to generate claims");
-    } finally {
-      setGeneratingClaims(false);
-    }
-  };
 
   useEffect(() => {
     if (user) fetchUsers();
@@ -1461,9 +1330,6 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* MOVE IN TAB */}
       {tab === "movein" && <MoveInPage />}
-
-      {/* CLAIMS TAB */}
-      {tab === "claims" && <ClaimsPage />}
 
       {/* USERS TAB */}
       {tab === "users" && <UsersPage />}

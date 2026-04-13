@@ -3,9 +3,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
-import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { AgentBookingsContent } from "@/components/AgentBookingsContent";
+import { MyDealsContent } from "@/components/MyDealsContent";
+import { AgentMoveInsContent } from "@/components/AgentMoveInsContent";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
@@ -55,10 +56,8 @@ export default function Index() {
   const location = useLocation();
   const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
   const { data: unitsData = [] } = useUnits();
-  const { data: claimsData = [] } = useClaims();
   const { data: agentBookings = [] } = useBookings("approved");
   const { data: allBookings = [] } = useBookings();
-  const createClaim = useCreateClaim();
   const [page, setPage] = useState(() => {
     const navState = location.state as { page?: string } | null;
     return navState?.page || "dashboard";
@@ -90,9 +89,6 @@ export default function Index() {
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
-  const [claimForm, setClaimForm] = useState({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
-  const [selectedClaimBookings, setSelectedClaimBookings] = useState<string[]>([]);
-  const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
   const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
   const [agentCommissionConfig, setAgentCommissionConfig] = useState<any>(null);
@@ -446,6 +442,9 @@ export default function Index() {
         },
       });
       if (dbErr) throw dbErr;
+
+      // Change room status to Pending
+      await supabase.from("rooms").update({ status: "Pending" }).eq("id", selectedRoom.id);
 
       // Mark selected car parks as Reserved immediately
       if (bookingForm.selectedCarParks && bookingForm.selectedCarParks.length > 0) {
@@ -944,166 +943,46 @@ export default function Index() {
     );
   }
 
-  // ─── CLAIMS PAGE ───
-  if (page === "claims") {
-    const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
-    const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
-    const pendingClaims = claimsData.filter(c => c.status === "pending");
-    const approvedClaims = claimsData.filter(c => c.status === "approved");
-    const rejectedClaims = claimsData.filter(c => c.status === "rejected");
-    const totalPending = pendingClaims.reduce((s, c) => s + Number(c.amount), 0);
-    const totalApproved = approvedClaims.reduce((s, c) => s + Number(c.amount), 0);
-
-    const submitClaim = async () => {
-      if (!user) return;
-      if (selectedClaimBookings.length === 0) { alert("Please select at least one booking."); return; }
-      if (!claimForm.amount || !claimForm.description) { alert("Please fill in amount and description."); return; }
-      try {
-        await createClaim.mutateAsync({
-          agent_id: user.id,
-          booking_id: selectedClaimBookings.length === 1 ? selectedClaimBookings[0] : null,
-          amount: Number(claimForm.amount),
-          description: claimForm.description,
-          bank_name: claimForm.bankName,
-          bank_account: claimForm.bankAccount,
-          account_holder: claimForm.accountHolder,
-        });
-        setClaimForm({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
-        setSelectedClaimBookings([]);
-        setClaimTab("pending");
-      } catch (e: any) {
-        alert(e.message || "Failed to submit claim");
-      }
-    };
-
-    // Filter approved bookings submitted by this agent that don't already have a claim
-    const claimedBookingIds = new Set(claimsData.map(c => c.booking_id).filter(Boolean));
-    const availableBookings = agentBookings.filter(b => b.submitted_by === user?.id && !claimedBookingIds.has(b.id));
-
-    const renderClaimList = (claims: Claim[]) => {
-      if (claims.length === 0) return <div className="text-center py-8 text-muted-foreground">No claims</div>;
-      return (
-        <div className="space-y-3">
-          {claims.map(c => {
-            const linkedBooking = agentBookings.find(b => b.id === c.booking_id);
-            return (
-              <div key={c.id} className="rounded-lg border bg-card p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold text-lg">RM{Number(c.amount).toLocaleString()}</div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : c.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{c.status.toUpperCase()}</span>
-                </div>
-                {linkedBooking && (
-                  <div className="text-xs bg-secondary rounded-lg px-3 py-2 text-muted-foreground">
-                    📋 {linkedBooking.room?.building} {linkedBooking.room?.unit} {linkedBooking.room?.room} — {linkedBooking.tenant_name}
-                  </div>
-                )}
-                <div className="text-sm text-muted-foreground">{c.description}</div>
-                {c.bank_name && <div className="text-xs text-muted-foreground">Bank: {c.bank_name} · {c.bank_account} · {c.account_holder}</div>}
-                {c.reject_reason && <div className="text-xs text-destructive">Reason: {c.reject_reason}</div>}
-                <div className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    };
-
+  // ─── MY DEALS PAGE ───
+  if (page === "myDeals") {
     return (
       <OldDashboardLayout>
         <div className="flex-1 p-6 overflow-auto text-foreground">
-        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
-          <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
-          <div className="text-3xl font-extrabold tracking-tight">💰 Claims</div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-card rounded-lg shadow-sm p-5 text-center">
-              <div className="text-2xl font-extrabold text-yellow-600">RM{totalPending.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground mt-1">Pending</div>
-            </div>
-            <div className="bg-card rounded-lg shadow-sm p-5 text-center">
-              <div className="text-2xl font-extrabold text-green-600">RM{totalApproved.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground mt-1">Approved</div>
-            </div>
-            <div className="bg-card rounded-lg shadow-sm p-5 text-center">
-              <div className="text-2xl font-extrabold">{claimsData.length}</div>
-              <div className="text-xs text-muted-foreground mt-1">Total Claims</div>
-            </div>
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+            <MyDealsContent />
           </div>
-          <div className="flex gap-2">
-            {(["new", "pending", "approved", "rejected"] as const).map(t => (
-              <button key={t} onClick={() => setClaimTab(t)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${claimTab === t ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:opacity-80"}`}>
-                {t === "new" ? "+ New Claim" : `${t.charAt(0).toUpperCase() + t.slice(1)} (${t === "pending" ? pendingClaims.length : t === "approved" ? approvedClaims.length : rejectedClaims.length})`}
-              </button>
-            ))}
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
+  // ─── MY MOVE-INS PAGE ───
+  if (page === "myMoveIns") {
+    return (
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+            <AgentMoveInsContent />
           </div>
-          {claimTab === "new" && (
-            <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
-              <div className="text-lg font-bold">Submit New Claim</div>
-              {/* Booking selector */}
-              <div className="space-y-1">
-                <label className={lbl}>Select Bookings (Approved) *</label>
-                <div className="text-xs text-muted-foreground mb-1">Your commission tier: <span className="font-semibold">{commissionLabel}</span></div>
-                {availableBookings.length === 0 ? (
-                  <div className="text-sm text-muted-foreground bg-secondary rounded-lg p-4">No approved bookings available for claim. Claims can only be submitted for approved bookings that haven't been claimed yet.</div>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3 bg-secondary/30">
-                    {availableBookings.length > 1 && (
-                      <label className="flex items-center gap-2 pb-2 border-b border-border text-sm cursor-pointer">
-                        <input type="checkbox" checked={selectedClaimBookings.length === availableBookings.length} onChange={e => {
-                          if (e.target.checked) {
-                            const allIds = availableBookings.map(b => b.id);
-                            setSelectedClaimBookings(allIds);
-                            const totalAmount = availableBookings.reduce((s, b) => s + calculateCommission(b), 0);
-                            const desc = availableBookings.map(b => `${b.room?.building || ""} ${b.room?.unit || ""} ${b.room?.room || ""} (${b.tenant_name})`).join(", ");
-                            setClaimForm({ ...claimForm, amount: String(totalAmount), description: `Commission - ${desc}` });
-                          } else {
-                            setSelectedClaimBookings([]);
-                            setClaimForm({ ...claimForm, amount: "", description: "" });
-                          }
-                        }} className="w-4 h-4 rounded" />
-                        <span className="font-medium">Select All ({availableBookings.length})</span>
-                      </label>
-                    )}
-                    {availableBookings.map(b => {
-                      const isChecked = selectedClaimBookings.includes(b.id);
-                      return (
-                        <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-secondary/50 rounded p-1 transition-colors">
-                          <input type="checkbox" checked={isChecked} onChange={() => {
-                            const next = isChecked ? selectedClaimBookings.filter(id => id !== b.id) : [...selectedClaimBookings, b.id];
-                            setSelectedClaimBookings(next);
-                            const selectedBookings = availableBookings.filter(ab => next.includes(ab.id));
-                            const totalAmount = selectedBookings.reduce((s, sb) => s + calculateCommission(sb), 0);
-                            const desc = selectedBookings.map(sb => `${sb.room?.building || ""} ${sb.room?.unit || ""} ${sb.room?.room || ""} (${sb.tenant_name})`).join(", ");
-                            setClaimForm({ ...claimForm, amount: totalAmount ? String(totalAmount) : "", description: selectedBookings.length ? `Commission - ${desc}` : "" });
-                          }} className="w-4 h-4 rounded" />
-                          <span>{b.room?.building} {b.room?.unit} {b.room?.room} — {b.tenant_name} ({new Date(b.move_in_date).toLocaleDateString()}) · <span className="font-semibold text-primary">RM{calculateCommission(b)}</span></span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-                {selectedClaimBookings.length > 0 && (
-                  <div className="text-sm font-medium text-primary mt-1">
-                    {selectedClaimBookings.length} booking(s) selected · Total: RM{claimForm.amount}
-                  </div>
-                )}
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className={lbl}>Amount (RM) *</label><input className={ic} type="number" placeholder="e.g. 500" value={claimForm.amount} onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })} /></div>
-                <div className="space-y-1"><label className={lbl}>Description *</label><input className={ic} placeholder="e.g. Commission for Casa Tiara A-17-8" value={claimForm.description} onChange={e => setClaimForm({ ...claimForm, description: e.target.value })} /></div>
-                <div className="space-y-1"><label className={lbl}>Bank Name</label><input className={ic} placeholder="e.g. Maybank" value={claimForm.bankName} onChange={e => setClaimForm({ ...claimForm, bankName: e.target.value })} /></div>
-                <div className="space-y-1"><label className={lbl}>Account No</label><input className={ic} placeholder="Bank account number" value={claimForm.bankAccount} onChange={e => setClaimForm({ ...claimForm, bankAccount: e.target.value })} /></div>
-                <div className="space-y-1"><label className={lbl}>Account Holder</label><input className={ic} placeholder="Account holder name" value={claimForm.accountHolder} onChange={e => setClaimForm({ ...claimForm, accountHolder: e.target.value })} /></div>
-              </div>
-              <div className="flex justify-end">
-                <button onClick={submitClaim} disabled={createClaim.isPending || selectedClaimBookings.length === 0} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {createClaim.isPending ? "Submitting..." : `Submit Claim (${selectedClaimBookings.length} booking${selectedClaimBookings.length > 1 ? "s" : ""})`}
-                </button>
-              </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
+  // ─── MY ACCOUNT PAGE ───
+  if (page === "myAccount") {
+    return (
+      <OldDashboardLayout>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
+            <div className="text-xl font-bold">My Account</div>
+            <div className="bg-card rounded-lg border p-6 space-y-3">
+              <div className="text-sm"><span className="text-muted-foreground">Email:</span> <span className="font-medium">{user?.email}</span></div>
+              <div className="text-sm"><span className="text-muted-foreground">Role:</span> <span className="font-medium capitalize">{role}</span></div>
             </div>
-          )}
-          {claimTab === "pending" && renderClaimList(pendingClaims)}
-          {claimTab === "approved" && renderClaimList(approvedClaims)}
-          {claimTab === "rejected" && renderClaimList(rejectedClaims)}
           </div>
         </div>
       </OldDashboardLayout>
