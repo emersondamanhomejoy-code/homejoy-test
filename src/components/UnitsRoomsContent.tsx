@@ -70,12 +70,14 @@ export function UnitsRoomsContent() {
     return sortData(list, (u: Unit, key: string) => {
       const rooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
       const carparks = u.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+      const occupiedPax = rooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
       const map: Record<string, any> = {
         location: u.location,
         building: u.building,
         unit: u.unit,
         unit_type: u.unit_type,
         max_pax: u.unit_max_pax,
+        remaining_pax: u.unit_max_pax - occupiedPax,
         remaining_rooms: rooms.filter(r => r.status === "Available").length,
         remaining_carparks: carparks.filter(r => r.status === "Available").length,
       };
@@ -131,7 +133,7 @@ export function UnitsRoomsContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Units & Rooms</h2>
+        <h2 className="text-2xl font-bold text-foreground">Units</h2>
         <Button onClick={() => setAddUnitOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Add Unit
         </Button>
@@ -183,9 +185,10 @@ export function UnitsRoomsContent() {
           <TableRow className="bg-muted/30">
             <TableHead className="w-10" />
             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
-            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit Number</SortableTableHead>
-            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
+            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Type</SortableTableHead>
             <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Occupants</SortableTableHead>
+            <SortableTableHead sortKey="remaining_pax" currentSort={sort} onSort={handleSort} className="text-center">Remaining Pax</SortableTableHead>
             <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Remaining Rooms</SortableTableHead>
             <SortableTableHead sortKey="remaining_carparks" currentSort={sort} onSort={handleSort} className="text-center">Remaining Carparks</SortableTableHead>
             <TableHead className="text-center">Actions</TableHead>
@@ -207,6 +210,8 @@ export function UnitsRoomsContent() {
           const carparks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
           const availableRooms = rooms.filter(r => r.status === "Available").length;
           const availableCarparks = carparks.filter(r => r.status === "Available").length;
+          const occupiedPax = rooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
+          const remainingPax = unit.unit_max_pax - occupiedPax;
           const isExpanded = expandedRows.has(unit.id);
 
           return (
@@ -232,6 +237,9 @@ export function UnitsRoomsContent() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
+                <TableCell className="text-center">
+                  <span className={remainingPax > 0 ? "text-emerald-600 font-semibold" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive font-semibold"}>{remainingPax}</span>
+                </TableCell>
                 <TableCell className="text-center">
                   <span className={availableRooms > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{availableRooms}</span>
                   <span className="text-muted-foreground">/{rooms.length}</span>
@@ -365,38 +373,90 @@ export function UnitsRoomsContent() {
           <DialogHeader>
             <DialogTitle>Unit Details — {viewingUnit?.building} · {viewingUnit?.unit}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0 space-y-5 pb-4">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0 space-y-6 pb-4">
             {viewingUnit && (() => {
               const unitRooms = (viewingUnit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
               const unitCarparks = (viewingUnit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
               const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+              const occupiedPax = unitRooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
+              const remainingPax = viewingUnit.unit_max_pax - occupiedPax;
+              const occupiedCarparks = unitCarparks.filter(r => r.status === "Occupied").length;
+
               return (
                 <>
-                  {((viewingUnit as any).common_photos || []).length > 0 && (
-                    <div className="flex flex-wrap gap-3">
-                      {((viewingUnit as any).common_photos as string[]).map((path: string, i: number) => (
-                        <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                      ))}
+                  {/* Building Summary */}
+                  <section>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Building Summary</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{viewingUnit.building}</span></div>
+                      <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{viewingUnit.location}</span></div>
                     </div>
-                  )}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                    <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{viewingUnit.location}</span></div>
-                    <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{viewingUnit.building}</span></div>
-                    <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{viewingUnit.unit}</span></div>
-                    <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{viewingUnit.unit_type}</span></div>
-                    <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{viewingUnit.unit_max_pax}</span></div>
-                    <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{(viewingUnit as any).deposit_multiplier} months</span></div>
-                    <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{(viewingUnit as any).admin_fee}</span></div>
-                    <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(viewingUnit as any).meter_type} · RM{(viewingUnit as any).meter_rate}/kWh</span></div>
-                    <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{viewingUnit.passcode || "—"}</span></div>
-                    <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(viewingUnit as any).wifi_name || "—"}</span></div>
-                    <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(viewingUnit as any).wifi_password || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(viewingUnit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
-                  </div>
+                    {((viewingUnit as any).common_photos || []).length > 0 && (
+                      <div className="flex flex-wrap gap-3 mt-3">
+                        {((viewingUnit as any).common_photos as string[]).map((path: string, i: number) => (
+                          <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+                        ))}
+                      </div>
+                    )}
+                  </section>
 
+                  {/* Unit Details */}
+                  <section>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Unit Details</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{viewingUnit.unit}</span></div>
+                      <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{viewingUnit.unit_type}</span></div>
+                      <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{viewingUnit.unit_max_pax}</span></div>
+                      <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{(viewingUnit as any).deposit_multiplier} months</span></div>
+                      <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{(viewingUnit as any).admin_fee}</span></div>
+                      <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(viewingUnit as any).meter_type} · RM{(viewingUnit as any).meter_rate}/kWh</span></div>
+                      <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{viewingUnit.passcode || "—"}</span></div>
+                      <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(viewingUnit as any).wifi_name || "—"}</span></div>
+                      <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(viewingUnit as any).wifi_password || "—"}</span></div>
+                      <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(viewingUnit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
+                    </div>
+                  </section>
+
+                  {/* Occupant Summary */}
+                  <section>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Occupant Summary</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold">{occupiedPax}</div>
+                        <div className="text-xs text-muted-foreground">Current Occupied</div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold">{viewingUnit.unit_max_pax}</div>
+                        <div className="text-xs text-muted-foreground">Max Pax</div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <div className={`text-2xl font-bold ${remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "" : "text-destructive"}`}>{remainingPax}</div>
+                        <div className="text-xs text-muted-foreground">Remaining Pax</div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold">{occupiedCarparks}</div>
+                        <div className="text-xs text-muted-foreground">Occupied Carparks</div>
+                      </div>
+                    </div>
+                    {/* Housemate summary by room */}
+                    {unitRooms.filter(r => r.status === "Occupied" && r.pax_staying > 0).length > 0 && (
+                      <div className="text-sm space-y-1">
+                        <div className="text-xs font-semibold text-muted-foreground mb-1">Housemates by Room</div>
+                        {unitRooms.filter(r => r.status === "Occupied" && r.pax_staying > 0).map(r => (
+                          <div key={r.id} className="flex items-center gap-2">
+                            <span className="font-medium">{r.room}:</span>
+                            <span>{(r.housemates as string[] || []).length > 0 ? (r.housemates as string[]).join(", ") : `${r.pax_staying} pax`}</span>
+                            {r.tenant_gender && <Badge variant="outline" className="text-xs">{r.tenant_gender}</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Rooms Summary */}
                   {unitRooms.length > 0 && (
-                    <div>
-                      <div className="text-sm font-semibold mb-2">Rooms</div>
+                    <section>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Rooms Summary</h3>
                       <div className="overflow-x-auto rounded-lg border">
                         <Table>
                           <TableHeader>
@@ -409,7 +469,6 @@ export function UnitsRoomsContent() {
                               <TableHead className="text-right">Rental</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead className="text-center">Pax</TableHead>
-                              <TableHead>Nationality</TableHead>
                               <TableHead>Gender</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -427,7 +486,6 @@ export function UnitsRoomsContent() {
                                   <TableCell className="text-right">RM{room.rent}</TableCell>
                                   <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
                                   <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
-                                  <TableCell>{(room as any).tenant_nationality || "—"}</TableCell>
                                   <TableCell>{room.tenant_gender || "—"}</TableCell>
                                 </TableRow>
                               );
@@ -435,12 +493,13 @@ export function UnitsRoomsContent() {
                           </TableBody>
                         </Table>
                       </div>
-                    </div>
+                    </section>
                   )}
 
+                  {/* Carparks Summary */}
                   {unitCarparks.length > 0 && (
-                    <div>
-                      <div className="text-sm font-semibold mb-2">Carparks</div>
+                    <section>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Carparks Summary</h3>
                       <div className="overflow-x-auto rounded-lg border">
                         <Table>
                           <TableHeader>
@@ -449,6 +508,7 @@ export function UnitsRoomsContent() {
                               <TableHead>Lot</TableHead>
                               <TableHead className="text-right">Rental</TableHead>
                               <TableHead>Status</TableHead>
+                              <TableHead>Assigned To</TableHead>
                               <TableHead>Remark</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -459,13 +519,14 @@ export function UnitsRoomsContent() {
                                 <TableCell>{(cp as any).parking_lot || "—"}</TableCell>
                                 <TableCell className="text-right">RM{cp.rent}</TableCell>
                                 <TableCell><StatusBadge status={cp.status} /></TableCell>
+                                <TableCell>{(cp as any).assigned_to || "—"}</TableCell>
                                 <TableCell>{(cp as any).internal_remark || "—"}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
                         </Table>
                       </div>
-                    </div>
+                    </section>
                   )}
                 </>
               );
