@@ -40,7 +40,6 @@ export function BookingsContent() {
   const { data: roomsData = [] } = useRooms();
 
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
-  const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filters
@@ -57,8 +56,7 @@ export function BookingsContent() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  const [showCancelDialog, setShowCancelDialog] = useState<Booking | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState<Booking | null>(null);
+  // Cancel/delete removed from table — handled inside detail modal
 
   // Fetch users/agents
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -137,32 +135,7 @@ export function BookingsContent() {
     return <Badge variant="secondary" className={`font-medium border-0 text-xs ${cls}`}>{label}</Badge>;
   };
 
-  const handleCancel = async (reason?: string) => {
-    if (!user || !showCancelDialog || !reason?.trim()) { toast.error("Cancel reason is required"); return; }
-    const b = showCancelDialog;
-    const carParkIds = ((b.documents as any)?.carParkSelections || []).map((s: any) => s.roomId).filter(Boolean);
-    const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason }];
-    await updateBookingStatus.mutateAsync({
-      id: b.id, status: "cancelled", reviewed_by: user.id, reject_reason: reason,
-      room_id: b.room_id, carParkIds, history,
-      resolution_type: b.status === "approved" ? "forfeit" : "",
-    });
-    toast.success("Booking cancelled");
-    setShowCancelDialog(null);
-  };
-
-  const handleDelete = async () => {
-    if (!showDeleteDialog) return;
-    const b = showDeleteDialog;
-    if (b.room_id && b.status === "submitted") {
-      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-    }
-    await supabase.from("bookings").delete().eq("id", b.id);
-    queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    queryClient.invalidateQueries({ queryKey: ["rooms"] });
-    toast.success("Booking deleted");
-    setShowDeleteDialog(null);
-  };
+  // Cancel/delete handled inside BookingDetailView modal
 
   return (
     <StandardPageLayout title="Bookings" actionLabel="Create Booking" actionIcon={<Plus className="h-4 w-4" />} onAction={() => setShowCreateDialog(true)}>
@@ -179,39 +152,9 @@ export function BookingsContent() {
         />
       )}
 
-      {editBooking && (
-        <BookingEditView
-          booking={allBookings.find(bk => bk.id === editBooking.id) || editBooking}
-          open={!!editBooking}
-          onOpenChange={(open) => { if (!open) setEditBooking(null); }}
-        />
-      )}
+      {/* Edit booking removed — all actions inside detail modal */}
 
-      {/* Cancel Booking Dialog */}
-      <ConfirmDialog
-        open={!!showCancelDialog}
-        onOpenChange={(open) => { if (!open) setShowCancelDialog(null); }}
-        title="Cancel Booking?"
-        description={showCancelDialog?.status === "approved"
-          ? "⚠️ This is an approved booking. Cancelling will mark it as Forfeit and release all pending room/carpark holds."
-          : "⚠️ Booking fee is non-refundable once paid. Please confirm with the tenant before cancelling."}
-        confirmLabel="Cancel Booking"
-        variant="destructive"
-        onConfirm={handleCancel}
-        reasonRequired
-        reasonPlaceholder="Cancel reason (required)..."
-      />
-
-      {/* Delete Booking Dialog */}
-      <ConfirmDialog
-        open={!!showDeleteDialog}
-        onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}
-        title="Delete Booking?"
-        description="This action cannot be undone. The booking record will be permanently removed."
-        confirmLabel="Delete"
-        variant="destructive"
-        onConfirm={handleDelete}
-      />
+      {/* Cancel/Delete dialogs removed — handled inside BookingDetailView */}
 
       {/* Status tabs */}
       <div className="flex items-center gap-1 mb-3">
@@ -309,12 +252,14 @@ export function BookingsContent() {
               <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.updated_at), "dd MMM yyyy, HH:mm")}</TableCell>
               <TableCell>
                 <div className="flex gap-1 justify-center">
-                  <ActionButtons actions={[
-                    { type: "view", onClick: () => setViewBooking(b) },
-                    { type: "edit", onClick: () => setEditBooking(b), show: b.status === "submitted" || b.status === "rejected" },
-                    { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "submitted" || b.status === "approved" },
-                    { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "submitted" && b.status !== "approved" },
-                  ]} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setViewBooking(b)}
+                  >
+                    {b.status === "submitted" ? "Review" : "View"}
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
