@@ -76,7 +76,7 @@ export function ClaimsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateClaimForm>({
     agent_id: "",
-    selectedBookingIds: [],
+    selectedMoveInIds: [],
     description: "",
     bank_name: "",
     bank_account: "",
@@ -155,8 +155,8 @@ export function ClaimsPage() {
   }, [approvedBookings, createForm.agent_id, activeClaimBookingIds, activeClaimItemKeys]);
 
   const selectedCreateBookings = useMemo(
-    () => availableCreateBookings.filter((booking) => createForm.selectedBookingIds.includes(booking.id)),
-    [availableCreateBookings, createForm.selectedBookingIds],
+    () => availableCreateBookings.filter((booking) => createForm.selectedMoveInIds.includes(booking.id)),
+    [availableCreateBookings, createForm.selectedMoveInIds],
   );
 
   const calculateCommission = (booking: Booking, agentId: string) => {
@@ -215,12 +215,12 @@ export function ClaimsPage() {
 
   const toggleCreateBooking = (bookingId: string, checked: boolean) => {
     const nextIds = checked
-      ? [...createForm.selectedBookingIds, bookingId]
-      : createForm.selectedBookingIds.filter((id) => id !== bookingId);
+      ? [...createForm.selectedMoveInIds, bookingId]
+      : createForm.selectedMoveInIds.filter((id) => id !== bookingId);
     const nextBookings = availableCreateBookings.filter((booking) => nextIds.includes(booking.id));
     setCreateForm((current) => ({
       ...current,
-      selectedBookingIds: nextIds,
+      selectedMoveInIds: nextIds,
       description: buildClaimDescription(nextBookings),
     }));
   };
@@ -230,7 +230,7 @@ export function ClaimsPage() {
     const nextBookings = checked ? availableCreateBookings : [];
     setCreateForm((current) => ({
       ...current,
-      selectedBookingIds: nextIds,
+      selectedMoveInIds: nextIds,
       description: buildClaimDescription(nextBookings),
     }));
   };
@@ -358,7 +358,7 @@ export function ClaimsPage() {
   };
 
   const handleCreate = async () => {
-    if (!user || !createForm.agent_id || createForm.selectedBookingIds.length === 0) {
+    if (!user || !createForm.agent_id || createForm.selectedMoveInIds.length === 0) {
       toast.error("Please select an agent and at least one booking");
       return;
     }
@@ -407,7 +407,7 @@ export function ClaimsPage() {
       queryClient.invalidateQueries({ queryKey: ["claims"] });
       toast.success("Claim created");
       setCreateOpen(false);
-      setCreateForm({ agent_id: "", selectedBookingIds: [], description: "", bank_name: "", bank_account: "", account_holder: "" });
+      setCreateForm({ agent_id: "", selectedMoveInIds: [], description: "", bank_name: "", bank_account: "", account_holder: "" });
     } catch (error: any) {
       toast.error(error.message || "Failed to create claim");
     } finally {
@@ -624,7 +624,7 @@ export function ClaimsPage() {
                     <select
                       className={fieldClassName}
                       value={createForm.agent_id}
-                      onChange={(e) => setCreateForm({ agent_id: e.target.value, selectedBookingIds: [], description: "", bank_name: "", bank_account: "", account_holder: "" })}
+                      onChange={(e) => setCreateForm({ agent_id: e.target.value, selectedMoveInIds: [], description: "", bank_name: "", bank_account: "", account_holder: "" })}
                     >
                       <option value="">Select agent</option>
                       {agentUsers.map((agent) => (
@@ -648,7 +648,7 @@ export function ClaimsPage() {
                             <input
                               type="checkbox"
                               className="h-4 w-4 rounded"
-                              checked={createForm.selectedBookingIds.length === availableCreateBookings.length}
+                              checked={createForm.selectedMoveInIds.length === availableCreateBookings.length}
                               onChange={(e) => toggleAllCreateBookings(e.target.checked)}
                             />
                             <span className="font-medium">Select All ({availableCreateBookings.length})</span>
@@ -656,7 +656,7 @@ export function ClaimsPage() {
                         )}
                         {availableCreateBookings.map((booking) => {
                           const amount = calculateCommission(booking, createForm.agent_id);
-                          const checked = createForm.selectedBookingIds.includes(booking.id);
+                          const checked = createForm.selectedMoveInIds.includes(booking.id);
                           return (
                             <label key={booking.id} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-card p-3">
                               <input
