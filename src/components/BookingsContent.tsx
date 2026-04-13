@@ -11,9 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Eye, Pencil, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import { StandardPageLayout } from "@/components/ui/standard-page-layout";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionButtons } from "@/components/ui/action-buttons";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { BookingDetailView } from "@/components/BookingDetailView";
 import { BookingEditView } from "@/components/BookingEditView";
@@ -53,7 +56,6 @@ export function BookingsContent() {
   const [pageSize, setPageSize] = useState(10);
 
   const [showCancelDialog, setShowCancelDialog] = useState<Booking | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState<Booking | null>(null);
 
   // Fetch users/agents
@@ -126,17 +128,16 @@ export function BookingsContent() {
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${cls}`}>{status.toUpperCase()}</span>;
   };
 
-  const handleCancel = async () => {
-    if (!user || !showCancelDialog || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
+  const handleCancel = async (reason?: string) => {
+    if (!user || !showCancelDialog || !reason?.trim()) { toast.error("Cancel reason is required"); return; }
     const b = showCancelDialog;
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason });
+    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: reason });
     if (b.room_id) {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
     }
     toast.success("Booking cancelled");
     setShowCancelDialog(null);
-    setCancelReason("");
   };
 
   const handleDelete = async () => {
@@ -156,7 +157,7 @@ export function BookingsContent() {
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
   return (
-    <div className="space-y-4">
+    <StandardPageLayout title="Bookings" actionLabel="Create Booking" actionIcon={Plus} onAction={() => setShowCreateDialog(true)}>
       {/* Create Booking Dialog */}
       <CreateBookingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
 
@@ -179,43 +180,28 @@ export function BookingsContent() {
       )}
 
       {/* Cancel Booking Dialog */}
-      <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
-            <AlertDialogDescription>⚠️ Booking fee is <strong>non-refundable</strong> once paid. Please confirm with the tenant before cancelling.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="px-6 pb-2">
-            <Input placeholder="Cancel reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Booking</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!showCancelDialog}
+        onOpenChange={(open) => { if (!open) setShowCancelDialog(null); }}
+        title="Cancel Booking?"
+        description="⚠️ Booking fee is non-refundable once paid. Please confirm with the tenant before cancelling."
+        confirmLabel="Cancel Booking"
+        variant="destructive"
+        onConfirm={handleCancel}
+        reasonRequired
+        reasonPlaceholder="Cancel reason (required)..."
+      />
 
       {/* Delete Booking Dialog */}
-      <AlertDialog open={!!showDeleteDialog} onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. The booking record will be permanently removed.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Bookings</h2>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Create Booking
-        </Button>
-      </div>
+      <ConfirmDialog
+        open={!!showDeleteDialog}
+        onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}
+        title="Delete Booking?"
+        description="This action cannot be undone. The booking record will be permanently removed."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* Search + Status filter */}
       <div className="flex flex-wrap gap-3 items-center">
@@ -291,23 +277,12 @@ export function BookingsContent() {
                       <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-center">
-                          <Button variant="ghost" size="icon" onClick={() => setViewBooking(b)} title="View">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {(b.status === "pending" || b.status === "rejected") && (
-                            <Button variant="ghost" size="icon" onClick={() => setEditBooking(b)} title="Edit">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {(b.status === "pending" || b.status === "approved") ? (
-                            <Button variant="ghost" size="icon" title="Cancel" onClick={() => setShowCancelDialog(b)}>
-                              <X className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          ) : (
-                            <Button variant="ghost" size="icon" title="Delete" onClick={() => setShowDeleteDialog(b)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          )}
+                          <ActionButtons actions={[
+                            { type: "view", onClick: () => setViewBooking(b) },
+                            { type: "edit", onClick: () => setEditBooking(b), show: b.status === "pending" || b.status === "rejected" },
+                            { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "pending" || b.status === "approved" },
+                            { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "pending" && b.status !== "approved" },
+                          ]} />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -339,6 +314,6 @@ export function BookingsContent() {
           <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
-    </div>
+    </StandardPageLayout>
   );
 }
