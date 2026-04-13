@@ -48,6 +48,7 @@ interface CondoData {
   photos: string[];
   visitor_car_parking: string;
   visitor_motorcycle_parking: string;
+  access_items: any;
 }
 
 export default function PublicUnitView() {
@@ -216,12 +217,57 @@ export default function PublicUnitView() {
               {condo.gps_link && <div><span className="text-muted-foreground">GPS:</span> <a href={condo.gps_link} target="_blank" rel="noreferrer" className="text-primary underline">{condo.gps_link}</a></div>}
               {condo.amenities && <div><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{condo.amenities}</span></div>}
               {condo.parking_info && <div><span className="text-muted-foreground">Parking:</span> <span className="font-medium">{condo.parking_info}</span></div>}
-              {condo.visitor_car_parking && <div><span className="text-muted-foreground">Visitor Car Parking:</span> <span className="font-medium">{condo.visitor_car_parking}</span></div>}
-              {condo.visitor_motorcycle_parking && <div><span className="text-muted-foreground">Visitor Motorcycle Parking:</span> <span className="font-medium">{condo.visitor_motorcycle_parking}</span></div>}
               {condo.arrival_instruction && <div><span className="text-muted-foreground">Arrival Instructions:</span> <span className="font-medium">{condo.arrival_instruction}</span></div>}
               {condo.description && <div><span className="text-muted-foreground">Description:</span> <span className="font-medium">{condo.description}</span></div>}
             </div>
           )}
+          {/* Access Information */}
+          {condo && (() => {
+            const raw = (condo as any).access_items || {};
+            const parse = (key: string) => {
+              const items = raw[key];
+              return Array.isArray(items) ? items.filter((i: any) => i.access_type && i.access_type !== "None") : [];
+            };
+            const pedestrian = parse("pedestrian");
+            const carpark = parse("carpark");
+            const motorcycle = parse("motorcycle");
+            if (pedestrian.length === 0 && carpark.length === 0 && motorcycle.length === 0 && !condo.visitor_car_parking && !condo.visitor_motorcycle_parking) return null;
+            const renderCategory = (label: string, items: any[]) => {
+              if (items.length === 0) return null;
+              return (
+                <div className="space-y-1" key={label}>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</h4>
+                  {items.map((item: any, i: number) => (
+                    <div key={i} className="text-sm pl-2 border-l-2 border-muted py-1 space-y-0.5">
+                      <div className="font-medium">{item.access_type}{item.locations?.length > 0 ? ` — ${item.locations.join(", ")}` : ""}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Provided by {item.provided_by}
+                        {item.chargeable_type && item.chargeable_type !== "none" && item.chargeable_type !== "Not Chargeable" && (
+                          <> · {item.chargeable_type}{item.price > 0 ? ` RM${item.price}` : ""}</>
+                        )}
+                      </div>
+                      {item.instruction && <div className="text-xs text-muted-foreground italic">{item.instruction}</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+            };
+            return (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Access Information</h3>
+                {renderCategory("Pedestrian Access", pedestrian)}
+                {renderCategory("Car Park Access", carpark)}
+                {renderCategory("Motorcycle Access", motorcycle)}
+                {(condo.visitor_car_parking || condo.visitor_motorcycle_parking) && (
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Visitor Parking</h4>
+                    {condo.visitor_car_parking && <div className="text-sm"><span className="text-muted-foreground">Car:</span> <span className="font-medium">{condo.visitor_car_parking}</span></div>}
+                    {condo.visitor_motorcycle_parking && <div className="text-sm"><span className="text-muted-foreground">Motorcycle:</span> <span className="font-medium">{condo.visitor_motorcycle_parking}</span></div>}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {/* Common area photos */}
           {Array.isArray(unit.common_photos) && unit.common_photos.length > 0 && (
             <>
