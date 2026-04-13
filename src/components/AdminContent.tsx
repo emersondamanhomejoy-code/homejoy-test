@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { MoveInPage } from "@/components/MoveInPage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
@@ -123,7 +124,7 @@ const emptyUnit = {
 };
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "bookings" | "claims" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "movein" | "claims" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
@@ -1478,6 +1479,9 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {/* BOOKINGS TAB */}
       {tab === "bookings" && <BookingsContent />}
+
+      {/* MOVE IN TAB */}
+      {tab === "movein" && <MoveInPage />}
 
       {/* CLAIMS TAB */}
       {tab === "claims" && (() => {
