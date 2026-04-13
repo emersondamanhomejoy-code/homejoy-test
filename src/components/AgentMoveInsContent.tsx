@@ -101,7 +101,7 @@ export function AgentMoveInsContent() {
         agreement_signed: createForm.agreement_signed,
         payment_method: createForm.payment_method,
         receipt_path: createForm.receipt_path,
-        status: "pending_review",
+        status: "submitted",
         history,
       });
       await logActivity("create_move_in", "move_in", selectedBooking.id, {
@@ -142,7 +142,7 @@ export function AgentMoveInsContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending_review">Pending Review</SelectItem>
+            <SelectItem value="submitted">Pending Review</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>

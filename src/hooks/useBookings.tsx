@@ -5,7 +5,7 @@ export interface Booking {
   id: string;
   room_id: string | null;
   unit_id: string | null;
-  status: "pending" | "approved" | "rejected" | "cancelled";
+  status: "submitted" | "approved" | "rejected" | "cancelled";
   tenant_name: string;
   tenant_phone: string;
   tenant_email: string;

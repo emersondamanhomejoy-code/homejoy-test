@@ -78,14 +78,14 @@ export default function AgentDashboard() {
   const myMoveIns = useMemo(() => allMoveIns.filter(m => m.booking_id && myBookingIds.has(m.booking_id)), [allMoveIns, myBookingIds]);
 
   // Stats
-  const bookingSubmitted = useMemo(() => myBookings.filter(b => b.status === "pending").length, [myBookings]);
+  const bookingSubmitted = useMemo(() => myBookings.filter(b => b.status === "submitted").length, [myBookings]);
   const bookingRejected = useMemo(() => myBookings.filter(b => b.status === "rejected").length, [myBookings]);
   
   // Pending move-in = approved bookings that don't have a move-in yet
   const moveInBookingIds = useMemo(() => new Set(myMoveIns.map(m => m.booking_id)), [myMoveIns]);
   const pendingMoveIn = useMemo(() => myBookings.filter(b => b.status === "approved" && !moveInBookingIds.has(b.id)).length, [myBookings, moveInBookingIds]);
   
-  const moveInPendingReview = useMemo(() => myMoveIns.filter(m => m.status === "pending_review").length, [myMoveIns]);
+  const moveInPendingReview = useMemo(() => myMoveIns.filter(m => m.status === "submitted").length, [myMoveIns]);
   const moveInRejected = useMemo(() => myMoveIns.filter(m => m.status === "rejected").length, [myMoveIns]);
   const completedDeals = useMemo(() => myMoveIns.filter(m => m.status === "approved"), [myMoveIns]);
 

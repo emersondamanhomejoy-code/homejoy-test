@@ -63,7 +63,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const statusBadge = (status: string) => {
-    const cls = status === "pending"
+    const cls = status === "submitted"
       ? "bg-yellow-500/20 text-yellow-600"
       : status === "approved"
         ? "bg-green-500/20 text-green-600"
@@ -76,7 +76,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   // Detail view
   if (selectedBooking) {
     const b = selectedBooking;
-    const canCancel = b.status === "pending" || b.status === "rejected";
+    const canCancel = b.status === "submitted" || b.status === "rejected";
     const canReEdit = b.status === "rejected";
 
     return (
@@ -193,7 +193,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="submitted">Submitted</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>

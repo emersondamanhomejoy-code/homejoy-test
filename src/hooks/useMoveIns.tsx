@@ -59,7 +59,7 @@ export function useCreateMoveIn() {
         agreement_signed: payload.agreement_signed ?? false,
         payment_method: payload.payment_method ?? "",
         receipt_path: payload.receipt_path ?? "",
-        status: payload.status ?? "pending_review",
+        status: payload.status ?? "submitted",
         history: payload.history ?? [],
       });
       if (error) throw error;

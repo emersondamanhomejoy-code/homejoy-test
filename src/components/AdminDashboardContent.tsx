@@ -36,8 +36,8 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
     };
   }, [units]);
 
-  const pendingBookings = useMemo(() => allBookings.filter(b => b.status === "pending"), [allBookings]);
-  const pendingMoveIns = useMemo(() => allMoveIns.filter(m => m.status === "pending_review"), [allMoveIns]);
+  const pendingBookings = useMemo(() => allBookings.filter(b => b.status === "submitted"), [allBookings]);
+  const pendingMoveIns = useMemo(() => allMoveIns.filter(m => m.status === "submitted"), [allMoveIns]);
 
   const summaryCards = [
     { label: "Pending Bookings", value: pendingBookings.length, icon: ClipboardList, color: "text-amber-500", bg: "bg-amber-500/10", tab: "bookings" },

@@ -58,7 +58,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   }, [carParkSelections, roomsData]);
 
   const statusBadge = (status: string) => {
-    const cls = status === "pending" ? "bg-yellow-500/20 text-yellow-600"
+    const cls = status === "submitted" ? "bg-yellow-500/20 text-yellow-600"
       : status === "approved" ? "bg-green-500/20 text-green-600"
         : status === "cancelled" ? "bg-gray-500/20 text-gray-500"
           : "bg-red-500/20 text-red-600";
@@ -129,7 +129,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleDelete = async () => {
     if (!user) return;
-    if (b.room_id && b.status === "pending") {
+    if (b.room_id && b.status === "submitted") {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
     }
     for (const sel of carParkSelections) {
@@ -186,7 +186,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   // Build footer actions
   const footerActions = () => {
-    if (b.status === "pending") {
+    if (b.status === "submitted") {
       return (
         <>
           <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>🚫 Cancel</Button>
