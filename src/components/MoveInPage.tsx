@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Check, X, Ban, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, Check, X, Ban, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserInfo { id: string; email: string; name: string; }
