@@ -1,128 +1,90 @@
 
 
-## Phased Rebuild Plan — HOMEJOY Operations Portal
+## Phase 2 — UI Standardization
 
-### Current State Summary
-- 4 roles (boss, manager, admin, agent) → migrating to 3 (Super Admin, Admin, Agent)
-- Claims module exists but being deprecated
-- Carparks stored in rooms table (keeping this)
-- Missing modules: Move Out, Announcements, Payouts, Earnings
+### What This Phase Does
+Creates reusable shared components that enforce consistent UI patterns across all pages. Then migrates existing pages to use them. All future modules (Phases 3-12) will use these components automatically.
 
----
+### Shared Components to Create
 
-### Phase 1 — Role Migration & Sidebar Restructure
-**Goal**: Clean foundation before building new features
+**1. `StandardPageLayout`** — wraps every list page
+- Props: `title`, `actionLabel`, `actionIcon`, `onAction`, `children`
+- Renders: page title (left), primary action button (top-right), then children
+- Consistent spacing and animation
 
-- Migrate `boss` and `manager` roles to `super_admin` in database
-- Update `app_role` enum: `super_admin`, `admin`, `agent`
-- Update all RLS policies and `has_role()` function
-- Update sidebar menus for all 3 roles per spec
-- Update auth/login to use new role names
-- Remove Claims from sidebar and routing
-- Activity Log visible to Super Admin only
+**2. `StandardModal`** — wraps all create/edit/view modals
+- Props: `open`, `onOpenChange`, `title`, `size` (sm/md/lg/xl), `children`, `footer`
+- Blocks outside-click close (`onInteractOutside` + `onEscapeKeyDown` prevented)
+- Sticky bottom action bar: Cancel left, primary action right
+- ScrollArea for content
+- Optional `isDirty` prop — if true, closing triggers discard confirmation AlertDialog automatically
+- Size mapping: sm → max-w-md, md → max-w-2xl, lg → max-w-3xl, xl → max-w-4xl
 
-### Phase 2 — UI Standardization
-**Goal**: Consistent modal, table, filter, and action patterns
+**3. `StandardFilterBar`** — search + filters row
+- Props: `search`, `onSearchChange`, `placeholder`, `children` (filter slots)
+- Consistent search input styling + grid layout for filters
+- Optional collapsible "Advanced Filters" section
 
-- Standardize all modals: sticky bottom bar, no outside-click close, discard confirmation
-- Standardize all table pages: title → action button → search/filters → table
-- Standardize action labels: Add, View, Edit, Delete, Approve, Reject, Cancel
-- Consistent status badges and colors across all modules
-- Mobile responsive: full-screen modals, collapsible sidebar
+**4. `StandardTable`** — table wrapper with empty state and pagination
+- Props: `columns`, `data`, `emptyMessage`, `page`, `pageSize`, `total`, `onPageChange`
+- Wraps existing Table in card with border
+- Built-in empty state row
+- Built-in pagination footer
 
-### Phase 3 — Locations & Buildings Enhancement
-**Goal**: Match spec for these simpler modules first
+**5. `ActionButtons`** — consistent action button set for table rows
+- Props: array of actions (`view`, `edit`, `delete`, `approve`, `reject`, etc.)
+- Standardized icon buttons with consistent hover styles
+- Dangerous actions (delete, cancel, reverse) use destructive hover color
 
-- Locations: add Buildings/Units/Rooms counts to table
-- Buildings: restructure access rules (Pedestrian, Carpark, Motorcycle sections), visitor info
-- Building view modal with sectioned layout
-- Available counts shown as "X / Y" format
+**6. `ConfirmDialog`** — reusable confirmation modal
+- Props: `open`, `onOpenChange`, `title`, `description`, `confirmLabel`, `variant` (default/destructive), `onConfirm`, optional `reasonRequired`
+- When `reasonRequired`: shows textarea, disables confirm until reason entered
+- Used for: Delete, Cancel, Reject, Reverse actions
 
-### Phase 4 — Units & Rooms / Carparks Enhancement
-**Goal**: Capacity logic, Available Soon workflow, carpark management
+**7. Update `StatusBadge`** — add missing statuses
+- Add: `Submitted`, `Ready for Move-in`, `Reversed`, `Paid`, `Generated`
+- Normalize casing (accept both `submitted` and `Submitted`)
+- Consistent color scheme across all modules
 
-- Units: add Remaining Pax, Remaining Rooms, Remaining Carparks columns
-- Rooms: add Effective Remaining Capacity (min of room slots, unit remaining pax)
-- Carpark management under Units (using rooms table with category flag)
-- Available Soon: require Available On Date, no auto-switch, admin reminder system
-- Room max pax defaults based on bed type
+### Standardized Styling Constants
+- Create `src/lib/ui-constants.ts` with shared input classes, label classes
+- Replace inline `inputClass` / `labelClass` strings scattered across components
 
-### Phase 5 — Tenants Module Enhancement
-**Goal**: Read-only occupancy view, booking history, multi-room/carpark support
+### Migration of Existing Pages
+Apply shared components to these existing pages (minimal logic changes, just wrapping):
 
-- Tenant detail: Current Occupancy (rooms + carparks tables)
-- Tenant detail: Booking History table
-- Enforce: no direct edit of room/carpark binding from tenant page
-- Support multiple active rooms and carparks per tenant
+1. **LocationsContent** — wrap with StandardPageLayout + StandardModal + StandardTable
+2. **CondosContent** — wrap with StandardPageLayout + StandardModal + StandardTable  
+3. **BookingsContent** — wrap with StandardPageLayout + StandardFilterBar + StandardTable + ConfirmDialog
+4. **MoveInContent** — wrap with StandardPageLayout + StandardFilterBar + StandardTable
+5. **TenantsContent** — wrap with StandardPageLayout + StandardFilterBar + StandardTable
+6. **UsersPage** — wrap with StandardPageLayout + StandardFilterBar + StandardTable
+7. **RoomsContent** — wrap with StandardPageLayout + StandardFilterBar + StandardTable
+8. **UnitsTableView** — wrap with StandardPageLayout + StandardFilterBar + StandardTable
+9. **ActivityLogPage** — wrap with StandardPageLayout + StandardFilterBar + StandardTable
+10. **BuildingForm** — wrap edit/create with StandardModal (large size)
+11. **CreateBookingDialog** — wrap with StandardModal (large size)
 
-### Phase 6 — Bookings Overhaul
-**Goal**: Booking types, tenant selection, calculation engine
+### Mobile Responsive Updates
+- StandardModal: on mobile (`< 768px`), modal becomes near-full-screen with bottom action bar always visible
+- Sidebar: already collapsible, no changes needed
+- StandardFilterBar: stack filters vertically on mobile
 
-- 3 booking types: Room Only, Room+Carpark, Carpark Only
-- Max 1 room + max 2 carparks per booking
-- Tenant selection: pick existing or enter new, email duplicate check
-- Booking cost calculation: advance rental, deposit, admin fee, access charges, parking
-- Approval logic: set room/carpark to Pending, auto-create Move-in record
-- Forfeit/Cancel logic with resolution type
+### Files to Create
+- `src/components/ui/standard-page-layout.tsx`
+- `src/components/ui/standard-modal.tsx`
+- `src/components/ui/standard-filter-bar.tsx`
+- `src/components/ui/standard-table.tsx`
+- `src/components/ui/action-buttons.tsx`
+- `src/components/ui/confirm-dialog.tsx`
+- `src/lib/ui-constants.ts`
 
-### Phase 7 — Move In Overhaul
-**Goal**: New status flow with Ready for Move-in, Reverse logic
+### Files to Modify
+- `src/components/StatusBadge.tsx` — add new statuses
+- All 11 content pages listed above — wrap with shared components
+- `src/components/BuildingForm.tsx` — convert to modal-based
+- `src/components/CreateBookingDialog.tsx` — use StandardModal
 
-- New statuses: Ready for Move-in → Submitted → Approved / Rejected / Reversed
-- Auto-create from approved booking with "Ready for Move-in" status
-- Agent submission form: agreement signed, payment method, remarks
-- Admin approve: create occupancy, bind tenant to room/carpark, update unit summary
-- Reverse Move-in: unbind occupancy, remove earnings effect, keep history
-
-### Phase 8 — Move Out (New Module)
-**Goal**: Handle real tenant departures
-
-- New `move_outs` table
-- Admin/Super Admin only
-- Form: tenant, asset type, effective date, move-out type, reason, next status
-- Logic: release tenant-room/carpark binding, update room status, preserve history
-
-### Phase 9 — Payouts & Earnings (New Modules)
-**Goal**: Replace claims with automated earnings from approved move-ins
-
-- New `payouts` table for admin batch management
-- Agent "My Deals" page: completed deals from approved move-ins
-- Agent "Earnings" page: commission amounts, payout status, PDF download
-- Admin "Payouts" page: generate batches, approve, mark paid, download PDF
-- Commission calculation from user_roles commission_config
-
-### Phase 10 — Announcements (New Module)
-**Goal**: Internal communication system
-
-- New `announcements` table
-- Banner and Popup types
-- Rich text description, image, link support
-- Admin manages; agents see active announcements
-
-### Phase 11 — Activity Log Enhancement
-**Goal**: Comprehensive audit trail per spec
-
-- Expand logging to cover all 15+ event categories in spec
-- Before/After snapshots for data changes
-- Enhanced filters: date range, actor, role, module, action
-- Detail modal with full change diff
-- Super Admin only access
-
-### Phase 12 — Dashboard Overhaul
-**Goal**: Role-specific dashboards with live data and quick actions
-
-- Admin dashboard: review queues, Available Soon reminders, pending payouts
-- Agent dashboard: pipeline cards matching new workflow
-- Quick action buttons per spec
-
----
-
-### Recommended Starting Phase
-**Phase 1 (Role Migration)** — this is the foundation everything else depends on. Once roles are clean, we can build each module correctly.
-
-### Technical Notes
-- Database: New enum values, migration of existing role data, new tables for move_outs, payouts, announcements
-- Carparks stay in `rooms` table using `room_category` or `special_type` field
-- Claims tables left in place but unused (no code references)
-- Each phase will be presented for your review before implementation
+### Approach
+Build shared components first, then migrate pages one by one. Each page migration preserves existing logic — only the layout/chrome changes.
 
