@@ -3,6 +3,7 @@ import { useCondos } from "@/hooks/useCondos";
 import { useCreateUnit, RoomConfig } from "@/hooks/useRooms";
 import { logActivity } from "@/hooks/useActivityLog";
 import { supabase } from "@/integrations/supabase/client";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -223,157 +224,173 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
           </Button>
         }
       >
-        <div className="space-y-8">
+        <Accordion type="multiple" defaultValue={["unit-info", "rooms", "carparks"]} className="space-y-2">
           {/* ── Unit Information ── */}
-          <section className="space-y-5">
-            <h2 className="text-lg font-semibold border-b border-border pb-2">Unit Information</h2>
-
-            {/* Common Area Photos */}
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Common Area Photos</Label>
-              <div className="flex flex-wrap gap-3 mt-2">
-                {form.common_photos.map((path, i) => (
-                  <div key={i} className="relative group">
-                    <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg" />
-                    <button onClick={() => updateField("common_photos", form.common_photos.filter((_, idx) => idx !== i))}
-                      className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+          <AccordionItem value="unit-info" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">Unit Information</span>
+                {form.building && <span className="text-xs text-muted-foreground">— {form.building} · {form.unit || "..."}</span>}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-5 pb-2">
+                {/* Common Area Photos */}
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Common Area Photos</Label>
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {form.common_photos.map((path, i) => (
+                      <div key={i} className="relative group">
+                        <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg" />
+                        <button onClick={() => updateField("common_photos", form.common_photos.filter((_, idx) => idx !== i))}
+                          className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                      </div>
+                    ))}
+                    {form.common_photos.length < 10 && (
+                      <label className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                        <span className="text-xl text-muted-foreground">+</span>
+                        <span className="text-[10px] text-muted-foreground">Add</span>
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (!files.length) return;
+                          const remaining = 10 - form.common_photos.length;
+                          const toUpload = files.slice(0, remaining);
+                          const newPaths: string[] = [];
+                          for (const file of toUpload) {
+                            const ext = file.name.split('.').pop();
+                            const path = `common/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                            const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                            if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                            newPaths.push(path);
+                          }
+                          if (newPaths.length > 0) updateField("common_photos", [...form.common_photos, ...newPaths]);
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    )}
                   </div>
-                ))}
-                {form.common_photos.length < 10 && (
-                  <label className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                    <span className="text-xl text-muted-foreground">+</span>
-                    <span className="text-[10px] text-muted-foreground">Add</span>
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (!files.length) return;
-                      const remaining = 10 - form.common_photos.length;
-                      const toUpload = files.slice(0, remaining);
-                      const newPaths: string[] = [];
-                      for (const file of toUpload) {
-                        const ext = file.name.split('.').pop();
-                        const path = `common/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                        const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                        if (error) { alert(`Upload failed: ${error.message}`); continue; }
-                        newPaths.push(path);
-                      }
-                      if (newPaths.length > 0) updateField("common_photos", [...form.common_photos, ...newPaths]);
-                      e.target.value = "";
-                    }} />
-                  </label>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Building *</Label>
-                <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
-                  const condo = condosList.find(c => c.name === e.target.value);
-                  setForm(prev => ({ ...prev, building: e.target.value, location: condo?.location?.name || "" }));
-                }}>
-                  <option value="">— Select Building —</option>
-                  {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Location *</Label>
-                <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly placeholder="Select a building above" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Unit Number *</Label>
-                <input className={`${inputClass} w-full`} placeholder="e.g. A-17-8" value={form.unit} onChange={e => updateField("unit", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Unit Type *</Label>
-                <select className={`${inputClass} w-full`} value={form.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
-                  <option value="Mix Unit">Mixed</option>
-                  <option value="Female Unit">Female</option>
-                  <option value="Male Unit">Male</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Maximum Occupants *</Label>
-                <input className={`${inputClass} w-full`} type="number" min={1} value={form.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Rental Deposit (Months) *</Label>
-                <input className={`${inputClass} w-full`} type="number" step="0.1" placeholder="e.g. 1.5" value={form.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Admin Fee (RM) *</Label>
-                <input className={`${inputClass} w-full`} type="number" value={form.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Meter Type *</Label>
-                <select className={`${inputClass} w-full`} value={form.meter_type} onChange={e => updateField("meter_type", e.target.value)}>
-                  <option value="Prepaid">Prepaid</option>
-                  <option value="Postpaid">Postpaid</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Meter Rate (RM per kWh) *</Label>
-                <input className={`${inputClass} w-full`} type="number" step="0.01" placeholder="e.g. 0.65" value={form.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Main Door Passcode</Label>
-                <input className={`${inputClass} w-full`} placeholder="Passcode" value={form.passcode} onChange={e => updateField("passcode", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">WiFi Name</Label>
-                <input className={`${inputClass} w-full`} placeholder="WiFi SSID" value={form.wifi_name} onChange={e => updateField("wifi_name", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">WiFi Password</Label>
-                <input className={`${inputClass} w-full`} placeholder="WiFi Password" value={form.wifi_password} onChange={e => updateField("wifi_password", e.target.value)} />
-              </div>
-            </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Building *</Label>
+                    <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
+                      const condo = condosList.find(c => c.name === e.target.value);
+                      setForm(prev => ({ ...prev, building: e.target.value, location: condo?.location?.name || "" }));
+                    }}>
+                      <option value="">— Select Building —</option>
+                      {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Location *</Label>
+                    <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly placeholder="Select a building above" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Unit Number *</Label>
+                    <input className={`${inputClass} w-full`} placeholder="e.g. A-17-8" value={form.unit} onChange={e => updateField("unit", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Unit Type *</Label>
+                    <select className={`${inputClass} w-full`} value={form.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
+                      <option value="Mix Unit">Mixed</option>
+                      <option value="Female Unit">Female</option>
+                      <option value="Male Unit">Male</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Maximum Occupants *</Label>
+                    <input className={`${inputClass} w-full`} type="number" min={1} value={form.unit_max_pax} onChange={e => updateField("unit_max_pax", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Rental Deposit (Months) *</Label>
+                    <input className={`${inputClass} w-full`} type="number" step="0.1" placeholder="e.g. 1.5" value={form.deposit_multiplier} onChange={e => updateField("deposit_multiplier", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Admin Fee (RM) *</Label>
+                    <input className={`${inputClass} w-full`} type="number" value={form.admin_fee} onChange={e => updateField("admin_fee", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Meter Type *</Label>
+                    <select className={`${inputClass} w-full`} value={form.meter_type} onChange={e => updateField("meter_type", e.target.value)}>
+                      <option value="Prepaid">Prepaid</option>
+                      <option value="Postpaid">Postpaid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Meter Rate (RM per kWh) *</Label>
+                    <input className={`${inputClass} w-full`} type="number" step="0.01" placeholder="e.g. 0.65" value={form.meter_rate || ""} onChange={e => updateField("meter_rate", Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Main Door Passcode</Label>
+                    <input className={`${inputClass} w-full`} placeholder="Passcode" value={form.passcode} onChange={e => updateField("passcode", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">WiFi Name</Label>
+                    <input className={`${inputClass} w-full`} placeholder="WiFi SSID" value={form.wifi_name} onChange={e => updateField("wifi_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">WiFi Password</Label>
+                    <input className={`${inputClass} w-full`} placeholder="WiFi Password" value={form.wifi_password} onChange={e => updateField("wifi_password", e.target.value)} />
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-3 pt-1">
-              <Checkbox id="addInternalOnly" checked={form.internal_only} onCheckedChange={(checked) => updateField("internal_only", !!checked)} />
-              <label htmlFor="addInternalOnly" className="text-sm font-medium cursor-pointer">🔒 Internal Only — Hidden from External Agent</label>
-            </div>
-          </section>
+                <div className="flex items-center gap-3 pt-1">
+                  <Checkbox id="addInternalOnly" checked={form.internal_only} onCheckedChange={(checked) => updateField("internal_only", !!checked)} />
+                  <label htmlFor="addInternalOnly" className="text-sm font-medium cursor-pointer">🔒 Internal Only — Hidden from External Agent</label>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
           {/* ── Rooms ── */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <h2 className="text-lg font-semibold">Rooms</h2>
-              <Button size="sm" onClick={addRoom}><Plus className="h-4 w-4 mr-1" /> Add Room</Button>
-            </div>
-
-            {roomRecords.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No rooms added yet. Click "Add Room" to start.</p>
-            ) : (
-              <div className="space-y-2">
-                {roomRecords.map(rc => rc._editing ? (
-                  <RoomInlineForm key={rc._key} room={rc} onChange={(f, v) => updateRoom(rc._key, f, v)} onSave={() => saveRoom(rc._key)} onCancel={() => cancelRoomEdit(rc._key)} />
-                ) : (
-                  <RoomSummaryRow key={rc._key} room={rc} onEdit={() => updateRoom(rc._key, "_editing", true)} onDelete={() => setDeleteConfirm({ type: "room", key: rc._key })} />
-                ))}
+          <AccordionItem value="rooms" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Rooms</span>
+                <span className="text-xs text-muted-foreground">— {roomRecords.length} rooms</span>
               </div>
-            )}
-          </section>
+              <Button size="sm" className="mr-2" onClick={(e) => { e.stopPropagation(); addRoom(); }}><Plus className="h-4 w-4 mr-1" /> Add Room</Button>
+            </AccordionTrigger>
+            <AccordionContent>
+              {roomRecords.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No rooms added yet. Click "Add Room" to start.</p>
+              ) : (
+                <div className="space-y-2 pb-2">
+                  {roomRecords.map(rc => rc._editing ? (
+                    <RoomInlineForm key={rc._key} room={rc} onChange={(f, v) => updateRoom(rc._key, f, v)} onSave={() => saveRoom(rc._key)} onCancel={() => cancelRoomEdit(rc._key)} />
+                  ) : (
+                    <RoomSummaryRow key={rc._key} room={rc} onEdit={() => updateRoom(rc._key, "_editing", true)} onDelete={() => setDeleteConfirm({ type: "room", key: rc._key })} />
+                  ))}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
           {/* ── Carparks ── */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <h2 className="text-lg font-semibold">Carparks</h2>
-              <Button size="sm" onClick={addCarpark}><Plus className="h-4 w-4 mr-1" /> Add Carpark</Button>
-            </div>
-
-            {carparkRecords.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No carparks added yet. Click "Add Carpark" to start.</p>
-            ) : (
-              <div className="space-y-2">
-                {carparkRecords.map(cp => cp._editing ? (
-                  <CarparkInlineForm key={cp._key} carpark={cp} onChange={(f, v) => updateCarpark(cp._key, f, v)} onSave={() => saveCarpark(cp._key)} onCancel={() => cancelCarparkEdit(cp._key)} />
-                ) : (
-                  <CarparkSummaryRow key={cp._key} carpark={cp} onEdit={() => updateCarpark(cp._key, "_editing", true)} onDelete={() => setDeleteConfirm({ type: "carpark", key: cp._key })} />
-                ))}
+          <AccordionItem value="carparks" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Carparks</span>
+                <span className="text-xs text-muted-foreground">— {carparkRecords.length} carparks</span>
               </div>
-            )}
-          </section>
-        </div>
+              <Button size="sm" className="mr-2" onClick={(e) => { e.stopPropagation(); addCarpark(); }}><Plus className="h-4 w-4 mr-1" /> Add Carpark</Button>
+            </AccordionTrigger>
+            <AccordionContent>
+              {carparkRecords.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No carparks added yet. Click "Add Carpark" to start.</p>
+              ) : (
+                <div className="space-y-2 pb-2">
+                  {carparkRecords.map(cp => cp._editing ? (
+                    <CarparkInlineForm key={cp._key} carpark={cp} onChange={(f, v) => updateCarpark(cp._key, f, v)} onSave={() => saveCarpark(cp._key)} onCancel={() => cancelCarparkEdit(cp._key)} />
+                  ) : (
+                    <CarparkSummaryRow key={cp._key} carpark={cp} onEdit={() => updateCarpark(cp._key, "_editing", true)} onDelete={() => setDeleteConfirm({ type: "carpark", key: cp._key })} />
+                  ))}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </StandardModal>
 
       <ConfirmDialog
