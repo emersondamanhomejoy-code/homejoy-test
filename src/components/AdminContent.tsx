@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { MoveInPage } from "@/components/MoveInPage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
