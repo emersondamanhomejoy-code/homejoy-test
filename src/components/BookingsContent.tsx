@@ -30,9 +30,7 @@ interface UserInfo {
 
 export function BookingsContent() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const { data: allBookings = [], isLoading } = useBookings();
-  const updateBookingStatus = useUpdateBookingStatus();
   const { data: roomsData = [] } = useRooms();
 
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
