@@ -90,14 +90,12 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleReject = async () => {
     if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
+    const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
     const history = [...(b.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, history });
-    if (b.room_id) {
-      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-    }
-    for (const sel of carParkSelections) {
-      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
-    }
+    await updateBookingStatus.mutateAsync({
+      id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason,
+      room_id: b.room_id, carParkIds, history,
+    });
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
