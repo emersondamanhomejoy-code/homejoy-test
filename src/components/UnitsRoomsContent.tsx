@@ -630,8 +630,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       </div>
     );
   }
-    return { pedestrian: parse("pedestrian"), carpark: parse("carpark"), motorcycle: parse("motorcycle") };
-  }, [condo]);
 
   const commonPhotosUrl = `${window.location.origin}/view/${unit.id}?section=photos`;
 
