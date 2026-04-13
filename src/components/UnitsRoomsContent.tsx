@@ -56,12 +56,12 @@ export function UnitsRoomsContent() {
   }, [units]);
 
   const buildings = useMemo(() => {
-    const source = selectedLocations.length
-      ? units.filter(u => selectedLocations.includes(u.location))
+    const source = selectedLocation !== "all"
+      ? units.filter(u => u.location === selectedLocation)
       : units;
     const set = new Set(source.map(u => u.building).filter(Boolean));
     return Array.from(set).sort();
-  }, [units, selectedLocations]);
+  }, [units, selectedLocation]);
 
   const filteredRows = useMemo(() => {
     let list = units;
@@ -69,13 +69,33 @@ export function UnitsRoomsContent() {
       const q = search.toLowerCase();
       list = list.filter(u =>
         u.building.toLowerCase().includes(q) ||
-        u.unit.toLowerCase().includes(q) ||
-        u.location.toLowerCase().includes(q)
+        u.unit.toLowerCase().includes(q)
       );
     }
-    if (selectedLocations.length) list = list.filter(u => selectedLocations.includes(u.location));
-    if (selectedBuildings.length) list = list.filter(u => selectedBuildings.includes(u.building));
+    if (selectedBuilding !== "all") list = list.filter(u => u.building === selectedBuilding);
     if (selectedUnitType !== "all") list = list.filter(u => u.unit_type?.toLowerCase().includes(selectedUnitType));
+    if (selectedLocation !== "all") list = list.filter(u => u.location === selectedLocation);
+    if (internalOnly === "yes") list = list.filter(u => u.internal_only);
+    if (internalOnly === "no") list = list.filter(u => !u.internal_only);
+
+    list = list.filter(u => {
+      const rooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
+      const carparks = u.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+      const availRooms = rooms.filter(r => r.status === "Available").length;
+      const availCarparks = carparks.filter(r => r.status === "Available").length;
+      const occupiedPax = rooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
+      const remPax = u.unit_max_pax - occupiedPax;
+
+      if (hasRemainingRooms === "yes" && availRooms === 0) return false;
+      if (hasRemainingRooms === "no" && availRooms > 0) return false;
+      if (hasRemainingCarparks === "yes" && availCarparks === 0) return false;
+      if (hasRemainingCarparks === "no" && availCarparks > 0) return false;
+      if (maxOccupantsMin && u.unit_max_pax < Number(maxOccupantsMin)) return false;
+      if (maxOccupantsMax && u.unit_max_pax > Number(maxOccupantsMax)) return false;
+      if (remainingPaxMin && remPax < Number(remainingPaxMin)) return false;
+      if (remainingPaxMax && remPax > Number(remainingPaxMax)) return false;
+      return true;
+    });
 
     return sortData(list, (u: Unit, key: string) => {
       const rooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
@@ -93,7 +113,7 @@ export function UnitsRoomsContent() {
       };
       return map[key];
     });
-  }, [units, search, selectedLocations, selectedBuildings, selectedUnitType, sort]);
+  }, [units, search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, sort]);
 
   useEffect(() => { setCurrentPage(0); }, [search, selectedLocations, selectedBuildings, selectedUnitType, pageSize]);
 
