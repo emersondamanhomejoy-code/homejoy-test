@@ -123,7 +123,7 @@ export function UsersPage() {
       // Update commission if agent
       if (editUser.roles.includes("agent") && editForm.commission_type) {
         await supabase.from("user_roles")
-          .update({ commission_type: editForm.commission_type, commission_config: editForm.commission_config })
+          .update({ commission_type: editForm.commission_type, commission_config: editForm.commission_config as unknown as import("@/integrations/supabase/types").Json })
           .eq("user_id", editUser.id).eq("role", "agent");
       }
       toast.success("User updated");
