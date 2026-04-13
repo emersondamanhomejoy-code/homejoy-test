@@ -88,7 +88,6 @@ export default function Index() {
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
   const [checkingSignature, setCheckingSignature] = useState(false);
-  const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
   const [agentCommissionConfig, setAgentCommissionConfig] = useState<any>(null);
   const [overviewPeriod, setOverviewPeriod] = useState<string>(String(new Date().getMonth()));
