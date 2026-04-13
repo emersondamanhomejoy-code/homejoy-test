@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, Upload, X, Snowflake, Sun } from "lucide-react";
 import { toast } from "sonner";
 
 interface CommissionTier { min: number; max: number | null; amount?: number; percentage?: number; }
@@ -23,6 +23,7 @@ interface UserWithRoles {
   name: string; display_name: string; phone: string; address: string;
   profile_picture_url: string; ic_document: string;
   emergency_contact_name: string; emergency_contact_phone: string;
+  frozen: boolean; frozen_at: string | null;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
@@ -48,6 +49,7 @@ export function UsersPage() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<UserWithRoles | null>(null);
   const [saving, setSaving] = useState(false);
+  const [freezingId, setFreezingId] = useState<string | null>(null);
 
   const [newAgent, setNewAgent] = useState({
     email: "", name: "", display_name: "", phone: "", address: "",
