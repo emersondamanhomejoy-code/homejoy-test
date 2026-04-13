@@ -32,6 +32,7 @@ interface LocalCarpark {
   status: string;
   assigned_to: string;
   internal_remark: string;
+  photos: string[];
   _editing: boolean;
   _key: number;
 }
@@ -132,7 +133,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const addCarpark = () => {
     setCarparkRecords(prev => [...prev, {
       room: getNextCarparkLabel(), parking_lot: "", rent: 150, status: "Available",
-      assigned_to: "", internal_remark: "",
+      assigned_to: "", internal_remark: "", photos: [],
       _editing: true, _key: ++keyCounter,
     }]);
   };
@@ -192,7 +193,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
           room: c.room, bed_type: "", max_pax: 0, rent: c.rent,
           room_type: "Car Park" as const, status: c.status,
           assigned_to: c.assigned_to, internal_remark: c.internal_remark,
-          parking_lot: c.parking_lot,
+          parking_lot: c.parking_lot, photos: c.photos,
         })),
       ];
       await createUnit.mutateAsync({
