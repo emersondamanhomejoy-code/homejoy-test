@@ -544,6 +544,8 @@ export type Database = {
           email: string
           emergency_contact_name: string
           emergency_contact_phone: string
+          frozen: boolean
+          frozen_at: string | null
           ic_document: string
           id: string
           name: string
@@ -558,6 +560,8 @@ export type Database = {
           email?: string
           emergency_contact_name?: string
           emergency_contact_phone?: string
+          frozen?: boolean
+          frozen_at?: string | null
           ic_document?: string
           id?: string
           name?: string
@@ -572,6 +576,8 @@ export type Database = {
           email?: string
           emergency_contact_name?: string
           emergency_contact_phone?: string
+          frozen?: boolean
+          frozen_at?: string | null
           ic_document?: string
           id?: string
           name?: string
