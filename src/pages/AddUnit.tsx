@@ -426,8 +426,12 @@ function RoomInlineForm({ room, onChange, onSave, onCancel }: {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div>
-          <label className="text-xs text-muted-foreground">Room Label</label>
+          <label className="text-xs text-muted-foreground">Room Code</label>
           <input className={`${inputClass} w-full`} value={room.room} onChange={e => onChange("room", e.target.value)} />
+        </div>
+        <div className="md:col-span-2">
+          <label className="text-xs text-muted-foreground">Room Title *</label>
+          <input className={`${inputClass} w-full`} placeholder="e.g. Balcony Queen Room" value={room.room_title || ""} onChange={e => onChange("room_title", e.target.value)} />
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Room Type</label>
