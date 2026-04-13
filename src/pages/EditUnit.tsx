@@ -441,13 +441,15 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground">Status</label>
-                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upRoom("status", e.target.value)}>
+                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upRoom("status", e.target.value)}
+                            disabled={rc.status === "Occupied"}>
+                            {rc.status === "Occupied" && <option value="Occupied">Occupied (managed by workflow)</option>}
                             <option value="Available">Available</option>
                             <option value="Available Soon">Available Soon</option>
                             <option value="Pending">Pending</option>
-                            <option value="Occupied">Occupied</option>
                             <option value="Archived">Archived</option>
                           </select>
+                          {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Status managed by Booking & Move-in workflow</p>}
                         </div>
                         {showAvailDate && (
                           <div>
@@ -536,11 +538,13 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground">Status</label>
-                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upCP("status", e.target.value)}>
+                          <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upCP("status", e.target.value)}
+                            disabled={rc.status === "Occupied"}>
+                            {rc.status === "Occupied" && <option value="Occupied">Occupied (managed by workflow)</option>}
                             <option value="Available">Available</option>
-                            <option value="Occupied">Occupied</option>
                             <option value="Archived">Archived</option>
                           </select>
+                          {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Status managed by Booking & Move-in workflow</p>}
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground">Remark</label>
