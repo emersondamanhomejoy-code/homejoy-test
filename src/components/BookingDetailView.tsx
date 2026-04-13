@@ -70,11 +70,12 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const handleApprove = async () => {
     if (!user) return;
     const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
+    const history = [...(b.history || []), { action: "approved", by: user.email, at: new Date().toISOString() }];
     await updateBookingStatus.mutateAsync({
       id: b.id, status: "approved", reviewed_by: user.id,
       room_id: b.room_id, tenant_name: b.tenant_name,
       tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
-      pax_staying: b.pax_staying, carParkIds,
+      pax_staying: b.pax_staying, carParkIds, history,
     });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
@@ -88,7 +89,8 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleReject = async () => {
     if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+    const history = [...(b.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
+    await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, history });
     if (b.room_id) {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
     }
@@ -108,7 +110,8 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleCancel = async () => {
     if (!user || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason });
+    const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
+    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason, history });
     if (b.room_id) {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
     }
