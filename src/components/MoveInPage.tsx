@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { useMoveIns, useUpdateMoveIn, MoveIn } from "@/hooks/useMoveIns";
+import { useMoveIns, useUpdateMoveIn, useCreateMoveIn, MoveIn } from "@/hooks/useMoveIns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
+import { useBookings, Booking } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
@@ -23,9 +24,12 @@ interface UserInfo { id: string; email: string; name: string; }
 
 export function MoveInPage() {
   const { user, role } = useAuth();
+  const canCreate = role === "admin" || role === "manager" || role === "boss";
   const { data: moveIns = [], isLoading } = useMoveIns();
   const updateMoveIn = useUpdateMoveIn();
+  const createMoveIn = useCreateMoveIn();
   const { data: roomsData = [] } = useRooms();
+  const { data: approvedBookings = [] } = useBookings("approved");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,6 +48,8 @@ export function MoveInPage() {
   const [viewItem, setViewItem] = useState<MoveIn | null>(null);
   const [editItem, setEditItem] = useState<MoveIn | null>(null);
   const [editForm, setEditForm] = useState<any>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ booking_id: "", agent_id: "", agreement_signed: false, payment_method: "", receipt_path: "" });
   const [showRejectDialog, setShowRejectDialog] = useState<MoveIn | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState<MoveIn | null>(null);
@@ -68,6 +74,14 @@ export function MoveInPage() {
   const roomOptions = useMemo(() => [...new Set(roomsData.map(r => r.room).filter(Boolean))].sort(), [roomsData]);
   const agentOptions = useMemo(() => [...new Set(users.map(u => u.name || u.email).filter(Boolean))].sort(), [users]);
   const paymentOptions = useMemo(() => [...new Set(moveIns.map(m => m.payment_method).filter(Boolean))].sort(), [moveIns]);
+
+  const existingMoveInBookingIds = useMemo(() => new Set(moveIns.map(m => m.booking_id).filter(Boolean)), [moveIns]);
+  const agentUsers = useMemo(() => users.filter(u => approvedBookings.some(b => b.submitted_by === u.id)), [users, approvedBookings]);
+  const availableCreateBookings = useMemo(() => {
+    if (!createForm.agent_id) return [] as Booking[];
+    return approvedBookings.filter(b => b.submitted_by === createForm.agent_id && !existingMoveInBookingIds.has(b.id));
+  }, [approvedBookings, createForm.agent_id, existingMoveInBookingIds]);
+  const selectedCreateBooking = useMemo(() => availableCreateBookings.find(b => b.id === createForm.booking_id) || null, [availableCreateBookings, createForm.booking_id]);
 
   const filtered = useMemo(() => {
     let list = moveIns;
@@ -123,6 +137,46 @@ export function MoveInPage() {
     setCancelReason("");
   };
 
+  const handleCreate = async () => {
+    if (!user || !createForm.agent_id || !selectedCreateBooking) {
+      toast.error("Please select agent and approved booking");
+      return;
+    }
+    if (createForm.payment_method === "Bank Transfer" && !createForm.receipt_path.trim()) {
+      toast.error("Receipt path is required for bank transfer");
+      return;
+    }
+    setSaving(true);
+    try {
+      const history = [{ action: "created", by: user.email, at: new Date().toISOString(), created_for_agent: getAgentName(createForm.agent_id) }];
+      await createMoveIn.mutateAsync({
+        booking_id: selectedCreateBooking.id,
+        room_id: selectedCreateBooking.room_id,
+        agent_id: createForm.agent_id,
+        tenant_name: selectedCreateBooking.tenant_name,
+        agreement_signed: createForm.agreement_signed,
+        payment_method: createForm.payment_method,
+        receipt_path: createForm.receipt_path,
+        status: "pending_review",
+        history,
+      });
+      await logActivity("create_move_in", "move_in", selectedCreateBooking.id, {
+        tenant_name: selectedCreateBooking.tenant_name,
+        building: selectedCreateBooking.room?.building,
+        unit: selectedCreateBooking.room?.unit,
+        room: selectedCreateBooking.room?.room,
+        agent: getAgentName(createForm.agent_id),
+      });
+      toast.success("Move-in created");
+      setCreateOpen(false);
+      setCreateForm({ booking_id: "", agent_id: "", agreement_signed: false, payment_method: "", receipt_path: "" });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create move-in");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openEdit = (m: MoveIn) => {
     setEditItem(m);
     setEditForm({ agreement_signed: m.agreement_signed, payment_method: m.payment_method, receipt_path: m.receipt_path });
@@ -165,139 +219,84 @@ export function MoveInPage() {
 
   return (
     <div className="space-y-4">
-      {/* View Modal */}
-      {viewItem && (
-        <Dialog open={!!viewItem} onOpenChange={(open) => { if (!open) setViewItem(null); }}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>View Move-In</DialogTitle></DialogHeader>
+      {createOpen && (
+        <Dialog open={createOpen} onOpenChange={(open) => { if (!saving) setCreateOpen(open); }}>
+          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0">
+            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Create Move-In</DialogTitle></DialogHeader>
             <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
               <div className="space-y-5 py-4">
-                {sectionCard("📋", "Move-In Summary", (
-                  <div>
-                    {infoRow("Move-In ID", <span className="font-mono text-xs">{viewItem.id}</span>)}
-                    {infoRow("Status", <StatusBadge status={viewItem.status} />)}
-                    {infoRow("Tenant", viewItem.tenant_name)}
-                    {infoRow("Agent", getAgentName(viewItem.agent_id))}
-                    {infoRow("Submitted At", format(new Date(viewItem.created_at), "dd MMM yyyy, HH:mm"))}
-                    {viewItem.reviewed_at && infoRow("Reviewed At", format(new Date(viewItem.reviewed_at), "dd MMM yyyy, HH:mm"))}
+                {sectionCard("👤", "Assign Agent", (
+                  <div className="space-y-1">
+                    <label className={lbl}>Agent</label>
+                    <select className={ic} value={createForm.agent_id} onChange={e => setCreateForm({ booking_id: "", agent_id: e.target.value, agreement_signed: false, payment_method: "", receipt_path: "" })}>
+                      <option value="">Select agent</option>
+                      {agentUsers.map(agent => <option key={agent.id} value={agent.id}>{agent.name || agent.email}</option>)}
+                    </select>
                   </div>
                 ))}
-                {sectionCard("🏠", "Room", (
+                {sectionCard("📋", "Approved Booking", (
+                  <div className="space-y-1">
+                    <label className={lbl}>Booking</label>
+                    <select className={ic} value={createForm.booking_id} onChange={e => setCreateForm({ ...createForm, booking_id: e.target.value })} disabled={!createForm.agent_id}>
+                      <option value="">Select approved booking</option>
+                      {availableCreateBookings.map(booking => (
+                        <option key={booking.id} value={booking.id}>
+                          {booking.tenant_name} — {booking.room?.building} {booking.room?.unit} {booking.room?.room}
+                        </option>
+                      ))}
+                    </select>
+                    {createForm.agent_id && availableCreateBookings.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No eligible approved bookings for this agent.</p>
+                    )}
+                  </div>
+                ))}
+                {selectedCreateBooking && sectionCard("🏠", "Booking Summary", (
                   <div>
-                    {infoRow("Building", viewItem.room?.building)}
-                    {infoRow("Unit", viewItem.room?.unit)}
-                    {infoRow("Room", viewItem.room?.room)}
+                    {infoRow("Tenant", selectedCreateBooking.tenant_name)}
+                    {infoRow("Building", selectedCreateBooking.room?.building)}
+                    {infoRow("Unit", selectedCreateBooking.room?.unit)}
+                    {infoRow("Room", selectedCreateBooking.room?.room)}
+                    {infoRow("Move In Date", selectedCreateBooking.move_in_date ? format(new Date(selectedCreateBooking.move_in_date), "dd MMM yyyy") : "—")}
                   </div>
                 ))}
                 {sectionCard("✅", "Confirmation", (
-                  <div>
-                    {infoRow("Agreement Signed", viewItem.agreement_signed ? "Yes ✅" : "No ❌")}
-                    {infoRow("Payment Method", viewItem.payment_method || "—")}
-                    {viewItem.receipt_path && infoRow("Receipt", <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/booking-docs/${viewItem.receipt_path}`} target="_blank" className="text-primary hover:underline text-xs">View Receipt</a>)}
-                  </div>
-                ))}
-                {viewItem.reject_reason && (
-                  <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm">
-                    <span className="font-semibold">Reject Reason:</span> {viewItem.reject_reason}
-                  </div>
-                )}
-                {viewItem.cancel_reason && (
-                  <div className="bg-muted text-muted-foreground rounded-lg p-4 text-sm">
-                    <span className="font-semibold">Cancel Reason:</span> {viewItem.cancel_reason}
-                  </div>
-                )}
-                {/* History */}
-                {(viewItem.history || []).length > 0 && sectionCard("📜", "History", (
-                  <div className="space-y-2">
-                    {(viewItem.history || []).map((h: any, i: number) => (
-                      <div key={i} className="text-xs bg-background rounded-lg border p-3">
-                        <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
-                        {h.reason && <div className="text-muted-foreground mt-1">Reason: {h.reason}</div>}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Edit Modal */}
-      {editItem && (
-        <Dialog open={!!editItem} onOpenChange={(open) => { if (!open && !saving) setEditItem(null); }}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Edit Move-In — {editItem.tenant_name}</DialogTitle></DialogHeader>
-            <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
-              <div className="space-y-5 py-4">
-                {sectionCard("✅", "Confirmation Details", (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <label className={lbl}>Agreement Signed</label>
-                      <input type="checkbox" checked={editForm.agreement_signed} onChange={e => setEditForm({ ...editForm, agreement_signed: e.target.checked })} className="h-4 w-4" />
-                      <span className="text-sm">{editForm.agreement_signed ? "Yes" : "No"}</span>
+                      <input type="checkbox" checked={createForm.agreement_signed} onChange={e => setCreateForm({ ...createForm, agreement_signed: e.target.checked })} className="h-4 w-4" />
+                      <span className="text-sm">{createForm.agreement_signed ? "Yes" : "No"}</span>
                     </div>
                     <div className="space-y-1">
                       <label className={lbl}>Payment Method</label>
-                      <select className={ic} value={editForm.payment_method} onChange={e => setEditForm({ ...editForm, payment_method: e.target.value })}>
-                        <option value="">Select</option>
+                      <select className={ic} value={createForm.payment_method} onChange={e => setCreateForm({ ...createForm, payment_method: e.target.value })}>
+                        <option value="">Select payment method</option>
                         <option value="Cash">Cash</option>
                         <option value="Bank Transfer">Bank Transfer</option>
                         <option value="Online Payment">Online Payment</option>
                       </select>
                     </div>
-                    {editForm.payment_method === "Bank Transfer" && (
+                    {createForm.payment_method === "Bank Transfer" && (
                       <div className="space-y-1">
-                        <label className={lbl}>Receipt (file path)</label>
-                        <input className={ic} value={editForm.receipt_path} onChange={e => setEditForm({ ...editForm, receipt_path: e.target.value })} placeholder="Upload path..." />
+                        <label className={lbl}>Receipt Path</label>
+                        <input className={ic} value={createForm.receipt_path} onChange={e => setCreateForm({ ...createForm, receipt_path: e.target.value })} placeholder="Upload path..." />
                       </div>
                     )}
                   </div>
                 ))}
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setEditItem(null)} disabled={saving}>Cancel</Button>
-                  <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                  <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={saving}>Cancel</Button>
+                  <Button onClick={handleCreate} disabled={saving}>{saving ? "Creating..." : "Create Move-In"}</Button>
                 </DialogFooter>
               </div>
             </ScrollArea>
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Reject Dialog */}
-      <AlertDialog open={!!showRejectDialog} onOpenChange={(open) => { if (!open) { setShowRejectDialog(null); setRejectReason(""); } }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reject Move-In?</AlertDialogTitle>
-            <AlertDialogDescription>Please enter the reason for rejection.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <Textarea placeholder="Reject reason (required)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3} />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReject} disabled={!rejectReason.trim()} className="bg-destructive text-destructive-foreground">Reject</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Cancel Dialog */}
-      <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Move-In?</AlertDialogTitle>
-            <AlertDialogDescription>Please enter the reason for cancellation.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <Textarea placeholder="Cancel reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Move-In</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
+...
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Move In</h2>
-        <Button onClick={() => toast.info("Create Move-In coming soon")}><Plus className="h-4 w-4 mr-1" /> Create Move-In</Button>
+        {canCreate && <Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" /> Create</Button>}
       </div>
 
       {/* Search + Status */}

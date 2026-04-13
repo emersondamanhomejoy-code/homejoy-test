@@ -37,6 +37,39 @@ export function useMoveIns() {
   });
 }
 
+export function useCreateMoveIn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      booking_id?: string | null;
+      room_id?: string | null;
+      agent_id: string;
+      tenant_name: string;
+      agreement_signed?: boolean;
+      payment_method?: string;
+      receipt_path?: string;
+      status?: string;
+      history?: any[];
+    }) => {
+      const { error } = await supabase.from("move_ins").insert({
+        booking_id: payload.booking_id ?? null,
+        room_id: payload.room_id ?? null,
+        agent_id: payload.agent_id,
+        tenant_name: payload.tenant_name,
+        agreement_signed: payload.agreement_signed ?? false,
+        payment_method: payload.payment_method ?? "",
+        receipt_path: payload.receipt_path ?? "",
+        status: payload.status ?? "pending_review",
+        history: payload.history ?? [],
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["move_ins"] });
+    },
+  });
+}
+
 export function useUpdateMoveIn() {
   const qc = useQueryClient();
   return useMutation({
