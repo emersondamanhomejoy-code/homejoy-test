@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { MoveInPage } from "@/components/MoveInPage";
 import { ClaimsPage } from "@/components/ClaimsPage";
 import { UsersPage } from "@/components/UsersPage";
+import { ActivityLogPage } from "@/components/ActivityLogPage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, useUpdateRoom, useCreateRoom, useDeleteRoom, Unit, Room, RoomConfig } from "@/hooks/useRooms";
@@ -135,9 +136,6 @@ export function AdminContent({ tab }: AdminContentProps) {
   const canCreateManager = role === "boss";
   const canCreateRoles = role === "boss" ? ["manager", "admin", "agent"] : role === "manager" ? ["admin", "agent"] : ["agent"];
 
-  // Activity log state
-  const [activityLogs, setActivityLogs] = useState<any[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
 
   // Users state
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -390,27 +388,6 @@ export function AdminContent({ tab }: AdminContentProps) {
     }
   };
 
-  const fetchActivityLogs = async () => {
-    setActivityLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("activity_logs" as any)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      setActivityLogs(data || []);
-    } catch (e: any) {
-      console.error("Failed to fetch activity logs:", e);
-    } finally {
-      setActivityLoading(false);
-    }
-  };
-
-  // Fetch activity logs when switching to activity tab
-  useEffect(() => {
-    if (tab === "activity") fetchActivityLogs();
-  }, [tab]);
 
   const openCreateRoom2 = () => {
     setEditingUnit({ ...emptyUnit });
@@ -1491,50 +1468,7 @@ export function AdminContent({ tab }: AdminContentProps) {
       {/* USERS TAB */}
       {tab === "users" && <UsersPage />}
 
-      {tab === "activity" && canViewActivityLog && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{activityLogs.length} recent activities</span>
-            <button onClick={fetchActivityLogs} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-80 transition-colors">🔄 Refresh</button>
-          </div>
-          {activityLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : activityLogs.length === 0 ? (
-            <div className="bg-card rounded-lg p-6 text-center text-muted-foreground text-sm">No activity logs yet</div>
-          ) : (
-            <div className="space-y-2">
-              {activityLogs.map((log: any) => (
-                <div key={log.id} className="bg-card rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{log.actor_email || log.actor_id?.slice(0, 8)}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        log.action.includes("create") ? "bg-green-500/20 text-green-600" :
-                        log.action.includes("delete") ? "bg-destructive/20 text-destructive" :
-                        log.action.includes("approve") ? "bg-green-500/20 text-green-600" :
-                        log.action.includes("reject") ? "bg-destructive/20 text-destructive" :
-                        log.action.includes("role") ? "bg-purple-500/20 text-purple-600" :
-                        "bg-secondary text-secondary-foreground"
-                      }`}>{log.action}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString()}</span>
-                  </div>
-                  {log.entity_type && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {log.entity_type}{log.entity_id ? ` · ${log.entity_id.slice(0, 8)}...` : ""}
-                    </div>
-                  )}
-                  {log.details && Object.keys(log.details).length > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1 bg-secondary rounded px-2 py-1">
-                      {Object.entries(log.details).map(([k, v]) => `${k}: ${v}`).join(" · ")}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {tab === "activity" && canViewActivityLog && <ActivityLogPage />}
     </div>
   );
 }
