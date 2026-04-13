@@ -3,7 +3,7 @@ import { useCondos, useDeleteCondo, Condo } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { useUnits } from "@/hooks/useRooms";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { StandardModal } from "@/components/ui/standard-modal";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AccessItem } from "@/components/BuildingForm";
@@ -202,13 +202,16 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
       </StandardTable>
 
       {/* View Dialog */}
-      <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Building Details</DialogTitle>
-          </DialogHeader>
-          {viewing && (
-            <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-5 pb-4">
+      <StandardModal
+        open={!!viewing}
+        onOpenChange={(open) => { if (!open) setViewing(null); }}
+        title="Building Details"
+        size="lg"
+        hideCancel
+        footer={<Button variant="outline" onClick={() => setViewing(null)}>Close</Button>}
+      >
+        {viewing && (
+          <div className="space-y-5">
               {viewing.photos && viewing.photos.length > 0 && (
                 <div className="grid grid-cols-4 gap-3">
                   {viewing.photos.map((path, i) => (
@@ -263,13 +266,9 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <div className="col-span-2"><span className="text-muted-foreground">Arrival Instruction:</span> <span className="font-medium whitespace-pre-wrap">{(viewing as any).arrival_instruction || "—"}</span></div>
                 </div>
               </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        )}
+      </StandardModal>
     </StandardPageLayout>
   );
 }
