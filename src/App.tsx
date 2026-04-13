@@ -14,9 +14,6 @@ import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
 import Login from "./pages/Login.tsx";
 import Rooms from "./pages/Rooms.tsx";
-import AddUnit from "./pages/AddUnit.tsx";
-import ViewUnit from "./pages/ViewUnit.tsx";
-import EditUnit from "./pages/EditUnit.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,9 +29,6 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/admin" element={<Index />} />
-           <Route path="/admin/add-unit" element={<AddUnit />} />
-           <Route path="/admin/view-unit/:unitId" element={<ViewUnit />} />
-           <Route path="/admin/edit-unit/:unitId" element={<EditUnit />} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sign/:token" element={<Sign />} />

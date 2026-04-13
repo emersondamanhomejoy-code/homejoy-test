@@ -440,17 +440,15 @@ export function RoomsContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Unit Dialog */}
-      <Dialog open={!!editUnitId} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0" hideClose onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>Edit Unit</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {editUnitId && <EditUnit unitIdProp={editUnitId} focusRoomId={editFocusRoomId} onClose={() => { setEditUnitId(null); setEditFocusRoomId(undefined); }} />}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Unit Modal */}
+      {editUnitId && (
+        <EditUnit
+          open={true}
+          onOpenChange={(o) => { if (!o) { setEditUnitId(null); setEditFocusRoomId(undefined); } }}
+          unitId={editUnitId}
+          focusRoomId={editFocusRoomId}
+        />
+      )}
     </StandardPageLayout>
   );
 }
