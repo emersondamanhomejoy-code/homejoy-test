@@ -9,28 +9,31 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 
 const bedTypeMaxPax: Record<string, number> = {
   Single: 1, "Super Single": 1, Queen: 2, King: 2,
 };
+const OPTIONAL_FEATURES = ["Balcony", "Private Bathroom", "Window"];
 
-const OPTIONAL_FEATURES = ["Balcony", "Private Toilet", "Window", "Master Room"];
+interface LocalRoom extends RoomConfig {
+  _editing: boolean;
+  _key: number;
+}
 
-const getDefaultRoomName = (index: number, naming: "alpha" | "digit") =>
-  naming === "alpha" ? `Room ${String.fromCharCode(65 + index)}` : `Room ${index + 1}`;
+interface LocalCarpark {
+  room: string;
+  parking_lot: string;
+  rent: number;
+  status: string;
+  assigned_to: string;
+  internal_remark: string;
+  _editing: boolean;
+  _key: number;
+}
 
-const getDefaultCarParkName = (index: number) => `Carpark ${index + 1}`;
-
-const hasMeaningfulData = (rc: RoomConfig, index: number, naming: "alpha" | "digit", isCarPark: boolean) => {
-  if (isCarPark) {
-    return Boolean(rc.parking_lot?.trim()) || Number(rc.rent) !== 150 ||
-      (rc.status && rc.status !== "Available") || Boolean(rc.assigned_to?.trim()) || Boolean(rc.internal_remark?.trim());
-  }
-  return Boolean(rc.bed_type?.trim()) || Number(rc.rent) > 0 || Number(rc.max_pax) !== 1 ||
-    (rc.status && rc.status !== "Available") || Boolean(rc.tenant_name?.trim()) ||
-    Boolean(rc.internal_remark?.trim()) || (rc.photos && rc.photos.length > 0);
-};
+let keyCounter = 0;
 
 interface AddUnitProps {
   open: boolean;
@@ -51,105 +54,109 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
 
   const updateField = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const [roomNaming, setRoomNaming] = useState<"alpha" | "digit">("alpha");
-  const [roomCountInput, setRoomCountInput] = useState("5");
-  const [carParkCountInput, setCarParkCountInput] = useState("1");
-  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(() => {
-    const rooms: RoomConfig[] = Array.from({ length: 5 }, (_, i) => ({
-      room: getDefaultRoomName(i, "alpha"), bed_type: "", max_pax: 1, rent: 0, status: "Available",
-      room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "", available_date: "",
-    }));
-    const cps: RoomConfig[] = [{ room: getDefaultCarParkName(0), bed_type: "", max_pax: 0, rent: 150, room_type: "Car Park", status: "Available", assigned_to: "", internal_remark: "" }];
-    return [...rooms, ...cps];
-  });
-
-  const [showReduceConfirm, setShowReduceConfirm] = useState<{ type: "room" | "carpark"; newCount: number } | null>(null);
-  const [collapsedRooms, setCollapsedRooms] = useState<Record<number, boolean>>({});
+  const [roomRecords, setRoomRecords] = useState<LocalRoom[]>([]);
+  const [carparkRecords, setCarparkRecords] = useState<LocalCarpark[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "room" | "carpark"; key: number } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const rebuildConfigs = (roomCount: number, carParkCount: number, naming: "alpha" | "digit") => {
-    const regularRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
-    const carParks = roomConfigs.filter(r => r.room_type === "Car Park");
-
-    let nextRooms = regularRooms.slice(0, roomCount).map((room, i) => ({ ...room, room: getDefaultRoomName(i, naming) }));
-    while (nextRooms.length < roomCount) {
-      nextRooms.push({ room: getDefaultRoomName(nextRooms.length, naming), bed_type: "", max_pax: 1, rent: 0, status: "Available", room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "", available_date: "" });
+  // ── Room helpers ──
+  const getNextRoomLabel = () => {
+    const usedLetters = roomRecords.map(r => r.room.replace("Room ", "")).filter(l => l.length === 1 && /[A-Z]/.test(l));
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(65 + i);
+      if (!usedLetters.includes(letter)) return `Room ${letter}`;
     }
-
-    let nextCPs = carParks.slice(0, carParkCount).map((cp, i) => ({ ...cp, room: getDefaultCarParkName(i) }));
-    while (nextCPs.length < carParkCount) {
-      nextCPs.push({ room: getDefaultCarParkName(nextCPs.length), bed_type: "", max_pax: 0, rent: 150, room_type: "Car Park", status: "Available", assigned_to: "", internal_remark: "" });
-    }
-
-    setRoomConfigs([...nextRooms, ...nextCPs]);
+    return `Room ${roomRecords.length + 1}`;
   };
 
-  const handleRoomCountChange = (val: string) => {
-    const n = Math.max(1, Math.min(20, Math.floor(Number(val) || 1)));
-    const currentRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
-    if (n < currentRooms.length) {
-      const removedRooms = currentRooms.slice(n);
-      const hasData = removedRooms.some((rc, i) => hasMeaningfulData(rc, n + i, roomNaming, false));
-      if (hasData) {
-        setShowReduceConfirm({ type: "room", newCount: n });
-        return;
-      }
-    }
-    setRoomCountInput(String(n));
-    rebuildConfigs(n, Number(carParkCountInput) || 0, roomNaming);
+  const addRoom = () => {
+    setRoomRecords(prev => [...prev, {
+      room: getNextRoomLabel(), bed_type: "", max_pax: 1, rent: 0, status: "Available",
+      room_category: "Normal Room", wall_type: "", optional_features: [], internal_remark: "",
+      available_date: "", photos: [],
+      _editing: true, _key: ++keyCounter,
+    }]);
   };
 
-  const handleCarParkCountChange = (val: string) => {
-    const n = Math.max(0, Math.min(10, Math.floor(Number(val) || 0)));
-    const currentCPs = roomConfigs.filter(r => r.room_type === "Car Park");
-    if (n < currentCPs.length) {
-      const removedCPs = currentCPs.slice(n);
-      const hasData = removedCPs.some((rc, i) => hasMeaningfulData(rc, n + i, roomNaming, true));
-      if (hasData) {
-        setShowReduceConfirm({ type: "carpark", newCount: n });
-        return;
-      }
-    }
-    setCarParkCountInput(String(n));
-    rebuildConfigs(Number(roomCountInput) || 1, n, roomNaming);
+  const updateRoom = (key: number, field: string, value: any) => {
+    setRoomRecords(prev => prev.map(r => r._key === key ? { ...r, [field]: value } : r));
   };
 
-  const confirmReduce = () => {
-    if (!showReduceConfirm) return;
-    const { type, newCount } = showReduceConfirm;
-    if (type === "room") {
-      setRoomCountInput(String(newCount));
-      rebuildConfigs(newCount, Number(carParkCountInput) || 0, roomNaming);
+  const saveRoom = (key: number) => {
+    const room = roomRecords.find(r => r._key === key);
+    if (!room) return;
+    if (room.room_category !== "Studio" && !room.bed_type.trim()) { alert("Bed Type is required."); return; }
+    if (!room.rent || room.rent <= 0) { alert("Rent must be greater than 0."); return; }
+    setRoomRecords(prev => prev.map(r => r._key === key ? { ...r, _editing: false } : r));
+  };
+
+  const cancelRoomEdit = (key: number) => {
+    const room = roomRecords.find(r => r._key === key);
+    if (!room) return;
+    // If never saved (no rent set), remove it
+    if (room.rent <= 0 && !room.bed_type) {
+      setRoomRecords(prev => prev.filter(r => r._key !== key));
     } else {
-      setCarParkCountInput(String(newCount));
-      rebuildConfigs(Number(roomCountInput) || 1, newCount, roomNaming);
+      setRoomRecords(prev => prev.map(r => r._key === key ? { ...r, _editing: false } : r));
     }
-    setShowReduceConfirm(null);
   };
 
-  const handleNamingChange = (n: "alpha" | "digit") => {
-    setRoomNaming(n);
-    rebuildConfigs(Number(roomCountInput) || 1, Number(carParkCountInput) || 0, n);
+  // ── Carpark helpers ──
+  const getNextCarparkLabel = () => {
+    const usedNums = carparkRecords.map(c => parseInt(c.room.replace("Carpark ", ""))).filter(n => !isNaN(n));
+    let next = 1;
+    while (usedNums.includes(next)) next++;
+    return `Carpark ${next}`;
   };
 
+  const addCarpark = () => {
+    setCarparkRecords(prev => [...prev, {
+      room: getNextCarparkLabel(), parking_lot: "", rent: 150, status: "Available",
+      assigned_to: "", internal_remark: "",
+      _editing: true, _key: ++keyCounter,
+    }]);
+  };
+
+  const updateCarpark = (key: number, field: string, value: any) => {
+    setCarparkRecords(prev => prev.map(c => c._key === key ? { ...c, [field]: value } : c));
+  };
+
+  const saveCarpark = (key: number) => {
+    setCarparkRecords(prev => prev.map(c => c._key === key ? { ...c, _editing: false } : c));
+  };
+
+  const cancelCarparkEdit = (key: number) => {
+    const cp = carparkRecords.find(c => c._key === key);
+    if (!cp) return;
+    if (!cp.parking_lot && cp.rent === 150 && cp.status === "Available") {
+      setCarparkRecords(prev => prev.filter(c => c._key !== key));
+    } else {
+      setCarparkRecords(prev => prev.map(c => c._key === key ? { ...c, _editing: false } : c));
+    }
+  };
+
+  const handleDelete = () => {
+    if (!deleteConfirm) return;
+    if (deleteConfirm.type === "room") {
+      setRoomRecords(prev => prev.filter(r => r._key !== deleteConfirm.key));
+    } else {
+      setCarparkRecords(prev => prev.filter(c => c._key !== deleteConfirm.key));
+    }
+    setDeleteConfirm(null);
+  };
+
+  // ── Save ──
   const saveUnit = async () => {
     const missingFields: string[] = [];
     if (!form.building.trim()) missingFields.push("Building");
     if (!form.location.trim()) missingFields.push("Location");
     if (!form.unit.trim()) missingFields.push("Unit Number");
     if (!Number.isFinite(form.unit_max_pax) || form.unit_max_pax < 1) missingFields.push("Maximum Occupants");
-    if (!Number.isFinite(form.deposit_multiplier) || form.deposit_multiplier <= 0) missingFields.push("Rental Deposit Multiplier");
-    if (!Number.isFinite(form.admin_fee) || form.admin_fee < 0) missingFields.push("Admin Fee");
-    if (!Number.isFinite(form.meter_rate) || form.meter_rate < 0) missingFields.push("Meter Rate");
 
-    const regularRooms = roomConfigs.filter(r => r.room_type !== "Car Park");
-
-    regularRooms.forEach((room, index) => {
-      const label = room.room || getDefaultRoomName(index, roomNaming);
-      if (room.room_category !== "Studio" && !room.bed_type.trim()) missingFields.push(`${label} Bed Type`);
-      if (!Number.isFinite(Number(room.max_pax)) || Number(room.max_pax) < 1) missingFields.push(`${label} Max Pax`);
-      if (!Number.isFinite(Number(room.rent)) || Number(room.rent) <= 0) missingFields.push(`${label} Rent`);
-    });
+    const editingRooms = roomRecords.filter(r => r._editing);
+    if (editingRooms.length > 0) { alert("Please save or cancel all room entries before saving the unit."); return; }
+    const editingCPs = carparkRecords.filter(c => c._editing);
+    if (editingCPs.length > 0) { alert("Please save or cancel all carpark entries before saving the unit."); return; }
 
     if (missingFields.length > 0) {
       alert(`Please complete the required fields:\n• ${missingFields.join("\n• ")}`);
@@ -159,15 +166,18 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
     setSaving(true);
     try {
       const { common_photos, wifi_name, wifi_password, ...unitData } = form;
+      const allConfigs: RoomConfig[] = [
+        ...roomRecords.map(({ _editing, _key, ...r }) => r),
+        ...carparkRecords.map(({ _editing, _key, ...c }) => ({
+          room: c.room, bed_type: "", max_pax: 0, rent: c.rent,
+          room_type: "Car Park" as const, status: c.status,
+          assigned_to: c.assigned_to, internal_remark: c.internal_remark,
+          parking_lot: c.parking_lot,
+        })),
+      ];
       await createUnit.mutateAsync({
-        unit: {
-          ...unitData,
-          common_photos,
-          wifi_name,
-          wifi_password,
-          access_info: "",
-        } as any,
-        roomConfigs,
+        unit: { ...unitData, common_photos, wifi_name, wifi_password, access_info: "" } as any,
+        roomConfigs: allConfigs,
       });
       logActivity("create_unit", "unit", "", { building: form.building, unit: form.unit });
       onOpenChange(false);
@@ -178,9 +188,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
     }
   };
 
-  const isDirty = !!(form.building || form.unit || roomConfigs.some((rc, i) =>
-    hasMeaningfulData(rc, i, roomNaming, rc.room_type === "Car Park")
-  ));
+  const isDirty = !!(form.building || form.unit || roomRecords.length > 0 || carparkRecords.length > 0);
 
   return (
     <>
@@ -307,293 +315,281 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
             </div>
           </section>
 
-          {/* ── Room Setup ── */}
-          <section className="space-y-5">
-            <h2 className="text-lg font-semibold border-b border-border pb-2">Room Setup</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Number of Rooms *</Label>
-                <input className={`${inputClass} w-full`} type="number" min={1} max={20} value={roomCountInput}
-                  onChange={e => setRoomCountInput(e.target.value)}
-                  onBlur={() => handleRoomCountChange(roomCountInput)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleRoomCountChange(roomCountInput); } }}
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground block mb-2">Room Naming Convention</Label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="roomNaming" value="alpha" checked={roomNaming === "alpha"} onChange={() => handleNamingChange("alpha")} className="w-4 h-4 accent-primary" />
-                    <span className="text-sm">Alphabet (A, B, C…)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="roomNaming" value="digit" checked={roomNaming === "digit"} onChange={() => handleNamingChange("digit")} className="w-4 h-4 accent-primary" />
-                    <span className="text-sm">Digit (1, 2, 3…)</span>
-                  </label>
-                </div>
-              </div>
+          {/* ── Rooms ── */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-2">
+              <h2 className="text-lg font-semibold">Rooms</h2>
+              <Button size="sm" onClick={addRoom}><Plus className="h-4 w-4 mr-1" /> Add Room</Button>
             </div>
 
-            {/* Room items */}
-            <div className="space-y-2">
-              {roomConfigs.filter(r => r.room_type !== "Car Park").map((rc, i) => {
-                const isCollapsed = !!collapsedRooms[i];
-                const updateRC = (field: string, value: any) => {
-                  const c = [...roomConfigs];
-                  c[i] = { ...c[i], [field]: value };
-                  setRoomConfigs(c);
-                };
-                const toggleCollapse = () => setCollapsedRooms(prev => ({ ...prev, [i]: !prev[i] }));
-
-                const showAvailDate = rc.status === "Available Soon";
-                const showOccupant = rc.status === "Occupied";
-
-                if (isCollapsed) {
-                  const parts = [rc.room, rc.room_category || "Normal Room", rc.bed_type || "—", `RM${rc.rent || 0}`, rc.status || "Available"];
-                  return (
-                    <div key={`room-${i}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 transition-colors" onClick={toggleCollapse}>
-                      <span className="text-sm font-medium">{parts.join(" · ")}</span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  );
-                }
-
-                return (
-                  <div key={`room-${i}`} className="rounded-lg border bg-card p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{rc.room}</span>
-                      <button onClick={toggleCollapse} className="p-1.5 rounded-md hover:bg-accent transition-colors" title="Collapse">
-                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </div>
-
-                    {/* Room Photos Upload */}
-                    <div>
-                      <label className="text-xs text-muted-foreground">Room Photos</label>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {(rc.photos || []).map((path: string, pi: number) => (
-                          <div key={pi} className="relative group">
-                            <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
-                            <button onClick={() => {
-                              const c = [...roomConfigs];
-                              c[i] = { ...c[i], photos: (c[i].photos || []).filter((_: any, idx: number) => idx !== pi) };
-                              setRoomConfigs(c);
-                            }} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-                          </div>
-                        ))}
-                        {(rc.photos || []).length < 10 && (
-                          <label className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                            <span className="text-lg text-muted-foreground">+</span>
-                            <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                              const files = Array.from(e.target.files || []);
-                              if (!files.length) return;
-                              const remaining = 10 - (rc.photos || []).length;
-                              const toUpload = files.slice(0, remaining);
-                              const newPaths: string[] = [];
-                              for (const file of toUpload) {
-                                const ext = file.name.split('.').pop();
-                                const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                                const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                                if (error) { alert(`Upload failed: ${error.message}`); continue; }
-                                newPaths.push(path);
-                              }
-                              if (newPaths.length > 0) {
-                                const c = [...roomConfigs];
-                                c[i] = { ...c[i], photos: [...(c[i].photos || []), ...newPaths] };
-                                setRoomConfigs(c);
-                              }
-                              e.target.value = "";
-                            }} />
-                          </label>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Room Type *</label>
-                        <select className={`${inputClass} w-full`} value={rc.room_category || "Normal Room"} onChange={e => {
-                          const val = e.target.value;
-                          const updates: any = { room_category: val };
-                          if (val === "Studio") {
-                            updates.bed_type = "None";
-                          } else if (rc.bed_type === "None") {
-                            updates.bed_type = "";
-                          }
-                          const c = [...roomConfigs];
-                          c[i] = { ...c[i], ...updates };
-                          setRoomConfigs(c);
-                        }}>
-                          <option value="Normal Room">Normal Room</option>
-                          <option value="Studio">Studio</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Bed Type {rc.room_category !== "Studio" ? "*" : ""}</label>
-                        <select className={`${inputClass} w-full`} value={rc.bed_type} onChange={e => {
-                          const bt = e.target.value;
-                          const c = [...roomConfigs];
-                          c[i] = { ...c[i], bed_type: bt, max_pax: bt === "None" ? c[i].max_pax : (bedTypeMaxPax[bt] || c[i].max_pax) };
-                          setRoomConfigs(c);
-                        }}>
-                          <option value="">—</option>
-                          <option value="None">None</option>
-                          <option value="Single">Single</option>
-                          <option value="Super Single">Super Single</option>
-                          <option value="Queen">Queen</option>
-                          <option value="King">King</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Wall Type</label>
-                        <select className={`${inputClass} w-full`} value={rc.wall_type || ""} onChange={e => updateRC("wall_type", e.target.value)}>
-                          <option value="">—</option>
-                          <option value="Original">Original</option>
-                          <option value="Partition">Partition</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Maximum Pax *</label>
-                        <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => updateRC("max_pax", Number(e.target.value))} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Monthly Rental (RM) *</label>
-                        <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateRC("rent", Number(e.target.value))} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Room Status</label>
-                        <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateRC("status", e.target.value)}>
-                          <option value="Available">Available</option>
-                          <option value="Available Soon">Available Soon</option>
-                          <option value="Pending">Pending</option>
-                          <option value="Occupied">Occupied</option>
-                          <option value="Archived">Archived</option>
-                        </select>
-                      </div>
-                      {showAvailDate && (
-                        <div>
-                          <label className="text-xs text-muted-foreground">Available Date</label>
-                          <input className={`${inputClass} w-full`} type="date" value={rc.available_date || ""} onChange={e => updateRC("available_date", e.target.value)} />
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1.5">Optional Features</label>
-                      <div className="flex flex-wrap gap-2">
-                        {OPTIONAL_FEATURES.map(feat => {
-                          const selected = (rc.optional_features || []).includes(feat);
-                          return (
-                            <button key={feat} type="button"
-                              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-secondary-foreground border-border hover:bg-accent"}`}
-                              onClick={() => {
-                                const current = rc.optional_features || [];
-                                const next = selected ? current.filter(f => f !== feat) : [...current, feat];
-                                updateRC("optional_features", next);
-                              }}
-                            >
-                              {feat}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground">Internal Remark</label>
-                      <input className={`${inputClass} w-full`} placeholder="Internal notes…" value={rc.internal_remark || ""} onChange={e => updateRC("internal_remark", e.target.value)} />
-                    </div>
-
-                    {showOccupant && (
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <label className="text-xs text-muted-foreground">Select Tenant</label>
-                        <select className={`${inputClass} w-full mt-1`} value={rc.tenant_name || ""} onChange={e => updateRC("tenant_name", e.target.value)} disabled>
-                          <option value="">— Select Tenant (coming soon) —</option>
-                        </select>
-                        <p className="text-xs text-muted-foreground mt-1">Tenant list will be populated from approved bookings.</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {roomRecords.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No rooms added yet. Click "Add Room" to start.</p>
+            ) : (
+              <div className="space-y-2">
+                {roomRecords.map(rc => rc._editing ? (
+                  <RoomInlineForm key={rc._key} room={rc} onChange={(f, v) => updateRoom(rc._key, f, v)} onSave={() => saveRoom(rc._key)} onCancel={() => cancelRoomEdit(rc._key)} />
+                ) : (
+                  <RoomSummaryRow key={rc._key} room={rc} onEdit={() => updateRoom(rc._key, "_editing", true)} onDelete={() => setDeleteConfirm({ type: "room", key: rc._key })} />
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* ── Carpark Setup ── */}
-          <section className="space-y-5">
-            <h2 className="text-lg font-semibold border-b border-border pb-2">Carpark Setup</h2>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Number of Carparks</Label>
-              <input className={`${inputClass} w-48`} type="number" min={0} max={10} value={carParkCountInput}
-                onChange={e => setCarParkCountInput(e.target.value)}
-                onBlur={() => handleCarParkCountChange(carParkCountInput)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleCarParkCountChange(carParkCountInput); } }}
-              />
+          {/* ── Carparks ── */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-2">
+              <h2 className="text-lg font-semibold">Carparks</h2>
+              <Button size="sm" onClick={addCarpark}><Plus className="h-4 w-4 mr-1" /> Add Carpark</Button>
             </div>
 
-            <div className="space-y-2">
-              {roomConfigs.map((rc, globalIdx) => {
-                if (rc.room_type !== "Car Park") return null;
-                const updateCP = (field: string, value: any) => {
-                  const c = [...roomConfigs]; c[globalIdx] = { ...c[globalIdx], [field]: value }; setRoomConfigs(c);
-                };
-                const cpOccupied = rc.status === "Occupied";
-                return (
-                  <div key={`cp-${globalIdx}`} className="rounded-lg border bg-accent/30 border-border p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="font-semibold text-sm">🅿️ {rc.room}</span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Lot Number</label>
-                        <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={rc.parking_lot || ""} onChange={e => updateCP("parking_lot", e.target.value)} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Rental (RM)</label>
-                        <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => updateCP("rent", Number(e.target.value))} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Status</label>
-                        <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => updateCP("status", e.target.value)}>
-                          <option value="Available">Available</option>
-                          <option value="Occupied">Occupied</option>
-                          <option value="Archived">Archived</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Remark</label>
-                        <input className={`${inputClass} w-full`} placeholder="Notes…" value={rc.internal_remark || ""} onChange={e => updateCP("internal_remark", e.target.value)} />
-                      </div>
-                    </div>
-                    {cpOccupied && (
-                      <div className="mt-3">
-                        <label className="text-xs text-muted-foreground">Select Tenant</label>
-                        <select className={`${inputClass} w-full mt-1`} value={rc.assigned_to || ""} onChange={e => updateCP("assigned_to", e.target.value)} disabled>
-                          <option value="">— Select Tenant (coming soon) —</option>
-                        </select>
-                        <p className="text-xs text-muted-foreground mt-1">Tenant list will be populated from approved bookings.</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {carparkRecords.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No carparks added yet. Click "Add Carpark" to start.</p>
+            ) : (
+              <div className="space-y-2">
+                {carparkRecords.map(cp => cp._editing ? (
+                  <CarparkInlineForm key={cp._key} carpark={cp} onChange={(f, v) => updateCarpark(cp._key, f, v)} onSave={() => saveCarpark(cp._key)} onCancel={() => cancelCarparkEdit(cp._key)} />
+                ) : (
+                  <CarparkSummaryRow key={cp._key} carpark={cp} onEdit={() => updateCarpark(cp._key, "_editing", true)} onDelete={() => setDeleteConfirm({ type: "carpark", key: cp._key })} />
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </StandardModal>
 
-      {/* Reduce Confirmation */}
       <ConfirmDialog
-        open={!!showReduceConfirm}
-        onOpenChange={(open) => { if (!open) setShowReduceConfirm(null); }}
-        title={`Remove ${showReduceConfirm?.type === "room" ? "rooms" : "car parks"}?`}
-        description={`Some of the ${showReduceConfirm?.type === "room" ? "rooms" : "car parks"} you're removing already have data filled in. This data will be lost. Continue?`}
+        open={!!deleteConfirm}
+        onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
+        title="Remove this item?"
+        description="This item will be removed. This cannot be undone."
         confirmLabel="Remove"
         variant="destructive"
-        onConfirm={confirmReduce}
+        onConfirm={handleDelete}
       />
     </>
+  );
+}
+
+// ── Room Inline Form ──
+function RoomInlineForm({ room, onChange, onSave, onCancel }: {
+  room: LocalRoom;
+  onChange: (field: string, value: any) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const showAvailDate = room.status === "Available Soon";
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3 border-primary/30">
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-sm">{room.room}</span>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={onCancel}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+          <Button size="sm" onClick={onSave}><Check className="h-4 w-4 mr-1" /> Save</Button>
+        </div>
+      </div>
+
+      {/* Room Photos */}
+      <div>
+        <label className="text-xs text-muted-foreground">Room Photos</label>
+        <div className="flex flex-wrap gap-2 mt-1">
+          {(room.photos || []).map((path: string, pi: number) => (
+            <div key={pi} className="relative group">
+              <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
+              <button onClick={() => onChange("photos", (room.photos || []).filter((_: any, idx: number) => idx !== pi))}
+                className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+            </div>
+          ))}
+          {(room.photos || []).length < 10 && (
+            <label className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+              <span className="text-lg text-muted-foreground">+</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                const remaining = 10 - (room.photos || []).length;
+                const toUpload = files.slice(0, remaining);
+                const newPaths: string[] = [];
+                for (const file of toUpload) {
+                  const ext = file.name.split('.').pop();
+                  const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                  const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                  newPaths.push(path);
+                }
+                if (newPaths.length > 0) onChange("photos", [...(room.photos || []), ...newPaths]);
+                e.target.value = "";
+              }} />
+            </label>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Room Label</label>
+          <input className={`${inputClass} w-full`} value={room.room} onChange={e => onChange("room", e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Room Type</label>
+          <select className={`${inputClass} w-full`} value={room.room_category || "Normal Room"} onChange={e => {
+            onChange("room_category", e.target.value);
+            if (e.target.value === "Studio") onChange("bed_type", "None");
+            else if (room.bed_type === "None") onChange("bed_type", "");
+          }}>
+            <option value="Normal Room">Room</option>
+            <option value="Studio">Studio</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Bed Type {room.room_category !== "Studio" ? "*" : ""}</label>
+          <select className={`${inputClass} w-full`} value={room.bed_type} onChange={e => {
+            const bt = e.target.value;
+            onChange("bed_type", bt);
+            if (bt !== "None" && bedTypeMaxPax[bt]) onChange("max_pax", bedTypeMaxPax[bt]);
+          }}>
+            <option value="">—</option>
+            <option value="None">None</option>
+            <option value="Single">Single</option>
+            <option value="Super Single">Super Single</option>
+            <option value="Queen">Queen</option>
+            <option value="King">King</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Wall Type</label>
+          <select className={`${inputClass} w-full`} value={room.wall_type || ""} onChange={e => onChange("wall_type", e.target.value)}>
+            <option value="">—</option>
+            <option value="Original">Original</option>
+            <option value="Partition">Partition</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Max Pax *</label>
+          <input className={`${inputClass} w-full`} type="number" min={1} value={room.max_pax} onChange={e => onChange("max_pax", Number(e.target.value))} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Listed Rental (RM) *</label>
+          <input className={`${inputClass} w-full`} type="number" value={room.rent || ""} onChange={e => onChange("rent", Number(e.target.value))} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Status</label>
+          <select className={`${inputClass} w-full`} value={room.status || "Available"} onChange={e => onChange("status", e.target.value)}>
+            <option value="Available">Available</option>
+            <option value="Available Soon">Available Soon</option>
+            <option value="Pending">Pending</option>
+            <option value="Occupied">Occupied</option>
+            <option value="Archived">Archived</option>
+          </select>
+        </div>
+        {showAvailDate && (
+          <div>
+            <label className="text-xs text-muted-foreground">Available Date</label>
+            <input className={`${inputClass} w-full`} type="date" value={room.available_date || ""} onChange={e => onChange("available_date", e.target.value)} />
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="text-xs text-muted-foreground block mb-1.5">Features</label>
+        <div className="flex flex-wrap gap-2">
+          {OPTIONAL_FEATURES.map(feat => {
+            const selected = (room.optional_features || []).includes(feat);
+            return (
+              <button key={feat} type="button"
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-secondary-foreground border-border hover:bg-accent"}`}
+                onClick={() => onChange("optional_features", selected ? (room.optional_features || []).filter(f => f !== feat) : [...(room.optional_features || []), feat])}
+              >{feat}</button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs text-muted-foreground">Remark</label>
+        <input className={`${inputClass} w-full`} placeholder="Internal notes…" value={room.internal_remark || ""} onChange={e => onChange("internal_remark", e.target.value)} />
+      </div>
+    </div>
+  );
+}
+
+// ── Room Summary Row ──
+function RoomSummaryRow({ room, onEdit, onDelete }: { room: LocalRoom; onEdit: () => void; onDelete: () => void }) {
+  return (
+    <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
+      <div className="flex items-center gap-3 text-sm">
+        <span className="font-medium">{room.room}</span>
+        <span className="text-muted-foreground">{room.room_category === "Studio" ? "Studio" : "Room"}</span>
+        <span className="text-muted-foreground">{room.bed_type || "—"}</span>
+        <span className="font-medium">RM{room.rent}</span>
+        <StatusBadge status={room.status || "Available"} />
+      </div>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit} title="Edit"><Pencil className="h-3.5 w-3.5" /></Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Carpark Inline Form ──
+function CarparkInlineForm({ carpark, onChange, onSave, onCancel }: {
+  carpark: LocalCarpark;
+  onChange: (field: string, value: any) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="rounded-lg border bg-accent/30 border-primary/30 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-sm">🅿️ {carpark.room}</span>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={onCancel}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+          <Button size="sm" onClick={onSave}><Check className="h-4 w-4 mr-1" /> Save</Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Label</label>
+          <input className={`${inputClass} w-full`} value={carpark.room} onChange={e => onChange("room", e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Lot Number</label>
+          <input className={`${inputClass} w-full`} placeholder="e.g. B1-23" value={carpark.parking_lot} onChange={e => onChange("parking_lot", e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Rental (RM)</label>
+          <input className={`${inputClass} w-full`} type="number" value={carpark.rent || ""} onChange={e => onChange("rent", Number(e.target.value))} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Status</label>
+          <select className={`${inputClass} w-full`} value={carpark.status} onChange={e => onChange("status", e.target.value)}>
+            <option value="Available">Available</option>
+            <option value="Occupied">Occupied</option>
+            <option value="Archived">Archived</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Remark</label>
+        <input className={`${inputClass} w-full`} placeholder="Notes…" value={carpark.internal_remark} onChange={e => onChange("internal_remark", e.target.value)} />
+      </div>
+    </div>
+  );
+}
+
+// ── Carpark Summary Row ──
+function CarparkSummaryRow({ carpark, onEdit, onDelete }: { carpark: LocalCarpark; onEdit: () => void; onDelete: () => void }) {
+  return (
+    <div className="rounded-lg border bg-accent/30 px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors">
+      <div className="flex items-center gap-3 text-sm">
+        <span className="font-medium">🅿️ {carpark.room}</span>
+        {carpark.parking_lot && <span className="text-muted-foreground">{carpark.parking_lot}</span>}
+        <span className="font-medium">RM{carpark.rent}</span>
+        <StatusBadge status={carpark.status} />
+      </div>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit} title="Edit"><Pencil className="h-3.5 w-3.5" /></Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
+      </div>
+    </div>
   );
 }

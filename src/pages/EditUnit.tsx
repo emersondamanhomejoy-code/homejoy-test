@@ -7,15 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
-import { Plus, Eye, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, Eye, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
-const OPTIONAL_FEATURES = ["Balcony", "Private Toilet", "Window", "Master Room", "Studio"];
+const OPTIONAL_FEATURES = ["Balcony", "Private Bathroom", "Window"];
 const bedTypeMaxPax: Record<string, number> = { Single: 1, "Super Single": 1, Queen: 2, King: 2 };
 
 interface EditUnitProps {
@@ -30,7 +29,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const { data: units = [], isLoading } = useUnits();
   const { data: condosList = [] } = useCondos();
   const updateUnit = useUpdateUnit();
-  const updateRoom = useUpdateRoom();
+  const updateRoomMut = useUpdateRoom();
   const createRoom = useCreateRoom();
   const deleteRoom = useDeleteRoom();
 
@@ -39,28 +38,14 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const [form, setForm] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirmRoom, setDeleteConfirmRoom] = useState<string | null>(null);
-  const [collapsedRooms, setCollapsedRooms] = useState<Record<string, boolean>>(() => {
-    if (focusRoomId) return { [focusRoomId]: false };
-    return {};
-  });
-
-  useEffect(() => {
-    if (focusRoomId) {
-      setTimeout(() => {
-        const el = document.getElementById(`room-card-${focusRoomId}`);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 300);
-    }
-  }, [focusRoomId, unit]);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [roomEdits, setRoomEdits] = useState<Record<string, Record<string, any>>>({});
 
   useEffect(() => {
     if (unit && !form) {
       setForm({
-        building: unit.building,
-        location: unit.location,
-        unit: unit.unit,
-        unit_type: unit.unit_type,
-        unit_max_pax: unit.unit_max_pax,
+        building: unit.building, location: unit.location, unit: unit.unit,
+        unit_type: unit.unit_type, unit_max_pax: unit.unit_max_pax,
         deposit_multiplier: (unit as any).deposit_multiplier ?? 1.5,
         admin_fee: (unit as any).admin_fee ?? 330,
         meter_type: (unit as any).meter_type || "Postpaid",
@@ -74,29 +59,26 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
     }
   }, [unit]);
 
-  // Reset form when modal closes
   useEffect(() => {
-    if (!open) {
-      setForm(null);
-      setRoomEdits({});
-      setCollapsedRooms(focusRoomId ? { [focusRoomId]: false } : {});
-    }
+    if (!open) { setForm(null); setRoomEdits({}); setEditingRoomId(null); }
   }, [open]);
+
+  useEffect(() => {
+    if (focusRoomId && open) {
+      setEditingRoomId(focusRoomId);
+      setTimeout(() => {
+        const el = document.getElementById(`room-card-${focusRoomId}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }, [focusRoomId, open, unit]);
 
   const rooms = useMemo(() => (unit?.rooms || []).filter(r => (r as any).room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark")), [unit]);
   const carparks = useMemo(() => (unit?.rooms || []).filter(r => (r as any).room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark")), [unit]);
 
-  const [roomEdits, setRoomEdits] = useState<Record<string, Record<string, any>>>({});
-
-  const getRoomData = (room: Room) => {
-    return roomEdits[room.id] ? { ...room, ...roomEdits[room.id] } : room;
-  };
-
+  const getRoomData = (room: Room) => roomEdits[room.id] ? { ...room, ...roomEdits[room.id] } : room;
   const updateRoomField = (roomId: string, field: string, value: any) => {
-    setRoomEdits(prev => ({
-      ...prev,
-      [roomId]: { ...prev[roomId], [field]: value },
-    }));
+    setRoomEdits(prev => ({ ...prev, [roomId]: { ...prev[roomId], [field]: value } }));
   };
 
   const isDirty = Object.keys(roomEdits).some(k => Object.keys(roomEdits[k]).length > 0);
@@ -113,9 +95,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   if (!unit) {
     return (
       <StandardModal open={open} onOpenChange={onOpenChange} title="Edit Unit" size="xl">
-        <div className="flex flex-col items-center justify-center gap-4 py-12">
-          <span className="text-muted-foreground">Unit not found.</span>
-        </div>
+        <div className="flex items-center justify-center py-12"><span className="text-muted-foreground">Unit not found.</span></div>
       </StandardModal>
     );
   }
@@ -124,32 +104,40 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const handleSave = async () => {
-    if (!form.building?.trim() || !form.unit?.trim()) {
-      toast.error("Building and Unit Number are required.");
-      return;
-    }
+    if (!form.building?.trim() || !form.unit?.trim()) { toast.error("Building and Unit Number are required."); return; }
+    if (editingRoomId) { toast.error("Please save or cancel the room you're editing first."); return; }
     setSaving(true);
     try {
       const { common_photos, ...rest } = form;
       await updateUnit.mutateAsync({ id: unit.id, ...rest, common_photos } as any);
-
       for (const [roomId, edits] of Object.entries(roomEdits)) {
         if (Object.keys(edits).length > 0) {
           const room = [...rooms, ...carparks].find(r => r.id === roomId);
-          if (room) {
-            await updateRoom.mutateAsync({ ...room, ...edits } as any);
-          }
+          if (room) await updateRoomMut.mutateAsync({ ...room, ...edits } as any);
         }
       }
-
       logActivity("update_unit", "unit", unit.id, { building: form.building, unit: form.unit });
       toast.success("Unit updated successfully.");
       onOpenChange(false);
-    } catch (e: any) {
-      toast.error(e.message || "Failed to save.");
-    } finally {
-      setSaving(false);
+    } catch (e: any) { toast.error(e.message || "Failed to save."); }
+    finally { setSaving(false); }
+  };
+
+  const saveInlineRoom = (roomId: string) => {
+    const edits = roomEdits[roomId];
+    const room = [...rooms, ...carparks].find(r => r.id === roomId);
+    if (!room) return;
+    const rc = { ...room, ...edits };
+    const isCarpark = (rc as any).room_type === "Car Park";
+    if (!isCarpark && (rc as any).room_category !== "Studio" && !(rc as any).bed_type?.trim()) {
+      toast.error("Bed Type is required."); return;
     }
+    setEditingRoomId(null);
+  };
+
+  const cancelInlineRoom = (roomId: string) => {
+    setRoomEdits(prev => { const next = { ...prev }; delete next[roomId]; return next; });
+    setEditingRoomId(null);
   };
 
   const getNextRoomName = () => {
@@ -157,55 +145,29 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
     const hasAlpha = existingNames.some(n => /Room [A-Z]$/.test(n));
     if (hasAlpha) {
       const usedLetters = existingNames.map(n => n.replace("Room ", "")).filter(l => l.length === 1 && /[A-Z]/.test(l));
-      for (let i = 0; i < 26; i++) {
-        const letter = String.fromCharCode(65 + i);
-        if (!usedLetters.includes(letter)) return `Room ${letter}`;
-      }
+      for (let i = 0; i < 26; i++) { const letter = String.fromCharCode(65 + i); if (!usedLetters.includes(letter)) return `Room ${letter}`; }
       return `Room ${rooms.length + 1}`;
     }
     const usedNums = existingNames.map(n => parseInt(n.replace("Room ", ""))).filter(n => !isNaN(n));
-    let next = 1;
-    while (usedNums.includes(next)) next++;
-    return `Room ${next}`;
+    let next = 1; while (usedNums.includes(next)) next++; return `Room ${next}`;
   };
 
   const getNextCarparkName = () => {
     const usedNums = carparks.map(cp => parseInt(cp.room.replace("Carpark ", ""))).filter(n => !isNaN(n));
-    let next = 1;
-    while (usedNums.includes(next)) next++;
-    return `Carpark ${next}`;
+    let next = 1; while (usedNums.includes(next)) next++; return `Carpark ${next}`;
   };
 
   const handleAddRoom = async () => {
     try {
       await createRoom.mutateAsync({
-        room: getNextRoomName(),
-        unit_id: unit.id,
-        building: unit.building,
-        unit: unit.unit,
-        location: unit.location,
-        rent: 0,
-        room_type: "Normal Room",
-        room_category: "Normal Room",
-        unit_type: unit.unit_type,
-        status: "Available",
-        available_date: "",
-        max_pax: 1,
-        occupied_pax: 0,
-        unit_max_pax: unit.unit_max_pax,
-        unit_occupied_pax: 0,
-        housemates: [],
-        photos: [],
-        access_info: "",
+        room: getNextRoomName(), unit_id: unit.id, building: unit.building, unit: unit.unit,
+        location: unit.location, rent: 0, room_type: "Normal Room", room_category: "Normal Room",
+        unit_type: unit.unit_type, status: "Available", available_date: "", max_pax: 1,
+        occupied_pax: 0, unit_max_pax: unit.unit_max_pax, unit_occupied_pax: 0,
+        housemates: [], photos: [], access_info: "",
         move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
-        bed_type: "",
-        pax_staying: 0,
-        tenant_gender: "",
-        tenant_race: "",
-        internal_only: (unit as any).internal_only || false,
-        wall_type: "",
-        optional_features: [],
-        internal_remark: "",
+        bed_type: "", pax_staying: 0, tenant_gender: "", tenant_race: "",
+        internal_only: (unit as any).internal_only || false, wall_type: "", optional_features: [], internal_remark: "",
       } as any);
       toast.success("Room added.");
     } catch (e: any) { toast.error(e.message); }
@@ -214,59 +176,31 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const handleAddCarpark = async () => {
     try {
       await createRoom.mutateAsync({
-        room: getNextCarparkName(),
-        unit_id: unit.id,
-        building: unit.building,
-        unit: unit.unit,
-        location: unit.location,
-        rent: 150,
-        room_type: "Car Park",
-        unit_type: unit.unit_type,
-        status: "Available",
-        available_date: "",
-        max_pax: 0,
-        occupied_pax: 0,
-        unit_max_pax: unit.unit_max_pax,
-        unit_occupied_pax: 0,
-        housemates: [],
-        photos: [],
-        access_info: "",
-        move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
-        bed_type: "",
-        pax_staying: 0,
-        tenant_gender: "",
-        tenant_race: "",
-        internal_only: false,
-        parking_lot: "",
-        assigned_to: "",
-        internal_remark: "",
+        room: getNextCarparkName(), unit_id: unit.id, building: unit.building, unit: unit.unit,
+        location: unit.location, rent: 150, room_type: "Car Park", unit_type: unit.unit_type,
+        status: "Available", available_date: "", max_pax: 0, occupied_pax: 0,
+        unit_max_pax: unit.unit_max_pax, unit_occupied_pax: 0, housemates: [], photos: [],
+        access_info: "", move_in_cost: { advance: 0, deposit: 0, accessCard: 0, moveInFee: 0, total: 0 },
+        bed_type: "", pax_staying: 0, tenant_gender: "", tenant_race: "",
+        internal_only: false, parking_lot: "", assigned_to: "", internal_remark: "",
       } as any);
       toast.success("Carpark added.");
     } catch (e: any) { toast.error(e.message); }
   };
 
-  const toggleCollapse = (id: string) => setCollapsedRooms(prev => ({ ...prev, [id]: !prev[id] }));
-
   return (
     <>
       <StandardModal
-        open={open}
-        onOpenChange={onOpenChange}
+        open={open} onOpenChange={onOpenChange}
         title={`Edit Unit — ${unit.building} · ${unit.unit}`}
-        size="xl"
-        isDirty={isDirty}
-        footer={
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "Save Changes"}
-          </Button>
-        }
+        size="xl" isDirty={isDirty}
+        footer={<Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</Button>}
       >
         <div className="space-y-8">
           {/* ── Unit Information ── */}
           <section className="space-y-5">
             <h2 className="text-lg font-semibold border-b border-border pb-2">Unit Information</h2>
 
-            {/* Common Area Photos */}
             <div>
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Common Area Photos</Label>
               <div className="flex flex-wrap gap-3 mt-2">
@@ -372,56 +306,49 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
             </div>
           </section>
 
-          {/* ── Room Setup ── */}
-          <section className="space-y-5">
+          {/* ── Rooms ── */}
+          <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-2">
-              <h2 className="text-lg font-semibold">Room Setup</h2>
-              <Button size="sm" onClick={handleAddRoom}>
-                <Plus className="h-4 w-4 mr-1" /> Add Room
-              </Button>
+              <h2 className="text-lg font-semibold">Rooms</h2>
+              <Button size="sm" onClick={handleAddRoom}><Plus className="h-4 w-4 mr-1" /> Add Room</Button>
             </div>
 
             {rooms.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No rooms configured.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">No rooms configured.</p>
             ) : (
               <div className="space-y-2">
                 {rooms.map(room => {
                   const rc = getRoomData(room);
-                  const collapsed = collapsedRooms[room.id] === undefined ? true : collapsedRooms[room.id];
+                  const isEditing = editingRoomId === room.id;
                   const upRoom = (field: string, value: any) => updateRoomField(room.id, field, value);
                   const features = Array.isArray((rc as any).optional_features) ? (rc as any).optional_features : [];
                   const showAvailDate = rc.status === "Available Soon";
-                  const showOccupant = rc.status === "Occupied";
 
-                  if (collapsed) {
-                    const parts = [rc.room, (rc as any).bed_type || "—", `RM${rc.rent || 0}`, rc.status || "Available"];
+                  if (!isEditing) {
                     return (
-                      <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => toggleCollapse(room.id)}>
-                        <span className="text-sm font-medium">{parts.join(" · ")}</span>
+                      <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="font-medium">{rc.room}</span>
+                          <span className="text-muted-foreground">{(rc as any).bed_type || "—"}</span>
+                          <span className="font-medium">RM{rc.rent || 0}</span>
+                          <StatusBadge status={rc.status || "Available"} />
+                        </div>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Remove" onClick={(e) => { e.stopPropagation(); setDeleteConfirmRoom(room.id); }}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Photos" onClick={() => navigate(`/photos/${room.id}`)}><Eye className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(room.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(room.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </div>
                       </div>
                     );
                   }
 
                   return (
-                    <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card p-4 space-y-3">
+                    <div key={room.id} id={`room-card-${room.id}`} className="rounded-lg border bg-card p-4 space-y-3 border-primary/30">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-sm">{rc.room}</span>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="View Photos" onClick={() => navigate(`/photos/${room.id}`)}>
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Remove" onClick={() => setDeleteConfirmRoom(room.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <button onClick={() => toggleCollapse(room.id)} className="p-1.5 rounded-md hover:bg-accent transition-colors" title="Collapse">
-                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          </button>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => cancelInlineRoom(room.id)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+                          <Button size="sm" onClick={() => saveInlineRoom(room.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
                         </div>
                       </div>
 
@@ -432,10 +359,8 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           {((rc as any).photos || []).map((path: string, pi: number) => (
                             <div key={pi} className="relative group">
                               <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
-                              <button onClick={() => {
-                                const currentPhotos = (rc as any).photos || [];
-                                upRoom("photos", currentPhotos.filter((_: any, idx: number) => idx !== pi));
-                              }} className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                              <button onClick={() => upRoom("photos", ((rc as any).photos || []).filter((_: any, idx: number) => idx !== pi))}
+                                className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                             </div>
                           ))}
                           {((rc as any).photos || []).length < 10 && (
@@ -464,6 +389,17 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
 
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         <div>
+                          <label className="text-xs text-muted-foreground">Room Type</label>
+                          <select className={`${inputClass} w-full`} value={(rc as any).room_category || "Normal Room"} onChange={e => {
+                            upRoom("room_category", e.target.value);
+                            if (e.target.value === "Studio") upRoom("bed_type", "None");
+                            else if ((rc as any).bed_type === "None") upRoom("bed_type", "");
+                          }}>
+                            <option value="Normal Room">Room</option>
+                            <option value="Studio">Studio</option>
+                          </select>
+                        </div>
+                        <div>
                           <label className="text-xs text-muted-foreground">Bed Type</label>
                           <select className={`${inputClass} w-full`} value={(rc as any).bed_type || ""} onChange={e => {
                             const bt = e.target.value;
@@ -487,15 +423,15 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs text-muted-foreground">Maximum Pax *</label>
+                          <label className="text-xs text-muted-foreground">Max Pax *</label>
                           <input className={`${inputClass} w-full`} type="number" min={1} value={rc.max_pax} onChange={e => upRoom("max_pax", Number(e.target.value))} />
                         </div>
                         <div>
-                          <label className="text-xs text-muted-foreground">Monthly Rental (RM) *</label>
+                          <label className="text-xs text-muted-foreground">Listed Rental (RM) *</label>
                           <input className={`${inputClass} w-full`} type="number" value={rc.rent || ""} onChange={e => upRoom("rent", Number(e.target.value))} />
                         </div>
                         <div>
-                          <label className="text-xs text-muted-foreground">Room Status</label>
+                          <label className="text-xs text-muted-foreground">Status</label>
                           <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => upRoom("status", e.target.value)}>
                             <option value="Available">Available</option>
                             <option value="Available Soon">Available Soon</option>
@@ -513,7 +449,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                       </div>
 
                       <div>
-                        <label className="text-xs text-muted-foreground block mb-1.5">Optional Features</label>
+                        <label className="text-xs text-muted-foreground block mb-1.5">Features</label>
                         <div className="flex flex-wrap gap-2">
                           {OPTIONAL_FEATURES.map(feat => {
                             const selected = features.includes(feat);
@@ -528,19 +464,9 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                       </div>
 
                       <div>
-                        <label className="text-xs text-muted-foreground">Internal Remark</label>
+                        <label className="text-xs text-muted-foreground">Remark</label>
                         <input className={`${inputClass} w-full`} placeholder="Internal notes…" value={(rc as any).internal_remark || ""} onChange={e => upRoom("internal_remark", e.target.value)} />
                       </div>
-
-                      {showOccupant && (
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <label className="text-xs text-muted-foreground">Select Tenant</label>
-                          <select className={`${inputClass} w-full mt-1`} disabled>
-                            <option value="">— Select Tenant (coming soon) —</option>
-                          </select>
-                          <p className="text-xs text-muted-foreground mt-1">Tenant list will be populated from approved bookings.</p>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -548,30 +474,47 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
             )}
           </section>
 
-          {/* ── Carpark Setup ── */}
-          <section className="space-y-5">
+          {/* ── Carparks ── */}
+          <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-2">
-              <h2 className="text-lg font-semibold">Carpark Setup</h2>
-              <Button size="sm" onClick={handleAddCarpark}>
-                <Plus className="h-4 w-4 mr-1" /> Add Carpark
-              </Button>
+              <h2 className="text-lg font-semibold">Carparks</h2>
+              <Button size="sm" onClick={handleAddCarpark}><Plus className="h-4 w-4 mr-1" /> Add Carpark</Button>
             </div>
 
             {carparks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No carparks configured.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">No carparks configured.</p>
             ) : (
               <div className="space-y-2">
                 {carparks.map(cp => {
                   const rc = getRoomData(cp);
+                  const isEditing = editingRoomId === cp.id;
                   const upCP = (field: string, value: any) => updateRoomField(cp.id, field, value);
-                  const cpOccupied = rc.status === "Occupied";
+
+                  if (!isEditing) {
+                    return (
+                      <div key={cp.id} className="rounded-lg border bg-accent/30 px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors">
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="font-medium">🅿️ {rc.room}</span>
+                          {(rc as any).parking_lot && <span className="text-muted-foreground">{(rc as any).parking_lot}</span>}
+                          <span className="font-medium">RM{rc.rent || 0}</span>
+                          <StatusBadge status={rc.status || "Available"} />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(cp.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(cp.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={cp.id} className="rounded-lg border bg-accent/30 border-border p-4">
-                      <div className="flex items-center justify-between mb-3">
+                    <div key={cp.id} className="rounded-lg border bg-accent/30 border-primary/30 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
                         <span className="font-semibold text-sm">🅿️ {rc.room}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Remove" onClick={() => setDeleteConfirmRoom(cp.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => cancelInlineRoom(cp.id)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+                          <Button size="sm" onClick={() => saveInlineRoom(cp.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
@@ -595,15 +538,6 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           <input className={`${inputClass} w-full`} placeholder="Notes…" value={(rc as any).internal_remark || ""} onChange={e => upCP("internal_remark", e.target.value)} />
                         </div>
                       </div>
-                      {cpOccupied && (
-                        <div className="mt-3">
-                          <label className="text-xs text-muted-foreground">Select Tenant</label>
-                          <select className={`${inputClass} w-full mt-1`} disabled>
-                            <option value="">— Select Tenant (coming soon) —</option>
-                          </select>
-                          <p className="text-xs text-muted-foreground mt-1">Tenant list will be populated from approved bookings.</p>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -613,7 +547,6 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
         </div>
       </StandardModal>
 
-      {/* Delete room confirm */}
       <ConfirmDialog
         open={!!deleteConfirmRoom}
         onOpenChange={(open) => { if (!open) setDeleteConfirmRoom(null); }}
@@ -623,10 +556,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
         variant="destructive"
         onConfirm={async () => {
           if (deleteConfirmRoom) {
-            try {
-              await deleteRoom.mutateAsync(deleteConfirmRoom);
-              toast.success("Removed.");
-            } catch (e: any) { toast.error(e.message); }
+            try { await deleteRoom.mutateAsync(deleteConfirmRoom); toast.success("Removed."); } catch (e: any) { toast.error(e.message); }
           }
           setDeleteConfirmRoom(null);
         }}
