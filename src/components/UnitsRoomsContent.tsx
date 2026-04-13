@@ -502,15 +502,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     </button>
   );
 
-  const TextLinkBtn = ({ url, label }: { url: string; label: string }) => (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
-      onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
-    >
-      <Link2 className="h-3 w-3" /> {label}
-    </button>
-  );
 
   const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
 
