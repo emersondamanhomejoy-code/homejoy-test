@@ -19,7 +19,7 @@ import { MoveInPage } from "@/components/MoveInPage";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
 import { Condo } from "@/hooks/useCondos";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 
 const rankingData = {
   internal: [
