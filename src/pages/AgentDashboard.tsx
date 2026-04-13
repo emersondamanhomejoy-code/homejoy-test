@@ -1,47 +1,22 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookings } from "@/hooks/useBookings";
 import { useMoveIns } from "@/hooks/useMoveIns";
+import { useUnits } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import {
+  BedDouble, ClipboardList, LogIn, CheckCircle, DollarSign,
+  Search, Plus, Upload,
+} from "lucide-react";
 
 interface CommissionConfig {
   percentage?: number;
   tiers?: { min: number; max: number | null; amount?: number; percentage?: number }[];
-}
-
-function PipelineCard({ label, value, color, size, highlight, onClick }: {
-  label: string; value: string | number; color: string; size: string; highlight?: boolean; onClick?: () => void;
-}) {
-  const isSmall = size === "small";
-  const isMedium = size === "medium";
-
-  if (isSmall) {
-    return (
-      <div onClick={onClick} className="bg-muted/50 rounded-lg p-3 border border-border cursor-pointer hover:bg-muted transition-all">
-        <div className={`text-xs font-semibold ${color} mb-1`}>{label}</div>
-        <div className="text-xl font-semibold text-muted-foreground tabular-nums">{value}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div onClick={onClick} className={`rounded-xl shadow-sm border cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all ${
-      highlight 
-        ? "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900" 
-        : "bg-card border-border"
-    } ${isMedium ? "p-4" : "p-5"}`}>
-      <div className={`text-xs font-semibold ${color} mb-2`}>{label}</div>
-      <div className={`font-bold tabular-nums ${
-        highlight ? "text-emerald-700 dark:text-emerald-400" : "text-foreground"
-      } ${isMedium ? "text-2xl" : "text-4xl"}`}>
-        {value}
-      </div>
-    </div>
-  );
 }
 
 export default function AgentDashboard() {
@@ -49,16 +24,14 @@ export default function AgentDashboard() {
   const navigate = useNavigate();
   const { data: allBookings = [] } = useBookings();
   const { data: allMoveIns = [] } = useMoveIns();
+  const { data: units = [] } = useUnits();
 
   const [commissionType, setCommissionType] = useState("internal_basic");
   const [commissionConfig, setCommissionConfig] = useState<CommissionConfig | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login", { replace: true });
-    } else if (!loading && user && role && role !== "agent") {
-      navigate("/admin", { replace: true });
-    }
+    if (!loading && !user) navigate("/login", { replace: true });
+    else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
   }, [user, role, loading, navigate]);
 
   useEffect(() => {
@@ -70,23 +43,21 @@ export default function AgentDashboard() {
       });
   }, [user]);
 
-  // My bookings
+  // Available rooms
+  const availableRooms = useMemo(() => {
+    return units.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park" && r.status === "Available"));
+  }, [units]);
+
+  // My bookings & move-ins
   const myBookings = useMemo(() => allBookings.filter(b => b.submitted_by === user?.id), [allBookings, user?.id]);
   const myBookingIds = useMemo(() => new Set(myBookings.map(b => b.id)), [myBookings]);
+  const myMoveIns = useMemo(() => allMoveIns.filter(m => m.agent_id === user?.id), [allMoveIns, user?.id]);
 
-  // My move-ins (linked to my bookings)
-  const myMoveIns = useMemo(() => allMoveIns.filter(m => m.booking_id && myBookingIds.has(m.booking_id)), [allMoveIns, myBookingIds]);
-
-  // Stats
-  const bookingSubmitted = useMemo(() => myBookings.filter(b => b.status === "submitted").length, [myBookings]);
-  const bookingRejected = useMemo(() => myBookings.filter(b => b.status === "rejected").length, [myBookings]);
+  const submittedBookings = useMemo(() => myBookings.filter(b => b.status === "submitted"), [myBookings]);
   
-  // Pending move-in = approved bookings that don't have a move-in yet
   const moveInBookingIds = useMemo(() => new Set(myMoveIns.map(m => m.booking_id)), [myMoveIns]);
-  const pendingMoveIn = useMemo(() => myBookings.filter(b => b.status === "approved" && !moveInBookingIds.has(b.id)).length, [myBookings, moveInBookingIds]);
-  
-  const moveInPendingReview = useMemo(() => myMoveIns.filter(m => m.status === "submitted").length, [myMoveIns]);
-  const moveInRejected = useMemo(() => myMoveIns.filter(m => m.status === "rejected").length, [myMoveIns]);
+  const readyForMoveIn = useMemo(() => myMoveIns.filter(m => m.status === "ready_for_move_in"), [myMoveIns]);
+  const submittedMoveIns = useMemo(() => myMoveIns.filter(m => m.status === "submitted"), [myMoveIns]);
   const completedDeals = useMemo(() => myMoveIns.filter(m => m.status === "approved"), [myMoveIns]);
 
   const calculateCommission = (moveIn: any): number => {
@@ -119,62 +90,80 @@ export default function AgentDashboard() {
 
   const navigateToPage = (page: string) => navigate("/admin", { state: { page } });
 
+  const summaryCards = [
+    { label: "Available Rooms", value: availableRooms.length, icon: BedDouble, color: "text-emerald-500", bg: "bg-emerald-500/10", tab: "availableRooms" },
+    { label: "Submitted Bookings", value: submittedBookings.length, icon: ClipboardList, color: "text-amber-500", bg: "bg-amber-500/10", tab: "myBookings" },
+    { label: "Ready for Move-in", value: readyForMoveIn.length, icon: LogIn, color: "text-blue-500", bg: "bg-blue-500/10", tab: "myMoveIns" },
+    { label: "Submitted Move-ins", value: submittedMoveIns.length, icon: LogIn, color: "text-orange-500", bg: "bg-orange-500/10", tab: "myMoveIns" },
+    { label: "My Deals", value: completedDeals.length, icon: CheckCircle, color: "text-primary", bg: "bg-primary/10", tab: "myDeals" },
+    { label: "My Earnings", value: `RM ${totalCommission.toLocaleString()}`, icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-500/10", tab: "earnings" },
+  ];
+
+  const quickActions = [
+    { label: "Browse Available Rooms", icon: Search, tab: "availableRooms" },
+    { label: "Submit Booking", icon: Plus, tab: "myBookings" },
+    { label: "Submit Move-in", icon: Upload, tab: "myMoveIns" },
+  ];
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AgentSidebar activeTab="dashboard" onTabChange={(tab) => navigate("/admin", { state: { page: tab } })} />
-        <div className="flex-1 flex flex-col">
-
-          {/* Announcement Banner */}
-          <div className="bg-gradient-to-r from-primary/5 to-accent/5 px-8 py-3 border-b border-border">
-            <p className="text-center text-sm font-medium text-foreground">
-              📢 New commission structure effective from 1st July 2025.{" "}
-              <a href="#" className="text-primary underline">Learn More</a>
-            </p>
-          </div>
-
-          {/* Main Content */}
-          <main className="flex-1 p-8 overflow-auto">
-            <div className="flex flex-col gap-8">
+        <AgentSidebar activeTab="dashboard" onTabChange={(tab) => navigateToPage(tab)} />
+        <div className="flex-1 flex flex-col overflow-auto">
+          <main className="flex-1 p-8">
+            <div className="space-y-8">
+              {/* Header */}
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Agent Dashboard</h2>
-                <p className="text-muted-foreground text-sm mt-1">Track your pipeline from booking to commission.</p>
+                <h1 className="text-2xl font-bold text-foreground">Agent Dashboard</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(), "EEEE, dd MMMM yyyy")}</p>
               </div>
 
-              {/* Pipeline Grid */}
-              <div className="space-y-4">
-                {/* Top row */}
-                <div className="grid grid-cols-4 gap-4">
-                  <PipelineCard label="Booking Submitted" value={bookingSubmitted} color="text-blue-500" size="large" onClick={() => navigateToPage("myBookings")} />
-                  <PipelineCard label="Pending Move-in" value={pendingMoveIn} color="text-amber-500" size="large" onClick={() => navigateToPage("myMoveIns")} />
-                  <PipelineCard label="My Deals" value={completedDeals.length} color="text-emerald-500" size="large" onClick={() => navigateToPage("myDeals")} />
-                  <PipelineCard label="Total Commission" value={`RM ${totalCommission.toLocaleString()}`} color="text-emerald-600" size="large" highlight onClick={() => navigateToPage("myDeals")} />
-                </div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {summaryCards.map(card => (
+                  <button
+                    key={card.label}
+                    onClick={() => navigateToPage(card.tab)}
+                    className="bg-card rounded-lg border p-4 text-left hover:shadow-md hover:border-primary/30 transition-all"
+                  >
+                    <div className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center mb-3`}>
+                      <card.icon className={`h-4 w-4 ${card.color}`} />
+                    </div>
+                    <div className="text-2xl font-bold text-foreground">{card.value}</div>
+                    <div className="text-xs font-medium text-foreground mt-0.5">{card.label}</div>
+                  </button>
+                ))}
+              </div>
 
-                {/* Second row */}
-                <div className="grid grid-cols-4 gap-4">
-                  <PipelineCard label="Booking Rejected" value={bookingRejected} color="text-destructive" size="small" onClick={() => navigateToPage("myBookings")} />
-                  <PipelineCard label="Move-in Pending Review" value={moveInPendingReview} color="text-amber-500" size="small" onClick={() => navigateToPage("myMoveIns")} />
-                </div>
-
-                {/* Third row */}
-                <div className="grid grid-cols-4 gap-4">
-                  <div /> {/* spacer */}
-                  <PipelineCard label="Move-in Rejected" value={moveInRejected} color="text-destructive" size="small" onClick={() => navigateToPage("myMoveIns")} />
+              {/* Quick Actions */}
+              <div className="bg-card rounded-lg border p-5">
+                <h2 className="font-semibold text-foreground mb-4">Quick Actions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {quickActions.map(action => (
+                    <Button
+                      key={action.label}
+                      variant="outline"
+                      className="h-auto py-4 flex flex-col items-center gap-2"
+                      onClick={() => navigateToPage(action.tab)}
+                    >
+                      <action.icon className="h-5 w-5 text-primary" />
+                      <span className="text-sm">{action.label}</span>
+                    </Button>
+                  ))}
                 </div>
               </div>
 
-              {/* Notifications */}
-              <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-                <div className="px-6 py-4 border-b border-border">
-                  <h3 className="font-semibold text-foreground">Pipeline Summary</h3>
+              {/* Pipeline Summary */}
+              <div className="bg-card rounded-lg border overflow-hidden">
+                <div className="px-5 py-4 border-b">
+                  <h2 className="font-semibold text-foreground">Pipeline Summary</h2>
                 </div>
-                <div className="p-6 text-sm text-muted-foreground space-y-2">
-                  <p>📋 <strong>Booking Submitted</strong> — Waiting for admin to review your booking.</p>
-                  <p>⏳ <strong>Pending Move-in</strong> — Booking approved. Submit move-in completion.</p>
-                  <p>🔍 <strong>Move-in Pending Review</strong> — Move-in submitted, waiting for admin approval.</p>
-                  <p>✅ <strong>My Deals</strong> — Completed deals with approved move-ins.</p>
-                  <p>💰 <strong>Total Commission</strong> — Auto-calculated from all completed deals.</p>
+                <div className="p-5 text-sm text-muted-foreground space-y-2">
+                  <p>📋 <strong className="text-foreground">Submitted Bookings</strong> — Waiting for admin to review.</p>
+                  <p>🏠 <strong className="text-foreground">Ready for Move-in</strong> — Booking approved, bring tenant to move in.</p>
+                  <p>🔍 <strong className="text-foreground">Submitted Move-ins</strong> — Move-in submitted, waiting for admin approval.</p>
+                  <p>✅ <strong className="text-foreground">My Deals</strong> — Completed deals with approved move-ins.</p>
+                  <p>💰 <strong className="text-foreground">My Earnings</strong> — Auto-calculated from all completed deals.</p>
                 </div>
               </div>
             </div>
