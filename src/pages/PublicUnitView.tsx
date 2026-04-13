@@ -48,6 +48,7 @@ interface CondoData {
   photos: string[];
   visitor_car_parking: string;
   visitor_motorcycle_parking: string;
+  access_items: any;
 }
 
 export default function PublicUnitView() {
