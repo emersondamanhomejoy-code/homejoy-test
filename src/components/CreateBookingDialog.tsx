@@ -676,7 +676,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                     <span className="text-right font-medium">{f.total.toLocaleString()}</span>
                   </div>
                 ))}
-                {carparkFeesBreakdown.map((f, i) => (
+                {(Number(form.parkingCount) || 0) > 0 && carparkFeesBreakdown.map((f, i) => (
                   <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
                     <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
                     <span className="text-right font-medium">{f.total.toLocaleString()}</span>

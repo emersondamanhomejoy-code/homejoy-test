@@ -348,7 +348,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
                 </div>
               ))}
 
-              {carparkFees.map((f, i) => (
+              {carparkFees.filter(f => f.qty > 0 && f.total > 0).map((f, i) => (
                 <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
                   <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
                   <span className="text-right font-medium">{f.total.toLocaleString()}</span>
