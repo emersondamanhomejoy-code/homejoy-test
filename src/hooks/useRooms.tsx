@@ -210,7 +210,7 @@ export function useUpdateRoom() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...rest }: Partial<Room> & { id: string }) => {
-      const { created_at, updated_at, ...fields } = rest as any;
+      const { created_at, updated_at, parking_lot, ...fields } = rest as any;
       const { error } = await supabase.from("rooms").update(fields).eq("id", id);
       if (error) throw error;
     },
