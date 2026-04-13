@@ -443,6 +443,9 @@ export default function Index() {
       });
       if (dbErr) throw dbErr;
 
+      // Change room status to Pending
+      await supabase.from("rooms").update({ status: "Pending" }).eq("id", selectedRoom.id);
+
       // Mark selected car parks as Reserved immediately
       if (bookingForm.selectedCarParks && bookingForm.selectedCarParks.length > 0) {
         for (const cpId of bookingForm.selectedCarParks) {
