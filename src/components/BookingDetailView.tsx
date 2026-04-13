@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Booking, useUpdateBookingStatus } from "@/hooks/useBookings";
+import { Booking, useUpdateBookingStatus, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
