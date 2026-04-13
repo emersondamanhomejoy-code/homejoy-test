@@ -37,7 +37,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const [rejectReason, setRejectReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  // Delete removed — bookings cannot be deleted
 
   const room = roomsData.find(r => r.id === b.room_id);
   const info = b.room || (room ? { room: room.room, building: room.building, unit: room.unit } : null);
@@ -127,26 +127,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     onOpenChange(false);
   };
 
-  const handleDelete = async () => {
-    if (!user) return;
-    if (b.room_id && b.status === "submitted") {
-      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-    }
-    for (const sel of carParkSelections) {
-      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
-    }
-    await supabase.from("bookings").delete().eq("id", b.id);
-    await supabase.from("activity_logs").insert({
-      actor_id: user.id, actor_email: user.email || "",
-      action: "delete_booking", entity_type: "booking", entity_id: b.id,
-      details: { tenant_name: b.tenant_name },
-    });
-    queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    queryClient.invalidateQueries({ queryKey: ["rooms"] });
-    toast.success("Booking deleted");
-    setShowDeleteDialog(false);
-    onOpenChange(false);
-  };
+  // Delete removed — bookings cannot be deleted
 
   const docSection = (label: string, paths: any) => {
     const arr = Array.isArray(paths) ? paths : [];
@@ -197,9 +178,6 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     }
     if (b.status === "approved") {
       return <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>🚫 Cancel Booking</Button>;
-    }
-    if (b.status === "rejected" || b.status === "cancelled") {
-      return <Button variant="outline" className="text-destructive" onClick={() => setShowDeleteDialog(true)}>🗑️ Delete</Button>;
     }
     return null;
   };
