@@ -52,6 +52,8 @@ export function ClaimsPage() {
   const { data: allClaims = [], isLoading } = useClaims();
   const { data: roomsData = [] } = useRooms();
   const { data: approvedBookings = [] } = useBookings("approved");
+  const { data: allMoveIns = [] } = useMoveIns();
+  const approvedMoveIns = useMemo(() => allMoveIns.filter(m => m.status === "approved"), [allMoveIns]);
   const updateClaimStatus = useUpdateClaimStatus();
   const updateClaim = useUpdateClaim();
   const createClaim = useCreateClaim();
