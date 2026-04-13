@@ -360,3 +360,385 @@ export function UnitsRoomsContent() {
     </div>
   );
 }
+
+// ─── Unit View Content Component ───
+
+interface AccessItem {
+  id: string;
+  access_type: string;
+  locations?: string[];
+  provided_by: string;
+  chargeable_type: string;
+  price: number;
+  instruction: string;
+}
+
+function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData: any[]; isAdmin: boolean }) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
+  const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
+  const occupiedPax = unitRooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
+  const remainingPax = unit.unit_max_pax - occupiedPax;
+  const occupiedCarparks = unitCarparks.filter(r => r.status === "Occupied").length;
+  const remainingCarparks = unitCarparks.length - occupiedCarparks;
+
+  // Match condo by building name
+  const condo = condosData.find(c => c.name === unit.building) || null;
+
+  // Cost calculator state
+  const [calcRoomId, setCalcRoomId] = useState("");
+  const [calcPax, setCalcPax] = useState("1");
+  const [calcCarparks, setCalcCarparks] = useState("0");
+
+  const calcRoom = unitRooms.find(r => r.id === calcRoomId) || null;
+  const pax = Number(calcPax) || 1;
+  const numCarparks = Number(calcCarparks) || 0;
+  const rental = calcRoom?.rent || 0;
+  const depMul = (unit as any).deposit_multiplier ?? 1.5;
+  const adminFee = (unit as any).admin_fee ?? 330;
+  const deposit = Math.round(rental * depMul);
+
+  // Access fees from condo
+  const condoAccess = useMemo(() => {
+    if (!condo) return { pedestrian: [] as AccessItem[], carpark: [] as AccessItem[] };
+    const raw = condo.access_items || {};
+    const parse = (key: string): AccessItem[] => {
+      const items = (raw as any)[key];
+      if (Array.isArray(items)) return items.filter((i: any) => i.access_type && i.access_type !== "None");
+      return [];
+    };
+    return { pedestrian: [...parse("pedestrian"), ...parse("motorcycle")], carpark: parse("carpark") };
+  }, [condo]);
+
+  const accessFees = useMemo(() => {
+    return condoAccess.pedestrian
+      .filter(a => a.provided_by === "Homejoy" && a.chargeable_type !== "none" && a.price > 0)
+      .map(a => ({ label: `${a.access_type} (${a.chargeable_type === "deposit" ? "Deposit" : "Fee"})`, unitPrice: a.price, qty: pax, total: a.price * pax }));
+  }, [condoAccess, pax]);
+
+  const carparkFees = useMemo(() => {
+    return condoAccess.carpark
+      .filter(a => a.provided_by === "Homejoy" && a.chargeable_type !== "none" && a.price > 0)
+      .map(a => ({ label: `Car Park ${a.access_type} (${a.chargeable_type === "deposit" ? "Deposit" : "Fee"})`, unitPrice: a.price, qty: numCarparks, total: a.price * numCarparks }));
+  }, [condoAccess, numCarparks]);
+
+  // Avg carpark rental
+  const avgCarparkRent = unitCarparks.length > 0 ? Math.round(unitCarparks.reduce((s, c) => s + (c.rent || 0), 0) / unitCarparks.length) : 0;
+  const carparkRentalTotal = avgCarparkRent * numCarparks;
+  const totalAccessFees = accessFees.reduce((s, f) => s + f.total, 0);
+  const totalCarparkFees = carparkFees.reduce((s, f) => s + f.total, 0);
+  const grandTotal = rental + deposit + adminFee + totalAccessFees + totalCarparkFees + carparkRentalTotal;
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied!`));
+  };
+
+  const copyBuildingDetails = () => {
+    const lines = [
+      `Building: ${unit.building}`,
+      `Location: ${unit.location}`,
+      ...(condo ? [
+        condo.address ? `Address: ${condo.address}` : "",
+        condo.gps_link ? `GPS: ${condo.gps_link}` : "",
+        condo.amenities ? `Amenities: ${condo.amenities}` : "",
+        condo.parking_info ? `Parking: ${condo.parking_info}` : "",
+        condo.arrival_instruction ? `Arrival: ${condo.arrival_instruction}` : "",
+      ].filter(Boolean) : []),
+    ];
+    copyToClipboard(lines.join("\n"), "Building details");
+  };
+
+  const copyUnitDetails = () => {
+    const lines = [
+      `Unit: ${unit.unit}`,
+      `Type: ${unit.unit_type}`,
+      `Max Occupants: ${unit.unit_max_pax}`,
+      `Deposit: ${depMul} months`,
+      `Admin Fee: RM${adminFee}`,
+      `Meter: ${(unit as any).meter_type} · RM${(unit as any).meter_rate}/kWh`,
+      unit.passcode ? `Passcode: ${unit.passcode}` : "",
+      (unit as any).wifi_name ? `WiFi: ${(unit as any).wifi_name}` : "",
+      (unit as any).wifi_password ? `WiFi PW: ${(unit as any).wifi_password}` : "",
+    ].filter(Boolean);
+    copyToClipboard(lines.join("\n"), "Unit details");
+  };
+
+  const copyRoomSummary = () => {
+    const header = "Code | Title | Rental | Status | Pax | Gender | Nationality";
+    const rows = unitRooms.map(r => {
+      const housemates = Array.isArray(r.housemates) ? r.housemates : [];
+      const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "—";
+      const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
+      return `${r.room.replace(/^Room\s+/i, "")} | ${(r as any).room_title || "—"} | RM${r.rent} | ${r.status} | ${r.pax_staying || 0} | ${genders} | ${nats}`;
+    });
+    copyToClipboard([header, ...rows].join("\n"), "Room summary");
+  };
+
+  const copyCostBreakdown = () => {
+    if (!calcRoom) return;
+    const lines = [
+      `Room: ${calcRoom.room} — ${(calcRoom as any).room_title || ""}`,
+      `Rental: RM${rental}`,
+      `Deposit (${depMul}×): RM${deposit}`,
+      `Admin Fee: RM${adminFee}`,
+      ...accessFees.map(f => `${f.label}: RM${f.total}`),
+      ...carparkFees.map(f => `${f.label}: RM${f.total}`),
+      numCarparks > 0 ? `Carpark Rental (${numCarparks}×): RM${carparkRentalTotal}` : "",
+      `─────────`,
+      `Total Move-In: RM${grandTotal}`,
+    ].filter(Boolean);
+    copyToClipboard(lines.join("\n"), "Cost breakdown");
+  };
+
+  const CopyBtn = ({ onClick }: { onClick: () => void }) => (
+    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={onClick}>
+      <Copy className="h-3.5 w-3.5" />
+    </Button>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Occupant Summary — compact fractions */}
+      <div className="flex items-center gap-6 px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Remaining Pax:</span>
+          <span className={`text-lg font-bold ${remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}`}>
+            {remainingPax}/{unit.unit_max_pax}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Remaining Carpark:</span>
+          <span className={`text-lg font-bold ${remainingCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+            {remainingCarparks}/{unitCarparks.length}
+          </span>
+        </div>
+      </div>
+
+      <Accordion type="multiple" defaultValue={["building", "unit", "rooms", "carparks"]} className="space-y-2">
+        {/* Building Details */}
+        <AccordionItem value="building" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-semibold">Building Details</span>
+              <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="flex items-center justify-end mb-2">
+              <CopyBtn onClick={copyBuildingDetails} />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
+              <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>
+              {condo && (
+                <>
+                  {condo.address && <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{condo.address}</span></div>}
+                  {condo.gps_link && <div className="col-span-2"><span className="text-muted-foreground">GPS:</span> <a href={condo.gps_link} target="_blank" rel="noreferrer" className="font-medium text-primary underline">{condo.gps_link}</a></div>}
+                  {condo.amenities && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{condo.amenities}</span></div>}
+                  {condo.parking_info && <div className="col-span-2"><span className="text-muted-foreground">Parking:</span> <span className="font-medium">{condo.parking_info}</span></div>}
+                  {condo.arrival_instruction && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Arrival:</span> <span className="font-medium">{condo.arrival_instruction}</span></div>}
+                </>
+              )}
+            </div>
+            {((unit as any).common_photos || []).length > 0 && (
+              <div className="flex flex-wrap gap-3 mt-3">
+                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
+                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+                ))}
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Unit Details */}
+        <AccordionItem value="unit" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-semibold">Unit Details</span>
+              <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="flex items-center justify-end mb-2">
+              <CopyBtn onClick={copyUnitDetails} />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
+              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{unit.unit_type}</span></div>
+              <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
+              <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
+              <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
+              <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(unit as any).meter_type} · RM{(unit as any).meter_rate}/kWh</span></div>
+              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "—"}</span></div>
+              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "—"}</span></div>
+              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "—"}</span></div>
+              <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(unit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Room Summary */}
+        {unitRooms.length > 0 && (
+          <AccordionItem value="rooms" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Room Summary</span>
+                <span className="text-xs text-muted-foreground">— {unitRooms.length} rooms</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="flex items-center justify-end mb-2">
+                <CopyBtn onClick={copyRoomSummary} />
+              </div>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Room Title</TableHead>
+                      <TableHead className="text-right">Rental</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Pax</TableHead>
+                      <TableHead>Gender</TableHead>
+                      <TableHead>Nationality</TableHead>
+                      {isAdmin && <TableHead>Tenant</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unitRooms.map(room => {
+                      const housemates = Array.isArray(room.housemates) ? room.housemates : [];
+                      const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || room.tenant_gender || "—";
+                      const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
+                      const tenantNames = housemates.map((h: any) => typeof h === "object" ? h?.name || "" : typeof h === "string" ? h : "").filter(Boolean).join(", ") || "—";
+                      return (
+                        <TableRow key={room.id}>
+                          <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
+                          <TableCell>{(room as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
+                          <TableCell className="text-right">RM{room.rent}</TableCell>
+                          <TableCell><StatusBadge status={room.status} availableDate={room.available_date} /></TableCell>
+                          <TableCell className="text-center">{room.pax_staying || 0}</TableCell>
+                          <TableCell>{genders}</TableCell>
+                          <TableCell>{nats}</TableCell>
+                          {isAdmin && <TableCell className="text-xs">{tenantNames}</TableCell>}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {/* Carpark Summary */}
+        {unitCarparks.length > 0 && (
+          <AccordionItem value="carparks" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Carpark Summary</span>
+                <span className="text-xs text-muted-foreground">— {unitCarparks.length} carparks</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Lot</TableHead>
+                      <TableHead className="text-right">Rental</TableHead>
+                      <TableHead>Status</TableHead>
+                      {isAdmin && <TableHead>Tenant</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unitCarparks.map(cp => (
+                      <TableRow key={cp.id}>
+                        <TableCell className="font-medium">🅿️ {cp.room}</TableCell>
+                        <TableCell>{(cp as any).parking_lot || "—"}</TableCell>
+                        <TableCell className="text-right">RM{cp.rent}</TableCell>
+                        <TableCell><StatusBadge status={cp.status} /></TableCell>
+                        {isAdmin && <TableCell className="text-xs">{(cp as any).assigned_to || "—"}</TableCell>}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+      </Accordion>
+
+      {/* Cost Breakdown Calculator */}
+      <section className="border rounded-lg p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Move-In Cost Calculator</h3>
+          {calcRoom && <CopyBtn onClick={copyCostBreakdown} />}
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className={labelClass}>Room</label>
+            <select className={inputClass} value={calcRoomId} onChange={e => setCalcRoomId(e.target.value)}>
+              <option value="">Select room</option>
+              {unitRooms.map(r => (
+                <option key={r.id} value={r.id}>{r.room.replace(/^Room\s+/i, "")} — RM{r.rent}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className={labelClass}>Pax</label>
+            <input type="number" min="1" className={inputClass} value={calcPax} onChange={e => setCalcPax(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className={labelClass}>Carparks</label>
+            <input type="number" min="0" className={inputClass} value={calcCarparks} onChange={e => setCalcCarparks(e.target.value)} />
+          </div>
+        </div>
+
+        {calcRoom && (
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-muted-foreground">1 Month Advance Rental</TableCell>
+                  <TableCell className="text-right font-medium">RM{rental}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-muted-foreground">Deposit ({depMul}× rental)</TableCell>
+                  <TableCell className="text-right font-medium">RM{deposit}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-muted-foreground">Admin Fee</TableCell>
+                  <TableCell className="text-right font-medium">RM{adminFee}</TableCell>
+                </TableRow>
+                {accessFees.map((f, i) => (
+                  <TableRow key={`af-${i}`}>
+                    <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
+                    <TableCell className="text-right font-medium">RM{f.total}</TableCell>
+                  </TableRow>
+                ))}
+                {carparkFees.map((f, i) => (
+                  <TableRow key={`cf-${i}`}>
+                    <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
+                    <TableCell className="text-right font-medium">RM{f.total}</TableCell>
+                  </TableRow>
+                ))}
+                {numCarparks > 0 && (
+                  <TableRow>
+                    <TableCell className="text-muted-foreground">Carpark Rental ({numCarparks}× RM{avgCarparkRent})</TableCell>
+                    <TableCell className="text-right font-medium">RM{carparkRentalTotal}</TableCell>
+                  </TableRow>
+                )}
+                <TableRow className="bg-muted/30">
+                  <TableCell className="font-semibold">Total Move-In Cost</TableCell>
+                  <TableCell className="text-right font-bold text-lg">RM{grandTotal}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
