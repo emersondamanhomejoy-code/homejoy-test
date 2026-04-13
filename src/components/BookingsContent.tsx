@@ -156,7 +156,7 @@ export function BookingsContent() {
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
   return (
-    <StandardPageLayout title="Bookings" actionLabel="Create Booking" actionIcon={Plus} onAction={() => setShowCreateDialog(true)}>
+    <StandardPageLayout title="Bookings" actionLabel="Create Booking" actionIcon={<Plus className="h-4 w-4" />} onAction={() => setShowCreateDialog(true)}>
       {/* Create Booking Dialog */}
       <CreateBookingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
 

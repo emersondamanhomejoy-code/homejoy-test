@@ -77,7 +77,7 @@ export function LocationsContent() {
   const isDirty = name !== initialName;
 
   return (
-    <StandardPageLayout title="Locations" actionLabel="Add Location" actionIcon={Plus} onAction={openCreate}>
+    <StandardPageLayout title="Locations" actionLabel="Add Location" actionIcon={<Plus className="h-4 w-4" />} onAction={openCreate}>
       {/* Add/Edit Modal */}
       <StandardModal
         open={showForm}
