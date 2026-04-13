@@ -78,13 +78,15 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return;
     const fetchAgents = async () => {
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role, commission_type");
       const { data: profiles } = await supabase.from("profiles").select("user_id, email, name");
       if (roles && profiles) {
-        const agentUserIds = [...new Set(roles.filter(r => r.role === "agent").map(r => r.user_id))];
+        const agentRoles = roles.filter(r => r.role === "agent");
+        const agentUserIds = [...new Set(agentRoles.map(r => r.user_id))];
         setAgents(agentUserIds.map(uid => {
           const p = profiles.find(pr => pr.user_id === uid);
-          return { id: uid, email: p?.email || "", name: p?.name || "" };
+          const agentRole = agentRoles.find(r => r.user_id === uid);
+          return { id: uid, email: p?.email || "", name: p?.name || "", commissionType: agentRole?.commission_type || "internal_basic" };
         }));
       }
     };
