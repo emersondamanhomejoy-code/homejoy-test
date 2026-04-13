@@ -339,7 +339,24 @@ export function UnitsRoomsContent() {
       <StandardModal
         open={!!viewingUnit}
         onOpenChange={open => { if (!open) setViewingUnit(null); }}
-        title={`Unit Details — ${viewingUnit?.building} · ${viewingUnit?.unit}`}
+        title={
+          <div className="flex items-center gap-2">
+            <span>{`Unit Details — ${viewingUnit?.building} · ${viewingUnit?.unit}`}</span>
+            {viewingUnit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={() => {
+                    const url = `${window.location.origin}/view/${viewingUnit.id}`;
+                    navigator.clipboard.writeText(url).then(() => toast.success("Share link copied!"));
+                  }}>
+                    <Link2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy shareable link</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        }
         size="lg"
         hideCancel
         footer={<Button variant="outline" onClick={() => setViewingUnit(null)}>Close</Button>}
