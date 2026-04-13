@@ -115,30 +115,26 @@ export function UnitsRoomsContent() {
     });
   }, [units, search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, sort]);
 
-  useEffect(() => { setCurrentPage(0); }, [search, selectedLocations, selectedBuildings, selectedUnitType, pageSize]);
+  useEffect(() => { setCurrentPage(0); }, [search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, pageSize]);
 
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
 
-  const applyLocations = (next: string[]) => {
-    setSelectedLocations(next);
-    if (next.length) {
-      setSelectedBuildings(prev => {
-        const valid = new Set(units.filter(u => next.includes(u.location)).map(u => u.building));
-        return prev.filter(b => valid.has(b));
-      });
-    }
-  };
-
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnitType !== "all" || search.trim() !== "";
+  const hasFilters = selectedBuilding !== "all" || selectedUnitType !== "all" || selectedLocation !== "all" || !!internalOnly || !!hasRemainingRooms || !!hasRemainingCarparks || !!maxOccupantsMin || !!maxOccupantsMax || !!remainingPaxMin || !!remainingPaxMax;
 
   const clearFilters = () => {
-    setSelectedLocations([]);
-    setSelectedBuildings([]);
+    setSelectedBuilding("all");
     setSelectedUnitType("all");
-    setSearch("");
+    setSelectedLocation("all");
+    setInternalOnly("");
+    setHasRemainingRooms("");
+    setHasRemainingCarparks("");
+    setMaxOccupantsMin("");
+    setMaxOccupantsMax("");
+    setRemainingPaxMin("");
+    setRemainingPaxMax("");
   };
 
   const toggleExpand = (id: string) => {
@@ -173,40 +169,78 @@ export function UnitsRoomsContent() {
       <StandardFilterBar
         search={search}
         onSearchChange={(v) => { setSearch(v); setCurrentPage(0); }}
-        placeholder="Search by building, unit, location..."
+        placeholder="Search by building or unit..."
         hasActiveFilters={hasFilters}
         onClearFilters={clearFilters}
       >
-        <MultiSelectFilter
-          label="Location"
-          placeholder="Select location"
-          options={locations}
-          selected={selectedLocations}
-          onApply={applyLocations}
-          className="min-w-[200px]"
-        />
-        <MultiSelectFilter
-          label="Building"
-          placeholder="Select building"
-          options={buildings}
-          selected={selectedBuildings}
-          onApply={next => setSelectedBuildings(next)}
-          className="min-w-[200px]"
-        />
+        <div className="space-y-1.5 min-w-[160px]">
+          <label className={labelClass}>Building</label>
+          <select className={inputClass} value={selectedBuilding} onChange={e => setSelectedBuilding(e.target.value)}>
+            <option value="all">All Buildings</option>
+            {buildings.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
         <div className="space-y-1.5 min-w-[160px]">
           <label className={labelClass}>Unit Type</label>
-          <Select onValueChange={setSelectedUnitType} value={selectedUnitType}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="mix">Mix Unit</SelectItem>
-              <SelectItem value="female">Female Unit</SelectItem>
-              <SelectItem value="male">Male Unit</SelectItem>
-            </SelectContent>
-          </Select>
+          <select className={inputClass} value={selectedUnitType} onChange={e => setSelectedUnitType(e.target.value)}>
+            <option value="all">All Types</option>
+            <option value="mix">Mix Unit</option>
+            <option value="female">Female Unit</option>
+            <option value="male">Male Unit</option>
+          </select>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm self-end">
+          {showAdvanced ? "Hide" : "Show"} Advanced Filters
+        </Button>
+        {showAdvanced && (
+          <>
+            <div className="space-y-1.5 min-w-[160px]">
+              <label className={labelClass}>Location</label>
+              <select className={inputClass} value={selectedLocation} onChange={e => { setSelectedLocation(e.target.value); if (e.target.value !== "all" && selectedBuilding !== "all") { const valid = units.filter(u => u.location === e.target.value).map(u => u.building); if (!valid.includes(selectedBuilding)) setSelectedBuilding("all"); } }}>
+                <option value="all">All Locations</option>
+                {locations.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[140px]">
+              <label className={labelClass}>Internal Only</label>
+              <select className={inputClass} value={internalOnly} onChange={e => setInternalOnly(e.target.value)}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[140px]">
+              <label className={labelClass}>Has Remaining Rooms</label>
+              <select className={inputClass} value={hasRemainingRooms} onChange={e => setHasRemainingRooms(e.target.value)}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[140px]">
+              <label className={labelClass}>Has Remaining Carparks</label>
+              <select className={inputClass} value={hasRemainingCarparks} onChange={e => setHasRemainingCarparks(e.target.value)}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[120px]">
+              <label className={labelClass}>Max Occupants</label>
+              <div className="flex gap-1">
+                <input type="number" placeholder="Min" className={`${inputClass} w-16`} value={maxOccupantsMin} onChange={e => setMaxOccupantsMin(e.target.value)} />
+                <input type="number" placeholder="Max" className={`${inputClass} w-16`} value={maxOccupantsMax} onChange={e => setMaxOccupantsMax(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5 min-w-[120px]">
+              <label className={labelClass}>Remaining Pax</label>
+              <div className="flex gap-1">
+                <input type="number" placeholder="Min" className={`${inputClass} w-16`} value={remainingPaxMin} onChange={e => setRemainingPaxMin(e.target.value)} />
+                <input type="number" placeholder="Max" className={`${inputClass} w-16`} value={remainingPaxMax} onChange={e => setRemainingPaxMax(e.target.value)} />
+              </div>
+            </div>
+          </>
+        )}
       </StandardFilterBar>
 
       {/* Table */}
