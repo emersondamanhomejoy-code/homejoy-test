@@ -35,6 +35,10 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [viewing, setViewing] = useState<Condo | null>(null);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [hasAvailableUnits, setHasAvailableUnits] = useState("");
+  const [hasAvailableRooms, setHasAvailableRooms] = useState("");
+  const [hasAvailableCarparks, setHasAvailableCarparks] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
@@ -66,12 +70,25 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
+  const hasActiveFilters = !!locationFilter || !!hasAvailableUnits || !!hasAvailableRooms || !!hasAvailableCarparks;
+
+  const clearFilters = () => {
+    setLocationFilter("");
+    setHasAvailableUnits("");
+    setHasAvailableRooms("");
+    setHasAvailableCarparks("");
+  };
+
   const filtered = condos.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.location?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.address || "").toLowerCase().includes(search.toLowerCase());
     const matchLocation = !locationFilter || c.location_id === locationFilter;
-    return matchSearch && matchLocation;
+    const s = condoStats[c.id];
+    const matchAvailUnits = !hasAvailableUnits || (hasAvailableUnits === "yes" ? (s?.availableUnits || 0) > 0 : (s?.availableUnits || 0) === 0);
+    const matchAvailRooms = !hasAvailableRooms || (hasAvailableRooms === "yes" ? (s?.availableRooms || 0) > 0 : (s?.availableRooms || 0) === 0);
+    const matchAvailCarparks = !hasAvailableCarparks || (hasAvailableCarparks === "yes" ? (s?.availableCarparks || 0) > 0 : (s?.availableCarparks || 0) === 0);
+    return matchSearch && matchLocation && matchAvailUnits && matchAvailRooms && matchAvailCarparks;
   });
 
   const sortedFiltered = sortData(filtered, (c, key: string) => {
@@ -148,11 +165,33 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
       />
 
       {/* Filters */}
-      <StandardFilterBar search={search} onSearchChange={setSearch} placeholder="Search buildings...">
+      <StandardFilterBar search={search} onSearchChange={setSearch} placeholder="Search buildings..." hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}>
         <select className={`${inputClass}`} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
           <option value="">All Locations</option>
           {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
+        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm">
+          {showAdvanced ? "Hide" : "Show"} Advanced Filters
+        </Button>
+        {showAdvanced && (
+          <>
+            <select className={`${inputClass}`} value={hasAvailableUnits} onChange={e => setHasAvailableUnits(e.target.value)}>
+              <option value="">Has Available Units</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            <select className={`${inputClass}`} value={hasAvailableRooms} onChange={e => setHasAvailableRooms(e.target.value)}>
+              <option value="">Has Available Rooms</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            <select className={`${inputClass}`} value={hasAvailableCarparks} onChange={e => setHasAvailableCarparks(e.target.value)}>
+              <option value="">Has Available Carparks</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </>
+        )}
       </StandardFilterBar>
 
       {/* Table */}
