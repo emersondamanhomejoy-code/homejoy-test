@@ -3,17 +3,24 @@
 ## Core
 HOMEJOY Agent Portal — room rental management system.
 Google OAuth only, no email/password auth.
-Each unit has dynamic rooms (add/remove), rooms independently available/unavailable.
+Each unit has 5 rooms (A-E), rooms independently available/unavailable.
 Lovable Cloud backend. Roles: admin, agent.
 
 ## Memories
-- [Tenant spec](mem://features/tenants) — Table columns, detail view, filters, occupancy display, booking history, no direct binding edits
-- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission types
-- [Area filter](mem://features/area-filter) — Valid area names for unit locations
-- [Bookings](mem://features/bookings) — Agent/customer submit booking requests, admin approves/rejects
+- [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
+- [Room status rules](mem://features/room-status-rules) — Final status transition logic: Available↔Archived, Occupied→Available Soon, Pending/Available Soon read-only
+- [Status system](mem://features/status-system) — Canonical status values for rooms, bookings, move-ins
+- [Tenant page](mem://features/tenants) — Table columns, detail sections, filters, occupancy display, booking history
 - [Product goal](mem://features/product-goal) — Agent portal for room rental management
-- [Roles](mem://features/roles) — admin, agent, boss, manager, super_admin
-- [Status system](mem://features/status-system) — Room status rules and transitions
-- [UI/UX](mem://design/ui-ux-requirements) — Design guidelines
-- [Form dialogs](mem://design/form-dialogs) — Standard modal patterns
-- [No pets](mem://constraints/no-pets) — max_pets always 0
+- [Business flow](mem://features/business-flow) — Booking→Approval→Move-in→Approval workflow
+- [Roles](mem://features/roles) — Admin, agent role definitions
+- [Bookings](mem://features/bookings) — Agent/customer submit booking requests
+- [Locations](mem://features/locations) — Location management
+- [Building access](mem://features/building-access) — Building access info structure
+- [Commission tiers](mem://features/commission-tiers) — Per-agent commission config
+- [Area filter](mem://features/area-filter) — Valid area names
+- [Dashboard](mem://features/dashboard) — Dashboard layout
+- [Tenant selection](mem://features/tenant-selection) — Tenant selection in booking
+- [Form dialogs](mem://design/form-dialogs) — Standard form/dialog patterns
+- [UI/UX requirements](mem://design/ui-ux-requirements) — Design system rules
+- [No pets](mem://constraints/no-pets) — No pet features
