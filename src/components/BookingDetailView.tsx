@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Booking, useUpdateBookingStatus, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits } from "@/hooks/useRooms";
-import { useCondos } from "@/hooks/useCondos";
+import { useMoveIns } from "@/hooks/useMoveIns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -30,20 +30,41 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const updateBookingStatus = useUpdateBookingStatus();
   const { data: roomsData = [] } = useRooms();
   const { data: unitsData = [] } = useUnits();
-  const { data: condosData = [] } = useCondos();
+  const { data: moveInsData = [] } = useMoveIns();
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  // Delete removed — bookings cannot be deleted
 
   const room = roomsData.find(r => r.id === b.room_id);
   const info = b.room || (room ? { room: room.room, building: room.building, unit: room.unit } : null);
   const unitCfg = room ? unitsData.find(u => u.id === room.unit_id) : null;
-
   const moveInCost = b.move_in_cost as any;
+
+  // Find related move-in record
+  const relatedMoveIn = useMemo(() => {
+    return moveInsData.find(m => m.booking_id === b.id);
+  }, [moveInsData, b.id]);
+
+  // Derive move-in status display
+  const moveInStatusDisplay = useMemo(() => {
+    if (b.status === "rejected" || b.status === "cancelled") return "Not Proceeded";
+    if (b.status === "approved" && relatedMoveIn) {
+      const s = relatedMoveIn.status;
+      const map: Record<string, string> = {
+        ready_for_move_in: "Ready for Move-in",
+        submitted: "Submitted",
+        approved: "Approved",
+        rejected: "Rejected",
+        reversed: "Reversed",
+      };
+      return map[s] || s;
+    }
+    if (b.status === "approved") return "Ready for Move-in";
+    return "Pending Booking Review";
+  }, [b.status, relatedMoveIn]);
 
   const carParkSelections: { roomId: string; carPlate: string }[] = useMemo(() => {
     const docs = b.documents as any;
@@ -57,12 +78,22 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     });
   }, [carParkSelections, roomsData]);
 
-  const statusBadge = (status: string) => {
-    const cls = status === "submitted" ? "bg-yellow-500/20 text-yellow-600"
-      : status === "approved" ? "bg-green-500/20 text-green-600"
+  const statusBadge = (status: string, variant?: "booking" | "movein") => {
+    let cls = "";
+    if (variant === "movein") {
+      cls = status === "Not Proceeded" ? "bg-gray-500/20 text-gray-500"
+        : status === "Ready for Move-in" ? "bg-blue-500/20 text-blue-600"
+        : status === "Approved" ? "bg-green-500/20 text-green-600"
+        : status === "Submitted" ? "bg-yellow-500/20 text-yellow-600"
+        : status === "Pending Booking Review" ? "bg-muted text-muted-foreground"
+        : "bg-orange-500/20 text-orange-600";
+    } else {
+      cls = status === "submitted" ? "bg-yellow-500/20 text-yellow-600"
+        : status === "approved" ? "bg-green-500/20 text-green-600"
         : status === "cancelled" ? "bg-gray-500/20 text-gray-500"
-          : "bg-red-500/20 text-red-600";
-    return <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${cls}`}>{status.toUpperCase()}</span>;
+        : "bg-red-500/20 text-red-600";
+    }
+    return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${cls}`}>{variant === "movein" ? status : status.toUpperCase()}</span>;
   };
 
   const handleApprove = async () => {
@@ -127,8 +158,6 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     onOpenChange(false);
   };
 
-  // Delete removed — bookings cannot be deleted
-
   const docSection = (label: string, paths: any) => {
     const arr = Array.isArray(paths) ? paths : [];
     if (arr.length === 0) return null;
@@ -147,9 +176,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     );
   };
 
-  const sectionCard = (emoji: string, title: string, children: React.ReactNode) => (
+  const sectionCard = (title: string, children: React.ReactNode) => (
     <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-      <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">{emoji} {title}</div>
+      <div className="text-sm font-bold flex items-center gap-2 border-b border-border pb-2 uppercase tracking-wide text-muted-foreground">{title}</div>
       {children}
     </div>
   );
@@ -165,21 +194,24 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const carparkFees: { label: string; unitPrice: number; qty: number; total: number }[] = moveInCost?.carparkFees || [];
   const carparkRental = moveInCost?.carparkRental || 0;
 
-  // Build footer actions
+  // Footer actions based on status
   const footerActions = () => {
     if (b.status === "submitted") {
       return (
         <>
-          <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>🚫 Cancel</Button>
-          <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>❌ Reject</Button>
-          <Button onClick={() => setShowApproveDialog(true)} className="bg-green-600 hover:bg-green-700 text-white">✅ Approve</Button>
+          <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>Cancel</Button>
+          <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>Reject</Button>
+          <Button onClick={() => setShowApproveDialog(true)} className="bg-green-600 hover:bg-green-700 text-white">Approve</Button>
         </>
       );
     }
-    if (b.status === "approved") {
-      return <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>🚫 Cancel Booking</Button>;
+    if (b.status === "rejected") {
+      return null; // Close only via modal Cancel button
     }
-    return null;
+    if (b.status === "approved") {
+      return null; // Close only
+    }
+    return null; // cancelled — close only
   };
 
   return (
@@ -191,15 +223,22 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         size="lg"
         footer={footerActions()}
       >
-        <div className="space-y-5">
+        <div className="space-y-4">
 
-          {/* 1. Booking Summary + Reject/Cancel reason at top */}
-          {sectionCard("📋", "Booking Summary", (
+          {/* SECTION A – Booking Status Summary */}
+          {sectionCard("Booking Status Summary", (
             <div>
-              {infoRow("Booking ID", <span className="font-mono text-xs">{b.id}</span>)}
+              {infoRow("Booking ID", <span className="font-mono text-xs">{b.id.slice(0, 8)}…</span>)}
               {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
-              {infoRow("Status", statusBadge(b.status))}
-              {b.resolution_type && infoRow("Resolution", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
+              {infoRow("Booking Status", statusBadge(b.status))}
+              {infoRow("Move-in Status", statusBadge(moveInStatusDisplay, "movein"))}
+              {b.resolution_type && infoRow("Resolution Type", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
+              {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
+              {infoRow("Agent", getAgentName(b.submitted_by))}
+              {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
+              {b.reviewed_by && infoRow("Reviewed By", getAgentName(b.reviewed_by))}
+
+              {/* Reason callout */}
               {b.status === "rejected" && b.reject_reason && (
                 <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm mt-2">
                   <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
@@ -210,52 +249,40 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
                   <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
                 </div>
               )}
-              {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
-              {infoRow("Agent", getAgentName(b.submitted_by))}
-              {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
-            </div>
-          ))}
-          {/* 2. Booking Fee Receipt — right after summary */}
-          {sectionCard("🧾", "Booking Fee Receipt", (
-            <div className="space-y-3">
-              {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
-              {!b.doc_transfer_slip?.length && (
-                <div className="text-sm text-muted-foreground">No receipt uploaded</div>
-              )}
             </div>
           ))}
 
-          {/* 3. Room Summary */}
-          {sectionCard("🏠", "Room Summary", (
+          {/* SECTION B – Room & Parking Summary */}
+          {sectionCard("Room & Parking Summary", (
             <div>
               {infoRow("Building", info?.building)}
               {infoRow("Unit", info?.unit)}
               {infoRow("Room", info?.room)}
               {infoRow("Room Status", room?.status)}
-              {infoRow("Exact Rental", `RM${moveInCost?.advance || b.monthly_salary || 0}`)}
+              {infoRow("Exact Rental", `RM ${moveInCost?.advance || 0}`)}
               {infoRow("Pax Staying", b.pax_staying)}
               {infoRow("Tenancy Duration", `${b.contract_months} months`)}
               {infoRow("Move-in Date", b.move_in_date)}
-            </div>
-          ))}
 
-          {/* 3. Parking */}
-          {carParkRooms.length > 0 && sectionCard("🅿️", "Parking", (
-            <div className="space-y-2">
-              {carParkRooms.map((cp, i) => (
-                <div key={i} className="bg-background rounded-lg border p-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "—"}</span>
-                    <span>RM{cp.room?.rent || 0}/mo</span>
-                  </div>
-                  <div className="text-muted-foreground">Car Plate: {cp.carPlate || "—"}</div>
+              {carParkRooms.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase">Parking</div>
+                  {carParkRooms.map((cp, i) => (
+                    <div key={i} className="bg-background rounded-lg border p-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "—"}</span>
+                        <span>RM {cp.room?.rent || 0}/mo</span>
+                      </div>
+                      <div className="text-muted-foreground">Car Plate: {cp.carPlate || "—"}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           ))}
 
-          {/* 4. Tenant Profile */}
-          {sectionCard("👤", "Tenant Profile", (
+          {/* SECTION C – Tenant Profile */}
+          {sectionCard("Tenant Profile", (
             <div className="grid md:grid-cols-2 gap-x-8">
               <div>
                 {infoRow("Full Name", b.tenant_name)}
@@ -276,7 +303,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             const docs = b.documents as any;
             const t2 = docs?.tenant2;
             if (!t2?.name) return null;
-            return sectionCard("👥", "Second Tenant", (
+            return sectionCard("Second Tenant", (
               <div className="grid md:grid-cols-2 gap-x-8">
                 <div>
                   {infoRow("Full Name", t2.name)}
@@ -292,8 +319,8 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             ));
           })()}
 
-          {/* 5. Emergency Contacts */}
-          {sectionCard("🚨", "Emergency Contacts", (
+          {/* SECTION D – Emergency Contacts */}
+          {sectionCard("Emergency Contacts", (
             <div className="grid md:grid-cols-2 gap-x-8">
               <div>
                 <div className="text-xs font-semibold text-muted-foreground mb-1">Contact 1</div>
@@ -310,8 +337,18 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             </div>
           ))}
 
-          {/* 6. Cost Breakdown */}
-          {moveInCost && sectionCard("💰", "Move-in Cost", (
+          {/* SECTION E – Booking Fee Receipt */}
+          {sectionCard("Booking Fee Receipt", (
+            <div className="space-y-3">
+              {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
+              {!b.doc_transfer_slip?.length && (
+                <div className="text-sm text-muted-foreground">No receipt uploaded</div>
+              )}
+            </div>
+          ))}
+
+          {/* SECTION F – Move-in Cost Breakdown */}
+          {moveInCost && sectionCard("Move-in Cost Breakdown", (
             <div className="bg-background rounded-lg border divide-y divide-border">
               <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                 <span>Description</span>
@@ -374,22 +411,17 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             </div>
           ))}
 
-          {/* Booking Fee Receipt already shown above — removed from here */}
-
-          {/* History Log */}
-          {(b.history || []).length > 0 && (
-            <div className="bg-card rounded-lg border p-5 space-y-3">
-              <div className="text-base font-bold border-b border-border pb-2">📜 History</div>
-              <div className="space-y-2">
-                {(b.history || []).map((h: any, i: number) => (
-                  <div key={i} className="rounded-lg border bg-muted/30 p-3 text-xs">
-                    <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
-                    {h.reason && <div className="mt-1 text-muted-foreground">Reason: {h.reason}</div>}
-                  </div>
-                ))}
-              </div>
+          {/* SECTION G – History */}
+          {(b.history || []).length > 0 && sectionCard("History", (
+            <div className="space-y-2">
+              {(b.history || []).map((h: any, i: number) => (
+                <div key={i} className="rounded-lg border bg-background p-3 text-xs">
+                  <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
+                  {h.reason && <div className="mt-1 text-muted-foreground">Reason: {h.reason}</div>}
+                </div>
+              ))}
             </div>
-          )}
+          ))}
         </div>
       </StandardModal>
 
@@ -424,9 +456,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowRejectDialog(false); setRejectReason(""); }}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>
-              Reject Booking
-            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>Reject Booking</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -443,13 +473,10 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCancelDialog(false); setCancelReason(""); }}>Go Back</Button>
-            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim()}>
-              Cancel Booking
-            </Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Booking</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }
