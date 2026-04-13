@@ -371,8 +371,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const receiptFileName = uploadedFiles.bookingFeeReceipt?.name || null;
   const hasReceipt = uploadedFiles.bookingFeeReceipt != null;
 
-  const removeReceipt = () => {
-    setUploadedFiles(prev => ({ ...prev, bookingFeeReceipt: null }));
+  const removeDoc = (key: "bookingFeeReceipt" | "passport" | "offerLetter") => {
+    setUploadedFiles(prev => ({ ...prev, [key]: null }));
+    if (key === "passport") setLinkedTenantDocs(prev => ({ ...prev, passport: "" }));
+    if (key === "offerLetter") setLinkedTenantDocs(prev => ({ ...prev, offerLetter: "" }));
   };
 
   const formIsDirty = !!(form.tenantName.trim() || form.roomId || form.agentId);
