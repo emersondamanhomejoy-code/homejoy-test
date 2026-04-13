@@ -619,11 +619,18 @@ export function UsersPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{u.roles.includes("agent") ? commSummary(u) : "—"}</TableCell>
-                  <TableCell className="text-center">{u.confirmed ? <StatusBadge status="Approved" /> : <StatusBadge status="Pending" />}</TableCell>
+                  <TableCell className="text-center">
+                    {u.frozen ? <StatusBadge status="Frozen" /> : u.confirmed ? <StatusBadge status="Approved" /> : <StatusBadge status="Pending" />}
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-center">
                       <Button variant="ghost" size="icon" onClick={() => setViewUser(u)} title="View"><Eye className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(u)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                      {u.id !== user?.id && u.roles.includes("agent") && (
+                        <Button variant="ghost" size="icon" onClick={() => handleFreezeToggle(u)} disabled={freezingId === u.id} title={u.frozen ? "Unfreeze" : "Freeze"}>
+                          {u.frozen ? <Sun className="h-4 w-4 text-amber-500" /> : <Snowflake className="h-4 w-4 text-blue-500" />}
+                        </Button>
+                      )}
                       {u.id !== user?.id && (
                         <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(u)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
