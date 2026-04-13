@@ -283,7 +283,7 @@ export function BookingsContent() {
                     { type: "view", onClick: () => setViewBooking(b) },
                     { type: "edit", onClick: () => setEditBooking(b), show: b.status === "submitted" || b.status === "rejected" },
                     { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "submitted" || b.status === "approved" },
-                    { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "pending" && b.status !== "approved" },
+                    { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "submitted" && b.status !== "approved" },
                   ]} />
                 </div>
               </TableCell>
