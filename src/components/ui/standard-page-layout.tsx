@@ -5,7 +5,7 @@ import { LucideIcon } from "lucide-react";
 interface StandardPageLayoutProps {
   title: string;
   actionLabel?: string;
-  actionIcon?: LucideIcon;
+  actionIcon?: LucideIcon | ReactNode;
   onAction?: () => void;
   actionVariant?: "default" | "outline" | "secondary" | "ghost" | "destructive";
   secondaryActions?: ReactNode;

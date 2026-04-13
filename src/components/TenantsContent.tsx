@@ -318,7 +318,8 @@ export function TenantsContent() {
         search={search}
         onSearchChange={v => { setSearch(v); setPage(0); }}
         placeholder="Search by name, phone, email, building, unit, room..."
-        onClear={hasFilters ? clearFilters : undefined}
+        hasActiveFilters={hasFilters}
+        onClearFilters={clearFilters}
       >
         <MultiSelectFilter label="Nationality" placeholder="All" options={nationalities} selected={selectedNationalities}
           onApply={v => { setSelectedNationalities(v); setPage(0); }} />

@@ -380,7 +380,8 @@ export function UsersPage() {
         search={search}
         onSearchChange={v => { setSearch(v); setPage(0); }}
         placeholder="Search name, email..."
-        onClear={hasFilters ? () => { setSearch(""); setRoleFilter("all"); setPage(0); } : undefined}
+        hasActiveFilters={hasFilters}
+        onClearFilters={() => { setSearch(""); setRoleFilter("all"); setPage(0); }}
       >
         <div className="space-y-1.5">
           <label className={lbl}>Role</label>
