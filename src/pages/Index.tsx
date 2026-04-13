@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
-import { useClaims, useCreateClaim, Claim } from "@/hooks/useClaims";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { AgentBookingsContent } from "@/components/AgentBookingsContent";
 import { supabase } from "@/integrations/supabase/client";
