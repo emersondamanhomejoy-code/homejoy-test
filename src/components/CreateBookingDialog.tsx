@@ -10,6 +10,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
 
 interface AccessItem {
@@ -59,10 +60,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
-  const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
+  const [uploadedFiles, setUploadedFiles] = useState<{ bookingFeeReceipt: File | null }>({ bookingFeeReceipt: null });
+  const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string }>({ passport: "", offerLetter: "" });
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"passport" | "offerLetter" | "transferSlip" | null>(null);
+  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | null>(null);
 
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
   useEffect(() => {
@@ -244,14 +245,14 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     const docP = Array.isArray(t.doc_passport) && t.doc_passport.length > 0 ? t.doc_passport[0] : "";
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
     const docS = Array.isArray(t.doc_transfer_slip) && t.doc_transfer_slip.length > 0 ? t.doc_transfer_slip[0] : "";
-    setLinkedTenantDocs({ passport: docP, offerLetter: docO, transferSlip: docS });
-    setUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
+    setLinkedTenantDocs({ passport: docP, offerLetter: docO });
+    setUploadedFiles({ bookingFeeReceipt: null });
   };
 
   const handleUnlinkTenant = () => {
     setSelectedTenantId(null);
-    setLinkedTenantDocs({ passport: "", offerLetter: "", transferSlip: "" });
-    setUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
+    setLinkedTenantDocs({ passport: "", offerLetter: "" });
+    setUploadedFiles({ bookingFeeReceipt: null });
     setForm(prev => ({ ...prev, tenantName: "", phone: "", email: "", icPassport: "", gender: "", nationality: "", occupation: "",
       emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
       emergency2Name: "", emergency2Phone: "", emergency2Relationship: "" }));
@@ -277,9 +278,9 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
     setSubmitting(true);
     try {
-      const passportPath = uploadedFiles.passport ? await uploadFile(uploadedFiles.passport, "passport") : linkedTenantDocs.passport;
-      const offerPath = uploadedFiles.offerLetter ? await uploadFile(uploadedFiles.offerLetter, "offer-letter") : linkedTenantDocs.offerLetter;
-      const slipPath = uploadedFiles.transferSlip ? await uploadFile(uploadedFiles.transferSlip, "transfer-slip") : linkedTenantDocs.transferSlip;
+      const passportPath = linkedTenantDocs.passport;
+      const offerPath = linkedTenantDocs.offerLetter;
+      const receiptPath = uploadedFiles.bookingFeeReceipt ? await uploadFile(uploadedFiles.bookingFeeReceipt, "booking-fee-receipt") : "";
 
       const moveInCost = {
         advance: exactRental, deposit, adminFee,
@@ -318,7 +319,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
         move_in_cost: moveInCost,
         doc_passport: passportPath ? [passportPath] : [],
         doc_offer_letter: offerPath ? [offerPath] : [],
-        doc_transfer_slip: slipPath ? [slipPath] : [],
+        doc_transfer_slip: receiptPath ? [receiptPath] : [],
         documents: {
           carParkSelections: form.carParkSelections.slice(0, parkingCount),
           ...(form.gender === "Couple" ? {
@@ -355,8 +356,8 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const resetForm = () => {
     setForm(initialForm);
-    setUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
-    setLinkedTenantDocs({ passport: "", offerLetter: "", transferSlip: "" });
+    setUploadedFiles({ bookingFeeReceipt: null });
+    setLinkedTenantDocs({ passport: "", offerLetter: "" });
     setSelectedTenantId(null);
   };
 
@@ -367,20 +368,11 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">{emoji} {title}</div>
   );
 
-  const getDocDisplay = (key: "passport" | "offerLetter" | "transferSlip") => {
-    if (uploadedFiles[key]) return uploadedFiles[key]!.name;
-    const linked = linkedTenantDocs[key];
-    if (linked) return linked.split("/").pop() || linked;
-    return null;
-  };
+  const receiptFileName = uploadedFiles.bookingFeeReceipt?.name || null;
+  const hasReceipt = uploadedFiles.bookingFeeReceipt != null;
 
-  const docHasFile = (key: "passport" | "offerLetter" | "transferSlip") => {
-    return uploadedFiles[key] != null || !!linkedTenantDocs[key];
-  };
-
-  const removeDoc = (key: "passport" | "offerLetter" | "transferSlip") => {
-    setUploadedFiles(prev => ({ ...prev, [key]: null }));
-    setLinkedTenantDocs(prev => ({ ...prev, [key]: "" }));
+  const removeReceipt = () => {
+    setUploadedFiles({ bookingFeeReceipt: null });
   };
 
   const formIsDirty = !!(form.tenantName.trim() || form.roomId || form.agentId);
