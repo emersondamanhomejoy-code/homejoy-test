@@ -5,9 +5,15 @@ import { useUnits } from "@/hooks/useRooms";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Plus, Eye } from "lucide-react";
+import { Plus } from "lucide-react";
 import { AccessItem } from "@/components/BuildingForm";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { StandardPageLayout } from "@/components/ui/standard-page-layout";
+import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { StandardTable } from "@/components/ui/standard-table";
+import { ActionButtons } from "@/components/ui/action-buttons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { inputClass } from "@/lib/ui-constants";
 
 const CHARGEABLE_LABELS: Record<string, string> = {
   none: "Not Chargeable",
@@ -50,11 +56,12 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     return map;
   }, [condos, units]);
 
-  const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this building?")) return;
-    try { await deleteCondo.mutateAsync(id); } catch (e: any) { alert(e.message); }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try { await deleteCondo.mutateAsync(deleteId); } catch (e: any) { alert(e.message); }
+    setDeleteId(null);
   };
 
   const { sort, handleSort, sortData } = useTableSort("name");
@@ -128,71 +135,71 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="text-2xl font-extrabold">Buildings</div>
-        <Button onClick={() => onOpenForm()}>
-          <Plus className="h-4 w-4" /> Add Building
-        </Button>
-      </div>
+    <StandardPageLayout title="Buildings" actionLabel="Add Building" actionIcon={Plus} onAction={() => onOpenForm()}>
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+        title="Delete Building?"
+        description="This building and its data will be permanently removed."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <input className={`${inputClass} w-full max-w-sm`} placeholder="Search buildings..." value={search} onChange={e => setSearch(e.target.value)} />
+      <StandardFilterBar search={search} onSearchChange={setSearch} placeholder="Search buildings...">
         <select className={`${inputClass}`} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
           <option value="">All Locations</option>
           {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
-      </div>
+      </StandardFilterBar>
 
       {/* Table */}
-      <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">No.</TableHead>
-              <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
-              
-              <SortableTableHead sortKey="availableUnits" currentSort={sort} onSort={handleSort} className="text-center">Available Units</SortableTableHead>
-              <SortableTableHead sortKey="availableRooms" currentSort={sort} onSort={handleSort} className="text-center">Available Rooms</SortableTableHead>
-              <SortableTableHead sortKey="availableCarparks" currentSort={sort} onSort={handleSort} className="text-center">Available Carparks</SortableTableHead>
-              <TableHead className="w-36 text-right">Actions</TableHead>
+      <StandardTable
+        columns={
+          <TableRow>
+            <TableHead className="w-12">No.</TableHead>
+            <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Building Name</SortableTableHead>
+            <SortableTableHead sortKey="availableUnits" currentSort={sort} onSort={handleSort} className="text-center">Available Units</SortableTableHead>
+            <SortableTableHead sortKey="availableRooms" currentSort={sort} onSort={handleSort} className="text-center">Available Rooms</SortableTableHead>
+            <SortableTableHead sortKey="availableCarparks" currentSort={sort} onSort={handleSort} className="text-center">Available Carparks</SortableTableHead>
+            <TableHead className="w-36 text-right">Actions</TableHead>
+          </TableRow>
+        }
+        isEmpty={sortedFiltered.length === 0}
+        emptyMessage="No buildings found"
+        total={sortedFiltered.length}
+      >
+        {sortedFiltered.map((c, i) => {
+          const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 };
+          return (
+            <TableRow key={c.id}>
+              <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+              <TableCell className="font-medium">{c.name}</TableCell>
+              <TableCell className="text-center font-semibold">
+                <span className={s.availableUnits > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableUnits}</span>
+                <span className="text-muted-foreground font-normal">/{s.totalUnits}</span>
+              </TableCell>
+              <TableCell className="text-center font-semibold">
+                <span className={s.availableRooms > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableRooms}</span>
+                <span className="text-muted-foreground font-normal">/{s.totalRooms}</span>
+              </TableCell>
+              <TableCell className="text-center font-semibold">
+                <span className={s.availableCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableCarparks}</span>
+                <span className="text-muted-foreground font-normal">/{s.totalCarparks}</span>
+              </TableCell>
+              <TableCell className="text-right">
+                <ActionButtons actions={[
+                  { type: "view", onClick: () => setViewing(c) },
+                  { type: "edit", onClick: () => onOpenForm(c) },
+                  { type: "delete", onClick: () => setDeleteId(c.id) },
+                ]} />
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedFiltered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No buildings found</TableCell></TableRow>
-            ) : sortedFiltered.map((c, i) => {
-              const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 };
-              return (
-                <TableRow key={c.id}>
-                  <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-center font-semibold">
-                    <span className={s.availableUnits > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableUnits}</span>
-                    <span className="text-muted-foreground font-normal">/{s.totalUnits}</span>
-                  </TableCell>
-                  <TableCell className="text-center font-semibold">
-                    <span className={s.availableRooms > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableRooms}</span>
-                    <span className="text-muted-foreground font-normal">/{s.totalRooms}</span>
-                  </TableCell>
-                  <TableCell className="text-center font-semibold">
-                    <span className={s.availableCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}>{s.availableCarparks}</span>
-                    <span className="text-muted-foreground font-normal">/{s.totalCarparks}</span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => setViewing(c)} className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="View"><Eye className="h-4 w-4" /></button>
-                      <button onClick={() => onOpenForm(c)} className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="Edit"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+          );
+        })}
+      </StandardTable>
 
       {/* View Dialog */}
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
@@ -263,6 +270,6 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </StandardPageLayout>
   );
 }

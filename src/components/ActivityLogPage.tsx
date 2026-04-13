@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Badge } from "@/components/ui/badge";
 import { Eye, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 
 interface ActivityLog {
   id: string;
@@ -150,7 +150,7 @@ export function ActivityLogPage() {
   if (!canView) return <div className="text-center py-10 text-muted-foreground">Access denied. Manager or Boss role required.</div>;
 
   return (
-    <div className="space-y-4">
+    <StandardPageLayout title="Activity Log">
       {/* View Log Modal */}
       {viewLog && (
         <Dialog open={!!viewLog} onOpenChange={(open) => { if (!open) setViewLog(null); }}>
@@ -182,10 +182,6 @@ export function ActivityLogPage() {
           </DialogContent>
         </Dialog>
       )}
-
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Activity Log</h2>
-      </div>
 
       <div className="flex flex-wrap gap-3 items-center">
         <Input placeholder="Search user, action, tenant, reason..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
@@ -267,6 +263,6 @@ export function ActivityLogPage() {
           <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
-    </div>
+    </StandardPageLayout>
   );
 }

@@ -14,18 +14,17 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-
-const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
+import { StandardPageLayout } from "@/components/ui/standard-page-layout";
+import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { ActionButtons } from "@/components/ui/action-buttons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { inputClass } from "@/lib/ui-constants";
 
 export function RoomsContent() {
   const navigate = useNavigate();
@@ -141,9 +140,9 @@ export function RoomsContent() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
+  const hasFilters: boolean = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
     selectedUnitTypes.length > 0 || selectedBedTypes.length > 0 ||
-    selectedWallTypes.length > 0 || selectedFeatures.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
+    selectedWallTypes.length > 0 || selectedFeatures.length > 0 || statusFilter !== "all" || !!minPrice || !!maxPrice || !!search.trim();
 
   const clearFilters = () => {
     setSelectedLocations([]); setSelectedBuildings([]); setSelectedUnits([]);
@@ -189,29 +188,22 @@ export function RoomsContent() {
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Rooms</h2>
+    <StandardPageLayout
+      title="Rooms"
+      secondaryActions={
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="h-4 w-4 mr-1" /> Export CSV
         </Button>
-      </div>
+      }
+    >
 
-      {/* Search + Filters */}
-      <div className="bg-card rounded-xl shadow-sm border border-border p-5 space-y-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by room, unit, building, location..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className={`${inputClass} w-full pl-10`}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-end gap-3">
+      <StandardFilterBar
+        search={search}
+        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        placeholder="Search by room, unit, building, location..."
+        hasActiveFilters={hasFilters || false}
+        onClearFilters={clearFilters}
+      >
           <MultiSelectFilter label="Location" placeholder="All Locations" options={locations} selected={selectedLocations}
             onApply={v => { setSelectedLocations(v); setSelectedBuildings([]); setSelectedUnits([]); setPage(1); }} />
           <MultiSelectFilter label="Building" placeholder="All Buildings" options={buildings} selected={selectedBuildings}
@@ -253,13 +245,7 @@ export function RoomsContent() {
             </div>
           </div>
 
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-              <X className="h-4 w-4 mr-1" /> Clear
-            </Button>
-          )}
-        </div>
-      </div>
+      </StandardFilterBar>
 
       {/* Table */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
@@ -375,18 +361,15 @@ export function RoomsContent() {
       </div>
 
       {/* Delete confirm */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive / Remove this room?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. The room will be permanently deleted.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remove</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
+        title="Archive / Remove this room?"
+        description="This action cannot be undone. The room will be permanently deleted."
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* View Room Dialog */}
       <Dialog open={!!viewingRoom} onOpenChange={() => setViewingRoom(null)}>
@@ -468,6 +451,6 @@ export function RoomsContent() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </StandardPageLayout>
   );
 }
