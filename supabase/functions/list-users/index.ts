@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify the caller is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -37,7 +36,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin/boss/manager role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -51,7 +49,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Parse body - supabase.functions.invoke always uses POST
     let body: any = {};
     try {
       body = await req.json();
@@ -61,9 +58,9 @@ Deno.serve(async (req) => {
 
     const action = body.action || "list";
 
-    // INVITE USER (sends setup email, no password needed)
+    // INVITE USER
     if (action === "create") {
-      const { email, name, phone, address, role: newRole, commission_type, commission_config } = body;
+      const { email, name, phone, address, role: newRole, commission_type, commission_config, display_name, emergency_contact_name, emergency_contact_phone } = body;
 
       if (!email || typeof email !== "string" || !email.includes("@")) {
         return new Response(JSON.stringify({ error: "Valid email is required" }), {
@@ -92,20 +89,20 @@ Deno.serve(async (req) => {
       }
 
       if (newUser.user) {
-        // Upsert profile
         await supabase.from("profiles").upsert({
           user_id: newUser.user.id,
           email: email.trim(),
           name: name || "",
+          display_name: display_name || "",
           phone: phone || "",
           address: address || "",
+          emergency_contact_name: emergency_contact_name || "",
+          emergency_contact_phone: emergency_contact_phone || "",
         }, { onConflict: "user_id" });
 
-        // Delete the default "agent" role from trigger, then insert the chosen role
         if (assignRole !== "agent") {
           await supabase.from("user_roles").delete().eq("user_id", newUser.user.id).eq("role", "agent");
         }
-        // Upsert role with commission
         await supabase.from("user_roles").upsert({
           user_id: newUser.user.id,
           role: assignRole,
@@ -143,7 +140,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // SET PASSWORD (admin use)
+    // SET PASSWORD
     if (action === "set_password") {
       const { user_id, password } = body;
       if (!user_id || !password || password.length < 6) {
@@ -173,14 +170,12 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Prevent deleting yourself
       if (user_id === user.id) {
         return new Response(JSON.stringify({ error: "Cannot delete yourself" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Delete from user_roles and profiles first (cascade should handle, but be safe)
       await supabase.from("user_roles").delete().eq("user_id", user_id);
       await supabase.from("profiles").delete().eq("user_id", user_id);
       const { error: deleteError } = await supabase.auth.admin.deleteUser(user_id);
@@ -197,7 +192,7 @@ Deno.serve(async (req) => {
 
     // UPDATE PROFILE
     if (action === "update_profile") {
-      const { user_id, name, phone, address } = body;
+      const { user_id, name, display_name, phone, address, emergency_contact_name, emergency_contact_phone, ic_document } = body;
 
       if (!user_id) {
         return new Response(JSON.stringify({ error: "user_id is required" }), {
@@ -206,12 +201,18 @@ Deno.serve(async (req) => {
         });
       }
 
-      await supabase.from("profiles").upsert({
+      const updateData: any = {
         user_id,
         name: name || "",
         phone: phone || "",
         address: address || "",
-      }, { onConflict: "user_id" });
+      };
+      if (display_name !== undefined) updateData.display_name = display_name;
+      if (emergency_contact_name !== undefined) updateData.emergency_contact_name = emergency_contact_name;
+      if (emergency_contact_phone !== undefined) updateData.emergency_contact_phone = emergency_contact_phone;
+      if (ic_document !== undefined) updateData.ic_document = ic_document;
+
+      await supabase.from("profiles").upsert(updateData, { onConflict: "user_id" });
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -229,7 +230,7 @@ Deno.serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, name, phone, address");
+      .select("user_id, name, display_name, phone, address, profile_picture_url, ic_document, emergency_contact_name, emergency_contact_phone");
     if (profilesError) throw profilesError;
 
     const result = users.map((u) => {
@@ -245,8 +246,13 @@ Deno.serve(async (req) => {
         commission_type: agentRole?.commission_type || "internal_basic",
         commission_config: agentRole?.commission_config || null,
         name: profile?.name || "",
+        display_name: profile?.display_name || "",
         phone: profile?.phone || "",
         address: profile?.address || "",
+        profile_picture_url: profile?.profile_picture_url || "",
+        ic_document: profile?.ic_document || "",
+        emergency_contact_name: profile?.emergency_contact_name || "",
+        emergency_contact_phone: profile?.emergency_contact_phone || "",
       };
     });
 
