@@ -14,7 +14,7 @@ import { CondosContent } from "@/components/CondosContent";
 import { BuildingForm } from "@/components/BuildingForm";
 import { RoomsContent } from "@/components/RoomsContent";
 import { TenantsContent } from "@/components/TenantsContent";
-import { MoveInContent } from "@/components/MoveInContent";
+import { MoveInPage } from "@/components/MoveInPage";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
 import { Condo } from "@/hooks/useCondos";
@@ -1221,7 +1221,7 @@ export default function Index() {
              ) :
              adminTab === "rooms" ? <RoomsContent /> :
              adminTab === "tenants" ? <TenantsContent /> :
-             adminTab === "movein" ? <MoveInContent /> :
+             adminTab === "movein" ? <MoveInPage /> :
              adminTab === "bookings" ? <BookingsContent /> :
              <AdminContent tab={adminTab as any} />}
           </div>
