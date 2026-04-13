@@ -699,7 +699,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
         description="Are you sure you want to remove this file? You can upload a new one after removing."
         confirmLabel="Remove"
         variant="destructive"
-        onConfirm={() => { if (docRemoveConfirm) removeReceipt(); setDocRemoveConfirm(null); }}
+        onConfirm={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}
       />
     </>
   );
