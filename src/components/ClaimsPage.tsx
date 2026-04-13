@@ -118,8 +118,8 @@ export function ClaimsPage() {
   };
 
   const agentUsers = useMemo(
-    () => users.filter((u) => approvedBookings.some((booking) => booking.submitted_by === u.id)),
-    [users, approvedBookings],
+    () => users.filter((u) => approvedMoveIns.some((m) => m.agent_id === u.id)),
+    [users, approvedMoveIns],
   );
   const agentOptions = useMemo(() => [...new Set(users.map((u) => u.name || u.email).filter(Boolean))].sort(), [users]);
   const locationOptions = useMemo(() => [...new Set(roomsData.map((r) => r.location).filter(Boolean))].sort(), [roomsData]);
@@ -143,20 +143,20 @@ export function ClaimsPage() {
     return keys;
   }, [allClaims]);
 
-  const availableCreateBookings = useMemo(() => {
-    if (!createForm.agent_id) return [] as Booking[];
-    return approvedBookings.filter((booking) => {
-      if (booking.submitted_by !== createForm.agent_id) return false;
-      if (activeClaimBookingIds.has(booking.id)) return false;
-      const itemKey = `${booking.room_id || ""}:${booking.tenant_name}`;
+  const availableCreateMoveIns = useMemo(() => {
+    if (!createForm.agent_id) return [] as MoveIn[];
+    return approvedMoveIns.filter((m) => {
+      if (m.agent_id !== createForm.agent_id) return false;
+      if (m.booking_id && activeClaimBookingIds.has(m.booking_id)) return false;
+      const itemKey = `${m.room_id || ""}:${m.tenant_name}`;
       if (activeClaimItemKeys.has(itemKey)) return false;
       return true;
     });
-  }, [approvedBookings, createForm.agent_id, activeClaimBookingIds, activeClaimItemKeys]);
+  }, [approvedMoveIns, createForm.agent_id, activeClaimBookingIds, activeClaimItemKeys]);
 
-  const selectedCreateBookings = useMemo(
-    () => availableCreateBookings.filter((booking) => createForm.selectedMoveInIds.includes(booking.id)),
-    [availableCreateBookings, createForm.selectedMoveInIds],
+  const selectedCreateMoveIns = useMemo(
+    () => availableCreateMoveIns.filter((m) => createForm.selectedMoveInIds.includes(m.id)),
+    [availableCreateMoveIns, createForm.selectedMoveInIds],
   );
 
   const calculateCommission = (booking: Booking, agentId: string) => {
