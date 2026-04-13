@@ -70,12 +70,14 @@ export function UnitsRoomsContent() {
     return sortData(list, (u: Unit, key: string) => {
       const rooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
       const carparks = u.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+      const occupiedPax = rooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
       const map: Record<string, any> = {
         location: u.location,
         building: u.building,
         unit: u.unit,
         unit_type: u.unit_type,
         max_pax: u.unit_max_pax,
+        remaining_pax: u.unit_max_pax - occupiedPax,
         remaining_rooms: rooms.filter(r => r.status === "Available").length,
         remaining_carparks: carparks.filter(r => r.status === "Available").length,
       };
@@ -131,7 +133,7 @@ export function UnitsRoomsContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Units & Rooms</h2>
+        <h2 className="text-2xl font-bold text-foreground">Units</h2>
         <Button onClick={() => setAddUnitOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Add Unit
         </Button>
@@ -183,9 +185,10 @@ export function UnitsRoomsContent() {
           <TableRow className="bg-muted/30">
             <TableHead className="w-10" />
             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
-            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit Number</SortableTableHead>
-            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Unit Type</SortableTableHead>
+            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+            <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Type</SortableTableHead>
             <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Occupants</SortableTableHead>
+            <SortableTableHead sortKey="remaining_pax" currentSort={sort} onSort={handleSort} className="text-center">Remaining Pax</SortableTableHead>
             <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Remaining Rooms</SortableTableHead>
             <SortableTableHead sortKey="remaining_carparks" currentSort={sort} onSort={handleSort} className="text-center">Remaining Carparks</SortableTableHead>
             <TableHead className="text-center">Actions</TableHead>
@@ -207,6 +210,8 @@ export function UnitsRoomsContent() {
           const carparks = unit.rooms?.filter(r => r.room_type === "Car Park") ?? [];
           const availableRooms = rooms.filter(r => r.status === "Available").length;
           const availableCarparks = carparks.filter(r => r.status === "Available").length;
+          const occupiedPax = rooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
+          const remainingPax = unit.unit_max_pax - occupiedPax;
           const isExpanded = expandedRows.has(unit.id);
 
           return (
@@ -232,6 +237,9 @@ export function UnitsRoomsContent() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
+                <TableCell className="text-center">
+                  <span className={remainingPax > 0 ? "text-emerald-600 font-semibold" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive font-semibold"}>{remainingPax}</span>
+                </TableCell>
                 <TableCell className="text-center">
                   <span className={availableRooms > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{availableRooms}</span>
                   <span className="text-muted-foreground">/{rooms.length}</span>
