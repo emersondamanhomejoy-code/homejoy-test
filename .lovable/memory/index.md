@@ -1,28 +1,19 @@
-# Memory: index.md
-Updated: now
-
 # Project Memory
 
 ## Core
 HOMEJOY Agent Portal — room rental management system.
 Google OAuth only, no email/password auth.
-Each unit has 5 rooms (A-E), rooms independently available/unavailable.
+Each unit has dynamic rooms (add/remove), rooms independently available/unavailable.
 Lovable Cloud backend. Roles: admin, agent.
 
 ## Memories
-- [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
-- [Status system](mem://features/status-system) — Canonical statuses for rooms, bookings, move-ins
-- [Room status rules](mem://features/room-status-rules) — No manual Occupied; only via booking/move-in workflow
-- [Tenant selection](mem://features/tenant-selection) — Occupied rooms select tenant from approved bookings
-- [Business flow](mem://features/business-flow) — End-to-end pipeline: location→building→unit→room→booking→move-in
-- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission config
+- [Tenant spec](mem://features/tenants) — Table columns, detail view, filters, occupancy display, booking history, no direct binding edits
+- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission types
 - [Area filter](mem://features/area-filter) — Valid area names for unit locations
-- [Bookings](mem://features/bookings) — Agent/customer submit booking, admin approves/rejects
-- [Form dialogs](mem://design/form-dialogs) — StandardModal pattern for create/edit forms
-- [UI/UX requirements](mem://design/ui-ux-requirements) — Design system and layout rules
-- [Product goal](mem://features/product-goal) — System purpose and target users
-- [Roles](mem://features/roles) — Admin, agent role definitions
-- [Building access](mem://features/building-access) — Record-by-record access items pattern
-- [Locations](mem://features/locations) — Location management
-- [Dashboard](mem://features/dashboard) — Dashboard layout and content
-- [No pets](mem://constraints/no-pets) — No pet features
+- [Bookings](mem://features/bookings) — Agent/customer submit booking requests, admin approves/rejects
+- [Product goal](mem://features/product-goal) — Agent portal for room rental management
+- [Roles](mem://features/roles) — admin, agent, boss, manager, super_admin
+- [Status system](mem://features/status-system) — Room status rules and transitions
+- [UI/UX](mem://design/ui-ux-requirements) — Design guidelines
+- [Form dialogs](mem://design/form-dialogs) — Standard modal patterns
+- [No pets](mem://constraints/no-pets) — max_pets always 0
