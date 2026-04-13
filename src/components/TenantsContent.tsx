@@ -91,7 +91,7 @@ function useTenants() {
 
 export function TenantsContent() {
   const { role } = useAuth();
-  const isAdmin = role === "admin" || role === "boss" || role === "manager";
+  const isAdmin = role === "admin" || role === "super_admin";
   const queryClient = useQueryClient();
   const { data: tenants = [], isLoading } = useTenants();
   const { data: units = [] } = useUnits();

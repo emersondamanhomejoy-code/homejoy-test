@@ -130,9 +130,8 @@ interface AdminContentProps {
 
 export function AdminContent({ tab }: AdminContentProps) {
   const { user, role } = useAuth();
-  const canViewActivityLog = role === "boss" || role === "manager";
-  const canCreateManager = role === "boss";
-  const canCreateRoles = role === "boss" ? ["manager", "admin", "agent"] : role === "manager" ? ["admin", "agent"] : ["agent"];
+  const canViewActivityLog = role === "super_admin";
+  const canCreateRoles = role === "super_admin" ? ["admin", "agent"] : ["agent"];
 
 
   // Users state
@@ -199,7 +198,7 @@ export function AdminContent({ tab }: AdminContentProps) {
     }
   };
 
-  const toggleRole = async (userId: string, targetRole: "admin" | "agent" | "boss" | "manager", hasRole: boolean) => {
+  const toggleRole = async (userId: string, targetRole: "admin" | "agent" | "super_admin", hasRole: boolean) => {
     setUpdating(userId + targetRole);
     try {
       if (hasRole) {

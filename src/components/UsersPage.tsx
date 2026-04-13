@@ -34,7 +34,7 @@ const defaultConfigs: Record<string, CommissionConfig> = {
 
 export function UsersPage() {
   const { user, role } = useAuth();
-  const canCreateRoles = role === "boss" ? ["manager", "admin", "agent"] : role === "manager" ? ["admin", "agent"] : ["agent"];
+  const canCreateRoles = role === "super_admin" ? ["admin", "agent"] : ["agent"];
 
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -576,8 +576,7 @@ export function UsersPage() {
             <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="agent">Agent</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="manager">Manager</SelectItem>
-            <SelectItem value="boss">Boss</SelectItem>
+            <SelectItem value="super_admin">Super Admin</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -614,7 +613,7 @@ export function UsersPage() {
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {u.roles.map(r => (
-                        <span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "boss" ? "bg-amber-100 text-amber-700" : r === "manager" ? "bg-purple-100 text-purple-700" : r === "admin" ? "bg-blue-100 text-blue-700" : "bg-secondary text-secondary-foreground"}`}>{r}</span>
+                        <span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "super_admin" ? "bg-amber-100 text-amber-700" : r === "admin" ? "bg-blue-100 text-blue-700" : "bg-secondary text-secondary-foreground"}`}>{r === "super_admin" ? "Super Admin" : r}</span>
                       ))}
                     </div>
                   </TableCell>

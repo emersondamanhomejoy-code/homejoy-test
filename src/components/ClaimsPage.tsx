@@ -45,8 +45,8 @@ interface CreateClaimForm {
 
 export function ClaimsPage() {
   const { user, role } = useAuth();
-  const canCreate = role === "admin" || role === "manager" || role === "boss";
-  const isBossManager = role === "boss" || role === "manager";
+  const canCreate = role === "admin" || role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
   const queryClient = useQueryClient();
 
   const { data: allClaims = [], isLoading } = useClaims();

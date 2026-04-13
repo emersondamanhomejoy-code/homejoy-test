@@ -29,7 +29,7 @@ const adminMenuItems = [
   { title: "Bookings", icon: ClipboardList, tab: "bookings" },
   { title: "Move In", icon: LogIn, tab: "movein" },
   { title: "Users", icon: Users, tab: "users" },
-  { title: "Activity Log", icon: FileText, tab: "activity", bossManagerOnly: true },
+  { title: "Activity Log", icon: FileText, tab: "activity", bossManagerOnly: true }, // superAdminOnly
 ];
 
 interface AdminSidebarProps {
@@ -42,7 +42,7 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
   const collapsed = state === "collapsed";
   const { signOut, user, role } = useAuth();
   const navigate = useNavigate();
-  const canViewActivityLog = role === "boss" || role === "manager";
+  const canViewActivityLog = role === "super_admin";
 
   const handleLogout = async () => {
     await signOut();
