@@ -465,14 +465,15 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   };
 
   const copyRoomSummary = () => {
-    const header = "Code | Title | Rental | Status | Pax | Gender | Nationality";
-    const rows = unitRooms.map(r => {
+    const occupiedRooms = unitRooms.filter(r => r.status === "Occupied" && (r.pax_staying || 0) > 0);
+    if (occupiedRooms.length === 0) { toast.info("No occupied rooms to copy"); return; }
+    const rows = occupiedRooms.map(r => {
       const housemates = Array.isArray(r.housemates) ? r.housemates : [];
       const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "—";
       const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
-      return `${r.room.replace(/^Room\s+/i, "")} | ${(r as any).room_title || "—"} | RM${r.rent} | ${r.status} | ${r.pax_staying || 0} | ${genders} | ${nats}`;
+      return `${r.pax_staying || 0} pax · ${genders} · ${nats}`;
     });
-    copyToClipboard([header, ...rows].join("\n"), "Room summary");
+    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Housemate details");
   };
 
   const copyCostBreakdown = () => {
@@ -491,34 +492,24 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     copyToClipboard(lines.join("\n"), "Cost breakdown");
   };
 
-  const CopyBtn = ({ onClick, tooltip }: { onClick: () => void; tooltip: string }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          onClick={(e) => { e.stopPropagation(); onClick(); }}
-        >
-          <Copy className="h-3.5 w-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+  const TextCopyBtn = ({ onClick, label }: { onClick: () => void; label: string }) => (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+    >
+      <Copy className="h-3 w-3" /> {label}
+    </button>
   );
 
-  const LinkBtn = ({ url, tooltip }: { url: string; tooltip: string }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
-        >
-          <Link2 className="h-3.5 w-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+  const TextLinkBtn = ({ url, label }: { url: string; label: string }) => (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+      onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
+    >
+      <Link2 className="h-3 w-3" /> {label}
+    </button>
   );
 
   const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
