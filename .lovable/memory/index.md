@@ -15,6 +15,7 @@ UI must be highly standardized — same action always looks/behaves the same.
 - [Role hierarchy](mem://features/roles) — Super Admin > Admin > Agent permissions
 - [Building access](mem://features/building-access) — Pedestrian/carpark/motorcycle access items
 - [Form dialogs](mem://design/form-dialogs) — All forms use Dialog modals with cancel confirmation
+- [UI/UX requirements](mem://design/ui-ux-requirements) — Layout, page structure, modals, tables, mobile, action labels, dangerous actions
 - [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission config
 - [Area filter](mem://features/area-filter) — Valid area names for unit locations
 - [Bookings](mem://features/bookings) — Booking submission and approval workflow
