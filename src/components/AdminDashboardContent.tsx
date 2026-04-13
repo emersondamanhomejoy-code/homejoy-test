@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useBookings, Booking } from "@/hooks/useBookings";
-import { useClaims, Claim } from "@/hooks/useClaims";
+import { useMoveIns } from "@/hooks/useMoveIns";
 import { useUnits } from "@/hooks/useRooms";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  ClipboardList, LogIn, DollarSign, BedDouble, Clock, AlertCircle, CheckCircle,
-  MapPin, Building, Building2, Users, Bell, User, Plus,
+  ClipboardList, LogIn, BedDouble, Clock, AlertCircle, CheckCircle,
+  MapPin, Building, Building2, Users, Bell, User,
 } from "lucide-react";
 
 interface AdminDashboardContentProps {
@@ -20,7 +20,7 @@ interface AdminDashboardContentProps {
 export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProps) {
   const { user } = useAuth();
   const { data: allBookings = [] } = useBookings();
-  const { data: allClaims = [] } = useClaims();
+  const { data: allMoveIns = [] } = useMoveIns();
   const { data: units = [] } = useUnits();
 
   // Room stats
@@ -37,19 +37,11 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
   }, [units]);
 
   const pendingBookings = useMemo(() => allBookings.filter(b => b.status === "pending"), [allBookings]);
-  const pendingClaims = useMemo(() => allClaims.filter(c => c.status === "pending"), [allClaims]);
-
-  // Pending move-ins: approved bookings with upcoming move-in dates
-  const pendingMoveIns = useMemo(() => {
-    return allBookings.filter(b => b.status === "approved").sort(
-      (a, b) => new Date(a.move_in_date).getTime() - new Date(b.move_in_date).getTime()
-    );
-  }, [allBookings]);
+  const pendingMoveIns = useMemo(() => allMoveIns.filter(m => m.status === "pending_review"), [allMoveIns]);
 
   const summaryCards = [
     { label: "Pending Bookings", value: pendingBookings.length, icon: ClipboardList, color: "text-amber-500", bg: "bg-amber-500/10", tab: "bookings" },
     { label: "Pending Move In", value: pendingMoveIns.length, icon: LogIn, color: "text-blue-500", bg: "bg-blue-500/10", tab: "movein" },
-    { label: "Pending Claims", value: pendingClaims.length, icon: DollarSign, color: "text-purple-500", bg: "bg-purple-500/10", tab: "claims" },
     { label: "Rooms Available", value: roomStats.available, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10", tab: "rooms" },
     { label: "Available Soon", value: roomStats.availableSoon, icon: Clock, color: "text-sky-500", bg: "bg-sky-500/10", tab: "rooms" },
     { label: "Rooms Pending", value: roomStats.pending, icon: AlertCircle, color: "text-orange-500", bg: "bg-orange-500/10", tab: "rooms" },
@@ -86,9 +78,9 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
-            {(pendingBookings.length + pendingClaims.length) > 0 && (
+            {pendingBookings.length > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-                {pendingBookings.length + pendingClaims.length}
+                {pendingBookings.length}
               </span>
             )}
           </Button>
@@ -99,7 +91,7 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
       </div>
 
       {/* 2. Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {summaryCards.map(card => (
           <button
             key={card.label}
@@ -176,19 +168,19 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
                 <TableHead>ID</TableHead>
                 <TableHead>Tenant</TableHead>
                 <TableHead>Property</TableHead>
-                <TableHead>Move-in Date</TableHead>
+                <TableHead>Submitted</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingMoveIns.slice(0, 5).map(b => (
-                <TableRow key={b.id}>
-                  <TableCell className="text-sm font-mono text-muted-foreground">{b.id.slice(0, 8)}</TableCell>
-                  <TableCell className="text-sm font-medium">{b.tenant_name}</TableCell>
+              {pendingMoveIns.slice(0, 5).map(m => (
+                <TableRow key={m.id}>
+                  <TableCell className="text-sm font-mono text-muted-foreground">{m.id.slice(0, 8)}</TableCell>
+                  <TableCell className="text-sm font-medium">{m.tenant_name}</TableCell>
                   <TableCell className="text-sm">
-                    {b.room ? `${b.room.building} · ${b.room.unit} · ${b.room.room}` : "—"}
+                    {m.room ? `${m.room.building} · ${m.room.unit} · ${m.room.room}` : "—"}
                   </TableCell>
-                  <TableCell className="text-sm font-medium">{b.move_in_date}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{formatTime(m.created_at)}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" onClick={() => onTabChange("movein")}>View</Button>
                   </TableCell>
@@ -199,47 +191,7 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
         )}
       </div>
 
-      {/* 5. Pending Claims Preview */}
-      <div className="bg-card rounded-lg border">
-        <div className="px-5 py-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Pending Claims</h2>
-          {pendingClaims.length > 5 && (
-            <Button variant="link" size="sm" onClick={() => onTabChange("claims")}>
-              View All ({pendingClaims.length})
-            </Button>
-          )}
-        </div>
-        {pendingClaims.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-muted-foreground">No pending claims</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Agent</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pendingClaims.slice(0, 5).map(c => (
-                <TableRow key={c.id}>
-                  <TableCell className="text-sm font-mono text-muted-foreground">{c.id.slice(0, 8)}</TableCell>
-                  <TableCell className="text-sm">{c.agent_id.slice(0, 8)}...</TableCell>
-                  <TableCell className="text-sm text-right font-medium">RM{Number(c.amount).toLocaleString()}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatTime(c.created_at)}</TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => onTabChange("claims")}>View</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-
-      {/* 6. Room Status Overview */}
+      {/* 5. Room Status Overview */}
       <div className="bg-card rounded-lg border p-5">
         <h2 className="font-semibold text-foreground mb-4">Room Status Overview</h2>
         <div className="flex items-center gap-1 h-3 rounded-full overflow-hidden mb-4">
@@ -264,7 +216,7 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
         </div>
       </div>
 
-      {/* 7. Quick Actions */}
+      {/* 6. Quick Actions */}
       <div className="bg-card rounded-lg border p-5">
         <h2 className="font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
