@@ -70,12 +70,25 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
+  const hasActiveFilters = !!locationFilter || !!hasAvailableUnits || !!hasAvailableRooms || !!hasAvailableCarparks;
+
+  const clearFilters = () => {
+    setLocationFilter("");
+    setHasAvailableUnits("");
+    setHasAvailableRooms("");
+    setHasAvailableCarparks("");
+  };
+
   const filtered = condos.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.location?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.address || "").toLowerCase().includes(search.toLowerCase());
     const matchLocation = !locationFilter || c.location_id === locationFilter;
-    return matchSearch && matchLocation;
+    const s = condoStats[c.id];
+    const matchAvailUnits = !hasAvailableUnits || (hasAvailableUnits === "yes" ? (s?.availableUnits || 0) > 0 : (s?.availableUnits || 0) === 0);
+    const matchAvailRooms = !hasAvailableRooms || (hasAvailableRooms === "yes" ? (s?.availableRooms || 0) > 0 : (s?.availableRooms || 0) === 0);
+    const matchAvailCarparks = !hasAvailableCarparks || (hasAvailableCarparks === "yes" ? (s?.availableCarparks || 0) > 0 : (s?.availableCarparks || 0) === 0);
+    return matchSearch && matchLocation && matchAvailUnits && matchAvailRooms && matchAvailCarparks;
   });
 
   const sortedFiltered = sortData(filtered, (c, key: string) => {
