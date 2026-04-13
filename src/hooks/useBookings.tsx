@@ -132,10 +132,13 @@ export function useUpdateBookingStatus() {
         }
       }
 
-      // On reject: release reserved car parks
-      if (status === "rejected" && carParkIds && carParkIds.length > 0) {
-        for (const cpId of carParkIds) {
-          await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", cpId);
+      // On reject: release room back to Available + release car parks
+      if (status === "rejected" && room_id) {
+        await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
+        if (carParkIds && carParkIds.length > 0) {
+          for (const cpId of carParkIds) {
+            await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", cpId);
+          }
         }
       }
     },
