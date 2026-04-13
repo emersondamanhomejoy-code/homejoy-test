@@ -4,10 +4,7 @@ import AddUnit from "@/pages/AddUnit";
 import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
