@@ -60,10 +60,10 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ bookingFeeReceipt: File | null }>({ bookingFeeReceipt: null });
+  const [uploadedFiles, setUploadedFiles] = useState<{ bookingFeeReceipt: File | null; passport: File | null; offerLetter: File | null }>({ bookingFeeReceipt: null, passport: null, offerLetter: null });
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string }>({ passport: "", offerLetter: "" });
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | null>(null);
+  const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | "passport" | "offerLetter" | null>(null);
 
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
   useEffect(() => {
