@@ -23,6 +23,9 @@ import { toast } from "sonner";
 
 export function UnitsRoomsContent() {
   const { data: units = [], isLoading } = useUnits();
+  const { data: condosData = [] } = useCondos();
+  const { role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const deleteUnit = useDeleteUnit();
 
   const [search, setSearch] = useState("");
