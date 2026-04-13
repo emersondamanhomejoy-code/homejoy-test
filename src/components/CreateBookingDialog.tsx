@@ -535,110 +535,109 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
             </div>
           )}
 
-          {/* 4. Tenant Details */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            {sectionTitle("👤", "Tenant Details")}
+          {/* 4. Tenant Details (Accordion) */}
+          <Accordion type="multiple" defaultValue={["tenant-details", "emergency-contacts"]} className="space-y-3">
+            <AccordionItem value="tenant-details" className="bg-muted/50 rounded-lg border-0">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="text-base font-bold flex items-center gap-2">👤 Tenant Details</div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4 space-y-3">
+                <div className="space-y-1">
+                  <label className={lbl}>Link Existing Tenant (optional)</label>
+                  <SearchableSelect
+                    options={tenantOptions}
+                    value={selectedTenantId || ""}
+                    onChange={v => { if (v) handleLinkTenant(v); else handleUnlinkTenant(); }}
+                    placeholder="— Select Existing Tenant —"
+                    searchPlaceholder="Search by name, phone, email, IC..."
+                  />
+                </div>
 
-            <div className="space-y-1">
-              <label className={lbl}>Link Existing Tenant (optional)</label>
-              <SearchableSelect
-                options={tenantOptions}
-                value={selectedTenantId || ""}
-                onChange={v => { if (v) handleLinkTenant(v); else handleUnlinkTenant(); }}
-                placeholder="— Select Existing Tenant —"
-                searchPlaceholder="Search by name, phone, email, IC..."
-              />
-            </div>
+                {isLinkedTenant && (
+                  <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">
+                    <span className="font-semibold">Linked:</span> {form.tenantName}
+                    <button type="button" className="ml-auto text-xs underline hover:no-underline" onClick={handleUnlinkTenant}>Unlink</button>
+                  </div>
+                )}
 
-            {isLinkedTenant && (
-              <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">
-                <span className="font-semibold">Linked:</span> {form.tenantName}
-                <button type="button" className="ml-auto text-xs underline hover:no-underline" onClick={handleUnlinkTenant}>Unlink</button>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-3">
-              <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
-              <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
-              <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
-              <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
-              <div className="space-y-1"><label className={lbl}>Gender *</label>
-                <select className={`${ic} w-full`} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
-                  <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
-                </select>
-              </div>
-              <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
-              <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
-            </div>
-
-            {form.gender === "Couple" && (
-              <div className="mt-3 p-3 border border-dashed border-primary/30 rounded-lg space-y-3">
-                <div className="text-sm font-bold flex items-center gap-2">👥 Second Tenant Details</div>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenant2Name} onChange={e => set("tenant2Name", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.tenant2IcPassport} onChange={e => set("tenant2IcPassport", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.tenant2Email} onChange={e => set("tenant2Email", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.tenant2Phone} onChange={e => set("tenant2Phone", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.tenant2Nationality} onChange={e => set("tenant2Nationality", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.tenant2Occupation} onChange={e => set("tenant2Occupation", e.target.value)} /></div>
+                  <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Gender *</label>
+                    <select className={`${ic} w-full`} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
+                      <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* 5. Emergency Contacts */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            {sectionTitle("🚨", "Emergency Contacts")}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm font-semibold">Contact 1 *</div>
-                <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
-                <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm font-semibold">Contact 2 *</div>
-                <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
-                <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
-              </div>
-            </div>
-          </div>
-
-          {/* 6. Documents */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            {sectionTitle("📎", "Documents")}
-            {([
-              { key: "passport" as const, label: "Passport / IC" },
-              { key: "offerLetter" as const, label: "Offer Letter" },
-              { key: "transferSlip" as const, label: "Transfer Slip" },
-            ]).map(({ key, label }) => {
-              const fileName = getDocDisplay(key);
-              const hasFile = docHasFile(key);
-              return (
-                <div key={key} className="space-y-1">
-                  <label className={lbl}>{label}</label>
-                  {hasFile ? (
-                    <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
-                      <span className="text-sm flex-1 truncate">{fileName}</span>
-                      <button type="button" onClick={() => setDocRemoveConfirm(key)}
-                        className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
-                        <X className="h-4 w-4" />
-                      </button>
+                {form.gender === "Couple" && (
+                  <div className="mt-3 p-3 border border-dashed border-primary/30 rounded-lg space-y-3">
+                    <div className="text-sm font-bold flex items-center gap-2">👥 Second Tenant Details</div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="space-y-1"><label className={lbl}>Full Name</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenant2Name} onChange={e => set("tenant2Name", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.tenant2IcPassport} onChange={e => set("tenant2IcPassport", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.tenant2Email} onChange={e => set("tenant2Email", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Contact No</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.tenant2Phone} onChange={e => set("tenant2Phone", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.tenant2Nationality} onChange={e => set("tenant2Nationality", e.target.value)} /></div>
+                      <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.tenant2Occupation} onChange={e => set("tenant2Occupation", e.target.value)} /></div>
                     </div>
-                  ) : (
-                    <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
-                      <span className="text-muted-foreground">Choose File</span>
-                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) setUploadedFiles(prev => ({ ...prev, [key]: file }));
-                        e.target.value = "";
-                      }} />
-                    </label>
-                  )}
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 5. Emergency Contacts (Accordion) */}
+            <AccordionItem value="emergency-contacts" className="bg-muted/50 rounded-lg border-0">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="text-base font-bold flex items-center gap-2">🚨 Emergency Contacts</div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold">Contact 1 *</div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold">Contact 2 *</div>
+                    <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
+                  </div>
                 </div>
-              );
-            })}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {/* 6. Upload Booking Fee Receipt */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            {sectionTitle("🧾", "Upload Booking Fee Receipt")}
+            <div className="space-y-1">
+              {hasReceipt ? (
+                <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                  <span className="text-sm flex-1 truncate">{receiptFileName}</span>
+                  <button type="button" onClick={() => setDocRemoveConfirm("bookingFeeReceipt")}
+                    className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                  <span className="text-muted-foreground">Choose File</span>
+                  <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) setUploadedFiles({ bookingFeeReceipt: file });
+                    e.target.value = "";
+                  }} />
+                </label>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">⚠️ Booking fee is non-refundable once transferred. Please ensure tenant has confirmed before submitting.</p>
           </div>
 
           {/* 7. Move-in Cost */}
@@ -698,7 +697,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
         description="Are you sure you want to remove this file? You can upload a new one after removing."
         confirmLabel="Remove"
         variant="destructive"
-        onConfirm={() => { if (docRemoveConfirm) removeDoc(docRemoveConfirm); setDocRemoveConfirm(null); }}
+        onConfirm={() => { if (docRemoveConfirm) removeReceipt(); setDocRemoveConfirm(null); }}
       />
     </>
   );
