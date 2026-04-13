@@ -4,6 +4,7 @@ import { useClaims, useUpdateClaimStatus, useUpdateClaim, useCreateClaim, Claim,
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
 import { useBookings, Booking } from "@/hooks/useBookings";
+import { useMoveIns, MoveIn } from "@/hooks/useMoveIns";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
