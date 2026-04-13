@@ -41,7 +41,7 @@ const ACTION_COLORS: Record<string, string> = {
 
 export function ActivityLogPage() {
   const { role } = useAuth();
-  const canView = role === "boss" || role === "manager";
+  const canView = role === "super_admin";
 
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
