@@ -507,6 +507,42 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
 
   const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
 
+  // Parse all access categories from condo (must be before early return)
+  const allAccess = useMemo(() => {
+    if (!condo) return { pedestrian: [] as AccessItem[], carpark: [] as AccessItem[], motorcycle: [] as AccessItem[] };
+    const raw = condo.access_items || {};
+    const parse = (key: string): AccessItem[] => {
+      const items = (raw as any)[key];
+      if (Array.isArray(items)) return items.filter((i: any) => i.access_type && i.access_type !== "None");
+      return [];
+    };
+    return { pedestrian: parse("pedestrian"), carpark: parse("carpark"), motorcycle: parse("motorcycle") };
+  }, [condo]);
+
+  // Helper to render access items for a category
+  const renderAccessCategory = (label: string, items: AccessItem[]) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="space-y-1">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</h4>
+        {items.map((item, i) => (
+          <div key={i} className="text-sm pl-2 border-l-2 border-muted py-1 space-y-0.5">
+            <div className="font-medium">{item.access_type}{item.locations && item.locations.length > 0 ? ` — ${item.locations.join(", ")}` : ""}</div>
+            <div className="text-xs text-muted-foreground">
+              Provided by {item.provided_by}
+              {item.chargeable_type && item.chargeable_type !== "none" && item.chargeable_type !== "Not Chargeable" && (
+                <> · {item.chargeable_type}{item.price > 0 ? ` RM${item.price}` : ""}</>
+              )}
+            </div>
+            {item.instruction && <div className="text-xs text-muted-foreground italic">{item.instruction}</div>}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const commonPhotosUrl = `${window.location.origin}/view/${unit.id}?section=photos`;
+
   // If viewing a specific room/carpark, show detail view
   if (viewingRoom) {
     const isCarpark = viewingRoom.room_type === "Car Park" || (viewingRoom.room || "").toLowerCase().startsWith("carpark");
@@ -563,7 +599,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           )}
           <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
         </div>
-        {/* Housemates */}
         {!isCarpark && Array.isArray(viewingRoom.housemates) && viewingRoom.housemates.length > 0 && (
           <div className="border rounded-lg p-4 space-y-2">
             <h4 className="text-sm font-semibold">Housemates</h4>
@@ -582,7 +617,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
           </div>
         )}
-        {/* Photos */}
         {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Photos</h4>
@@ -596,38 +630,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       </div>
     );
   }
-
-  // Helper to render access items for a category
-  const renderAccessCategory = (label: string, items: AccessItem[]) => {
-    if (!items || items.length === 0) return null;
-    return (
-      <div className="space-y-1">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</h4>
-        {items.map((item, i) => (
-          <div key={i} className="text-sm pl-2 border-l-2 border-muted py-1 space-y-0.5">
-            <div className="font-medium">{item.access_type}{item.locations && item.locations.length > 0 ? ` — ${item.locations.join(", ")}` : ""}</div>
-            <div className="text-xs text-muted-foreground">
-              Provided by {item.provided_by}
-              {item.chargeable_type && item.chargeable_type !== "none" && item.chargeable_type !== "Not Chargeable" && (
-                <> · {item.chargeable_type}{item.price > 0 ? ` RM${item.price}` : ""}</>
-              )}
-            </div>
-            {item.instruction && <div className="text-xs text-muted-foreground italic">{item.instruction}</div>}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Parse all access categories from condo
-  const allAccess = useMemo(() => {
-    if (!condo) return { pedestrian: [] as AccessItem[], carpark: [] as AccessItem[], motorcycle: [] as AccessItem[] };
-    const raw = condo.access_items || {};
-    const parse = (key: string): AccessItem[] => {
-      const items = (raw as any)[key];
-      if (Array.isArray(items)) return items.filter((i: any) => i.access_type && i.access_type !== "None");
-      return [];
-    };
     return { pedestrian: parse("pedestrian"), carpark: parse("carpark"), motorcycle: parse("motorcycle") };
   }, [condo]);
 
