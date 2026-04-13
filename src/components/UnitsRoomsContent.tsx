@@ -246,6 +246,7 @@ export function UnitsRoomsContent() {
             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
             <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
             <SortableTableHead sortKey="unit_type" currentSort={sort} onSort={handleSort}>Type</SortableTableHead>
+            <SortableTableHead sortKey="internal_only" currentSort={sort} onSort={handleSort} className="text-center">Internal</SortableTableHead>
             <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Occupants</SortableTableHead>
             <SortableTableHead sortKey="remaining_pax" currentSort={sort} onSort={handleSort} className="text-center">Remaining Pax</SortableTableHead>
             <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Remaining Rooms</SortableTableHead>
@@ -283,6 +284,13 @@ export function UnitsRoomsContent() {
                 >
                   {unit.unit_type}
                 </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                {unit.internal_only ? (
+                  <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-700">Yes</Badge>
+                ) : (
+                  <span className="text-muted-foreground text-xs">No</span>
+                )}
               </TableCell>
               <TableCell className="text-center">{unit.unit_max_pax}</TableCell>
               <TableCell className="text-center">

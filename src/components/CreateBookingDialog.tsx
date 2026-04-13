@@ -31,6 +31,7 @@ interface UserInfo {
   id: string;
   email: string;
   name: string;
+  commissionType: string;
 }
 
 const initialForm = {
@@ -77,13 +78,15 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return;
     const fetchAgents = async () => {
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role, commission_type");
       const { data: profiles } = await supabase.from("profiles").select("user_id, email, name");
       if (roles && profiles) {
-        const agentUserIds = [...new Set(roles.filter(r => r.role === "agent").map(r => r.user_id))];
+        const agentRoles = roles.filter(r => r.role === "agent");
+        const agentUserIds = [...new Set(agentRoles.map(r => r.user_id))];
         setAgents(agentUserIds.map(uid => {
           const p = profiles.find(pr => pr.user_id === uid);
-          return { id: uid, email: p?.email || "", name: p?.name || "" };
+          const agentRole = agentRoles.find(r => r.user_id === uid);
+          return { id: uid, email: p?.email || "", name: p?.name || "", commissionType: agentRole?.commission_type || "internal_basic" };
         }));
       }
     };
@@ -92,13 +95,30 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
+  // Reset room selection when agent changes (available rooms may differ)
+  useEffect(() => {
+    setForm(prev => ({ ...prev, roomId: "", carParkSelections: [] }));
+  }, [form.agentId]);
+
+
   const agentOptions = useMemo(() => agents.map(a => ({
     value: a.id,
     label: a.name || a.email,
     sublabel: a.name ? a.email : undefined,
   })), [agents]);
 
-  const availableRooms = useMemo(() => roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available"), [roomsData]);
+  const selectedAgent = useMemo(() => agents.find(a => a.id === form.agentId) || null, [agents, form.agentId]);
+  const isExternalAgent = selectedAgent?.commissionType === "external";
+
+  const availableRooms = useMemo(() => {
+    let rooms = roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available");
+    // External agents cannot see internal-only units
+    if (isExternalAgent) {
+      const internalUnitIds = new Set(unitsData.filter(u => u.internal_only).map(u => u.id));
+      rooms = rooms.filter(r => !r.unit_id || !internalUnitIds.has(r.unit_id));
+    }
+    return rooms;
+  }, [roomsData, unitsData, isExternalAgent]);
   const roomOptions = useMemo(() => availableRooms.map(r => ({
     value: r.id,
     label: `${r.building} · ${r.unit} · ${r.room}${(r as any).room_title ? ` — ${(r as any).room_title}` : ""}`,
