@@ -436,6 +436,23 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied!`));
   };
 
+  const formatAccessItems = (label: string, items: AccessItem[]) => {
+    if (!items || items.length === 0) return [];
+    return [
+      `\n${label}:`,
+      ...items.map(a => {
+        const parts = [a.access_type];
+        if (a.locations && a.locations.length > 0) parts.push(`@ ${a.locations.join(", ")}`);
+        parts.push(`— ${a.provided_by}`);
+        if (a.chargeable_type && a.chargeable_type !== "none" && a.chargeable_type !== "Not Chargeable") {
+          parts.push(`(${a.chargeable_type}${a.price > 0 ? ` RM${a.price}` : ""})`);
+        }
+        if (a.instruction) parts.push(`[${a.instruction}]`);
+        return `  • ${parts.join(" ")}`;
+      }),
+    ];
+  };
+
   const copyBuildingDetails = () => {
     const lines = [
       `Building: ${unit.building}`,
@@ -447,6 +464,11 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
         condo.parking_info ? `Parking: ${condo.parking_info}` : "",
         condo.arrival_instruction ? `Arrival: ${condo.arrival_instruction}` : "",
       ].filter(Boolean) : []),
+      ...formatAccessItems("Pedestrian Access", allAccess.pedestrian),
+      ...formatAccessItems("Car Park Access", allAccess.carpark),
+      ...formatAccessItems("Motorcycle Access", allAccess.motorcycle),
+      ...(condo?.visitor_car_parking ? [`Visitor Car Parking: ${condo.visitor_car_parking}`] : []),
+      ...(condo?.visitor_motorcycle_parking ? [`Visitor Motorcycle Parking: ${condo.visitor_motorcycle_parking}`] : []),
     ];
     copyToClipboard(lines.join("\n"), "Building details");
   };
