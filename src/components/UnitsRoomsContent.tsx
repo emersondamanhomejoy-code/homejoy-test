@@ -631,7 +631,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     );
   }
 
-  const commonPhotosUrl = `${window.location.origin}/view/${unit.id}?section=photos`;
 
   return (
     <div className="space-y-4">
