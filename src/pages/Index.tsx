@@ -941,7 +941,6 @@ export default function Index() {
       <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <AgentBookingsContent onEditBooking={(booking) => {
               // TODO: Pre-fill booking form and navigate to edit mode
               alert("Edit & Resubmit feature coming soon. Booking ID: " + booking.id.slice(0, 8));
@@ -958,7 +957,6 @@ export default function Index() {
       <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <MyDealsContent />
           </div>
         </div>
@@ -972,7 +970,6 @@ export default function Index() {
       <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <AgentMoveInsContent />
           </div>
         </div>
@@ -986,7 +983,6 @@ export default function Index() {
       <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <div className="text-xl font-bold">My Account</div>
             <div className="bg-card rounded-lg border p-6 space-y-3">
               <div className="text-sm"><span className="text-muted-foreground">Email:</span> <span className="font-medium">{user?.email}</span></div>
