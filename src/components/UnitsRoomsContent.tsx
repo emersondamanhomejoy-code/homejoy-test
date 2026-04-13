@@ -554,7 +554,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
-              <TextLinkBtn url={`${baseShareUrl}?section=condo`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -590,7 +589,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
-              <TextLinkBtn url={`${baseShareUrl}?section=unit`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -619,7 +617,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               </div>
               <div className="flex items-center gap-1 mr-2">
                 <TextCopyBtn onClick={copyRoomSummary} label="Copy Housemates" />
-                <TextLinkBtn url={`${baseShareUrl}?section=room`} label="Copy Link" />
               </div>
             </AccordionTrigger>
             <AccordionContent>
