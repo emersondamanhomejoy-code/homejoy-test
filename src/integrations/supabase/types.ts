@@ -118,6 +118,7 @@ export type Database = {
           emergency_name: string
           emergency_phone: string
           emergency_relationship: string
+          history: Json
           id: string
           monthly_salary: number
           move_in_cost: Json
@@ -163,6 +164,7 @@ export type Database = {
           emergency_name?: string
           emergency_phone?: string
           emergency_relationship?: string
+          history?: Json
           id?: string
           monthly_salary?: number
           move_in_cost?: Json
@@ -208,6 +210,7 @@ export type Database = {
           emergency_name?: string
           emergency_phone?: string
           emergency_relationship?: string
+          history?: Json
           id?: string
           monthly_salary?: number
           move_in_cost?: Json
