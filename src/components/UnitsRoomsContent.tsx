@@ -4,10 +4,6 @@ import AddUnit from "@/pages/AddUnit";
 import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MultiSelectFilter } from "@/components/MultiSelectFilter";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -21,15 +17,14 @@ import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { labelClass } from "@/lib/ui-constants";
+import { labelClass, inputClass } from "@/lib/ui-constants";
 
 export function UnitsRoomsContent() {
   const { data: units = [], isLoading } = useUnits();
   const deleteUnit = useDeleteUnit();
 
   const [search, setSearch] = useState("");
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
+  const [selectedBuilding, setSelectedBuilding] = useState("all");
   const [selectedUnitType, setSelectedUnitType] = useState<string>("all");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(0);
@@ -40,18 +35,29 @@ export function UnitsRoomsContent() {
   const [editUnitId, setEditUnitId] = useState<string | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
 
+  // Advanced filters
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState("all");
+  const [internalOnly, setInternalOnly] = useState("");
+  const [hasRemainingRooms, setHasRemainingRooms] = useState("");
+  const [hasRemainingCarparks, setHasRemainingCarparks] = useState("");
+  const [maxOccupantsMin, setMaxOccupantsMin] = useState("");
+  const [maxOccupantsMax, setMaxOccupantsMax] = useState("");
+  const [remainingPaxMin, setRemainingPaxMin] = useState("");
+  const [remainingPaxMax, setRemainingPaxMax] = useState("");
+
   const locations = useMemo(() => {
     const set = new Set(units.map(u => u.location).filter(Boolean));
     return Array.from(set).sort();
   }, [units]);
 
   const buildings = useMemo(() => {
-    const source = selectedLocations.length
-      ? units.filter(u => selectedLocations.includes(u.location))
+    const source = selectedLocation !== "all"
+      ? units.filter(u => u.location === selectedLocation)
       : units;
     const set = new Set(source.map(u => u.building).filter(Boolean));
     return Array.from(set).sort();
-  }, [units, selectedLocations]);
+  }, [units, selectedLocation]);
 
   const filteredRows = useMemo(() => {
     let list = units;
@@ -59,13 +65,33 @@ export function UnitsRoomsContent() {
       const q = search.toLowerCase();
       list = list.filter(u =>
         u.building.toLowerCase().includes(q) ||
-        u.unit.toLowerCase().includes(q) ||
-        u.location.toLowerCase().includes(q)
+        u.unit.toLowerCase().includes(q)
       );
     }
-    if (selectedLocations.length) list = list.filter(u => selectedLocations.includes(u.location));
-    if (selectedBuildings.length) list = list.filter(u => selectedBuildings.includes(u.building));
+    if (selectedBuilding !== "all") list = list.filter(u => u.building === selectedBuilding);
     if (selectedUnitType !== "all") list = list.filter(u => u.unit_type?.toLowerCase().includes(selectedUnitType));
+    if (selectedLocation !== "all") list = list.filter(u => u.location === selectedLocation);
+    if (internalOnly === "yes") list = list.filter(u => u.internal_only);
+    if (internalOnly === "no") list = list.filter(u => !u.internal_only);
+
+    list = list.filter(u => {
+      const rooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
+      const carparks = u.rooms?.filter(r => r.room_type === "Car Park") ?? [];
+      const availRooms = rooms.filter(r => r.status === "Available").length;
+      const availCarparks = carparks.filter(r => r.status === "Available").length;
+      const occupiedPax = rooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
+      const remPax = u.unit_max_pax - occupiedPax;
+
+      if (hasRemainingRooms === "yes" && availRooms === 0) return false;
+      if (hasRemainingRooms === "no" && availRooms > 0) return false;
+      if (hasRemainingCarparks === "yes" && availCarparks === 0) return false;
+      if (hasRemainingCarparks === "no" && availCarparks > 0) return false;
+      if (maxOccupantsMin && u.unit_max_pax < Number(maxOccupantsMin)) return false;
+      if (maxOccupantsMax && u.unit_max_pax > Number(maxOccupantsMax)) return false;
+      if (remainingPaxMin && remPax < Number(remainingPaxMin)) return false;
+      if (remainingPaxMax && remPax > Number(remainingPaxMax)) return false;
+      return true;
+    });
 
     return sortData(list, (u: Unit, key: string) => {
       const rooms = u.rooms?.filter(r => r.room_type !== "Car Park") ?? [];
@@ -83,32 +109,28 @@ export function UnitsRoomsContent() {
       };
       return map[key];
     });
-  }, [units, search, selectedLocations, selectedBuildings, selectedUnitType, sort]);
+  }, [units, search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, sort]);
 
-  useEffect(() => { setCurrentPage(0); }, [search, selectedLocations, selectedBuildings, selectedUnitType, pageSize]);
+  useEffect(() => { setCurrentPage(0); }, [search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, pageSize]);
 
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
 
-  const applyLocations = (next: string[]) => {
-    setSelectedLocations(next);
-    if (next.length) {
-      setSelectedBuildings(prev => {
-        const valid = new Set(units.filter(u => next.includes(u.location)).map(u => u.building));
-        return prev.filter(b => valid.has(b));
-      });
-    }
-  };
-
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnitType !== "all" || search.trim() !== "";
+  const hasFilters = selectedBuilding !== "all" || selectedUnitType !== "all" || selectedLocation !== "all" || !!internalOnly || !!hasRemainingRooms || !!hasRemainingCarparks || !!maxOccupantsMin || !!maxOccupantsMax || !!remainingPaxMin || !!remainingPaxMax;
 
   const clearFilters = () => {
-    setSelectedLocations([]);
-    setSelectedBuildings([]);
+    setSelectedBuilding("all");
     setSelectedUnitType("all");
-    setSearch("");
+    setSelectedLocation("all");
+    setInternalOnly("");
+    setHasRemainingRooms("");
+    setHasRemainingCarparks("");
+    setMaxOccupantsMin("");
+    setMaxOccupantsMax("");
+    setRemainingPaxMin("");
+    setRemainingPaxMax("");
   };
 
   const toggleExpand = (id: string) => {
@@ -143,40 +165,78 @@ export function UnitsRoomsContent() {
       <StandardFilterBar
         search={search}
         onSearchChange={(v) => { setSearch(v); setCurrentPage(0); }}
-        placeholder="Search by building, unit, location..."
+        placeholder="Search by building or unit..."
         hasActiveFilters={hasFilters}
         onClearFilters={clearFilters}
       >
-        <MultiSelectFilter
-          label="Location"
-          placeholder="Select location"
-          options={locations}
-          selected={selectedLocations}
-          onApply={applyLocations}
-          className="min-w-[200px]"
-        />
-        <MultiSelectFilter
-          label="Building"
-          placeholder="Select building"
-          options={buildings}
-          selected={selectedBuildings}
-          onApply={next => setSelectedBuildings(next)}
-          className="min-w-[200px]"
-        />
+        <div className="space-y-1.5 min-w-[160px]">
+          <label className={labelClass}>Building</label>
+          <select className={inputClass} value={selectedBuilding} onChange={e => setSelectedBuilding(e.target.value)}>
+            <option value="all">All Buildings</option>
+            {buildings.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
         <div className="space-y-1.5 min-w-[160px]">
           <label className={labelClass}>Unit Type</label>
-          <Select onValueChange={setSelectedUnitType} value={selectedUnitType}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="mix">Mix Unit</SelectItem>
-              <SelectItem value="female">Female Unit</SelectItem>
-              <SelectItem value="male">Male Unit</SelectItem>
-            </SelectContent>
-          </Select>
+          <select className={inputClass} value={selectedUnitType} onChange={e => setSelectedUnitType(e.target.value)}>
+            <option value="all">All Types</option>
+            <option value="mix">Mix Unit</option>
+            <option value="female">Female Unit</option>
+            <option value="male">Male Unit</option>
+          </select>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm self-end">
+          {showAdvanced ? "Hide" : "Show"} Advanced Filters
+        </Button>
+        {showAdvanced && (
+          <>
+            <div className="space-y-1.5 min-w-[160px]">
+              <label className={labelClass}>Location</label>
+              <select className={inputClass} value={selectedLocation} onChange={e => { setSelectedLocation(e.target.value); if (e.target.value !== "all" && selectedBuilding !== "all") { const valid = units.filter(u => u.location === e.target.value).map(u => u.building); if (!valid.includes(selectedBuilding)) setSelectedBuilding("all"); } }}>
+                <option value="all">All Locations</option>
+                {locations.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[140px]">
+              <label className={labelClass}>Internal Only</label>
+              <select className={inputClass} value={internalOnly} onChange={e => setInternalOnly(e.target.value)}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[140px]">
+              <label className={labelClass}>Has Remaining Rooms</label>
+              <select className={inputClass} value={hasRemainingRooms} onChange={e => setHasRemainingRooms(e.target.value)}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[140px]">
+              <label className={labelClass}>Has Remaining Carparks</label>
+              <select className={inputClass} value={hasRemainingCarparks} onChange={e => setHasRemainingCarparks(e.target.value)}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 min-w-[120px]">
+              <label className={labelClass}>Max Occupants</label>
+              <div className="flex gap-1">
+                <input type="number" placeholder="Min" className={`${inputClass} w-16`} value={maxOccupantsMin} onChange={e => setMaxOccupantsMin(e.target.value)} />
+                <input type="number" placeholder="Max" className={`${inputClass} w-16`} value={maxOccupantsMax} onChange={e => setMaxOccupantsMax(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5 min-w-[120px]">
+              <label className={labelClass}>Remaining Pax</label>
+              <div className="flex gap-1">
+                <input type="number" placeholder="Min" className={`${inputClass} w-16`} value={remainingPaxMin} onChange={e => setRemainingPaxMin(e.target.value)} />
+                <input type="number" placeholder="Max" className={`${inputClass} w-16`} value={remainingPaxMax} onChange={e => setRemainingPaxMax(e.target.value)} />
+              </div>
+            </div>
+          </>
+        )}
       </StandardFilterBar>
 
       {/* Table */}
