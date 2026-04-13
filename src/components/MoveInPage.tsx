@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Check, X, Ban, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, Check, X, Ban, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserInfo { id: string; email: string; name: string; }
@@ -297,6 +297,7 @@ export function MoveInPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Move In</h2>
+        <Button onClick={() => toast.info("Create Move-In coming soon")}><Plus className="h-4 w-4 mr-1" /> Create Move-In</Button>
       </div>
 
       {/* Search + Status */}
