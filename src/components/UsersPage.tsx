@@ -223,6 +223,26 @@ export function UsersPage() {
     }
   };
 
+  const handleFreezeToggle = async (u: UserWithRoles) => {
+    setFreezingId(u.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("list-users", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { action: u.frozen ? "unfreeze_user" : "freeze_user", user_id: u.id },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+      await logActivity(u.frozen ? "unfreeze_user" : "freeze_user", "user", u.id, { email: u.email });
+      toast.success(u.frozen ? "User unfrozen" : "User frozen");
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update freeze status");
+    } finally {
+      setFreezingId(null);
+    }
+  };
+
   const openEdit = (u: UserWithRoles) => {
     setEditUser(u);
     setEditForm({
