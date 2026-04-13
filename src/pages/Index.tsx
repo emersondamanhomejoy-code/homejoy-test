@@ -20,6 +20,15 @@ import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
 import { Condo } from "@/hooks/useCondos";
 
+function ComingSoonPlaceholder({ title }: { title: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="text-4xl mb-4">🚧</div>
+      <h2 className="text-xl font-bold text-foreground">{title}</h2>
+      <p className="text-muted-foreground mt-2">This feature is coming soon.</p>
+    </div>
+  );
+}
 
 const rankingData = {
   internal: [
