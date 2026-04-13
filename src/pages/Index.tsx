@@ -54,10 +54,8 @@ export default function Index() {
   const location = useLocation();
   const { data: roomsData = [], isLoading: roomsLoading } = useRooms();
   const { data: unitsData = [] } = useUnits();
-  const { data: claimsData = [] } = useClaims();
   const { data: agentBookings = [] } = useBookings("approved");
   const { data: allBookings = [] } = useBookings();
-  const createClaim = useCreateClaim();
   const [page, setPage] = useState(() => {
     const navState = location.state as { page?: string } | null;
     return navState?.page || "dashboard";
@@ -89,9 +87,7 @@ export default function Index() {
   const [signatureLink, setSignatureLink] = useState<string | null>(null);
   const [signatureToken, setSignatureToken] = useState<string | null>(null);
   const [signatureSigned, setSignatureSigned] = useState(false);
-  const [claimForm, setClaimForm] = useState({ bookingId: "", amount: "", description: "", bankName: "", bankAccount: "", accountHolder: "" });
-  const [selectedClaimBookings, setSelectedClaimBookings] = useState<string[]>([]);
-  const [claimTab, setClaimTab] = useState<"pending" | "approved" | "rejected" | "new">("pending");
+  const [checkingSignature, setCheckingSignature] = useState(false);
   const [checkingSignature, setCheckingSignature] = useState(false);
   const [agentCommissionType, setAgentCommissionType] = useState<string>("internal_basic");
   const [agentCommissionConfig, setAgentCommissionConfig] = useState<any>(null);
