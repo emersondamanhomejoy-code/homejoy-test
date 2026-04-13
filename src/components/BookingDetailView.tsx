@@ -194,13 +194,23 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       >
         <div className="space-y-5">
 
-          {/* 1. Booking Summary */}
+          {/* 1. Booking Summary + Reject/Cancel reason at top */}
           {sectionCard("📋", "Booking Summary", (
             <div>
               {infoRow("Booking ID", <span className="font-mono text-xs">{b.id}</span>)}
               {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
               {infoRow("Status", statusBadge(b.status))}
               {b.resolution_type && infoRow("Resolution", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
+              {b.status === "rejected" && b.reject_reason && (
+                <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm mt-2">
+                  <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
+                </div>
+              )}
+              {b.status === "cancelled" && b.reject_reason && (
+                <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm mt-2">
+                  <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
+                </div>
+              )}
               {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
               {infoRow("Agent", getAgentName(b.submitted_by))}
               {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
@@ -356,29 +366,15 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             </div>
           ))}
 
-          {/* 7. Uploaded Documents */}
-          {sectionCard("📎", "Uploaded Documents", (
+          {/* 7. Booking Fee Receipt */}
+          {sectionCard("🧾", "Booking Fee Receipt", (
             <div className="space-y-3">
-              {docSection("Passport / IC", b.doc_passport)}
-              {docSection("Offer Letter", b.doc_offer_letter)}
-              {docSection("Transfer Slip", b.doc_transfer_slip)}
-              {!b.doc_passport?.length && !b.doc_offer_letter?.length && !b.doc_transfer_slip?.length && (
-                <div className="text-sm text-muted-foreground">No documents uploaded</div>
+              {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
+              {!b.doc_transfer_slip?.length && (
+                <div className="text-sm text-muted-foreground">No receipt uploaded</div>
               )}
             </div>
           ))}
-
-          {/* Reject / Cancel reason display */}
-          {b.status === "rejected" && b.reject_reason && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm">
-              <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
-            </div>
-          )}
-          {b.status === "cancelled" && b.reject_reason && (
-            <div className="bg-muted text-muted-foreground rounded-lg p-4 text-sm">
-              <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
-            </div>
-          )}
 
           {/* History Log */}
           {(b.history || []).length > 0 && (
@@ -454,21 +450,6 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. The booking record will be permanently removed.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
