@@ -134,6 +134,9 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
     if (!isCarpark && (rc as any).room_category !== "Studio" && !(rc as any).bed_type?.trim()) {
       toast.error("Bed Type is required."); return;
     }
+    if (rc.status === "Available Soon" && !rc.available_date?.trim()) {
+      toast.error("Available Date is required when setting status to Available Soon."); return;
+    }
     setEditingRoomId(null);
   };
 
