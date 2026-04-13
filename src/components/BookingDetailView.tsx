@@ -189,7 +189,6 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         onOpenChange={onOpenChange}
         title="View Booking"
         size="lg"
-        hideCancel
         footer={footerActions()}
       >
         <div className="space-y-5">
@@ -216,8 +215,17 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
               {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
             </div>
           ))}
+          {/* 2. Booking Fee Receipt — right after summary */}
+          {sectionCard("🧾", "Booking Fee Receipt", (
+            <div className="space-y-3">
+              {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
+              {!b.doc_transfer_slip?.length && (
+                <div className="text-sm text-muted-foreground">No receipt uploaded</div>
+              )}
+            </div>
+          ))}
 
-          {/* 2. Room Summary */}
+          {/* 3. Room Summary */}
           {sectionCard("🏠", "Room Summary", (
             <div>
               {infoRow("Building", info?.building)}
@@ -366,15 +374,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             </div>
           ))}
 
-          {/* 7. Booking Fee Receipt */}
-          {sectionCard("🧾", "Booking Fee Receipt", (
-            <div className="space-y-3">
-              {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
-              {!b.doc_transfer_slip?.length && (
-                <div className="text-sm text-muted-foreground">No receipt uploaded</div>
-              )}
-            </div>
-          ))}
+          {/* Booking Fee Receipt already shown above — removed from here */}
 
           {/* History Log */}
           {(b.history || []).length > 0 && (
