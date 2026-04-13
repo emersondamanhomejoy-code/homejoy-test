@@ -297,6 +297,7 @@ export function MoveInPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Move In</h2>
+        <Button onClick={() => toast.info("Create Move-In coming soon")}><Plus className="h-4 w-4 mr-1" /> Create Move-In</Button>
       </div>
 
       {/* Search + Status */}
