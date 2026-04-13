@@ -27,7 +27,7 @@ interface ActivityLog {
 
 const MODULE_OPTIONS = ["booking", "move_in", "claim", "user", "unit", "room", "building", "location"];
 const ACTION_OPTIONS = ["create", "edit", "approve", "reject", "cancel", "delete", "undo"];
-const ROLE_OPTIONS = ["boss", "manager", "admin", "agent"];
+const ROLE_OPTIONS = ["super_admin", "admin", "agent"];
 
 const ACTION_COLORS: Record<string, string> = {
   create: "bg-emerald-100 text-emerald-800",
