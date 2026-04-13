@@ -476,22 +476,7 @@ function RoomInlineForm({ room, onChange, onSave, onCancel }: {
           <label className="text-xs text-muted-foreground">Listed Rental (RM) *</label>
           <input className={`${inputClass} w-full`} type="number" value={room.rent || ""} onChange={e => onChange("rent", Number(e.target.value))} />
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Status</label>
-          <select className={`${inputClass} w-full`} value={room.status || "Available"} onChange={e => onChange("status", e.target.value)}>
-            <option value="Available">Available</option>
-            <option value="Available Soon">Available Soon</option>
-            <option value="Pending">Pending</option>
-            <option value="Occupied">Occupied</option>
-            <option value="Archived">Archived</option>
-          </select>
-        </div>
-        {showAvailDate && (
-          <div>
-            <label className="text-xs text-muted-foreground">Available Date</label>
-            <input className={`${inputClass} w-full`} type="date" value={room.available_date || ""} onChange={e => onChange("available_date", e.target.value)} />
-          </div>
-        )}
+        {/* Status is always "Available" for new rooms — no manual override */}
       </div>
 
       <div>
@@ -564,11 +549,7 @@ function CarparkInlineForm({ carpark, onChange, onSave, onCancel }: {
           <label className="text-xs text-muted-foreground">Rental (RM)</label>
           <input className={`${inputClass} w-full`} type="number" value={carpark.rent || ""} onChange={e => onChange("rent", Number(e.target.value))} />
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Status</label>
-          <select className={`${inputClass} w-full`} value={carpark.status} onChange={e => onChange("status", e.target.value)}>
-            <option value="Available">Available</option>
-            <option value="Occupied">Occupied</option>
+        {/* Status is always "Available" for new carparks — no manual override */}
             <option value="Archived">Archived</option>
           </select>
         </div>
