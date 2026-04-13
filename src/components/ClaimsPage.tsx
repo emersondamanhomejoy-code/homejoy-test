@@ -361,7 +361,7 @@ export function ClaimsPage() {
 
   const handleCreate = async () => {
     if (!user || !createForm.agent_id || createForm.selectedMoveInIds.length === 0) {
-      toast.error("Please select an agent and at least one booking");
+      toast.error("Please select an agent and at least one approved move-in");
       return;
     }
     if (!createForm.description.trim()) {
@@ -374,7 +374,7 @@ export function ClaimsPage() {
       const history = [{ action: "created", by: user.email, at: new Date().toISOString(), created_for_agent: getAgentName(createForm.agent_id), item_count: selectedCreateMoveIns.length }];
       const createdClaim = await createClaim.mutateAsync({
         agent_id: createForm.agent_id,
-        booking_id: selectedCreateMoveIns.length === 1 ? selectedCreateMoveIns[0].id : null,
+        booking_id: selectedCreateMoveIns.length === 1 ? (selectedCreateMoveIns[0].booking_id || null) : null,
         amount: totalCreateAmount,
         description: createForm.description,
         bank_name: createForm.bank_name,
