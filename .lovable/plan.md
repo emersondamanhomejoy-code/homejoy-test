@@ -1,56 +1,98 @@
+## Plan: Redesign Unit View Modal
 
+This is a significant restructure of the Unit View modal in `UnitsRoomsContent.tsx`. The changes are UI-only — no database migrations needed.
 
-## Plan: Refactor Unit Create/Edit to Record-by-Record Pattern
+### What Changes
 
-### Problem
-Current AddUnit pre-generates 5 room cards + 1 carpark card based on count inputs. This makes the form large, heavy, and inconsistent with the Building access record pattern.
+**1. Simplify Occupant Summary**
 
-### New Design
+- Replace the 4 stat cards with 2 compact fraction displays:
+  - **Remaining Pax**: `4/6` (colored green if available, red if over)
+  - **Remaining Carpark**: `1/2`
+- Remove the separate "Current Housemates" table entirely — merge that info into Room Summary
 
-**Unit Details Section** — no change, stays as-is (text fields, dropdowns, checkbox, uploads).
+**2. Redesign Room Summary Table**
 
-**Rooms Section:**
-- Starts empty with a header "Rooms" and an "Add Room" button
-- Clicking "Add Room" opens an inline card/form for one room
-- User fills in: Room Label, Room Type (Room/Studio), Bed Type, Wall Type, Max Pax, Listed Rental, Status, Available Date, Features, Remark
-- "Save" collapses it into a compact summary row showing: Room Label | Bed Type | Rent | Status
-- Each saved row has View / Edit / Delete actions
-- Edit re-opens the inline form for that room
-- Delete removes with confirmation
+- Columns: Code, Room Title, Rental, Status, Pax, Gender, Nationality, Tenant (admin-only)
+- Remove Occupation from display
+- "Tenant" column only visible for admin/super_admin users, hidden for agents
+- Pax shows actual pax_staying count
 
-**Carparks Section:**
-- Same pattern — starts empty, "Add Carpark" button
-- Each carpark record: Label, Rent, Status, Assigned To, Remark
-- Saved rows show: Label | Rent | Status
-- View / Edit / Delete actions
+**3. Redesign Carpark Summary Table**
 
-### Technical Changes
+- Remove "Remark" column
+- Rename "Assigned To" → "Tenant" (admin-only, hidden for agents)
+- Keep: Name, Lot, Rental, Status, Tenant
 
-**File: `src/pages/AddUnit.tsx` (~599 lines) — major rewrite**
-- Remove room/carpark count inputs, naming convention selector, rebuildConfigs logic
-- Remove collapsible card pattern and bulk generation
-- Add local state array for room records and carpark records
-- Each record has an `editing` flag — when true, show the inline form; when false, show summary row
-- "Add Room" pushes a new blank record in editing mode
-- "Save" on inline form validates and sets editing=false
-- On final "Save Unit & Rooms", submit all records together (same mutation)
+**4. Collapsible Accordion Sections**
 
-**File: `src/pages/EditUnit.tsx` (~636 lines) — major rewrite**
-- Same record-by-record pattern
-- Existing rooms from DB are displayed as summary rows
-- "Add Room" / "Add Carpark" adds new records inline
-- Edit opens inline form for existing room
-- Delete calls useDeleteRoom with confirmation
-- Save updates changed rooms via useUpdateRoom, creates new ones via useCreateRoom
+- Wrap each section in an accordion: Building Details, Unit Details, Room Summary, Carpark Summary
+- When collapsed, show a one-line summary (e.g., building name + location, unit type + max pax)
+- Default state: all expanded (or Unit Details collapsed since less critical)
 
-**File: `src/components/UnitsRoomsContent.tsx`** — View modal already works, no change needed.
+**5. Cost Breakdown Calculator**
 
-**No database changes** — rooms/units tables already support this pattern since rooms are individual DB rows.
+- Add a new section at the bottom with inputs: number of pax, number of carparks
+- Auto-calculate: 1 month advance rental, deposit (× multiplier), admin fee, access card fees, carpark rental
+- Uses same logic as the Create Booking cost breakdown
+- User selects a room from a dropdown to base calculation on
 
-### Consistency
-This matches the Building access items pattern: empty list → add one at a time → compact saved rows → view/edit/delete each.
+**6. Copy Buttons (per section)**
 
-### Summary Row Format
-| Room Label | Type | Bed Type | Rent | Status | Actions |
-Each row is compact — one line per room, no accordion, no expand/collapse.
+- Each section header gets a small "Copy" icon button
+- Copies formatted text to clipboard:
+  - **Copy Condo/Building Details** — building name, address, GPS link, amenities, access info
+  - **Copy Unit Details** — unit, type, passcode, wifi, etc.
+  - **Copy Room Summary / Housemate Details** — table formatted as text
+  - **Copy Cost Breakdown** — the calculated cost as text
+- Copies a link which can be opened to view Room Photo + details, Unit Photo + details, Condo Photo + details (has 3 section). This is for agent sending the link to customer to view the Room and the unit and its surround to understand more and increase chance of renting.
+- No copy for Carpark section (per user request)
 
+**7. Agent vs Admin Visibility**
+
+- Room Summary and Carpark Summary: "Tenant" column hidden for agent role
+- Uses existing `useAuth` hook to check role
+
+### Technical Details
+
+**File: `src/components/UnitsRoomsContent.tsx**` — Major rewrite of the View modal section (lines ~330–542):
+
+- Import `useAuth` and `Accordion` components
+- Replace stat cards with fraction display
+- Remove Current Housemates table
+- Add tenant/gender/nationality columns to Room Summary
+- Remove Remark from Carpark, rename Assigned To → Tenant
+- Wrap sections in Accordion
+- Add Cost Breakdown section with room selector + pax/carpark inputs + auto-calc
+- Add copy-to-clipboard buttons per section header
+- Conditionally hide tenant columns based on user role
+
+**File: `src/hooks/useAuth.tsx**` — Read only, to check how role is exposed (likely `user.role` or similar)
+
+No other files need changes — this is contained to the View modal.
+
+### Section Layout (top to bottom)
+
+```text
+┌─ Building Details (accordion) ──────────────────┐
+│  Summary: "Condo Name · Location"    [📋 Copy]  │
+│  Expanded: full building info + common photos    │
+├─ Unit Details (accordion) ──────────────────────┤
+│  Summary: "Unit A-12-3 · Mix Unit · 6 pax"      │
+│  [📋 Copy]                                       │
+│  Expanded: all unit fields                       │
+├─ Occupant Summary ──────────────────────────────┤
+│  Remaining Pax: 4/6    Remaining Carpark: 1/2   │
+├─ Room Summary (accordion) ──────────────────────┤
+│  [📋 Copy Housemate Details]                     │
+│  Code | Title | Rental | Status | Pax | Gender  │
+│       | Nationality | Tenant*                    │
+├─ Carpark Summary (accordion) ───────────────────┤
+│  Name | Lot | Rental | Status | Tenant*          │
+├─ Cost Breakdown Calculator ─────────────────────┤
+│  Select Room: [dropdown]                         │
+│  Pax: [input]  Carparks: [input]                │
+│  --- auto-calculated table ---        [📋 Copy] │
+└─────────────────────────────────────────────────┘
+* Tenant column: admin-only, hidden for agents
+```
