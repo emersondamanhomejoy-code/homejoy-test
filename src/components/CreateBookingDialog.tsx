@@ -31,6 +31,7 @@ interface UserInfo {
   id: string;
   email: string;
   name: string;
+  commissionType: string;
 }
 
 const initialForm = {
