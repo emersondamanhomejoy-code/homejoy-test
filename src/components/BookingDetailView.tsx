@@ -386,7 +386,21 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         </div>
       )}
 
-      {/* ─── Actions Section ─── */}
+      {/* ─── History Log ─── */}
+      {(b.history || []).length > 0 && (
+        <div className="bg-card rounded-lg border p-5 space-y-3">
+          <div className="text-base font-bold border-b border-border pb-2">📜 History</div>
+          <div className="space-y-2">
+            {(b.history || []).map((h: any, i: number) => (
+              <div key={i} className="rounded-lg border bg-muted/30 p-3 text-xs">
+                <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
+                {h.reason && <div className="mt-1 text-muted-foreground">Reason: {h.reason}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {b.status === "pending" && (
         <div className="bg-card rounded-lg border p-5 space-y-3">
           <div className="text-base font-bold border-b border-border pb-2">⚡ Actions</div>
