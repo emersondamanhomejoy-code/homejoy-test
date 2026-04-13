@@ -246,7 +246,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
     const docS = Array.isArray(t.doc_transfer_slip) && t.doc_transfer_slip.length > 0 ? t.doc_transfer_slip[0] : "";
     setLinkedTenantDocs({ passport: docP, offerLetter: docO });
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles(prev => ({ ...prev, bookingFeeReceipt: null, passport: null, offerLetter: null }));
   };
 
   const handleUnlinkTenant = () => {
