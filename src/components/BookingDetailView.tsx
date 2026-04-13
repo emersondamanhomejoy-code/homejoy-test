@@ -111,21 +111,20 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleCancel = async () => {
     if (!user || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
+    const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
     const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason, history });
-    if (b.room_id) {
-      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-    }
-    for (const sel of carParkSelections) {
-      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
-    }
+    await updateBookingStatus.mutateAsync({
+      id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason,
+      room_id: b.room_id, carParkIds, history,
+      resolution_type: b.status === "approved" ? "forfeit" : "",
+    });
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "cancel_booking", entity_type: "booking", entity_id: b.id,
-      details: { tenant_name: b.tenant_name, reason: cancelReason },
+      details: { tenant_name: b.tenant_name, reason: cancelReason, resolution_type: b.status === "approved" ? "forfeit" : "" },
     });
-    toast.success("Booking cancelled");
+    toast.success(b.status === "approved" ? "Booking cancelled (Forfeit)" : "Booking cancelled");
     setShowCancelDialog(false);
     onOpenChange(false);
   };
