@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCondos } from "@/hooks/useCondos";
 import { useCreateUnit, RoomConfig } from "@/hooks/useRooms";
 import { logActivity } from "@/hooks/useActivityLog";
@@ -60,6 +60,23 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const [carparkRecords, setCarparkRecords] = useState<LocalCarpark[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "room" | "carpark"; key: number } | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Reset all state when modal opens
+  useEffect(() => {
+    if (open) {
+      setForm({
+        building: "", location: "", unit: "", unit_type: "Mix Unit",
+        unit_max_pax: 6, deposit_multiplier: 1.5, admin_fee: 330,
+        meter_type: "Postpaid", meter_rate: 0.65, passcode: "",
+        wifi_name: "", wifi_password: "", internal_only: false,
+        common_photos: [] as string[],
+      });
+      setRoomRecords([]);
+      setCarparkRecords([]);
+      setDeleteConfirm(null);
+      setSaving(false);
+    }
+  }, [open]);
 
   // ── Room helpers ──
   const getNextRoomLabel = () => {
