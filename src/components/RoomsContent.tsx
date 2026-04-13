@@ -454,6 +454,6 @@ export function RoomsContent() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </StandardPageLayout>
   );
 }
