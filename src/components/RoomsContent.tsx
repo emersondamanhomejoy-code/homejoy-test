@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Download, Eye, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
@@ -140,9 +140,9 @@ export function RoomsContent() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const hasFilters = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
+  const hasFilters: boolean = selectedLocations.length > 0 || selectedBuildings.length > 0 || selectedUnits.length > 0 ||
     selectedUnitTypes.length > 0 || selectedBedTypes.length > 0 ||
-    selectedWallTypes.length > 0 || selectedFeatures.length > 0 || statusFilter !== "all" || minPrice || maxPrice || search.trim();
+    selectedWallTypes.length > 0 || selectedFeatures.length > 0 || statusFilter !== "all" || !!minPrice || !!maxPrice || !!search.trim();
 
   const clearFilters = () => {
     setSelectedLocations([]); setSelectedBuildings([]); setSelectedUnits([]);
