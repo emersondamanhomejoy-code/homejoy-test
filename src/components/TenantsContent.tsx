@@ -10,21 +10,19 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { ChevronLeft, ChevronRight, Search, X, Eye, Pencil, Trash2, Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { StandardPageLayout } from "@/components/ui/standard-page-layout";
+import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { StandardTable } from "@/components/ui/standard-table";
+import { StandardModal } from "@/components/ui/standard-modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionButtons } from "@/components/ui/action-buttons";
+import { inputClass, labelClass } from "@/lib/ui-constants";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TenantRoom {
   id: string;
@@ -72,9 +70,6 @@ interface Tenant {
   tenant_rooms?: TenantRoom[];
 }
 
-const inputClass = "px-3 py-2 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
-const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
-
 function useTenants() {
   return useQuery({
     queryKey: ["tenants"],
@@ -102,7 +97,7 @@ export function TenantsContent() {
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
 
   const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
@@ -185,8 +180,7 @@ export function TenantsContent() {
     });
   }, [tenants, selectedNationalities, selectedGenders, selectedBuildings, selectedUnits, statusFilter, search, sort]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const hasFilters = selectedNationalities.length > 0 || selectedGenders.length > 0 ||
     selectedBuildings.length > 0 || selectedUnits.length > 0 ||
@@ -195,7 +189,7 @@ export function TenantsContent() {
   const clearFilters = () => {
     setSelectedNationalities([]); setSelectedGenders([]);
     setSelectedBuildings([]); setSelectedUnits([]);
-    setStatusFilter("all"); setSearch(""); setPage(1);
+    setStatusFilter("all"); setSearch(""); setPage(0);
   };
 
   // Edit
@@ -213,7 +207,6 @@ export function TenantsContent() {
   const saveTenant = async () => {
     if (!editingTenant) return;
     try {
-      // Upload new files
       const passportPath = editUploadedFiles.passport ? await uploadFile(editUploadedFiles.passport, "passport") : editExistingDocs.passport;
       const offerPath = editUploadedFiles.offerLetter ? await uploadFile(editUploadedFiles.offerLetter, "offer-letter") : editExistingDocs.offerLetter;
       const slipPath = editUploadedFiles.transferSlip ? await uploadFile(editUploadedFiles.transferSlip, "transfer-slip") : editExistingDocs.transferSlip;
@@ -313,501 +306,413 @@ export function TenantsContent() {
   // Helpers
   const getRooms = (t: Tenant) => (t.tenant_rooms || []).filter(tr => tr.room?.room_type !== "Car Park");
   const getCarparks = (t: Tenant) => (t.tenant_rooms || []).filter(tr => tr.room?.room_type === "Car Park");
-  const getPax = (t: Tenant) => getRooms(t).length;
-
-  if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Tenants</h2>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{filtered.length} tenant(s)</span>
-          {isAdmin && (
-            <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Tenant</Button>
-          )}
+    <StandardPageLayout
+      title="Tenants"
+      actionLabel={isAdmin ? "Add Tenant" : undefined}
+      actionIcon={isAdmin ? <Plus className="h-4 w-4" /> : undefined}
+      onAction={isAdmin ? openAdd : undefined}
+    >
+      <StandardFilterBar
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(0); }}
+        placeholder="Search by name, phone, email, building, unit, room..."
+        hasActiveFilters={!!hasFilters}
+        onClearFilters={clearFilters}
+      >
+        <MultiSelectFilter label="Nationality" placeholder="All" options={nationalities} selected={selectedNationalities}
+          onApply={v => { setSelectedNationalities(v); setPage(0); }} />
+        <MultiSelectFilter label="Gender" placeholder="All" options={genders} selected={selectedGenders}
+          onApply={v => { setSelectedGenders(v); setPage(0); }} />
+        <MultiSelectFilter label="Building" placeholder="All" options={buildings} selected={selectedBuildings}
+          onApply={v => { setSelectedBuildings(v); setPage(0); }} />
+        <MultiSelectFilter label="Unit" placeholder="All" options={unitNumbers} selected={selectedUnits}
+          onApply={v => { setSelectedUnits(v); setPage(0); }} />
+        <div className="space-y-1.5">
+          <label className={labelClass}>Status</label>
+          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="ended">Ended</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </div>
+      </StandardFilterBar>
 
-      {/* Search + Filters */}
-      <div className="bg-card rounded-xl shadow-sm border border-border p-5 space-y-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by name, phone, email, building, unit, room..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className={`${inputClass} w-full pl-10`}
-          />
-        </div>
+      <StandardTable
+        columns={
+          <TableRow className="bg-muted/30">
+            <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
+            <SortableTableHead sortKey="phone" currentSort={sort} onSort={handleSort}>Phone</SortableTableHead>
+            <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
+            <SortableTableHead sortKey="nationality" currentSort={sort} onSort={handleSort}>Nationality</SortableTableHead>
+            <SortableTableHead sortKey="gender" currentSort={sort} onSort={handleSort}>Gender</SortableTableHead>
+            <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+            <TableHead>Carpark</TableHead>
+            <TableHead>Pax</TableHead>
+            <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        }
+        isEmpty={filtered.length === 0}
+        emptyMessage="No tenants found."
+        total={filtered.length}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        isLoading={isLoading}
+        showCount
+        countLabel="tenant(s)"
+      >
+        {paged.map(t => {
+          const rooms = getRooms(t);
+          const carparks = getCarparks(t);
+          const activeRooms = rooms.filter(r => r.status === "active");
+          const status = activeRooms.length > 0 ? "active" : rooms.length > 0 ? rooms[0].status : "—";
+          return (
+            <TableRow key={t.id}>
+              <TableCell className="font-medium">{t.name || "—"}</TableCell>
+              <TableCell>{t.phone || "—"}</TableCell>
+              <TableCell className="text-muted-foreground">{t.email || "—"}</TableCell>
+              <TableCell>{t.nationality || "—"}</TableCell>
+              <TableCell>{t.gender || "—"}</TableCell>
+              <TableCell>{rooms.map(r => r.room?.building).filter(Boolean).join(", ") || "—"}</TableCell>
+              <TableCell>{rooms.map(r => r.room?.unit).filter(Boolean).join(", ") || "—"}</TableCell>
+              <TableCell>{rooms.map(r => r.room?.room?.replace(/^Room\s+/i, "")).filter(Boolean).join(", ") || "—"}</TableCell>
+              <TableCell>{carparks.map(c => c.room?.room).filter(Boolean).join(", ") || "—"}</TableCell>
+              <TableCell>{rooms.length || "—"}</TableCell>
+              <TableCell>
+                <Badge variant={status === "active" ? "default" : "secondary"} className={
+                  status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : ""
+                }>
+                  {status}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <ActionButtons actions={[
+                  { type: "view", onClick: () => setViewingTenant(t) },
+                  { type: "edit", onClick: () => openEdit(t), show: isAdmin },
+                  { type: "delete", onClick: () => setDeleteConfirm(t.id), show: isAdmin },
+                ]} />
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </StandardTable>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <MultiSelectFilter label="Nationality" placeholder="All" options={nationalities} selected={selectedNationalities}
-            onApply={v => { setSelectedNationalities(v); setPage(1); }} />
-          <MultiSelectFilter label="Gender" placeholder="All" options={genders} selected={selectedGenders}
-            onApply={v => { setSelectedGenders(v); setPage(1); }} />
-          <MultiSelectFilter label="Building" placeholder="All" options={buildings} selected={selectedBuildings}
-            onApply={v => { setSelectedBuildings(v); setPage(1); }} />
-          <MultiSelectFilter label="Unit" placeholder="All" options={unitNumbers} selected={selectedUnits}
-            onApply={v => { setSelectedUnits(v); setPage(1); }} />
-
-          <div className="space-y-1.5">
-            <label className={lbl}>Status</label>
-            <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="ended">Ended</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-              <X className="h-4 w-4 mr-1" /> Clear
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="p-12 text-muted-foreground">No tenants found.</div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
-                    <SortableTableHead sortKey="phone" currentSort={sort} onSort={handleSort}>Phone</SortableTableHead>
-                    <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
-                    <SortableTableHead sortKey="nationality" currentSort={sort} onSort={handleSort}>Nationality</SortableTableHead>
-                    <SortableTableHead sortKey="gender" currentSort={sort} onSort={handleSort}>Gender</SortableTableHead>
-                    <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
-                    <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                    <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
-                    <TableHead>Carpark</TableHead>
-                    <TableHead>Pax</TableHead>
-                    <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paged.map(t => {
-                    const rooms = getRooms(t);
-                    const carparks = getCarparks(t);
-                    const activeRooms = rooms.filter(r => r.status === "active");
-                    const status = activeRooms.length > 0 ? "active" : rooms.length > 0 ? rooms[0].status : "—";
-                    return (
-                      <TableRow key={t.id}>
-                        <TableCell className="font-medium">{t.name || "—"}</TableCell>
-                        <TableCell>{t.phone || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{t.email || "—"}</TableCell>
-                        <TableCell>{t.nationality || "—"}</TableCell>
-                        <TableCell>{t.gender || "—"}</TableCell>
-                        <TableCell>{rooms.map(r => r.room?.building).filter(Boolean).join(", ") || "—"}</TableCell>
-                        <TableCell>{rooms.map(r => r.room?.unit).filter(Boolean).join(", ") || "—"}</TableCell>
-                        <TableCell>{rooms.map(r => r.room?.room?.replace(/^Room\s+/i, "")).filter(Boolean).join(", ") || "—"}</TableCell>
-                        <TableCell>{carparks.map(c => c.room?.room).filter(Boolean).join(", ") || "—"}</TableCell>
-                        <TableCell>{rooms.length || "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant={status === "active" ? "default" : "secondary"} className={
-                            status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : ""
-                          }>
-                            {status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 justify-center">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingTenant(t)}>
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
-                            {isAdmin && (
-                              <>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => openEdit(t)}>
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirm(t.id)}>
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+      {/* View Dialog */}
+      <StandardModal
+        open={!!viewingTenant}
+        onOpenChange={() => setViewingTenant(null)}
+        title="Tenant Details"
+        size="md"
+        hideCancel
+      >
+        {viewingTenant && (
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <ViewField label="Full Name" value={viewingTenant.name} />
+                <ViewField label="NRIC / Passport No" value={viewingTenant.ic_passport} />
+                <ViewField label="Email" value={viewingTenant.email} />
+                <ViewField label="Contact No" value={viewingTenant.phone} />
+                <ViewField label="Gender" value={viewingTenant.gender} />
+                <ViewField label="Nationality" value={viewingTenant.nationality} />
+                <ViewField label="Occupation" value={viewingTenant.occupation} />
+              </div>
             </div>
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Show</span>
-                <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
-                  <SelectTrigger className="w-[70px] h-8"><SelectValue /></SelectTrigger>
+            {getRooms(viewingTenant).length > 0 && (
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🏠 Assigned Rooms</div>
+                <div className="space-y-1.5">
+                  {getRooms(viewingTenant).map(tr => (
+                    <div key={tr.id} className="flex items-center gap-2 text-sm bg-background rounded-lg border px-3 py-2">
+                      <span className="font-medium">{tr.room?.building} · {tr.room?.unit} · {tr.room?.room}</span>
+                      <span className="text-muted-foreground">RM{tr.room?.rent}</span>
+                      <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
+                        tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
+                      }>{tr.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {getCarparks(viewingTenant).length > 0 && (
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🅿️ Assigned Carparks</div>
+                <div className="space-y-1.5">
+                  {getCarparks(viewingTenant).map(tr => (
+                    <div key={tr.id} className="flex items-center gap-2 text-sm bg-background rounded-lg border px-3 py-2">
+                      <span className="font-medium">🅿️ {tr.room?.room}</span>
+                      <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
+                        tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
+                      }>{tr.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold">Contact 1</div>
+                  <ViewField label="Name" value={viewingTenant.emergency_1_name} />
+                  <ViewField label="Phone" value={viewingTenant.emergency_1_phone} />
+                  <ViewField label="Relationship" value={viewingTenant.emergency_1_relationship} />
+                </div>
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold">Contact 2</div>
+                  <ViewField label="Name" value={viewingTenant.emergency_2_name} />
+                  <ViewField label="Phone" value={viewingTenant.emergency_2_phone} />
+                  <ViewField label="Relationship" value={viewingTenant.emergency_2_relationship} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
+              {([
+                { label: "Passport / IC", paths: viewingTenant.doc_passport },
+                { label: "Offer Letter", paths: viewingTenant.doc_offer_letter },
+                { label: "Transfer Slip", paths: viewingTenant.doc_transfer_slip },
+              ]).map(({ label, paths }) => {
+                const arr = Array.isArray(paths) ? paths : [];
+                return (
+                  <div key={label} className="space-y-1">
+                    <label className={labelClass}>{label}</label>
+                    {arr.length > 0 ? (
+                      <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                        <span className="text-sm flex-1 truncate">{String(arr[0]).split("/").pop()}</span>
+                        <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/booking-docs/${arr[0]}`}
+                          target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No file uploaded</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </StandardModal>
+
+      {/* Edit Dialog */}
+      <StandardModal
+        open={!!editingTenant}
+        onOpenChange={(open) => { if (!open) setEditingTenant(null); }}
+        title="Edit Tenant"
+        size="md"
+        isDirty={JSON.stringify(editForm) !== JSON.stringify(editingTenant)}
+        footer={<Button onClick={saveTenant}>Save Changes</Button>}
+      >
+        <div className="space-y-4">
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="space-y-1"><label className={labelClass}>Full Name</label><Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>NRIC / Passport No</label><Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Email</label><Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Contact No</label><Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} /></div>
+              <div className="space-y-1">
+                <label className={labelClass}>Gender</label>
+                <Select value={editForm.gender || ""} onValueChange={v => setField("gender", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Couple">Couple</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <div className="space-y-1"><label className={labelClass}>Nationality</label><Input value={editForm.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Occupation</label><Input value={editForm.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
             </div>
-          </>
-        )}
-      </div>
+          </div>
 
-      {/* View Dialog */}
-      <Dialog open={!!viewingTenant} onOpenChange={() => setViewingTenant(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>Tenant Details</DialogTitle>
-          </DialogHeader>
-          {viewingTenant && (
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
-              <div className="space-y-4 py-4">
-                {/* Personal Info */}
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <ViewField label="Full Name" value={viewingTenant.name} />
-                    <ViewField label="NRIC / Passport No" value={viewingTenant.ic_passport} />
-                    <ViewField label="Email" value={viewingTenant.email} />
-                    <ViewField label="Contact No" value={viewingTenant.phone} />
-                    <ViewField label="Gender" value={viewingTenant.gender} />
-                    <ViewField label="Nationality" value={viewingTenant.nationality} />
-                    <ViewField label="Occupation" value={viewingTenant.occupation} />
-                  </div>
-                </div>
-
-                {/* Assigned Rooms */}
-                {getRooms(viewingTenant).length > 0 && (
-                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                    <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🏠 Assigned Rooms</div>
-                    <div className="space-y-1.5">
-                      {getRooms(viewingTenant).map(tr => (
-                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-background rounded-lg border px-3 py-2">
-                          <span className="font-medium">{tr.room?.building} · {tr.room?.unit} · {tr.room?.room}</span>
-                          <span className="text-muted-foreground">RM{tr.room?.rent}</span>
-                          <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
-                            tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
-                          }>{tr.status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Assigned Carparks */}
-                {getCarparks(viewingTenant).length > 0 && (
-                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                    <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🅿️ Assigned Carparks</div>
-                    <div className="space-y-1.5">
-                      {getCarparks(viewingTenant).map(tr => (
-                        <div key={tr.id} className="flex items-center gap-2 text-sm bg-background rounded-lg border px-3 py-2">
-                          <span className="font-medium">🅿️ {tr.room?.room}</span>
-                          <Badge variant={tr.status === "active" ? "default" : "secondary"} className={
-                            tr.status === "active" ? "bg-emerald-100 text-emerald-700 text-xs" : "text-xs"
-                          }>{tr.status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Emergency Contacts */}
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="text-sm font-semibold">Contact 1</div>
-                      <ViewField label="Name" value={viewingTenant.emergency_1_name} />
-                      <ViewField label="Phone" value={viewingTenant.emergency_1_phone} />
-                      <ViewField label="Relationship" value={viewingTenant.emergency_1_relationship} />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm font-semibold">Contact 2</div>
-                      <ViewField label="Name" value={viewingTenant.emergency_2_name} />
-                      <ViewField label="Phone" value={viewingTenant.emergency_2_phone} />
-                      <ViewField label="Relationship" value={viewingTenant.emergency_2_relationship} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Documents */}
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
-                  {([
-                    { label: "Passport / IC", paths: viewingTenant.doc_passport },
-                    { label: "Offer Letter", paths: viewingTenant.doc_offer_letter },
-                    { label: "Transfer Slip", paths: viewingTenant.doc_transfer_slip },
-                  ]).map(({ label, paths }) => {
-                    const arr = Array.isArray(paths) ? paths : [];
-                    return (
-                      <div key={label} className="space-y-1">
-                        <label className={lbl}>{label}</label>
-                        {arr.length > 0 ? (
-                          <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
-                            <span className="text-sm flex-1 truncate">{String(arr[0]).split("/").pop()}</span>
-                            <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/booking-docs/${arr[0]}`}
-                              target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground">No file uploaded</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 1</div>
+                <div className="space-y-1"><label className={labelClass}>Name</label><Input value={editForm.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={editForm.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={editForm.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} /></div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editingTenant} onOpenChange={(open) => { if (!open) setEditingTenant(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>Edit Tenant</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-2">
-            <div className="space-y-4 py-4">
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name</label><Input value={editForm.name || ""} onChange={e => setField("name", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>NRIC / Passport No</label><Input value={editForm.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Email</label><Input value={editForm.email || ""} onChange={e => setField("email", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No</label><Input value={editForm.phone || ""} onChange={e => setField("phone", e.target.value)} /></div>
-                  <div className="space-y-1">
-                    <label className={lbl}>Gender</label>
-                    <Select value={editForm.gender || ""} onValueChange={v => setField("gender", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Couple">Couple</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1"><label className={lbl}>Nationality</label><Input value={editForm.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Occupation</label><Input value={editForm.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">Contact 1</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><Input value={editForm.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><Input value={editForm.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><Input value={editForm.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} /></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">Contact 2</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><Input value={editForm.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><Input value={editForm.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><Input value={editForm.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} /></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Documents */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
-                {([
-                  { key: "passport" as const, label: "Passport / IC" },
-                  { key: "offerLetter" as const, label: "Offer Letter" },
-                  { key: "transferSlip" as const, label: "Transfer Slip" },
-                ]).map(({ key, label }) => {
-                  const hasNewFile = editUploadedFiles[key] != null;
-                  const hasExisting = !!editExistingDocs[key];
-                  const hasFile = hasNewFile || hasExisting;
-                  const fileName = hasNewFile ? editUploadedFiles[key]!.name : hasExisting ? editExistingDocs[key].split("/").pop() : null;
-                  return (
-                    <div key={key} className="space-y-1">
-                      <label className={lbl}>{label}</label>
-                      {hasFile ? (
-                        <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
-                          <span className="text-sm flex-1 truncate">{fileName}</span>
-                          <button type="button" onClick={() => setEditDocRemoveConfirm(key)}
-                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
-                          <span className="text-muted-foreground">Choose File</span>
-                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (file) setEditUploadedFiles(prev => ({ ...prev, [key]: file }));
-                            e.target.value = "";
-                          }} />
-                        </label>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 2</div>
+                <div className="space-y-1"><label className={labelClass}>Name</label><Input value={editForm.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={editForm.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={editForm.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} /></div>
               </div>
             </div>
           </div>
-          <DialogFooter className="px-6 pb-6 pt-2 border-t">
-            <Button variant="outline" onClick={() => setEditingTenant(null)}>Cancel</Button>
-            <Button onClick={saveTenant}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
+            {([
+              { key: "passport" as const, label: "Passport / IC" },
+              { key: "offerLetter" as const, label: "Offer Letter" },
+              { key: "transferSlip" as const, label: "Transfer Slip" },
+            ]).map(({ key, label }) => {
+              const hasNewFile = editUploadedFiles[key] != null;
+              const hasExisting = !!editExistingDocs[key];
+              const hasFile = hasNewFile || hasExisting;
+              const fileName = hasNewFile ? editUploadedFiles[key]!.name : hasExisting ? editExistingDocs[key].split("/").pop() : null;
+              return (
+                <div key={key} className="space-y-1">
+                  <label className={labelClass}>{label}</label>
+                  {hasFile ? (
+                    <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                      <span className="text-sm flex-1 truncate">{fileName}</span>
+                      <button type="button" onClick={() => setEditDocRemoveConfirm(key)}
+                        className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                      <span className="text-muted-foreground">Choose File</span>
+                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) setEditUploadedFiles(prev => ({ ...prev, [key]: file }));
+                        e.target.value = "";
+                      }} />
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </StandardModal>
 
       {/* Edit doc remove confirm */}
-      <AlertDialog open={!!editDocRemoveConfirm} onOpenChange={(open) => { if (!open) setEditDocRemoveConfirm(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove file?</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to remove this file?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep File</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (editDocRemoveConfirm) {
-                setEditUploadedFiles(prev => ({ ...prev, [editDocRemoveConfirm]: null }));
-                setEditExistingDocs(prev => ({ ...prev, [editDocRemoveConfirm]: "" }));
-              }
-              setEditDocRemoveConfirm(null);
-            }}>Remove</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!editDocRemoveConfirm}
+        onOpenChange={(open) => { if (!open) setEditDocRemoveConfirm(null); }}
+        title="Remove file?"
+        description="Are you sure you want to remove this file?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (editDocRemoveConfirm) {
+            setEditUploadedFiles(prev => ({ ...prev, [editDocRemoveConfirm]: null }));
+            setEditExistingDocs(prev => ({ ...prev, [editDocRemoveConfirm]: "" }));
+          }
+          setEditDocRemoveConfirm(null);
+        }}
+      />
 
       {/* Delete Confirm */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this tenant? This action cannot be undone. All room assignments will also be removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={() => setDeleteConfirm(null)}
+        title="Delete Tenant"
+        description="Are you sure you want to delete this tenant? This action cannot be undone. All room assignments will also be removed."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* Add Tenant Dialog */}
-      <Dialog open={addingTenant} onOpenChange={(open) => { if (!open) setAddingTenant(false); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>Add Tenant</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-2">
-            <div className="space-y-4 py-4">
-              {/* Personal Info */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name *</label><Input value={addForm.name || ""} onChange={e => setAddField("name", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>NRIC / Passport No</label><Input value={addForm.ic_passport || ""} onChange={e => setAddField("ic_passport", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Email</label><Input value={addForm.email || ""} onChange={e => setAddField("email", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No *</label><Input value={addForm.phone || ""} onChange={e => setAddField("phone", e.target.value)} /></div>
-                  <div className="space-y-1">
-                    <label className={lbl}>Gender</label>
-                    <Select value={addForm.gender || ""} onValueChange={v => setAddField("gender", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Couple">Couple</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1"><label className={lbl}>Nationality</label><Input value={addForm.nationality || ""} onChange={e => setAddField("nationality", e.target.value)} /></div>
-                  <div className="space-y-1"><label className={lbl}>Occupation</label><Input value={addForm.occupation || ""} onChange={e => setAddField("occupation", e.target.value)} /></div>
-                </div>
+      <StandardModal
+        open={addingTenant}
+        onOpenChange={(open) => { if (!open) setAddingTenant(false); }}
+        title="Add Tenant"
+        size="md"
+        isDirty={!!addForm.name || !!addForm.phone}
+        footer={<Button onClick={saveNewTenant}>Add Tenant</Button>}
+      >
+        <div className="space-y-4">
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="space-y-1"><label className={labelClass}>Full Name *</label><Input value={addForm.name || ""} onChange={e => setAddField("name", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>NRIC / Passport No</label><Input value={addForm.ic_passport || ""} onChange={e => setAddField("ic_passport", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Email</label><Input value={addForm.email || ""} onChange={e => setAddField("email", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Contact No *</label><Input value={addForm.phone || ""} onChange={e => setAddField("phone", e.target.value)} /></div>
+              <div className="space-y-1">
+                <label className={labelClass}>Gender</label>
+                <Select value={addForm.gender || ""} onValueChange={v => setAddField("gender", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Couple">Couple</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+              <div className="space-y-1"><label className={labelClass}>Nationality</label><Input value={addForm.nationality || ""} onChange={e => setAddField("nationality", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Occupation</label><Input value={addForm.occupation || ""} onChange={e => setAddField("occupation", e.target.value)} /></div>
+            </div>
+          </div>
 
-              {/* Emergency Contacts */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">Contact 1 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><Input value={addForm.emergency_1_name || ""} onChange={e => setAddField("emergency_1_name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><Input value={addForm.emergency_1_phone || ""} onChange={e => setAddField("emergency_1_phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><Input value={addForm.emergency_1_relationship || ""} onChange={e => setAddField("emergency_1_relationship", e.target.value)} /></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">Contact 2 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><Input value={addForm.emergency_2_name || ""} onChange={e => setAddField("emergency_2_name", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><Input value={addForm.emergency_2_phone || ""} onChange={e => setAddField("emergency_2_phone", e.target.value)} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><Input value={addForm.emergency_2_relationship || ""} onChange={e => setAddField("emergency_2_relationship", e.target.value)} /></div>
-                  </div>
-                </div>
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 1 *</div>
+                <div className="space-y-1"><label className={labelClass}>Name</label><Input value={addForm.emergency_1_name || ""} onChange={e => setAddField("emergency_1_name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={addForm.emergency_1_phone || ""} onChange={e => setAddField("emergency_1_phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={addForm.emergency_1_relationship || ""} onChange={e => setAddField("emergency_1_relationship", e.target.value)} /></div>
               </div>
-
-              {/* Documents */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
-                {([
-                  { key: "passport" as const, label: "Passport / IC" },
-                  { key: "offerLetter" as const, label: "Offer Letter" },
-                  { key: "transferSlip" as const, label: "Transfer Slip" },
-                ]).map(({ key, label }) => {
-                  const hasFile = addUploadedFiles[key] != null;
-                  return (
-                    <div key={key} className="space-y-1">
-                      <label className={lbl}>{label}</label>
-                      {hasFile ? (
-                        <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
-                          <span className="text-sm flex-1 truncate">{addUploadedFiles[key]!.name}</span>
-                          <button type="button" onClick={() => setAddUploadedFiles(prev => ({ ...prev, [key]: null }))}
-                            className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
-                          <span className="text-muted-foreground">Choose File</span>
-                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (file) setAddUploadedFiles(prev => ({ ...prev, [key]: file }));
-                            e.target.value = "";
-                          }} />
-                        </label>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 2 *</div>
+                <div className="space-y-1"><label className={labelClass}>Name</label><Input value={addForm.emergency_2_name || ""} onChange={e => setAddField("emergency_2_name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={addForm.emergency_2_phone || ""} onChange={e => setAddField("emergency_2_phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={addForm.emergency_2_relationship || ""} onChange={e => setAddField("emergency_2_relationship", e.target.value)} /></div>
               </div>
             </div>
           </div>
-          <DialogFooter className="px-6 pb-6 pt-2 border-t">
-            <Button variant="outline" onClick={() => setAddingTenant(false)}>Cancel</Button>
-            <Button onClick={saveNewTenant}>Add Tenant</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
+            {([
+              { key: "passport" as const, label: "Passport / IC" },
+              { key: "offerLetter" as const, label: "Offer Letter" },
+              { key: "transferSlip" as const, label: "Transfer Slip" },
+            ]).map(({ key, label }) => {
+              const hasFile = addUploadedFiles[key] != null;
+              return (
+                <div key={key} className="space-y-1">
+                  <label className={labelClass}>{label}</label>
+                  {hasFile ? (
+                    <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+                      <span className="text-sm flex-1 truncate">{addUploadedFiles[key]!.name}</span>
+                      <button type="button" onClick={() => setAddUploadedFiles(prev => ({ ...prev, [key]: null }))}
+                        className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                      <span className="text-muted-foreground">Choose File</span>
+                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) setAddUploadedFiles(prev => ({ ...prev, [key]: file }));
+                        e.target.value = "";
+                      }} />
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </StandardModal>
+    </StandardPageLayout>
   );
 }
 

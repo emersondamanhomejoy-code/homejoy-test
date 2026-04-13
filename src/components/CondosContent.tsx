@@ -135,7 +135,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
-    <StandardPageLayout title="Buildings" actionLabel="Add Building" actionIcon={Plus} onAction={() => onOpenForm()}>
+    <StandardPageLayout title="Buildings" actionLabel="Add Building" actionIcon={<Plus className="h-4 w-4" />} onAction={() => onOpenForm()}>
       {/* Delete Confirmation */}
       <ConfirmDialog
         open={!!deleteId}

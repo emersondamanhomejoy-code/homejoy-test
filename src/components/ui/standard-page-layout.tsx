@@ -1,11 +1,10 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { LucideIcon } from "lucide-react";
 
 interface StandardPageLayoutProps {
   title: string;
   actionLabel?: string;
-  actionIcon?: LucideIcon;
+  actionIcon?: ReactNode;
   onAction?: () => void;
   actionVariant?: "default" | "outline" | "secondary" | "ghost" | "destructive";
   secondaryActions?: ReactNode;
@@ -36,7 +35,7 @@ export function StandardPageLayout({
           {secondaryActions}
           {actionLabel && onAction && (
             <Button onClick={onAction} variant={actionVariant}>
-              {ActionIcon && <ActionIcon className="h-4 w-4" />}
+              {ActionIcon}
               {actionLabel}
             </Button>
           )}

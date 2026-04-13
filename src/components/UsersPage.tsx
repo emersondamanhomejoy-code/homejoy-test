@@ -6,14 +6,18 @@ import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, Upload, X, Snowflake, Sun } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { StandardPageLayout } from "@/components/ui/standard-page-layout";
+import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { StandardTable } from "@/components/ui/standard-table";
+import { StandardModal } from "@/components/ui/standard-modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionButtons } from "@/components/ui/action-buttons";
+import { inputClass, labelClass } from "@/lib/ui-constants";
 
 interface CommissionTier { min: number; max: number | null; amount?: number; percentage?: number; }
 interface CommissionConfig { percentage?: number; tiers?: CommissionTier[]; }
@@ -134,8 +138,6 @@ export function UsersPage() {
       const { error: uploadError } = await supabase.storage.from("booking-docs").upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("booking-docs").getPublicUrl(path);
-      // Update profile
-      const { data: { session } } = await supabase.auth.getSession();
       await supabase.from("profiles").update({ profile_picture_url: publicUrl }).eq("user_id", userId);
       toast.success("Profile picture updated");
       await fetchUsers();
@@ -254,8 +256,8 @@ export function UsersPage() {
     });
   };
 
-  const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full text-sm";
-  const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+  const ic = inputClass;
+  const lbl = labelClass;
 
   const commSummary = (u: UserWithRoles) => {
     const cfg = u.commission_config || defaultConfigs[u.commission_type] || defaultConfigs.internal_basic;
@@ -268,7 +270,7 @@ export function UsersPage() {
     <div className="space-y-3">
       <div className="space-y-1">
         <label className={lbl}>Commission Type</label>
-        <select className={ic} value={type} onChange={e => onChange(e.target.value, defaultConfigs[e.target.value] || defaultConfigs.internal_basic)}>
+        <select className={`${ic} w-full`} value={type} onChange={e => onChange(e.target.value, defaultConfigs[e.target.value] || defaultConfigs.internal_basic)}>
           <option value="internal_basic">Internal Basic (RM tiers)</option>
           <option value="internal_full">Internal Full (% tiers)</option>
           <option value="external">External (%)</option>
@@ -353,8 +355,15 @@ export function UsersPage() {
     );
   };
 
+  const hasFilters = search.trim() !== "" || roleFilter !== "all";
+
   return (
-    <div className="space-y-4">
+    <StandardPageLayout
+      title="Users"
+      actionLabel="Add User"
+      actionIcon={<Plus className="h-4 w-4" />}
+      onAction={() => setShowAddUser(true)}
+    >
       {/* Hidden file inputs */}
       <input ref={profilePicRef} type="file" accept="image/*" className="hidden" onChange={e => {
         const file = e.target.files?.[0];
@@ -367,301 +376,274 @@ export function UsersPage() {
         e.target.value = "";
       }} />
 
-      {/* Add User Modal */}
-      <Dialog open={showAddUser} onOpenChange={(open) => { if (!open && !saving) setShowAddUser(false); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
-          <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Add User</DialogTitle></DialogHeader>
-          <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
-            <div className="space-y-5 py-4">
-              {sectionCard("👤", "User Details", (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-xl">
-                      {(newAgent.name || newAgent.email || "?")[0]?.toUpperCase()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Profile picture can be uploaded after account creation</p>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
-                    <div className="space-y-1"><label className={lbl}>Display Name</label><input className={ic} placeholder="Optional" value={newAgent.display_name} onChange={e => setNewAgent({ ...newAgent, display_name: e.target.value })} /></div>
-                    <div className="space-y-1"><label className={lbl}>Email *</label><input className={ic} type="email" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={ic} value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
-                    <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={ic} value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
-                  </div>
-                </div>
-              ))}
-
-              {sectionCard("🚨", "Emergency Contact", (
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={ic} value={newAgent.emergency_contact_name} onChange={e => setNewAgent({ ...newAgent, emergency_contact_name: e.target.value })} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={ic} value={newAgent.emergency_contact_phone} onChange={e => setNewAgent({ ...newAgent, emergency_contact_phone: e.target.value })} /></div>
-                </div>
-              ))}
-
-              {sectionCard("🔑", "Role & Access", (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className={lbl}>Role *</label>
-                    <select className={ic} value={newAgent.role} onChange={e => setNewAgent({ ...newAgent, role: e.target.value })}>
-                      {canCreateRoles.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-                    </select>
-                  </div>
-                  <p className="text-xs text-muted-foreground">IC document can be uploaded after account creation</p>
-                </div>
-              ))}
-
-              {newAgent.role === "agent" && sectionCard("💰", "Commission", (
-                renderCommissionEditor(newAgent.commission_type, newAgent.commission_config, (type, config) => setNewAgent({ ...newAgent, commission_type: type, commission_config: config }))
-              ))}
-
-              <p className="text-xs text-muted-foreground">User will receive an email invitation link to set up their password.</p>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowAddUser(false)} disabled={saving}>Cancel</Button>
-                <Button onClick={createUser} disabled={saving}>{saving ? "Sending..." : "Send Invite"}</Button>
-              </DialogFooter>
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* View User Modal */}
-      {viewUser && (
-        <Dialog open={!!viewUser} onOpenChange={(open) => { if (!open) setViewUser(null); }}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>View User</DialogTitle></DialogHeader>
-            <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
-              <div className="space-y-5 py-4">
-                {sectionCard("👤", "Profile", (
-                  <div>
-                    <div className="flex items-center gap-4 mb-4">
-                      {avatarDisplay(viewUser, "w-20 h-20", "text-2xl")}
-                      <div>
-                        <div className="font-bold text-lg">{viewUser.name || "—"}</div>
-                        {viewUser.display_name && <div className="text-sm text-muted-foreground">Display: {viewUser.display_name}</div>}
-                      </div>
-                    </div>
-                    {infoRow("Full Name", viewUser.name)}
-                    {infoRow("Display Name", viewUser.display_name)}
-                    {infoRow("Email", viewUser.email)}
-                    {infoRow("Phone", viewUser.phone)}
-                    {infoRow("Address", viewUser.address)}
-                    {infoRow("Roles", viewUser.roles.map(r => r.toUpperCase()).join(", "))}
-                    {infoRow("Status", viewUser.confirmed ? "Confirmed" : "Pending Invite")}
-                    {infoRow("Joined", format(new Date(viewUser.created_at), "dd MMM yyyy"))}
-                  </div>
-                ))}
-
-                {sectionCard("🚨", "Emergency Contact", (
-                  <div>
-                    {infoRow("Name", viewUser.emergency_contact_name)}
-                    {infoRow("Phone", viewUser.emergency_contact_phone)}
-                  </div>
-                ))}
-
-                {sectionCard("📄", "Documents", (
-                  <div>
-                    {infoRow("IC Document", viewUser.ic_document ? (
-                      <a href={viewUser.ic_document} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View IC</a>
-                    ) : "Not uploaded")}
-                  </div>
-                ))}
-
-                {viewUser.roles.includes("agent") && sectionCard("💰", "Commission", (
-                  <div>
-                    {infoRow("Type", commSummary(viewUser))}
-                    <div className="mt-2">{renderCommissionTiersSummary(viewUser)}</div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Edit User Modal */}
-      {editUser && (
-        <Dialog open={!!editUser} onOpenChange={(open) => { if (!open && !saving) setEditUser(null); }}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Edit User — {editUser.name || editUser.email}</DialogTitle></DialogHeader>
-            <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
-              <div className="space-y-5 py-4">
-                {sectionCard("👤", "Profile", (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      {avatarDisplay(editUser, "w-20 h-20", "text-2xl")}
-                      <div className="space-y-1">
-                        <Button variant="outline" size="sm" disabled={uploadingPic} onClick={() => profilePicRef.current?.click()}>
-                          <Upload className="h-3 w-3 mr-1" />{uploadingPic ? "Uploading..." : "Change Photo"}
-                        </Button>
-                        <p className="text-xs text-muted-foreground">JPG, PNG up to 5MB</p>
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <div className="space-y-1"><label className={lbl}>Full Name</label><input className={ic} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-                      <div className="space-y-1"><label className={lbl}>Display Name</label><input className={ic} placeholder="Optional" value={editForm.display_name} onChange={e => setEditForm({ ...editForm, display_name: e.target.value })} /></div>
-                      <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} value={editUser.email} disabled /></div>
-                      <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={ic} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
-                      <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={ic} value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
-                    </div>
-                  </div>
-                ))}
-
-                {sectionCard("🚨", "Emergency Contact", (
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={ic} value={editForm.emergency_contact_name} onChange={e => setEditForm({ ...editForm, emergency_contact_name: e.target.value })} /></div>
-                    <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={ic} value={editForm.emergency_contact_phone} onChange={e => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })} /></div>
-                  </div>
-                ))}
-
-                {sectionCard("📄", "Documents", (
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <label className={lbl}>IC Document</label>
-                      {editForm.ic_document ? (
-                        <div className="flex items-center gap-2">
-                          <a href={editForm.ic_document} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View current IC</a>
-                          <Button variant="outline" size="sm" disabled={uploadingIc} onClick={() => icUploadRef.current?.click()}>
-                            <Upload className="h-3 w-3 mr-1" />{uploadingIc ? "Uploading..." : "Replace"}
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button variant="outline" size="sm" disabled={uploadingIc} onClick={() => icUploadRef.current?.click()}>
-                          <Upload className="h-3 w-3 mr-1" />{uploadingIc ? "Uploading..." : "Upload IC"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {editUser.roles.includes("agent") && sectionCard("💰", "Commission", (
-                  <>
-                    {renderCommissionEditor(editForm.commission_type, editForm.commission_config || defaultConfigs.internal_basic, (type, config) => setEditForm({ ...editForm, commission_type: type, commission_config: config }))}
-                    <p className="text-xs text-muted-foreground mt-2">⚠️ Changes only apply to future claims. Approved historical commissions are not affected.</p>
-                  </>
-                ))}
-
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setEditUser(null)} disabled={saving}>Cancel</Button>
-                  <Button onClick={saveProfile} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-                </DialogFooter>
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Delete Dialog */}
-      <AlertDialog open={!!showDeleteDialog} onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Delete User?</AlertDialogTitle><AlertDialogDescription>This cannot be undone. User: {showDeleteDialog?.email}</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Users</h2>
-        <Button onClick={() => setShowAddUser(true)}><Plus className="h-4 w-4 mr-1" /> Add User</Button>
-      </div>
-
-      {/* Search + Role filter */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <Input placeholder="Search name, email..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
-        <Select value={roleFilter} onValueChange={v => { setRoleFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Role" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="agent">Agent</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="super_admin">Super Admin</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
-      {fetching ? (
-        <div className="text-center py-10 text-muted-foreground">Loading...</div>
-      ) : (
-        <div className="rounded-lg border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Photo</TableHead>
-                <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Display Name</SortableTableHead>
-                <TableHead>Full Name</TableHead>
-                <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
-                <TableHead>Phone</TableHead>
-                <SortableTableHead sortKey="role" currentSort={sort} onSort={handleSort}>Role</SortableTableHead>
-                <SortableTableHead sortKey="commission_type" currentSort={sort} onSort={handleSort}>Commission</SortableTableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-muted-foreground py-8 text-center">No users found</TableCell></TableRow>
-              ) : paged.map(u => (
-                <TableRow key={u.id}>
-                  <TableCell className="text-center">{avatarDisplay(u)}</TableCell>
-                  <TableCell className="font-medium">{u.display_name || u.name || "—"}</TableCell>
-                  <TableCell className="text-sm">{u.name || "—"}</TableCell>
-                  <TableCell className="text-sm">{u.email}</TableCell>
-                  <TableCell className="text-sm">{u.phone || "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {u.roles.map(r => (
-                        <span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "super_admin" ? "bg-amber-100 text-amber-700" : r === "admin" ? "bg-blue-100 text-blue-700" : "bg-secondary text-secondary-foreground"}`}>{r === "super_admin" ? "Super Admin" : r}</span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{u.roles.includes("agent") ? commSummary(u) : "—"}</TableCell>
-                  <TableCell className="text-center">
-                    {u.frozen ? <StatusBadge status="Frozen" /> : u.confirmed ? <StatusBadge status="Approved" /> : <StatusBadge status="Pending" />}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 justify-center">
-                      <Button variant="ghost" size="icon" onClick={() => setViewUser(u)} title="View"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(u)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                      {u.id !== user?.id && u.roles.includes("agent") && (
-                        <Button variant="ghost" size="icon" onClick={() => handleFreezeToggle(u)} disabled={freezingId === u.id} title={u.frozen ? "Unfreeze" : "Freeze"}>
-                          {u.frozen ? <Sun className="h-4 w-4 text-amber-500" /> : <Snowflake className="h-4 w-4 text-blue-500" />}
-                        </Button>
-                      )}
-                      {u.id !== user?.id && (
-                        <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(u)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span>Show</span>
-          <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(0); }}>
-            <SelectTrigger className="w-[70px] h-8"><SelectValue /></SelectTrigger>
+      <StandardFilterBar
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(0); }}
+        placeholder="Search name, email..."
+        hasActiveFilters={hasFilters}
+        onClearFilters={() => { setSearch(""); setRoleFilter("all"); setPage(0); }}
+      >
+        <div className="space-y-1.5">
+          <label className={lbl}>Role</label>
+          <Select value={roleFilter} onValueChange={v => { setRoleFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Role" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="agent">Agent</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="super_admin">Super Admin</SelectItem>
             </SelectContent>
           </Select>
-          <span>of {filtered.length}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <span className="px-2">{page + 1} / {totalPages}</span>
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+      </StandardFilterBar>
+
+      <StandardTable
+        columns={
+          <TableRow>
+            <TableHead>Photo</TableHead>
+            <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Display Name</SortableTableHead>
+            <TableHead>Full Name</TableHead>
+            <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
+            <TableHead>Phone</TableHead>
+            <SortableTableHead sortKey="role" currentSort={sort} onSort={handleSort}>Role</SortableTableHead>
+            <SortableTableHead sortKey="commission_type" currentSort={sort} onSort={handleSort}>Commission</SortableTableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        }
+        isEmpty={paged.length === 0}
+        emptyMessage="No users found"
+        total={filtered.length}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        isLoading={fetching}
+      >
+        {paged.map(u => (
+          <TableRow key={u.id}>
+            <TableCell className="text-center">{avatarDisplay(u)}</TableCell>
+            <TableCell className="font-medium">{u.display_name || u.name || "—"}</TableCell>
+            <TableCell className="text-sm">{u.name || "—"}</TableCell>
+            <TableCell className="text-sm">{u.email}</TableCell>
+            <TableCell className="text-sm">{u.phone || "—"}</TableCell>
+            <TableCell>
+              <div className="flex gap-1 flex-wrap">
+                {u.roles.map(r => (
+                  <span key={r} className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${r === "super_admin" ? "bg-amber-100 text-amber-700" : r === "admin" ? "bg-blue-100 text-blue-700" : "bg-secondary text-secondary-foreground"}`}>{r === "super_admin" ? "Super Admin" : r}</span>
+                ))}
+              </div>
+            </TableCell>
+            <TableCell className="text-sm">{u.roles.includes("agent") ? commSummary(u) : "—"}</TableCell>
+            <TableCell className="text-center">
+              {u.frozen ? <StatusBadge status="Frozen" /> : u.confirmed ? <StatusBadge status="Approved" /> : <StatusBadge status="Pending" />}
+            </TableCell>
+            <TableCell>
+              <ActionButtons actions={[
+                { type: "view", onClick: () => setViewUser(u) },
+                { type: "edit", onClick: () => openEdit(u) },
+                { type: "freeze" as any, onClick: () => handleFreezeToggle(u), show: u.id !== user?.id && u.roles.includes("agent") && !u.frozen, disabled: freezingId === u.id },
+                { type: "unfreeze" as any, onClick: () => handleFreezeToggle(u), show: u.id !== user?.id && u.roles.includes("agent") && u.frozen, disabled: freezingId === u.id },
+                { type: "delete", onClick: () => setShowDeleteDialog(u), show: u.id !== user?.id },
+              ]} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </StandardTable>
+
+      {/* Add User Modal */}
+      <StandardModal
+        open={showAddUser}
+        onOpenChange={(open) => { if (!open && !saving) setShowAddUser(false); }}
+        title="Add User"
+        size="lg"
+        isDirty={!!newAgent.email || !!newAgent.name}
+        footer={
+          <Button onClick={createUser} disabled={saving}>{saving ? "Sending..." : "Send Invite"}</Button>
+        }
+      >
+        <div className="space-y-5">
+          {sectionCard("👤", "User Details", (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-xl">
+                  {(newAgent.name || newAgent.email || "?")[0]?.toUpperCase()}
+                </div>
+                <p className="text-xs text-muted-foreground">Profile picture can be uploaded after account creation</p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Display Name</label><input className={`${ic} w-full`} placeholder="Optional" value={newAgent.display_name} onChange={e => setNewAgent({ ...newAgent, display_name: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Email *</label><input className={`${ic} w-full`} type="email" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={`${ic} w-full`} value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
+                <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={`${ic} w-full`} value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
+              </div>
+            </div>
+          ))}
+
+          {sectionCard("🚨", "Emergency Contact", (
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={`${ic} w-full`} value={newAgent.emergency_contact_name} onChange={e => setNewAgent({ ...newAgent, emergency_contact_name: e.target.value })} /></div>
+              <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={`${ic} w-full`} value={newAgent.emergency_contact_phone} onChange={e => setNewAgent({ ...newAgent, emergency_contact_phone: e.target.value })} /></div>
+            </div>
+          ))}
+
+          {sectionCard("🔑", "Role & Access", (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className={lbl}>Role *</label>
+                <select className={`${ic} w-full`} value={newAgent.role} onChange={e => setNewAgent({ ...newAgent, role: e.target.value })}>
+                  {canCreateRoles.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                </select>
+              </div>
+              <p className="text-xs text-muted-foreground">IC document can be uploaded after account creation</p>
+            </div>
+          ))}
+
+          {newAgent.role === "agent" && sectionCard("💰", "Commission", (
+            renderCommissionEditor(newAgent.commission_type, newAgent.commission_config, (type, config) => setNewAgent({ ...newAgent, commission_type: type, commission_config: config }))
+          ))}
+
+          <p className="text-xs text-muted-foreground">User will receive an email invitation link to set up their password.</p>
         </div>
-      </div>
-    </div>
+      </StandardModal>
+
+      {/* View User Modal */}
+      <StandardModal
+        open={!!viewUser}
+        onOpenChange={(open) => { if (!open) setViewUser(null); }}
+        title="View User"
+        size="lg"
+        hideCancel
+      >
+        {viewUser && (
+          <div className="space-y-5">
+            {sectionCard("👤", "Profile", (
+              <div>
+                <div className="flex items-center gap-4 mb-4">
+                  {avatarDisplay(viewUser, "w-20 h-20", "text-2xl")}
+                  <div>
+                    <div className="font-bold text-lg">{viewUser.name || "—"}</div>
+                    {viewUser.display_name && <div className="text-sm text-muted-foreground">Display: {viewUser.display_name}</div>}
+                  </div>
+                </div>
+                {infoRow("Full Name", viewUser.name)}
+                {infoRow("Display Name", viewUser.display_name)}
+                {infoRow("Email", viewUser.email)}
+                {infoRow("Phone", viewUser.phone)}
+                {infoRow("Address", viewUser.address)}
+                {infoRow("Roles", viewUser.roles.map(r => r.toUpperCase()).join(", "))}
+                {infoRow("Status", viewUser.confirmed ? "Confirmed" : "Pending Invite")}
+                {infoRow("Joined", format(new Date(viewUser.created_at), "dd MMM yyyy"))}
+              </div>
+            ))}
+
+            {sectionCard("🚨", "Emergency Contact", (
+              <div>
+                {infoRow("Name", viewUser.emergency_contact_name)}
+                {infoRow("Phone", viewUser.emergency_contact_phone)}
+              </div>
+            ))}
+
+            {sectionCard("📄", "Documents", (
+              <div>
+                {infoRow("IC Document", viewUser.ic_document ? (
+                  <a href={viewUser.ic_document} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View IC</a>
+                ) : "Not uploaded")}
+              </div>
+            ))}
+
+            {viewUser.roles.includes("agent") && sectionCard("💰", "Commission", (
+              <div>
+                {infoRow("Type", commSummary(viewUser))}
+                <div className="mt-2">{renderCommissionTiersSummary(viewUser)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </StandardModal>
+
+      {/* Edit User Modal */}
+      <StandardModal
+        open={!!editUser}
+        onOpenChange={(open) => { if (!open && !saving) setEditUser(null); }}
+        title={`Edit User — ${editUser?.name || editUser?.email || ""}`}
+        size="lg"
+        isDirty={!!editUser}
+        footer={
+          <Button onClick={saveProfile} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+        }
+      >
+        {editUser && (
+          <div className="space-y-5">
+            {sectionCard("👤", "Profile", (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  {avatarDisplay(editUser, "w-20 h-20", "text-2xl")}
+                  <div className="space-y-1">
+                    <Button variant="outline" size="sm" disabled={uploadingPic} onClick={() => profilePicRef.current?.click()}>
+                      <Upload className="h-3 w-3 mr-1" />{uploadingPic ? "Uploading..." : "Change Photo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">JPG, PNG up to 5MB</p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="space-y-1"><label className={lbl}>Full Name</label><input className={`${ic} w-full`} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
+                  <div className="space-y-1"><label className={lbl}>Display Name</label><input className={`${ic} w-full`} placeholder="Optional" value={editForm.display_name} onChange={e => setEditForm({ ...editForm, display_name: e.target.value })} /></div>
+                  <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} value={editUser.email} disabled /></div>
+                  <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={`${ic} w-full`} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+                  <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={`${ic} w-full`} value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
+                </div>
+              </div>
+            ))}
+
+            {sectionCard("🚨", "Emergency Contact", (
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={`${ic} w-full`} value={editForm.emergency_contact_name} onChange={e => setEditForm({ ...editForm, emergency_contact_name: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={`${ic} w-full`} value={editForm.emergency_contact_phone} onChange={e => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })} /></div>
+              </div>
+            ))}
+
+            {sectionCard("📄", "Documents", (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className={lbl}>IC Document</label>
+                  {editForm.ic_document ? (
+                    <div className="flex items-center gap-2">
+                      <a href={editForm.ic_document} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View current IC</a>
+                      <Button variant="outline" size="sm" disabled={uploadingIc} onClick={() => icUploadRef.current?.click()}>
+                        <Upload className="h-3 w-3 mr-1" />{uploadingIc ? "Uploading..." : "Replace"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled={uploadingIc} onClick={() => icUploadRef.current?.click()}>
+                      <Upload className="h-3 w-3 mr-1" />{uploadingIc ? "Uploading..." : "Upload IC"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {editUser.roles.includes("agent") && sectionCard("💰", "Commission", (
+              <>
+                {renderCommissionEditor(editForm.commission_type, editForm.commission_config || defaultConfigs.internal_basic, (type, config) => setEditForm({ ...editForm, commission_type: type, commission_config: config }))}
+                <p className="text-xs text-muted-foreground mt-2">⚠️ Changes only apply to future claims. Approved historical commissions are not affected.</p>
+              </>
+            ))}
+          </div>
+        )}
+      </StandardModal>
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={!!showDeleteDialog}
+        onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}
+        title="Delete User?"
+        description={`This cannot be undone. User: ${showDeleteDialog?.email}`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
+    </StandardPageLayout>
   );
 }
