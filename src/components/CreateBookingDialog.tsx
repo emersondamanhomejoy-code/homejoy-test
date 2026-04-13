@@ -93,6 +93,8 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
     fetchAgents();
   }, [open]);
 
+  const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+
   // Reset room selection when agent changes (available rooms may differ)
   useEffect(() => {
     setForm(prev => ({ ...prev, roomId: "", carParkSelections: [] }));
