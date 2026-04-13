@@ -465,14 +465,15 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   };
 
   const copyRoomSummary = () => {
-    const header = "Code | Title | Rental | Status | Pax | Gender | Nationality";
-    const rows = unitRooms.map(r => {
+    const occupiedRooms = unitRooms.filter(r => r.status === "Occupied" && (r.pax_staying || 0) > 0);
+    if (occupiedRooms.length === 0) { toast.info("No occupied rooms to copy"); return; }
+    const rows = occupiedRooms.map(r => {
       const housemates = Array.isArray(r.housemates) ? r.housemates : [];
       const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "—";
       const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
-      return `${r.room.replace(/^Room\s+/i, "")} | ${(r as any).room_title || "—"} | RM${r.rent} | ${r.status} | ${r.pax_staying || 0} | ${genders} | ${nats}`;
+      return `${r.pax_staying || 0} pax · ${genders} · ${nats}`;
     });
-    copyToClipboard([header, ...rows].join("\n"), "Room summary");
+    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Housemate details");
   };
 
   const copyCostBreakdown = () => {
@@ -491,34 +492,24 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     copyToClipboard(lines.join("\n"), "Cost breakdown");
   };
 
-  const CopyBtn = ({ onClick, tooltip }: { onClick: () => void; tooltip: string }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          onClick={(e) => { e.stopPropagation(); onClick(); }}
-        >
-          <Copy className="h-3.5 w-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+  const TextCopyBtn = ({ onClick, label }: { onClick: () => void; label: string }) => (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+    >
+      <Copy className="h-3 w-3" /> {label}
+    </button>
   );
 
-  const LinkBtn = ({ url, tooltip }: { url: string; tooltip: string }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
-        >
-          <Link2 className="h-3.5 w-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+  const TextLinkBtn = ({ url, label }: { url: string; label: string }) => (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+      onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
+    >
+      <Link2 className="h-3 w-3" /> {label}
+    </button>
   );
 
   const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
@@ -562,8 +553,8 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
-              <CopyBtn onClick={copyBuildingDetails} tooltip="Copy Building Details" />
-              <LinkBtn url={`${baseShareUrl}?section=condo`} tooltip="Copy Common Area Link" />
+              <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
+              <TextLinkBtn url={`${baseShareUrl}?section=condo`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -598,8 +589,8 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
-              <CopyBtn onClick={copyUnitDetails} tooltip="Copy Unit Details" />
-              <LinkBtn url={`${baseShareUrl}?section=unit`} tooltip="Copy Unit Link" />
+              <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
+              <TextLinkBtn url={`${baseShareUrl}?section=unit`} label="Copy Link" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -627,8 +618,8 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
                 <span className="text-xs text-muted-foreground">— {unitRooms.length} rooms</span>
               </div>
               <div className="flex items-center gap-1 mr-2">
-                <CopyBtn onClick={copyRoomSummary} tooltip="Copy Housemate Details" />
-                <LinkBtn url={`${baseShareUrl}?section=room`} tooltip="Copy Room Photos Link" />
+                <TextCopyBtn onClick={copyRoomSummary} label="Copy Housemates" />
+                <TextLinkBtn url={`${baseShareUrl}?section=room`} label="Copy Link" />
               </div>
             </AccordionTrigger>
             <AccordionContent>
@@ -715,7 +706,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       <section className="border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Move-In Cost Calculator</h3>
-          {calcRoom && <CopyBtn onClick={copyCostBreakdown} tooltip="Copy Cost Breakdown" />}
+          {calcRoom && <TextCopyBtn onClick={copyCostBreakdown} label="Copy Cost" />}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
