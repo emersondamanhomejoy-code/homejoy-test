@@ -1480,6 +1480,9 @@ export function AdminContent({ tab }: AdminContentProps) {
       {/* BOOKINGS TAB */}
       {tab === "bookings" && <BookingsContent />}
 
+      {/* MOVE IN TAB */}
+      {tab === "movein" && <MoveInPage />}
+
       {/* CLAIMS TAB */}
       {tab === "claims" && (() => {
         const pendingClaims = allClaims.filter(c => c.status === "pending");
