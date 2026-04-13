@@ -707,22 +707,22 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className={labelClass}>Room</label>
-            <select className={inputClass} value={calcRoomId} onChange={e => setCalcRoomId(e.target.value)}>
+            <select className={`${inputClass} w-full`} value={calcRoomId} onChange={e => setCalcRoomId(e.target.value)}>
               <option value="">Select room</option>
               {unitRooms.map(r => (
                 <option key={r.id} value={r.id}>{r.room.replace(/^Room\s+/i, "")} — RM{r.rent}</option>
               ))}
             </select>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className={labelClass}>Pax</label>
-            <input type="number" min="1" className={inputClass} value={calcPax} onChange={e => setCalcPax(e.target.value)} />
+            <input type="number" min="1" className={`${inputClass} w-full`} value={calcPax} onChange={e => setCalcPax(e.target.value)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className={labelClass}>Carparks</label>
-            <input type="number" min="0" className={inputClass} value={calcCarparks} onChange={e => setCalcCarparks(e.target.value)} />
+            <input type="number" min="0" className={`${inputClass} w-full`} value={calcCarparks} onChange={e => setCalcCarparks(e.target.value)} />
           </div>
         </div>
 
