@@ -28,8 +28,7 @@ export function UnitsRoomsContent() {
   const deleteUnit = useDeleteUnit();
 
   const [search, setSearch] = useState("");
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
+  const [selectedBuilding, setSelectedBuilding] = useState("all");
   const [selectedUnitType, setSelectedUnitType] = useState<string>("all");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(0);
@@ -39,6 +38,17 @@ export function UnitsRoomsContent() {
   const [addUnitOpen, setAddUnitOpen] = useState(false);
   const [editUnitId, setEditUnitId] = useState<string | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
+
+  // Advanced filters
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState("all");
+  const [internalOnly, setInternalOnly] = useState("");
+  const [hasRemainingRooms, setHasRemainingRooms] = useState("");
+  const [hasRemainingCarparks, setHasRemainingCarparks] = useState("");
+  const [maxOccupantsMin, setMaxOccupantsMin] = useState("");
+  const [maxOccupantsMax, setMaxOccupantsMax] = useState("");
+  const [remainingPaxMin, setRemainingPaxMin] = useState("");
+  const [remainingPaxMax, setRemainingPaxMax] = useState("");
 
   const locations = useMemo(() => {
     const set = new Set(units.map(u => u.location).filter(Boolean));
