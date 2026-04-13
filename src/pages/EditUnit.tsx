@@ -648,6 +648,12 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                             )}
                             {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Only &quot;Available Soon&quot; transition allowed here. Full release via Move Out workflow.</p>}
                           </div>
+                          {rc.status === "Available Soon" && (
+                            <div>
+                              <label className="text-xs text-muted-foreground">Available Date *</label>
+                              <input className={`${inputClass} w-full`} type="date" value={rc.available_date || ""} onChange={e => upCP("available_date", e.target.value)} />
+                            </div>
+                          )}
                           <div>
                             <label className="text-xs text-muted-foreground">Remark</label>
                             <input className={`${inputClass} w-full`} placeholder="Notes…" value={(rc as any).internal_remark || ""} onChange={e => upCP("internal_remark", e.target.value)} />
