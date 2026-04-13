@@ -165,11 +165,33 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
       />
 
       {/* Filters */}
-      <StandardFilterBar search={search} onSearchChange={setSearch} placeholder="Search buildings...">
+      <StandardFilterBar search={search} onSearchChange={setSearch} placeholder="Search buildings..." hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}>
         <select className={`${inputClass}`} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
           <option value="">All Locations</option>
           {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
+        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm">
+          {showAdvanced ? "Hide" : "Show"} Advanced Filters
+        </Button>
+        {showAdvanced && (
+          <>
+            <select className={`${inputClass}`} value={hasAvailableUnits} onChange={e => setHasAvailableUnits(e.target.value)}>
+              <option value="">Has Available Units</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            <select className={`${inputClass}`} value={hasAvailableRooms} onChange={e => setHasAvailableRooms(e.target.value)}>
+              <option value="">Has Available Rooms</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            <select className={`${inputClass}`} value={hasAvailableCarparks} onChange={e => setHasAvailableCarparks(e.target.value)}>
+              <option value="">Has Available Carparks</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </>
+        )}
       </StandardFilterBar>
 
       {/* Table */}
