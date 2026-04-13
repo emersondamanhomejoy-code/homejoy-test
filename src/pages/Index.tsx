@@ -20,6 +20,15 @@ import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
 import { Condo } from "@/hooks/useCondos";
 
+function ComingSoonPlaceholder({ title }: { title: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="text-4xl mb-4">🚧</div>
+      <h2 className="text-xl font-bold text-foreground">{title}</h2>
+      <p className="text-muted-foreground mt-2">This feature is coming soon.</p>
+    </div>
+  );
+}
 
 const rankingData = {
   internal: [
@@ -470,7 +479,7 @@ export default function Index() {
   // ─── ROOM DETAIL ───
   if (page === "detail" && selectedRoom) {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => selectedBuilding ? setPage("building") : setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -592,7 +601,7 @@ export default function Index() {
     const set = (field: string, value: string) => setBookingForm({ ...f, [field]: value });
 
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => setPage("detail")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Room Detail</button>
@@ -897,7 +906,7 @@ export default function Index() {
   // ─── BOOKING SUCCESS ───
   if (page === "booking-success" && bookingSubmitted) {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-3xl mx-auto bg-card rounded-lg shadow-lg p-8 space-y-6 animate-fade-in">
           <div className="text-center">
@@ -929,10 +938,9 @@ export default function Index() {
   // ─── MY BOOKINGS PAGE ───
   if (page === "myBookings") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <AgentBookingsContent onEditBooking={(booking) => {
               // TODO: Pre-fill booking form and navigate to edit mode
               alert("Edit & Resubmit feature coming soon. Booking ID: " + booking.id.slice(0, 8));
@@ -946,10 +954,9 @@ export default function Index() {
   // ─── MY DEALS PAGE ───
   if (page === "myDeals") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <MyDealsContent />
           </div>
         </div>
@@ -960,10 +967,9 @@ export default function Index() {
   // ─── MY MOVE-INS PAGE ───
   if (page === "myMoveIns") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <AgentMoveInsContent />
           </div>
         </div>
@@ -974,10 +980,9 @@ export default function Index() {
   // ─── MY ACCOUNT PAGE ───
   if (page === "myAccount") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
-            <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
             <div className="text-xl font-bold">My Account</div>
             <div className="bg-card rounded-lg border p-6 space-y-3">
               <div className="text-sm"><span className="text-muted-foreground">Email:</span> <span className="font-medium">{user?.email}</span></div>
@@ -989,7 +994,32 @@ export default function Index() {
     );
   }
 
-  // ─── DASHBOARD ───
+  // ─── EARNINGS PAGE ───
+  if (page === "earnings") {
+    return (
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <ComingSoonPlaceholder title="Earnings" />
+          </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
+  // ─── ANNOUNCEMENTS PAGE (AGENT) ───
+  if (page === "announcements") {
+    return (
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <ComingSoonPlaceholder title="Announcements" />
+          </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
   const availableCarParksCount = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available").length;
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1002,7 +1032,7 @@ export default function Index() {
     const buildingCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === selectedBuilding).length;
 
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 overflow-auto text-foreground">
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
           <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -1098,6 +1128,9 @@ export default function Index() {
              adminTab === "tenants" ? <TenantsContent /> :
              adminTab === "movein" ? <MoveInPage /> :
              adminTab === "bookings" ? <BookingsContent /> :
+             adminTab === "moveout" ? <ComingSoonPlaceholder title="Move Out" /> :
+             adminTab === "payouts" ? <ComingSoonPlaceholder title="Payouts" /> :
+             adminTab === "announcements" ? <ComingSoonPlaceholder title="Announcements" /> :
              <AdminContent tab={adminTab as any} />}
           </div>
         )}

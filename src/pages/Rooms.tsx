@@ -139,7 +139,7 @@ export default function Rooms() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AgentSidebar />
+        <AgentSidebar onTabChange={(tab) => navigate("/admin", { state: { page: tab } })} />
         <div className="flex-1 flex flex-col">
           {/* Announcement Banner */}
           <div className="bg-gradient-to-r from-primary/5 to-accent/5 px-8 py-3 border-b border-border">
