@@ -278,8 +278,8 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
     setSubmitting(true);
     try {
-      const passportPath = linkedTenantDocs.passport;
-      const offerPath = linkedTenantDocs.offerLetter;
+      const passportPath = linkedTenantDocs.passport || (uploadedFiles.passport ? await uploadFile(uploadedFiles.passport, "passport") : "");
+      const offerPath = linkedTenantDocs.offerLetter || (uploadedFiles.offerLetter ? await uploadFile(uploadedFiles.offerLetter, "offer-letter") : "");
       const receiptPath = uploadedFiles.bookingFeeReceipt ? await uploadFile(uploadedFiles.bookingFeeReceipt, "booking-fee-receipt") : "";
 
       const moveInCost = {
