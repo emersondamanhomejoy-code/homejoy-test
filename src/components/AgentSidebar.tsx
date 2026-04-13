@@ -1,4 +1,7 @@
-import { LayoutDashboard, Home, LogOut, PanelLeftClose, PanelLeft, ClipboardList, LogIn, Trophy, User } from "lucide-react";
+import {
+  LayoutDashboard, Home, LogOut, PanelLeftClose, PanelLeft,
+  ClipboardList, LogIn, Trophy, User, Wallet, Megaphone
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,16 +17,30 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Rooms", url: "/rooms", icon: Home },
-  { title: "Bookings", url: "/admin", icon: ClipboardList, state: { page: "myBookings" } },
-  { title: "Move-in", url: "/admin", icon: LogIn, state: { page: "myMoveIns" } },
-  { title: "My Deals", url: "/admin", icon: Trophy, state: { page: "myDeals" } },
-  { title: "My Account", url: "/admin", icon: User, state: { page: "myAccount" } },
+interface AgentMenuItem {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  url?: string;
+  tab?: string;
+}
+
+const menuItems: AgentMenuItem[] = [
+  { title: "Dashboard", icon: LayoutDashboard, url: "/" },
+  { title: "Available Rooms", icon: Home, url: "/rooms" },
+  { title: "My Bookings", icon: ClipboardList, tab: "myBookings" },
+  { title: "Move In", icon: LogIn, tab: "myMoveIns" },
+  { title: "My Deals", icon: Trophy, tab: "myDeals" },
+  { title: "Earnings", icon: Wallet, tab: "earnings" },
+  { title: "Announcements", icon: Megaphone, tab: "announcements" },
+  { title: "Profile", icon: User, tab: "myAccount" },
 ];
 
-export function AgentSidebar() {
+interface AgentSidebarProps {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export function AgentSidebar({ activeTab, onTabChange }: AgentSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
@@ -57,16 +74,7 @@ export function AgentSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    {(item as any).state ? (
-                      <a
-                        className="hover:bg-muted/50 flex items-center cursor-pointer"
-                        onClick={() => navigate(item.url, { state: (item as any).state })}
-                        role="button"
-                      >
-                        <item.icon className="h-4 w-4 mr-2" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </a>
-                    ) : (
+                    {item.url ? (
                       <NavLink
                         to={item.url}
                         end={item.url === "/"}
@@ -76,6 +84,18 @@ export function AgentSidebar() {
                         <item.icon className="h-4 w-4 mr-2" />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
+                    ) : (
+                      <button
+                        onClick={() => onTabChange?.(item.tab!)}
+                        className={`flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm transition-colors ${
+                          activeTab === item.tab
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "hover:bg-muted/50 text-foreground"
+                        }`}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </button>
                     )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>

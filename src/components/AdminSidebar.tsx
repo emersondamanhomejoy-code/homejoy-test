@@ -1,7 +1,8 @@
 import {
   LayoutDashboard, Users, FileText, LogOut,
-  PanelLeftClose, PanelLeft, Sparkles, Building2, ClipboardList,
-  MapPin, Building, BedDouble, UserCheck, LogIn
+  PanelLeftClose, PanelLeft, Sparkles,
+  MapPin, Building, Building2, BedDouble, UserCheck,
+  ClipboardList, LogIn, LogOut as LogOutIcon, Wallet, Megaphone
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -23,13 +24,16 @@ const adminMenuItems = [
   { title: "Dashboard", icon: LayoutDashboard, tab: "dashboard" },
   { title: "Locations", icon: MapPin, tab: "locations" },
   { title: "Buildings", icon: Building, tab: "condos" },
-  { title: "Units & Rooms", icon: Building2, tab: "units" },
+  { title: "Units", icon: Building2, tab: "units" },
   { title: "Rooms", icon: BedDouble, tab: "rooms" },
   { title: "Tenants", icon: UserCheck, tab: "tenants" },
   { title: "Bookings", icon: ClipboardList, tab: "bookings" },
   { title: "Move In", icon: LogIn, tab: "movein" },
+  { title: "Move Out", icon: LogOutIcon, tab: "moveout" },
+  { title: "Payouts", icon: Wallet, tab: "payouts" },
   { title: "Users", icon: Users, tab: "users" },
-  { title: "Activity Log", icon: FileText, tab: "activity", bossManagerOnly: true }, // superAdminOnly
+  { title: "Announcements", icon: Megaphone, tab: "announcements" },
+  { title: "Activity Log", icon: FileText, tab: "activity", superAdminOnly: true },
 ];
 
 interface AdminSidebarProps {
@@ -42,7 +46,7 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
   const collapsed = state === "collapsed";
   const { signOut, user, role } = useAuth();
   const navigate = useNavigate();
-  const canViewActivityLog = role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
 
   const handleLogout = async () => {
     await signOut();
@@ -50,7 +54,7 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
   };
 
   const visibleItems = adminMenuItems.filter(
-    (item) => !item.bossManagerOnly || canViewActivityLog
+    (item) => !item.superAdminOnly || isSuperAdmin
   );
 
   return (
@@ -122,7 +126,7 @@ export function AdminSidebar({ activeTab = "dashboard", onTabChange }: AdminSide
               {(role || "A")[0].toUpperCase()}
             </div>
             <div>
-              <div className="text-sm font-medium text-foreground capitalize">{role}</div>
+              <div className="text-sm font-medium text-foreground capitalize">{role?.replace("_", " ")}</div>
               <div className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</div>
             </div>
           </div>
