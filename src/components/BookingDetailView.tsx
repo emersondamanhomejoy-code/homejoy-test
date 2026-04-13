@@ -73,14 +73,17 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       id: b.id, status: "approved", reviewed_by: user.id,
       room_id: b.room_id, tenant_name: b.tenant_name,
       tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
+      tenant_nationality: b.tenant_nationality,
       pax_staying: b.pax_staying, carParkIds, history,
+      booking_type: (b.booking_type || "room_only") as BookingType,
+      bookingData: b,
     });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "approve_booking", entity_type: "booking", entity_id: b.id,
       details: { tenant_name: b.tenant_name, room: info ? `${info.building} ${info.unit} ${info.room}` : "" },
     });
-    toast.success("Booking approved");
+    toast.success("Booking approved — Move-in record created");
     setShowApproveDialog(false);
     onOpenChange(false);
   };
