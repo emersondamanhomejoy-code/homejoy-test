@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface CommissionTier { min: number; max: number | null; amount?: number; percentage?: number; }
@@ -20,7 +20,9 @@ interface CommissionConfig { percentage?: number; tiers?: CommissionTier[]; }
 interface UserWithRoles {
   id: string; email: string; created_at: string; confirmed: boolean;
   roles: string[]; commission_type: string; commission_config: CommissionConfig | null;
-  name: string; phone: string; address: string;
+  name: string; display_name: string; phone: string; address: string;
+  profile_picture_url: string; ic_document: string;
+  emergency_contact_name: string; emergency_contact_phone: string;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
@@ -48,11 +50,22 @@ export function UsersPage() {
   const [saving, setSaving] = useState(false);
 
   const [newAgent, setNewAgent] = useState({
-    email: "", name: "", phone: "", address: "", role: "agent",
-    commission_type: "internal_basic", commission_config: defaultConfigs.internal_basic as CommissionConfig,
+    email: "", name: "", display_name: "", phone: "", address: "",
+    emergency_contact_name: "", emergency_contact_phone: "",
+    role: "agent", commission_type: "internal_basic",
+    commission_config: defaultConfigs.internal_basic as CommissionConfig,
   });
 
-  const [editForm, setEditForm] = useState({ name: "", phone: "", address: "", commission_type: "", commission_config: null as CommissionConfig | null });
+  const [editForm, setEditForm] = useState({
+    name: "", display_name: "", phone: "", address: "",
+    emergency_contact_name: "", emergency_contact_phone: "",
+    ic_document: "", commission_type: "", commission_config: null as CommissionConfig | null,
+  });
+
+  const profilePicRef = useRef<HTMLInputElement>(null);
+  const icUploadRef = useRef<HTMLInputElement>(null);
+  const [uploadingPic, setUploadingPic] = useState(false);
+  const [uploadingIc, setUploadingIc] = useState(false);
 
   const fetchUsers = async () => {
     setFetching(true);
@@ -77,7 +90,7 @@ export function UsersPage() {
     if (roleFilter !== "all") list = list.filter(u => u.roles.includes(roleFilter));
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s));
+      list = list.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.display_name || "").toLowerCase().includes(s));
     }
     return sortData(list, (u: UserWithRoles, key: string) => {
       const map: Record<string, any> = { name: u.name, email: u.email, role: u.roles.join(","), commission_type: u.commission_type, created_at: u.created_at };
@@ -101,13 +114,60 @@ export function UsersPage() {
       if (res.data?.error) throw new Error(res.data.error);
       await logActivity("create_user", "user", "", { email: newAgent.email, name: newAgent.name });
       toast.success("Invite sent!");
-      setNewAgent({ email: "", name: "", phone: "", address: "", role: "agent", commission_type: "internal_basic", commission_config: defaultConfigs.internal_basic });
+      setNewAgent({ email: "", name: "", display_name: "", phone: "", address: "", emergency_contact_name: "", emergency_contact_phone: "", role: "agent", commission_type: "internal_basic", commission_config: defaultConfigs.internal_basic });
       setShowAddUser(false);
       await fetchUsers();
     } catch (e: any) {
       toast.error(e.message || "Failed to invite user");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadProfilePicture = async (file: File, userId: string) => {
+    setUploadingPic(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/profile.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("booking-docs").upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("booking-docs").getPublicUrl(path);
+      // Update profile
+      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.from("profiles").update({ profile_picture_url: publicUrl }).eq("user_id", userId);
+      toast.success("Profile picture updated");
+      await fetchUsers();
+      if (editUser) setEditUser({ ...editUser, profile_picture_url: publicUrl });
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploadingPic(false);
+    }
+  };
+
+  const uploadIcDocument = async (file: File, userId: string) => {
+    setUploadingIc(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/ic.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("booking-docs").upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("booking-docs").getPublicUrl(path);
+      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.functions.invoke("list-users", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { action: "update_profile", user_id: userId, ic_document: publicUrl },
+      });
+      toast.success("IC document uploaded");
+      await fetchUsers();
+      if (editUser) {
+        setEditUser({ ...editUser, ic_document: publicUrl });
+        setEditForm(f => ({ ...f, ic_document: publicUrl }));
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploadingIc(false);
     }
   };
 
@@ -118,9 +178,15 @@ export function UsersPage() {
       const { data: { session } } = await supabase.auth.getSession();
       await supabase.functions.invoke("list-users", {
         headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: { action: "update_profile", user_id: editUser.id, name: editForm.name, phone: editForm.phone, address: editForm.address },
+        body: {
+          action: "update_profile", user_id: editUser.id,
+          name: editForm.name, display_name: editForm.display_name,
+          phone: editForm.phone, address: editForm.address,
+          emergency_contact_name: editForm.emergency_contact_name,
+          emergency_contact_phone: editForm.emergency_contact_phone,
+          ic_document: editForm.ic_document,
+        },
       });
-      // Update commission if agent
       if (editUser.roles.includes("agent") && editForm.commission_type) {
         await supabase.from("user_roles")
           .update({ commission_type: editForm.commission_type, commission_config: editForm.commission_config as unknown as import("@/integrations/supabase/types").Json })
@@ -157,7 +223,13 @@ export function UsersPage() {
 
   const openEdit = (u: UserWithRoles) => {
     setEditUser(u);
-    setEditForm({ name: u.name, phone: u.phone, address: u.address, commission_type: u.commission_type, commission_config: u.commission_config ? { ...u.commission_config, tiers: u.commission_config.tiers?.map(t => ({ ...t })) } : defaultConfigs[u.commission_type] });
+    setEditForm({
+      name: u.name, display_name: u.display_name || "", phone: u.phone, address: u.address,
+      emergency_contact_name: u.emergency_contact_name || "", emergency_contact_phone: u.emergency_contact_phone || "",
+      ic_document: u.ic_document || "",
+      commission_type: u.commission_type,
+      commission_config: u.commission_config ? { ...u.commission_config, tiers: u.commission_config.tiers?.map(t => ({ ...t })) } : defaultConfigs[u.commission_type],
+    });
   };
 
   const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full text-sm";
@@ -234,8 +306,45 @@ export function UsersPage() {
     </div>
   );
 
+  const avatarDisplay = (u: UserWithRoles, size = "w-8 h-8", textSize = "text-sm") => (
+    u.profile_picture_url ? (
+      <img src={u.profile_picture_url} alt={u.name} className={`${size} rounded-full object-cover mx-auto`} />
+    ) : (
+      <div className={`${size} bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold ${textSize} mx-auto`}>
+        {(u.name || u.email)[0]?.toUpperCase()}
+      </div>
+    )
+  );
+
+  const renderCommissionTiersSummary = (u: UserWithRoles) => {
+    const cfg = u.commission_config || defaultConfigs[u.commission_type] || defaultConfigs.internal_basic;
+    if (u.commission_type === "external") return <span>{cfg.percentage ?? 100}% of monthly rent</span>;
+    if (!cfg.tiers?.length) return <span>—</span>;
+    return (
+      <div className="space-y-0.5">
+        {cfg.tiers.map((t, i) => (
+          <div key={i} className="text-xs">
+            {t.min}–{t.max ?? "∞"} rooms → {u.commission_type === "internal_basic" ? `RM${t.amount}` : `${t.percentage}%`}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
+      {/* Hidden file inputs */}
+      <input ref={profilePicRef} type="file" accept="image/*" className="hidden" onChange={e => {
+        const file = e.target.files?.[0];
+        if (file && editUser) uploadProfilePicture(file, editUser.id);
+        e.target.value = "";
+      }} />
+      <input ref={icUploadRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+        const file = e.target.files?.[0];
+        if (file && editUser) uploadIcDocument(file, editUser.id);
+        e.target.value = "";
+      }} />
+
       {/* Add User Modal */}
       <Dialog open={showAddUser} onOpenChange={(open) => { if (!open && !saving) setShowAddUser(false); }}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
@@ -243,23 +352,47 @@ export function UsersPage() {
           <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
             <div className="space-y-5 py-4">
               {sectionCard("👤", "User Details", (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-xl">
+                      {(newAgent.name || newAgent.email || "?")[0]?.toUpperCase()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Profile picture can be uploaded after account creation</p>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={ic} value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
+                    <div className="space-y-1"><label className={lbl}>Display Name</label><input className={ic} placeholder="Optional" value={newAgent.display_name} onChange={e => setNewAgent({ ...newAgent, display_name: e.target.value })} /></div>
+                    <div className="space-y-1"><label className={lbl}>Email *</label><input className={ic} type="email" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                    <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={ic} value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
+                    <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={ic} value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
+                  </div>
+                </div>
+              ))}
+
+              {sectionCard("🚨", "Emergency Contact", (
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name</label><input className={ic} value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
-                  <div className="space-y-1"><label className={lbl}>Email *</label><input className={ic} type="email" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
-                  <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
-                  <div className="space-y-1"><label className={lbl}>Address</label><input className={ic} value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
+                  <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={ic} value={newAgent.emergency_contact_name} onChange={e => setNewAgent({ ...newAgent, emergency_contact_name: e.target.value })} /></div>
+                  <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={ic} value={newAgent.emergency_contact_phone} onChange={e => setNewAgent({ ...newAgent, emergency_contact_phone: e.target.value })} /></div>
+                </div>
+              ))}
+
+              {sectionCard("🔑", "Role & Access", (
+                <div className="space-y-3">
                   <div className="space-y-1">
                     <label className={lbl}>Role *</label>
                     <select className={ic} value={newAgent.role} onChange={e => setNewAgent({ ...newAgent, role: e.target.value })}>
                       {canCreateRoles.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                     </select>
                   </div>
+                  <p className="text-xs text-muted-foreground">IC document can be uploaded after account creation</p>
                 </div>
               ))}
+
               {newAgent.role === "agent" && sectionCard("💰", "Commission", (
                 renderCommissionEditor(newAgent.commission_type, newAgent.commission_config, (type, config) => setNewAgent({ ...newAgent, commission_type: type, commission_config: config }))
               ))}
-              <p className="text-xs text-muted-foreground">User will receive an email to set up their own password.</p>
+
+              <p className="text-xs text-muted-foreground">User will receive an email invitation link to set up their password.</p>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddUser(false)} disabled={saving}>Cancel</Button>
                 <Button onClick={createUser} disabled={saving}>{saving ? "Sending..." : "Send Invite"}</Button>
@@ -278,7 +411,15 @@ export function UsersPage() {
               <div className="space-y-5 py-4">
                 {sectionCard("👤", "Profile", (
                   <div>
-                    {infoRow("Name", viewUser.name)}
+                    <div className="flex items-center gap-4 mb-4">
+                      {avatarDisplay(viewUser, "w-20 h-20", "text-2xl")}
+                      <div>
+                        <div className="font-bold text-lg">{viewUser.name || "—"}</div>
+                        {viewUser.display_name && <div className="text-sm text-muted-foreground">Display: {viewUser.display_name}</div>}
+                      </div>
+                    </div>
+                    {infoRow("Full Name", viewUser.name)}
+                    {infoRow("Display Name", viewUser.display_name)}
                     {infoRow("Email", viewUser.email)}
                     {infoRow("Phone", viewUser.phone)}
                     {infoRow("Address", viewUser.address)}
@@ -287,8 +428,27 @@ export function UsersPage() {
                     {infoRow("Joined", format(new Date(viewUser.created_at), "dd MMM yyyy"))}
                   </div>
                 ))}
+
+                {sectionCard("🚨", "Emergency Contact", (
+                  <div>
+                    {infoRow("Name", viewUser.emergency_contact_name)}
+                    {infoRow("Phone", viewUser.emergency_contact_phone)}
+                  </div>
+                ))}
+
+                {sectionCard("📄", "Documents", (
+                  <div>
+                    {infoRow("IC Document", viewUser.ic_document ? (
+                      <a href={viewUser.ic_document} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View IC</a>
+                    ) : "Not uploaded")}
+                  </div>
+                ))}
+
                 {viewUser.roles.includes("agent") && sectionCard("💰", "Commission", (
-                  <div>{infoRow("Type", commSummary(viewUser))}</div>
+                  <div>
+                    {infoRow("Type", commSummary(viewUser))}
+                    <div className="mt-2">{renderCommissionTiersSummary(viewUser)}</div>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -304,15 +464,60 @@ export function UsersPage() {
             <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
               <div className="space-y-5 py-4">
                 {sectionCard("👤", "Profile", (
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={ic} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={ic} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
-                    <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={ic} value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      {avatarDisplay(editUser, "w-20 h-20", "text-2xl")}
+                      <div className="space-y-1">
+                        <Button variant="outline" size="sm" disabled={uploadingPic} onClick={() => profilePicRef.current?.click()}>
+                          <Upload className="h-3 w-3 mr-1" />{uploadingPic ? "Uploading..." : "Change Photo"}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">JPG, PNG up to 5MB</p>
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="space-y-1"><label className={lbl}>Full Name</label><input className={ic} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
+                      <div className="space-y-1"><label className={lbl}>Display Name</label><input className={ic} placeholder="Optional" value={editForm.display_name} onChange={e => setEditForm({ ...editForm, display_name: e.target.value })} /></div>
+                      <div className="space-y-1"><label className={lbl}>Email</label><input className={ic} value={editUser.email} disabled /></div>
+                      <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={ic} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+                      <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={ic} value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
+                    </div>
                   </div>
                 ))}
-                {editUser.roles.includes("agent") && sectionCard("💰", "Commission", (
-                  renderCommissionEditor(editForm.commission_type, editForm.commission_config || defaultConfigs.internal_basic, (type, config) => setEditForm({ ...editForm, commission_type: type, commission_config: config }))
+
+                {sectionCard("🚨", "Emergency Contact", (
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={ic} value={editForm.emergency_contact_name} onChange={e => setEditForm({ ...editForm, emergency_contact_name: e.target.value })} /></div>
+                    <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={ic} value={editForm.emergency_contact_phone} onChange={e => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })} /></div>
+                  </div>
                 ))}
+
+                {sectionCard("📄", "Documents", (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className={lbl}>IC Document</label>
+                      {editForm.ic_document ? (
+                        <div className="flex items-center gap-2">
+                          <a href={editForm.ic_document} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View current IC</a>
+                          <Button variant="outline" size="sm" disabled={uploadingIc} onClick={() => icUploadRef.current?.click()}>
+                            <Upload className="h-3 w-3 mr-1" />{uploadingIc ? "Uploading..." : "Replace"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled={uploadingIc} onClick={() => icUploadRef.current?.click()}>
+                          <Upload className="h-3 w-3 mr-1" />{uploadingIc ? "Uploading..." : "Upload IC"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {editUser.roles.includes("agent") && sectionCard("💰", "Commission", (
+                  <>
+                    {renderCommissionEditor(editForm.commission_type, editForm.commission_config || defaultConfigs.internal_basic, (type, config) => setEditForm({ ...editForm, commission_type: type, commission_config: config }))}
+                    <p className="text-xs text-muted-foreground mt-2">⚠️ Changes only apply to future claims. Approved historical commissions are not affected.</p>
+                  </>
+                ))}
+
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditUser(null)} disabled={saving}>Cancel</Button>
                   <Button onClick={saveProfile} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
@@ -363,8 +568,9 @@ export function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Avatar</TableHead>
-                <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Name</SortableTableHead>
+                <TableHead>Photo</TableHead>
+                <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Display Name</SortableTableHead>
+                <TableHead>Full Name</TableHead>
                 <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
                 <TableHead>Phone</TableHead>
                 <SortableTableHead sortKey="role" currentSort={sort} onSort={handleSort}>Role</SortableTableHead>
@@ -375,15 +581,12 @@ export function UsersPage() {
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-muted-foreground py-8 text-center">No users found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-muted-foreground py-8 text-center">No users found</TableCell></TableRow>
               ) : paged.map(u => (
                 <TableRow key={u.id}>
-                  <TableCell className="text-center">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm mx-auto">
-                      {(u.name || u.email)[0]?.toUpperCase()}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{u.name || "—"}</TableCell>
+                  <TableCell className="text-center">{avatarDisplay(u)}</TableCell>
+                  <TableCell className="font-medium">{u.display_name || u.name || "—"}</TableCell>
+                  <TableCell className="text-sm">{u.name || "—"}</TableCell>
                   <TableCell className="text-sm">{u.email}</TableCell>
                   <TableCell className="text-sm">{u.phone || "—"}</TableCell>
                   <TableCell>
