@@ -1098,6 +1098,9 @@ export default function Index() {
              adminTab === "tenants" ? <TenantsContent /> :
              adminTab === "movein" ? <MoveInPage /> :
              adminTab === "bookings" ? <BookingsContent /> :
+             adminTab === "moveout" ? <ComingSoonPlaceholder title="Move Out" /> :
+             adminTab === "payouts" ? <ComingSoonPlaceholder title="Payouts" /> :
+             adminTab === "announcements" ? <ComingSoonPlaceholder title="Announcements" /> :
              <AdminContent tab={adminTab as any} />}
           </div>
         )}
