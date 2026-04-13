@@ -78,9 +78,9 @@ export function StandardModal({
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4">{children}</div>
-          </ScrollArea>
+          </div>
 
           {/* Sticky footer */}
           <div className="border-t px-6 py-4 flex items-center justify-between gap-3 shrink-0 bg-background">
