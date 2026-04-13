@@ -553,14 +553,14 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setViewingRoom(null)}>
             <ArrowLeft className="h-4 w-4" /> Back to Unit
           </Button>
-          {!isCarpark && Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
+          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, "Room photos link")}>
-                  <Image className="h-3.5 w-3.5" /> Copy Room Photos Link
+                <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, isCarpark ? "Carpark photos link" : "Room photos link")}>
+                  <Image className="h-3.5 w-3.5" /> Copy {isCarpark ? "Carpark" : "Room"} Photos Link
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Copy link showing only this room's photos</TooltipContent>
+              <TooltipContent>Copy link showing only this {isCarpark ? "carpark's" : "room's"} photos</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -817,6 +817,14 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
           </AccordionTrigger>
           <AccordionContent>
+            {/* Building photos at top */}
+            {condo && Array.isArray(condo.photos) && condo.photos.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-4">
+                {(condo.photos as string[]).map((path: string, i: number) => (
+                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Building ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
               <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>

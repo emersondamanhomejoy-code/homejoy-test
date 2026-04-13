@@ -542,6 +542,40 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                             <Button size="sm" onClick={() => saveInlineRoom(cp.id)}><Check className="h-4 w-4 mr-1" /> Done</Button>
                           </div>
                         </div>
+                        {/* Carpark Photos */}
+                        <div>
+                          <label className="text-xs text-muted-foreground">Photos</label>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {((rc as any).photos || []).map((path: string, pi: number) => (
+                              <div key={pi} className="relative group">
+                                <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Carpark ${pi + 1}`} className="h-16 w-16 object-cover rounded-lg" />
+                                <button onClick={() => upCP("photos", ((rc as any).photos || []).filter((_: any, idx: number) => idx !== pi))}
+                                  className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                              </div>
+                            ))}
+                            {((rc as any).photos || []).length < 10 && (
+                              <label className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                                <span className="text-lg text-muted-foreground">+</span>
+                                <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (!files.length) return;
+                                  const remaining = 10 - ((rc as any).photos || []).length;
+                                  const toUpload = files.slice(0, remaining);
+                                  const newPaths: string[] = [];
+                                  for (const file of toUpload) {
+                                    const ext = file.name.split('.').pop();
+                                    const path = `rooms/${cp.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                                    const { error } = await supabase.storage.from("room-photos").upload(path, file);
+                                    if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
+                                    newPaths.push(path);
+                                  }
+                                  if (newPaths.length > 0) upCP("photos", [...((rc as any).photos || []), ...newPaths]);
+                                  e.target.value = "";
+                                }} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           <div>
                             <label className="text-xs text-muted-foreground">Lot Number</label>
