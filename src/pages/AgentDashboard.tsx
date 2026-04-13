@@ -1,46 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useBookings } from "@/hooks/useBookings";
+import { useMoveIns } from "@/hooks/useMoveIns";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
+import { useState } from "react";
 
-const navigateToOld = (navigate: ReturnType<typeof useNavigate>, page = "dashboard") => {
-  navigate("/admin", { state: { page } });
-};
-
-const pipelineData = {
-  booking: [
-    { label: "Submitted", value: 5, color: "text-blue-500", size: "large" },
-    { label: "Rejected", value: 2, color: "text-destructive", size: "small" },
-  ],
-  movein: [
-    { label: "Pending Move-in", value: 3, color: "text-amber-500", size: "large" },
-    { label: "Pending Review", value: 1, color: "text-amber-500", size: "medium" },
-    { label: "Rejected", value: 0, color: "text-destructive", size: "small" },
-  ],
-  claim: [
-    { label: "Claimable", value: 2, color: "text-teal-500", size: "large" },
-    { label: "Pending Review", value: 1, color: "text-teal-500", size: "medium" },
-    { label: "Rejected", value: 0, color: "text-destructive", size: "small" },
-  ],
-  result: [
-    { label: "My Deals", value: 12, color: "text-emerald-500", size: "large" },
-    { label: "Total Commission", value: "RM 3,400", color: "text-emerald-600", size: "large", highlight: true },
-  ],
-};
-
-const notifications = [
-  { message: "Booking #1023 has been approved", time: "2 minutes ago", type: "success" },
-  { message: "Move-in #887 rejected — reason: incomplete docs", time: "1 hour ago", type: "error" },
-  { message: "Claim #445 approved — RM 200 credited", time: "3 hours ago", type: "success" },
-  { message: "📢 Announcement: New parking policy starts next month", time: "Yesterday", type: "info" },
-];
-
-const dotColor: Record<string, string> = {
-  success: "bg-emerald-400",
-  error: "bg-destructive",
-  info: "bg-primary",
-};
+interface CommissionConfig {
+  percentage?: number;
+  tiers?: { min: number; max: number | null; amount?: number; percentage?: number }[];
+}
 
 function PipelineCard({ label, value, color, size, highlight, onClick }: {
   label: string; value: string | number; color: string; size: string; highlight?: boolean; onClick?: () => void;
@@ -76,6 +47,11 @@ function PipelineCard({ label, value, color, size, highlight, onClick }: {
 export default function AgentDashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const { data: allBookings = [] } = useBookings();
+  const { data: allMoveIns = [] } = useMoveIns();
+
+  const [commissionType, setCommissionType] = useState("internal_basic");
+  const [commissionConfig, setCommissionConfig] = useState<CommissionConfig | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -85,7 +61,63 @@ export default function AgentDashboard() {
     }
   }, [user, role, loading, navigate]);
 
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("commission_type, commission_config").eq("user_id", user.id).eq("role", "agent").single()
+      .then(({ data }) => {
+        if (data?.commission_type) setCommissionType(data.commission_type);
+        if (data?.commission_config) setCommissionConfig(data.commission_config as CommissionConfig);
+      });
+  }, [user]);
+
+  // My bookings
+  const myBookings = useMemo(() => allBookings.filter(b => b.submitted_by === user?.id), [allBookings, user?.id]);
+  const myBookingIds = useMemo(() => new Set(myBookings.map(b => b.id)), [myBookings]);
+
+  // My move-ins (linked to my bookings)
+  const myMoveIns = useMemo(() => allMoveIns.filter(m => m.booking_id && myBookingIds.has(m.booking_id)), [allMoveIns, myBookingIds]);
+
+  // Stats
+  const bookingSubmitted = useMemo(() => myBookings.filter(b => b.status === "pending").length, [myBookings]);
+  const bookingRejected = useMemo(() => myBookings.filter(b => b.status === "rejected").length, [myBookings]);
+  
+  // Pending move-in = approved bookings that don't have a move-in yet
+  const moveInBookingIds = useMemo(() => new Set(myMoveIns.map(m => m.booking_id)), [myMoveIns]);
+  const pendingMoveIn = useMemo(() => myBookings.filter(b => b.status === "approved" && !moveInBookingIds.has(b.id)).length, [myBookings, moveInBookingIds]);
+  
+  const moveInPendingReview = useMemo(() => myMoveIns.filter(m => m.status === "pending_review").length, [myMoveIns]);
+  const moveInRejected = useMemo(() => myMoveIns.filter(m => m.status === "rejected").length, [myMoveIns]);
+  const completedDeals = useMemo(() => myMoveIns.filter(m => m.status === "approved"), [myMoveIns]);
+
+  const calculateCommission = (moveIn: any): number => {
+    const booking = allBookings.find(b => b.id === moveIn.booking_id);
+    if (!booking) return 0;
+    const rent = booking.monthly_salary || 0;
+    const duration = booking.contract_months || 12;
+    const durationMultiplier = duration / 12;
+    const config = commissionConfig;
+    let base = 0;
+    if (commissionType === "external") {
+      base = Math.round(rent * (config?.percentage ?? 100) / 100);
+    } else if (commissionType === "internal_full") {
+      const tiers = config?.tiers || [{ min: 1, max: 300, percentage: 70 }, { min: 301, max: null, percentage: 75 }];
+      const tier = tiers.find(t => completedDeals.length >= t.min && (t.max === null || completedDeals.length <= t.max));
+      base = Math.round(rent * (tier?.percentage ?? 70) / 100);
+    } else {
+      const tiers = config?.tiers || [{ min: 1, max: 5, amount: 200 }, { min: 6, max: 10, amount: 300 }, { min: 11, max: null, amount: 400 }];
+      const tier = tiers.find(t => completedDeals.length >= t.min && (t.max === null || completedDeals.length <= t.max));
+      base = tier?.amount ?? 200;
+    }
+    return Math.round(base * durationMultiplier);
+  };
+
+  const totalCommission = useMemo(() => {
+    return completedDeals.reduce((sum, d) => sum + calculateCommission(d), 0);
+  }, [completedDeals, commissionType, commissionConfig, allBookings]);
+
   if (loading || !user) return null;
+
+  const navigateToPage = (page: string) => navigate("/admin", { state: { page } });
 
   return (
     <SidebarProvider>
@@ -110,39 +142,39 @@ export default function AgentDashboard() {
               </div>
 
               {/* Pipeline Grid */}
-              <div className="grid grid-cols-4 gap-4">
-                {Object.entries(pipelineData).map(([key, cards]) => (
-                  <div key={key} className="space-y-3">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                      {key === "movein" ? "Move-in" : key.charAt(0).toUpperCase() + key.slice(1)}
-                    </div>
-                    {cards.map((card, i) => (
-                      <PipelineCard key={i} {...card} onClick={
-                        key === "claim" ? () => navigateToOld(navigate, "claims") :
-                        key === "booking" ? () => navigateToOld(navigate) :
-                        undefined
-                      } />
-                    ))}
-                  </div>
-                ))}
+              <div className="space-y-4">
+                {/* Top row */}
+                <div className="grid grid-cols-4 gap-4">
+                  <PipelineCard label="Booking Submitted" value={bookingSubmitted} color="text-blue-500" size="large" onClick={() => navigateToPage("myBookings")} />
+                  <PipelineCard label="Pending Move-in" value={pendingMoveIn} color="text-amber-500" size="large" onClick={() => navigateToPage("myMoveIns")} />
+                  <PipelineCard label="My Deals" value={completedDeals.length} color="text-emerald-500" size="large" onClick={() => navigateToPage("myDeals")} />
+                  <PipelineCard label="Total Commission" value={`RM ${totalCommission.toLocaleString()}`} color="text-emerald-600" size="large" highlight onClick={() => navigateToPage("myDeals")} />
+                </div>
+
+                {/* Second row */}
+                <div className="grid grid-cols-4 gap-4">
+                  <PipelineCard label="Booking Rejected" value={bookingRejected} color="text-destructive" size="small" onClick={() => navigateToPage("myBookings")} />
+                  <PipelineCard label="Move-in Pending Review" value={moveInPendingReview} color="text-amber-500" size="small" onClick={() => navigateToPage("myMoveIns")} />
+                </div>
+
+                {/* Third row */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div /> {/* spacer */}
+                  <PipelineCard label="Move-in Rejected" value={moveInRejected} color="text-destructive" size="small" onClick={() => navigateToPage("myMoveIns")} />
+                </div>
               </div>
 
               {/* Notifications */}
               <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-                <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                  <h3 className="font-semibold text-foreground">Notifications & Updates</h3>
-                  <span className="text-xs text-primary cursor-pointer hover:underline">View All</span>
+                <div className="px-6 py-4 border-b border-border">
+                  <h3 className="font-semibold text-foreground">Pipeline Summary</h3>
                 </div>
-                <div className="divide-y divide-border">
-                  {notifications.map((n, i) => (
-                    <div key={i} className="px-6 py-4 flex items-center gap-4 hover:bg-muted/50 cursor-pointer">
-                      <div className={`w-2 h-2 ${dotColor[n.type]} rounded-full shrink-0`} />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-foreground">{n.message}</div>
-                        <div className="text-xs text-muted-foreground">{n.time}</div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="p-6 text-sm text-muted-foreground space-y-2">
+                  <p>📋 <strong>Booking Submitted</strong> — Waiting for admin to review your booking.</p>
+                  <p>⏳ <strong>Pending Move-in</strong> — Booking approved. Submit move-in completion.</p>
+                  <p>🔍 <strong>Move-in Pending Review</strong> — Move-in submitted, waiting for admin approval.</p>
+                  <p>✅ <strong>My Deals</strong> — Completed deals with approved move-ins.</p>
+                  <p>💰 <strong>Total Commission</strong> — Auto-calculated from all completed deals.</p>
                 </div>
               </div>
             </div>
