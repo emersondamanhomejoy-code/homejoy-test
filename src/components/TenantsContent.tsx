@@ -188,13 +188,13 @@ export function TenantsContent() {
   const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [editForm, setEditForm] = useState<Partial<Tenant>>({});
-  const [editUploadedFiles, setEditUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
-  const [editExistingDocs, setEditExistingDocs] = useState<{ passport: string; offerLetter: string; transferSlip: string }>({ passport: "", offerLetter: "", transferSlip: "" });
-  const [editDocRemoveConfirm, setEditDocRemoveConfirm] = useState<"passport" | "offerLetter" | "transferSlip" | null>(null);
+  const [editUploadedFiles, setEditUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null }>({ passport: null, offerLetter: null });
+  const [editExistingDocs, setEditExistingDocs] = useState<{ passport: string; offerLetter: string }>({ passport: "", offerLetter: "" });
+  const [editDocRemoveConfirm, setEditDocRemoveConfirm] = useState<"passport" | "offerLetter" | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [addingTenant, setAddingTenant] = useState(false);
   const [addForm, setAddForm] = useState<Partial<Tenant>>({});
-  const [addUploadedFiles, setAddUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>({ passport: null, offerLetter: null, transferSlip: null });
+  const [addUploadedFiles, setAddUploadedFiles] = useState<{ passport: File | null; offerLetter: File | null }>({ passport: null, offerLetter: null });
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
@@ -280,9 +280,8 @@ export function TenantsContent() {
     setEditForm({ ...t });
     const docP = Array.isArray(t.doc_passport) && t.doc_passport.length > 0 ? t.doc_passport[0] : "";
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
-    const docS = Array.isArray(t.doc_transfer_slip) && t.doc_transfer_slip.length > 0 ? t.doc_transfer_slip[0] : "";
-    setEditExistingDocs({ passport: docP, offerLetter: docO, transferSlip: docS });
-    setEditUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
+    setEditExistingDocs({ passport: docP, offerLetter: docO });
+    setEditUploadedFiles({ passport: null, offerLetter: null });
   };
   const setField = (key: keyof Tenant, value: any) => setEditForm(prev => ({ ...prev, [key]: value }));
 
@@ -291,7 +290,6 @@ export function TenantsContent() {
     try {
       const passportPath = editUploadedFiles.passport ? await uploadFile(editUploadedFiles.passport, "passport") : editExistingDocs.passport;
       const offerPath = editUploadedFiles.offerLetter ? await uploadFile(editUploadedFiles.offerLetter, "offer-letter") : editExistingDocs.offerLetter;
-      const slipPath = editUploadedFiles.transferSlip ? await uploadFile(editUploadedFiles.transferSlip, "transfer-slip") : editExistingDocs.transferSlip;
 
       const { error } = await supabase.from("tenants").update({
         name: editForm.name || "",
@@ -309,7 +307,6 @@ export function TenantsContent() {
         emergency_2_relationship: editForm.emergency_2_relationship || "",
         doc_passport: passportPath ? [passportPath] : [],
         doc_offer_letter: offerPath ? [offerPath] : [],
-        doc_transfer_slip: slipPath ? [slipPath] : [],
       }).eq("id", editingTenant.id);
       if (error) throw error;
       toast.success("Tenant updated.");
@@ -322,7 +319,7 @@ export function TenantsContent() {
 
   const openAdd = () => {
     setAddForm({});
-    setAddUploadedFiles({ passport: null, offerLetter: null, transferSlip: null });
+    setAddUploadedFiles({ passport: null, offerLetter: null });
     setAddingTenant(true);
   };
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
@@ -333,7 +330,6 @@ export function TenantsContent() {
     try {
       const passportPath = addUploadedFiles.passport ? await uploadFile(addUploadedFiles.passport, "passport") : "";
       const offerPath = addUploadedFiles.offerLetter ? await uploadFile(addUploadedFiles.offerLetter, "offer-letter") : "";
-      const slipPath = addUploadedFiles.transferSlip ? await uploadFile(addUploadedFiles.transferSlip, "transfer-slip") : "";
 
       const { error } = await supabase.from("tenants").insert({
         name: addForm.name || "",
@@ -351,7 +347,6 @@ export function TenantsContent() {
         emergency_2_relationship: addForm.emergency_2_relationship || "",
         doc_passport: passportPath ? [passportPath] : [],
         doc_offer_letter: offerPath ? [offerPath] : [],
-        doc_transfer_slip: slipPath ? [slipPath] : [],
       } as any);
       if (error) throw error;
       toast.success("Tenant added.");
@@ -497,7 +492,7 @@ export function TenantsContent() {
         footer={<Button onClick={saveTenant}>Save Changes</Button>}
       >
         <TenantForm form={editForm} setField={setField} uploadedFiles={editUploadedFiles} setUploadedFiles={setEditUploadedFiles}
-          existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm} />
+          existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm as any} />
       </StandardModal>
 
       {/* Edit doc remove confirm */}
@@ -538,7 +533,7 @@ export function TenantsContent() {
         footer={<Button onClick={saveNewTenant}>Add Tenant</Button>}
       >
         <TenantForm form={addForm} setField={setAddField} uploadedFiles={addUploadedFiles} setUploadedFiles={setAddUploadedFiles}
-          existingDocs={{ passport: "", offerLetter: "", transferSlip: "" }} />
+          existingDocs={{ passport: "", offerLetter: "" }} />
       </StandardModal>
     </StandardPageLayout>
   );
@@ -549,11 +544,43 @@ export function TenantsContent() {
 function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingDocs, onRemoveDoc }: {
   form: Partial<Tenant>;
   setField: (key: keyof Tenant, value: any) => void;
-  uploadedFiles: { passport: File | null; offerLetter: File | null; transferSlip: File | null };
-  setUploadedFiles: React.Dispatch<React.SetStateAction<{ passport: File | null; offerLetter: File | null; transferSlip: File | null }>>;
-  existingDocs: { passport: string; offerLetter: string; transferSlip: string };
-  onRemoveDoc?: (key: "passport" | "offerLetter" | "transferSlip") => void;
+  uploadedFiles: { passport: File | null; offerLetter: File | null };
+  setUploadedFiles: React.Dispatch<React.SetStateAction<{ passport: File | null; offerLetter: File | null }>>;
+  existingDocs: { passport: string; offerLetter: string };
+  onRemoveDoc?: (key: "passport" | "offerLetter") => void;
 }) {
+  const renderFileField = (key: "passport" | "offerLetter", label: string) => {
+    const hasNewFile = uploadedFiles[key] != null;
+    const hasExisting = !!existingDocs[key];
+    const hasFile = hasNewFile || hasExisting;
+    const fileName = hasNewFile ? uploadedFiles[key]!.name : hasExisting ? existingDocs[key].split("/").pop() : null;
+    return (
+      <div key={key} className="space-y-1">
+        <label className={labelClass}>{label}</label>
+        {hasFile ? (
+          <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
+            <span className="text-sm flex-1 truncate">{fileName}</span>
+            {onRemoveDoc && (
+              <button type="button" onClick={() => onRemoveDoc(key)}
+                className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+            <span className="text-muted-foreground">Choose File</span>
+            <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) setUploadedFiles(prev => ({ ...prev, [key]: file }));
+              e.target.value = "";
+            }} />
+          </label>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-muted/50 rounded-lg p-4 space-y-3">
@@ -577,6 +604,11 @@ function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingD
           <div className="space-y-1"><label className={labelClass}>Nationality</label><Input value={form.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
           <div className="space-y-1"><label className={labelClass}>Occupation</label><Input value={form.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
         </div>
+        {/* Document uploads at end of Personal Info */}
+        <div className="grid md:grid-cols-2 gap-3 pt-2">
+          {renderFileField("passport", "Passport / IC")}
+          {renderFileField("offerLetter", "Offer Letter")}
+        </div>
       </div>
 
       <div className="bg-muted/50 rounded-lg p-4 space-y-3">
@@ -595,45 +627,6 @@ function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingD
             <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={form.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} /></div>
           </div>
         </div>
-      </div>
-
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">📎 Documents</div>
-        {([
-          { key: "passport" as const, label: "Passport / IC" },
-          { key: "offerLetter" as const, label: "Offer Letter" },
-          { key: "transferSlip" as const, label: "Transfer Slip" },
-        ]).map(({ key, label }) => {
-          const hasNewFile = uploadedFiles[key] != null;
-          const hasExisting = !!existingDocs[key];
-          const hasFile = hasNewFile || hasExisting;
-          const fileName = hasNewFile ? uploadedFiles[key]!.name : hasExisting ? existingDocs[key].split("/").pop() : null;
-          return (
-            <div key={key} className="space-y-1">
-              <label className={labelClass}>{label}</label>
-              {hasFile ? (
-                <div className="flex items-center gap-2 bg-background rounded-lg border px-3 py-2">
-                  <span className="text-sm flex-1 truncate">{fileName}</span>
-                  {onRemoveDoc && (
-                    <button type="button" onClick={() => onRemoveDoc(key)}
-                      className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove file">
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-dashed border-border bg-background text-sm cursor-pointer hover:bg-muted/30 transition-colors">
-                  <span className="text-muted-foreground">Choose File</span>
-                  <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) setUploadedFiles(prev => ({ ...prev, [key]: file }));
-                    e.target.value = "";
-                  }} />
-                </label>
-              )}
-            </div>
-          );
-        })}
       </div>
     </div>
   );
