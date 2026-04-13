@@ -36,7 +36,7 @@ interface AgentCommissionConfig {
 
 interface CreateClaimForm {
   agent_id: string;
-  selectedBookingIds: string[];
+  selectedMoveInIds: string[];
   description: string;
   bank_name: string;
   bank_account: string;
