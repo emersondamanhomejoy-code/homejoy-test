@@ -35,11 +35,26 @@ export default function Login() {
     setSigningIn(true);
     setError("");
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim(),
       });
       if (error) throw error;
+
+      // Check if account is frozen
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("frozen")
+          .eq("user_id", data.user.id)
+          .limit(1)
+          .single();
+        if (profile?.frozen) {
+          await supabase.auth.signOut();
+          setError("Your account has been frozen. Please contact admin for more information.");
+          return;
+        }
+      }
     } catch (e: any) {
       setError(e.message || "Login failed");
     } finally {

@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, Upload, X, Snowflake, Sun } from "lucide-react";
 import { toast } from "sonner";
 
 interface CommissionTier { min: number; max: number | null; amount?: number; percentage?: number; }
@@ -23,6 +23,7 @@ interface UserWithRoles {
   name: string; display_name: string; phone: string; address: string;
   profile_picture_url: string; ic_document: string;
   emergency_contact_name: string; emergency_contact_phone: string;
+  frozen: boolean; frozen_at: string | null;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
@@ -48,6 +49,7 @@ export function UsersPage() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<UserWithRoles | null>(null);
   const [saving, setSaving] = useState(false);
+  const [freezingId, setFreezingId] = useState<string | null>(null);
 
   const [newAgent, setNewAgent] = useState({
     email: "", name: "", display_name: "", phone: "", address: "",
@@ -218,6 +220,26 @@ export function UsersPage() {
       await fetchUsers();
     } catch (e: any) {
       toast.error(e.message || "Failed to delete");
+    }
+  };
+
+  const handleFreezeToggle = async (u: UserWithRoles) => {
+    setFreezingId(u.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("list-users", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { action: u.frozen ? "unfreeze_user" : "freeze_user", user_id: u.id },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+      await logActivity(u.frozen ? "unfreeze_user" : "freeze_user", "user", u.id, { email: u.email });
+      toast.success(u.frozen ? "User unfrozen" : "User frozen");
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update freeze status");
+    } finally {
+      setFreezingId(null);
     }
   };
 
@@ -597,11 +619,18 @@ export function UsersPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{u.roles.includes("agent") ? commSummary(u) : "—"}</TableCell>
-                  <TableCell className="text-center">{u.confirmed ? <StatusBadge status="Approved" /> : <StatusBadge status="Pending" />}</TableCell>
+                  <TableCell className="text-center">
+                    {u.frozen ? <StatusBadge status="Frozen" /> : u.confirmed ? <StatusBadge status="Approved" /> : <StatusBadge status="Pending" />}
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-center">
                       <Button variant="ghost" size="icon" onClick={() => setViewUser(u)} title="View"><Eye className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(u)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                      {u.id !== user?.id && u.roles.includes("agent") && (
+                        <Button variant="ghost" size="icon" onClick={() => handleFreezeToggle(u)} disabled={freezingId === u.id} title={u.frozen ? "Unfreeze" : "Freeze"}>
+                          {u.frozen ? <Sun className="h-4 w-4 text-amber-500" /> : <Snowflake className="h-4 w-4 text-blue-500" />}
+                        </Button>
+                      )}
                       {u.id !== user?.id && (
                         <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(u)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}

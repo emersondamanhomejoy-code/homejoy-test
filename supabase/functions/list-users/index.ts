@@ -190,6 +190,53 @@ Deno.serve(async (req) => {
       });
     }
 
+    // FREEZE / UNFREEZE USER
+    if (action === "freeze_user" || action === "unfreeze_user") {
+      const { user_id } = body;
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (user_id === user.id) {
+        return new Response(JSON.stringify({ error: "Cannot freeze yourself" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const isFreezing = action === "freeze_user";
+      const { error: freezeError } = await supabase.from("profiles").update({
+        frozen: isFreezing,
+        frozen_at: isFreezing ? new Date().toISOString() : null,
+      }).eq("user_id", user_id);
+
+      if (freezeError) {
+        return new Response(JSON.stringify({ error: freezeError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // CHECK FROZEN (public — no admin role required, called at login)
+    if (action === "check_frozen") {
+      const { user_id } = body;
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: profile } = await supabase.from("profiles").select("frozen").eq("user_id", user_id).limit(1).single();
+      return new Response(JSON.stringify({ frozen: profile?.frozen || false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // UPDATE PROFILE
     if (action === "update_profile") {
       const { user_id, name, display_name, phone, address, emergency_contact_name, emergency_contact_phone, ic_document } = body;
@@ -230,7 +277,7 @@ Deno.serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, name, display_name, phone, address, profile_picture_url, ic_document, emergency_contact_name, emergency_contact_phone");
+      .select("user_id, name, display_name, phone, address, profile_picture_url, ic_document, emergency_contact_name, emergency_contact_phone, frozen, frozen_at");
     if (profilesError) throw profilesError;
 
     const result = users.map((u) => {
@@ -253,6 +300,8 @@ Deno.serve(async (req) => {
         ic_document: profile?.ic_document || "",
         emergency_contact_name: profile?.emergency_contact_name || "",
         emergency_contact_phone: profile?.emergency_contact_phone || "",
+        frozen: profile?.frozen || false,
+        frozen_at: profile?.frozen_at || null,
       };
     });
 

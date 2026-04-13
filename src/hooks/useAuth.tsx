@@ -25,6 +25,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchRole = async (userId: string) => {
     try {
+      // Check if user is frozen
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("frozen")
+        .eq("user_id", userId)
+        .limit(1)
+        .single();
+      if (profile?.frozen) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setRole(null);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
