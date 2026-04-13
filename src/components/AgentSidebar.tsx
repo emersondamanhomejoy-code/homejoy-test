@@ -1,6 +1,6 @@
-import { LayoutDashboard, Home, LogOut, ExternalLink, PanelLeftClose, PanelLeft, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Home, LogOut, PanelLeftClose, PanelLeft, ClipboardList, LogIn, Trophy, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
@@ -17,7 +17,10 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Rooms", url: "/rooms", icon: Home },
-  { title: "My Bookings", url: "/admin", icon: ClipboardList, state: { page: "myBookings" } },
+  { title: "Bookings", url: "/admin", icon: ClipboardList, state: { page: "myBookings" } },
+  { title: "Move-in", url: "/admin", icon: LogIn, state: { page: "myMoveIns" } },
+  { title: "My Deals", url: "/admin", icon: Trophy, state: { page: "myDeals" } },
+  { title: "My Account", url: "/admin", icon: User, state: { page: "myAccount" } },
 ];
 
 export function AgentSidebar() {
@@ -85,14 +88,6 @@ export function AgentSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink to="/admin" className="hover:bg-muted/50 text-muted-foreground">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                {!collapsed && <span>Admin Panel</span>}
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
               <a className="cursor-pointer hover:bg-muted/50" onClick={handleLogout} role="button">
                 <LogOut className="h-4 w-4 mr-2" />
                 {!collapsed && <span>Logout</span>}
@@ -100,14 +95,14 @@ export function AgentSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        {!collapsed && (
+        {!collapsed && user && (
           <div className="px-3 pb-4 flex items-center gap-3">
             <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
               A
             </div>
             <div>
-              <div className="text-sm font-medium text-foreground">Agent Name</div>
-              <div className="text-xs text-muted-foreground">agent@email.com</div>
+              <div className="text-sm font-medium text-foreground">Agent</div>
+              <div className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</div>
             </div>
           </div>
         )}

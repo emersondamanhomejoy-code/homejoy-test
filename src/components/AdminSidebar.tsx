@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, DollarSign, FileText, LogOut,
+  LayoutDashboard, Users, FileText, LogOut,
   PanelLeftClose, PanelLeft, Sparkles, Building2, ClipboardList,
   MapPin, Building, BedDouble, UserCheck, LogIn
 } from "lucide-react";
@@ -28,7 +28,6 @@ const adminMenuItems = [
   { title: "Tenants", icon: UserCheck, tab: "tenants" },
   { title: "Bookings", icon: ClipboardList, tab: "bookings" },
   { title: "Move In", icon: LogIn, tab: "movein" },
-  { title: "Claims", icon: DollarSign, tab: "claims" },
   { title: "Users", icon: Users, tab: "users" },
   { title: "Activity Log", icon: FileText, tab: "activity", bossManagerOnly: true },
 ];
