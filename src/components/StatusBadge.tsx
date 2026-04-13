@@ -18,6 +18,8 @@ const statusStyles: Record<string, string> = {
   cancelled: "bg-muted text-muted-foreground",
   pending_review: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
   adjusted: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+  Frozen: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+  frozen: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
 };
 
 const fallback = "bg-muted text-muted-foreground";
