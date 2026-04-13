@@ -54,7 +54,7 @@ export default function PublicUnitView() {
   const { unitId } = useParams<{ unitId: string }>();
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get("room");
-  const section = searchParams.get("section"); // "condo", "unit", "room"
+  const section = searchParams.get("section"); // "condo", "unit", "room", "photos"
 
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [rooms, setRooms] = useState<RoomData[]>([]);
@@ -95,7 +95,7 @@ export default function PublicUnitView() {
   }, [unitId]);
 
   useEffect(() => {
-    if (!loading && section) {
+    if (!loading && section && section !== "photos") {
       setTimeout(() => {
         document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: "smooth" });
       }, 300);
@@ -122,6 +122,74 @@ export default function PublicUnitView() {
 
   const photoUrl = (path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`;
 
+  const isPhotoOnly = section === "photos";
+
+  // Photo-only mode: room photos or common area photos
+  if (isPhotoOnly) {
+    if (selectedRoom) {
+      // Show only this room's photos
+      const roomPhotos = Array.isArray(selectedRoom.photos) ? selectedRoom.photos : [];
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+            <div className="text-center space-y-1">
+              <h1 className="text-2xl font-bold text-foreground">
+                Room {selectedRoom.room.replace(/^Room\s+/i, "")} {selectedRoom.room_title ? `— ${selectedRoom.room_title}` : ""}
+              </h1>
+              <p className="text-muted-foreground">{unit.building} · {unit.unit}</p>
+            </div>
+            {roomPhotos.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {roomPhotos.map((path, i) => (
+                  <img key={i} src={photoUrl(path as string)} alt={`Room photo ${i + 1}`} className="w-full aspect-[4/3] object-cover rounded-lg border" />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground">No photos available for this room.</p>
+            )}
+            <div className="text-center text-xs text-muted-foreground pt-4 border-t">Powered by Homejoy</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Common area photos only (no room specified)
+    const condoPhotos = Array.isArray(condo?.photos) ? condo!.photos : [];
+    const commonPhotos = Array.isArray(unit.common_photos) ? unit.common_photos : [];
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+          <div className="text-center space-y-1">
+            <h1 className="text-2xl font-bold text-foreground">{unit.building}</h1>
+            <p className="text-muted-foreground">{unit.unit} · Common Area Photos</p>
+          </div>
+          {condoPhotos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {(condoPhotos as string[]).map((path, i) => (
+                <img key={i} src={photoUrl(path)} alt={`Building photo ${i + 1}`} className="w-full aspect-[4/3] object-cover rounded-lg border" />
+              ))}
+            </div>
+          )}
+          {commonPhotos.length > 0 && (
+            <>
+              {condoPhotos.length > 0 && <h3 className="text-sm font-medium text-muted-foreground">Unit Common Area</h3>}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {commonPhotos.map((path, i) => (
+                  <img key={i} src={photoUrl(path)} alt={`Common area ${i + 1}`} className="w-full aspect-[4/3] object-cover rounded-lg border" />
+                ))}
+              </div>
+            </>
+          )}
+          {condoPhotos.length === 0 && commonPhotos.length === 0 && (
+            <p className="text-center text-muted-foreground">No common area photos available.</p>
+          )}
+          <div className="text-center text-xs text-muted-foreground pt-4 border-t">Powered by Homejoy</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full view (default)
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">

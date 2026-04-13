@@ -6,11 +6,12 @@ import AddUnit from "@/pages/AddUnit";
 import EditUnit from "@/pages/EditUnit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus, Copy, ChevronDown, Link2, ArrowLeft, Eye } from "lucide-react";
+import { Plus, Copy, ChevronDown, Link2, ArrowLeft, Eye, Image } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
@@ -506,14 +507,63 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
 
   const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
 
+  // Parse all access categories from condo (must be before early return)
+  const allAccess = useMemo(() => {
+    if (!condo) return { pedestrian: [] as AccessItem[], carpark: [] as AccessItem[], motorcycle: [] as AccessItem[] };
+    const raw = condo.access_items || {};
+    const parse = (key: string): AccessItem[] => {
+      const items = (raw as any)[key];
+      if (Array.isArray(items)) return items.filter((i: any) => i.access_type && i.access_type !== "None");
+      return [];
+    };
+    return { pedestrian: parse("pedestrian"), carpark: parse("carpark"), motorcycle: parse("motorcycle") };
+  }, [condo]);
+
+  // Helper to render access items for a category
+  const renderAccessCategory = (label: string, items: AccessItem[]) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="space-y-1">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</h4>
+        {items.map((item, i) => (
+          <div key={i} className="text-sm pl-2 border-l-2 border-muted py-1 space-y-0.5">
+            <div className="font-medium">{item.access_type}{item.locations && item.locations.length > 0 ? ` — ${item.locations.join(", ")}` : ""}</div>
+            <div className="text-xs text-muted-foreground">
+              Provided by {item.provided_by}
+              {item.chargeable_type && item.chargeable_type !== "none" && item.chargeable_type !== "Not Chargeable" && (
+                <> · {item.chargeable_type}{item.price > 0 ? ` RM${item.price}` : ""}</>
+              )}
+            </div>
+            {item.instruction && <div className="text-xs text-muted-foreground italic">{item.instruction}</div>}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const commonPhotosUrl = `${window.location.origin}/view/${unit.id}?section=photos`;
+
   // If viewing a specific room/carpark, show detail view
   if (viewingRoom) {
     const isCarpark = viewingRoom.room_type === "Car Park" || (viewingRoom.room || "").toLowerCase().startsWith("carpark");
+    const roomPhotoUrl = `${window.location.origin}/view/${unit.id}?room=${viewingRoom.id}&section=photos`;
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setViewingRoom(null)}>
-          <ArrowLeft className="h-4 w-4" /> Back to Unit
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setViewingRoom(null)}>
+            <ArrowLeft className="h-4 w-4" /> Back to Unit
+          </Button>
+          {!isCarpark && Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, "Room photos link")}>
+                  <Image className="h-3.5 w-3.5" /> Copy Room Photos Link
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy link showing only this room's photos</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm border rounded-lg p-4">
           {!isCarpark && (
@@ -549,7 +599,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           )}
           <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
         </div>
-        {/* Housemates */}
         {!isCarpark && Array.isArray(viewingRoom.housemates) && viewingRoom.housemates.length > 0 && (
           <div className="border rounded-lg p-4 space-y-2">
             <h4 className="text-sm font-semibold">Housemates</h4>
@@ -568,7 +617,6 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </div>
           </div>
         )}
-        {/* Photos */}
         {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Photos</h4>
@@ -583,10 +631,19 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     );
   }
 
+
   return (
     <div className="space-y-4">
-      {/* Top share link */}
+      {/* Top share links */}
       <div className="flex items-center justify-end gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(commonPhotosUrl, "Common area photos link")}>
+              <Image className="h-3.5 w-3.5" /> Copy Common Photos Link
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copy link showing only common area photos</TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(baseShareUrl, "Share link")}>
@@ -597,86 +654,28 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
         </Tooltip>
       </div>
 
-      {/* Occupant Summary — compact fractions */}
-      <div className="flex items-center gap-6 px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Remaining Pax:</span>
-          <span className={`text-lg font-bold ${remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}`}>
-            {remainingPax}/{unit.unit_max_pax}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Remaining Carpark:</span>
-          <span className={`text-lg font-bold ${remainingCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
-            {remainingCarparks}/{unitCarparks.length}
-          </span>
-        </div>
+      {/* Statistic Cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className={`text-2xl font-bold ${remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}`}>
+              {remainingPax}/{unit.unit_max_pax}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Remaining Pax</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className={`text-2xl font-bold ${remainingCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+              {remainingCarparks}/{unitCarparks.length}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Remaining Carpark</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Accordion type="multiple" defaultValue={["building", "unit", "rooms", "carparks"]} className="space-y-2">
-        {/* Building Details */}
-        <AccordionItem value="building" className="border rounded-lg px-4">
-          <AccordionTrigger className="py-3 hover:no-underline">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-semibold">Building Details</span>
-              <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
-            </div>
-            <div className="flex items-center gap-1 mr-2">
-              <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
-              <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>
-              {condo && (
-                <>
-                  {condo.address && <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{condo.address}</span></div>}
-                  {condo.gps_link && <div className="col-span-2"><span className="text-muted-foreground">GPS:</span> <a href={condo.gps_link} target="_blank" rel="noreferrer" className="font-medium text-primary underline">{condo.gps_link}</a></div>}
-                  {condo.amenities && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{condo.amenities}</span></div>}
-                  {condo.parking_info && <div className="col-span-2"><span className="text-muted-foreground">Parking:</span> <span className="font-medium">{condo.parking_info}</span></div>}
-                  {condo.arrival_instruction && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Arrival:</span> <span className="font-medium">{condo.arrival_instruction}</span></div>}
-                </>
-              )}
-            </div>
-            {((unit as any).common_photos || []).length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-3">
-                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
-                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                ))}
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Unit Details */}
-        <AccordionItem value="unit" className="border rounded-lg px-4">
-          <AccordionTrigger className="py-3 hover:no-underline">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-semibold">Unit Details</span>
-              <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
-            </div>
-            <div className="flex items-center gap-1 mr-2">
-              <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
-              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{unit.unit_type}</span></div>
-              <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
-              <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
-              <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
-              <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(unit as any).meter_type} · RM{(unit as any).meter_rate}/kWh</span></div>
-              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "—"}</span></div>
-              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "—"}</span></div>
-              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "—"}</span></div>
-              <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(unit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Room Summary */}
+      <Accordion type="multiple" defaultValue={["rooms", "carparks", "unit", "building"]} className="space-y-2">
+        {/* Room Summary — FIRST */}
         {unitRooms.length > 0 && (
           <AccordionItem value="rooms" className="border rounded-lg px-4">
             <AccordionTrigger className="py-3 hover:no-underline">
@@ -735,7 +734,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           </AccordionItem>
         )}
 
-        {/* Carpark Summary */}
+        {/* Carpark Summary — SECOND */}
         {unitCarparks.length > 0 && (
           <AccordionItem value="carparks" className="border rounded-lg px-4">
             <AccordionTrigger className="py-3 hover:no-underline">
@@ -778,6 +777,93 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </AccordionContent>
           </AccordionItem>
         )}
+
+        {/* Unit Details — THIRD */}
+        <AccordionItem value="unit" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-semibold">Unit Details</span>
+              <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
+            </div>
+            <div className="flex items-center gap-1 mr-2">
+              <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
+              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{unit.unit_type}</span></div>
+              <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
+              <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
+              <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
+              <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(unit as any).meter_type} · RM{(unit as any).meter_rate}/kWh</span></div>
+              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "—"}</span></div>
+              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "—"}</span></div>
+              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "—"}</span></div>
+              <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(unit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Building Details — FOURTH */}
+        <AccordionItem value="building" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-semibold">Building Details</span>
+              <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
+            </div>
+            <div className="flex items-center gap-1 mr-2">
+              <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
+              <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>
+              {condo && (
+                <>
+                  {condo.address && <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{condo.address}</span></div>}
+                  {condo.gps_link && <div className="col-span-2"><span className="text-muted-foreground">GPS:</span> <a href={condo.gps_link} target="_blank" rel="noreferrer" className="font-medium text-primary underline">{condo.gps_link}</a></div>}
+                  {condo.amenities && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{condo.amenities}</span></div>}
+                  {condo.parking_info && <div className="col-span-2"><span className="text-muted-foreground">Parking:</span> <span className="font-medium">{condo.parking_info}</span></div>}
+                  {condo.arrival_instruction && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Arrival:</span> <span className="font-medium">{condo.arrival_instruction}</span></div>}
+                </>
+              )}
+            </div>
+
+            {/* Access Information */}
+            {(allAccess.pedestrian.length > 0 || allAccess.carpark.length > 0 || allAccess.motorcycle.length > 0) && (
+              <div className="mt-4 space-y-3">
+                <h4 className="text-sm font-semibold">Access Information</h4>
+                {renderAccessCategory("Pedestrian Access", allAccess.pedestrian)}
+                {renderAccessCategory("Car Park Access", allAccess.carpark)}
+                {renderAccessCategory("Motorcycle Access", allAccess.motorcycle)}
+              </div>
+            )}
+
+            {/* Visitor Parking */}
+            {condo && (condo.visitor_car_parking || condo.visitor_motorcycle_parking) && (
+              <div className="mt-4 space-y-1">
+                <h4 className="text-sm font-semibold">Visitor Parking</h4>
+                {condo.visitor_car_parking && (
+                  <div className="text-sm"><span className="text-muted-foreground">Visitor Car Parking:</span> <span className="font-medium">{condo.visitor_car_parking}</span></div>
+                )}
+                {condo.visitor_motorcycle_parking && (
+                  <div className="text-sm"><span className="text-muted-foreground">Visitor Motorcycle Parking:</span> <span className="font-medium">{condo.visitor_motorcycle_parking}</span></div>
+                )}
+              </div>
+            )}
+
+            {/* Common photos */}
+            {((unit as any).common_photos || []).length > 0 && (
+              <div className="flex flex-wrap gap-3 mt-3">
+                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
+                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+                ))}
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
       </Accordion>
 
       {/* Cost Breakdown Calculator */}
