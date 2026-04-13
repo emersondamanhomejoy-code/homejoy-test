@@ -491,14 +491,52 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     copyToClipboard(lines.join("\n"), "Cost breakdown");
   };
 
-  const CopyBtn = ({ onClick }: { onClick: () => void }) => (
-    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={onClick}>
-      <Copy className="h-3.5 w-3.5" />
-    </Button>
+  const CopyBtn = ({ onClick, tooltip }: { onClick: () => void; tooltip: string }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          onClick={(e) => { e.stopPropagation(); onClick(); }}
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
+
+  const LinkBtn = ({ url, tooltip }: { url: string; tooltip: string }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="h-6 w-6 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          onClick={(e) => { e.stopPropagation(); copyToClipboard(url, "Link"); }}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+
+  const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
 
   return (
     <div className="space-y-4">
+      {/* Top share link */}
+      <div className="flex items-center justify-end gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(baseShareUrl, "Share link")}>
+              <Link2 className="h-3.5 w-3.5" /> Copy Share Link
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copy public link for customers</TooltipContent>
+        </Tooltip>
+      </div>
+
       {/* Occupant Summary — compact fractions */}
       <div className="flex items-center gap-6 px-1">
         <div className="flex items-center gap-2">
@@ -523,11 +561,12 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
               <span className="text-sm font-semibold">Building Details</span>
               <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
             </div>
+            <div className="flex items-center gap-1 mr-2">
+              <CopyBtn onClick={copyBuildingDetails} tooltip="Copy Building Details" />
+              <LinkBtn url={`${baseShareUrl}?section=condo`} tooltip="Copy Common Area Link" />
+            </div>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="flex items-center justify-end mb-2">
-              <CopyBtn onClick={copyBuildingDetails} />
-            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
               <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>
