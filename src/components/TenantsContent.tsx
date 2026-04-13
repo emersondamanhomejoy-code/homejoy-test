@@ -241,6 +241,7 @@ export function TenantsContent() {
       const map: Record<string, any> = {
         name: t.name,
         phone: t.phone,
+        email: t.email,
         gender: t.gender,
         nationality: t.nationality,
         occupation: t.occupation,
@@ -430,15 +431,13 @@ export function TenantsContent() {
       {/* ── Table ── */}
       <StandardTable
         columns={
-          <TableRow className="bg-muted/30">
+        <TableRow className="bg-muted/30">
             <SortableTableHead sortKey="name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
-            <SortableTableHead sortKey="phone" currentSort={sort} onSort={handleSort}>Contact</SortableTableHead>
-            <SortableTableHead sortKey="gender" currentSort={sort} onSort={handleSort}>Gender</SortableTableHead>
+            <SortableTableHead sortKey="phone" currentSort={sort} onSort={handleSort}>Phone Number</SortableTableHead>
+            <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email Address</SortableTableHead>
             <SortableTableHead sortKey="nationality" currentSort={sort} onSort={handleSort}>Nationality</SortableTableHead>
-            <SortableTableHead sortKey="occupation" currentSort={sort} onSort={handleSort}>Occupation</SortableTableHead>
             <SortableTableHead sortKey="active_rooms" currentSort={sort} onSort={handleSort} className="text-center">Active Rooms</SortableTableHead>
             <SortableTableHead sortKey="active_carparks" currentSort={sort} onSort={handleSort} className="text-center">Active Carparks</SortableTableHead>
-            <SortableTableHead sortKey="total_bookings" currentSort={sort} onSort={handleSort} className="text-center">Total Bookings</SortableTableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         }
@@ -457,16 +456,14 @@ export function TenantsContent() {
           <TableRow key={t.id}>
             <TableCell className="font-medium">{t.name || "—"}</TableCell>
             <TableCell>{t.phone || "—"}</TableCell>
-            <TableCell>{t.gender || "—"}</TableCell>
+            <TableCell>{t.email || "—"}</TableCell>
             <TableCell>{t.nationality || "—"}</TableCell>
-            <TableCell>{t.occupation || "—"}</TableCell>
             <TableCell className="text-center">
               <span className={t._activeRooms! > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{t._activeRooms}</span>
             </TableCell>
             <TableCell className="text-center">
               <span className={t._activeCarparks! > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{t._activeCarparks}</span>
             </TableCell>
-            <TableCell className="text-center">{t._totalBookings || 0}</TableCell>
             <TableCell className="text-center">
               <ActionButtons actions={[
                 { type: "view", onClick: () => setViewingTenant(t) },
