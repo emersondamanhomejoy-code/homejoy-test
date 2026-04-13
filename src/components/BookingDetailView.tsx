@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Booking, useUpdateBookingStatus } from "@/hooks/useBookings";
+import { Booking, useUpdateBookingStatus, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
@@ -73,28 +73,29 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       id: b.id, status: "approved", reviewed_by: user.id,
       room_id: b.room_id, tenant_name: b.tenant_name,
       tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
+      tenant_nationality: b.tenant_nationality,
       pax_staying: b.pax_staying, carParkIds, history,
+      booking_type: (b.booking_type || "room_only") as BookingType,
+      bookingData: b,
     });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "approve_booking", entity_type: "booking", entity_id: b.id,
       details: { tenant_name: b.tenant_name, room: info ? `${info.building} ${info.unit} ${info.room}` : "" },
     });
-    toast.success("Booking approved");
+    toast.success("Booking approved — Move-in record created");
     setShowApproveDialog(false);
     onOpenChange(false);
   };
 
   const handleReject = async () => {
     if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
+    const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
     const history = [...(b.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, history });
-    if (b.room_id) {
-      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-    }
-    for (const sel of carParkSelections) {
-      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
-    }
+    await updateBookingStatus.mutateAsync({
+      id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason,
+      room_id: b.room_id, carParkIds, history,
+    });
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
@@ -108,21 +109,20 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleCancel = async () => {
     if (!user || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
+    const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
     const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
-    await updateBookingStatus.mutateAsync({ id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason, history });
-    if (b.room_id) {
-      await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
-    }
-    for (const sel of carParkSelections) {
-      if (sel.roomId) await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", sel.roomId);
-    }
+    await updateBookingStatus.mutateAsync({
+      id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason,
+      room_id: b.room_id, carParkIds, history,
+      resolution_type: b.status === "approved" ? "forfeit" : "",
+    });
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "cancel_booking", entity_type: "booking", entity_id: b.id,
-      details: { tenant_name: b.tenant_name, reason: cancelReason },
+      details: { tenant_name: b.tenant_name, reason: cancelReason, resolution_type: b.status === "approved" ? "forfeit" : "" },
     });
-    toast.success("Booking cancelled");
+    toast.success(b.status === "approved" ? "Booking cancelled (Forfeit)" : "Booking cancelled");
     setShowCancelDialog(false);
     onOpenChange(false);
   };
@@ -220,7 +220,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           {sectionCard("📋", "Booking Summary", (
             <div>
               {infoRow("Booking ID", <span className="font-mono text-xs">{b.id}</span>)}
+              {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
               {infoRow("Status", statusBadge(b.status))}
+              {b.resolution_type && infoRow("Resolution", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
               {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
               {infoRow("Agent", getAgentName(b.submitted_by))}
               {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
@@ -424,7 +426,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             <AlertDialogTitle>Approve Booking?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to approve this booking for <strong>{b.tenant_name}</strong>?
-              The room will be marked as Occupied.
+              Room/carpark will be marked as <strong>Pending</strong>, a Move-in record will be auto-created, and a tenant record will be created.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

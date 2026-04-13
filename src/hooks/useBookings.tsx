@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type BookingType = "room_only" | "room_carpark" | "carpark_only";
+
 export interface Booking {
   id: string;
   room_id: string | null;
   unit_id: string | null;
+  booking_type: BookingType;
   status: "submitted" | "approved" | "rejected" | "cancelled";
+  resolution_type: string;
   tenant_name: string;
   tenant_phone: string;
   tenant_email: string;
@@ -50,6 +54,12 @@ export interface Booking {
   room?: { room: string; building: string; unit: string };
 }
 
+export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
+  room_only: "Room Only",
+  room_carpark: "Room + Carpark",
+  carpark_only: "Carpark Only",
+};
+
 export function useBookings(statusFilter?: string) {
   return useQuery({
     queryKey: ["bookings", statusFilter],
@@ -78,9 +88,13 @@ export function useUpdateBookingStatus() {
       tenant_name,
       tenant_gender,
       tenant_race,
+      tenant_nationality,
       pax_staying,
       carParkIds,
       history,
+      resolution_type,
+      booking_type,
+      bookingData,
     }: {
       id: string;
       status: "approved" | "rejected" | "cancelled";
@@ -90,9 +104,13 @@ export function useUpdateBookingStatus() {
       tenant_name?: string;
       tenant_gender?: string;
       tenant_race?: string;
+      tenant_nationality?: string;
       pax_staying?: number;
       carParkIds?: string[];
       history?: any[];
+      resolution_type?: string;
+      booking_type?: BookingType;
+      bookingData?: Booking;
     }) => {
       const updates: Record<string, any> = {
         status,
@@ -101,43 +119,167 @@ export function useUpdateBookingStatus() {
         reject_reason: reject_reason || "",
       };
       if (history !== undefined) updates.history = history;
+      if (resolution_type !== undefined) updates.resolution_type = resolution_type;
       const { error } = await supabase
         .from("bookings")
         .update(updates)
         .eq("id", id);
       if (error) throw error;
 
-      // On approve: update room status + tenant info
-      if (status === "approved" && room_id) {
-        const { error: roomErr } = await supabase
-          .from("rooms")
-          .update({
-            status: "Occupied",
-            tenant_gender: tenant_gender || "",
-            tenant_race: tenant_race || "",
-            pax_staying: pax_staying || 1,
-            occupied_pax: pax_staying || 1,
-          })
-          .eq("id", room_id);
-        if (roomErr) throw roomErr;
+      // ─── APPROVE: set room/carpark to Pending, create move-in, create tenant ───
+      if (status === "approved") {
+        // Set room to Pending (NOT Occupied — that happens on move-in approval)
+        if (room_id) {
+          await supabase.from("rooms").update({ status: "Pending" }).eq("id", room_id);
+        }
 
-        // Mark selected car parks as Tenanted
+        // Set selected car parks to Pending
         if (carParkIds && carParkIds.length > 0) {
           for (const cpId of carParkIds) {
             await supabase.from("rooms").update({
-              status: "Tenanted",
+              status: "Pending",
               tenant_gender: `${tenant_name || ""} (${tenant_gender || ""})`,
             }).eq("id", cpId);
           }
         }
+
+        // Auto-create move-in record with ready_for_move_in status
+        const agentId = bookingData?.submitted_by || reviewed_by;
+        await supabase.from("move_ins").insert({
+          booking_id: id,
+          room_id: room_id || null,
+          agent_id: agentId,
+          tenant_name: tenant_name || "",
+          status: "ready_for_move_in",
+          history: [{ action: "created_from_booking_approval", by: reviewed_by, at: new Date().toISOString() }],
+        });
+
+        // Create formal tenant record
+        if (bookingData) {
+          // Check if tenant already exists by phone + name
+          const { data: existingTenant } = await supabase
+            .from("tenants")
+            .select("id")
+            .eq("phone", bookingData.tenant_phone)
+            .eq("name", bookingData.tenant_name)
+            .maybeSingle();
+
+          let tenantId: string;
+          if (existingTenant) {
+            tenantId = existingTenant.id;
+            // Update existing tenant with latest info
+            await supabase.from("tenants").update({
+              email: bookingData.tenant_email || "",
+              ic_passport: bookingData.tenant_ic_passport || "",
+              gender: bookingData.tenant_gender || "",
+              nationality: bookingData.tenant_nationality || "",
+              occupation: bookingData.occupation || "",
+              emergency_1_name: bookingData.emergency_1_name || "",
+              emergency_1_phone: bookingData.emergency_1_phone || "",
+              emergency_1_relationship: bookingData.emergency_1_relationship || "",
+              emergency_2_name: bookingData.emergency_2_name || "",
+              emergency_2_phone: bookingData.emergency_2_phone || "",
+              emergency_2_relationship: bookingData.emergency_2_relationship || "",
+              doc_passport: bookingData.doc_passport || [],
+              doc_offer_letter: bookingData.doc_offer_letter || [],
+              doc_transfer_slip: bookingData.doc_transfer_slip || [],
+              booking_id: id,
+            }).eq("id", tenantId);
+          } else {
+            const { data: newTenant, error: tErr } = await supabase.from("tenants").insert({
+              name: bookingData.tenant_name,
+              phone: bookingData.tenant_phone,
+              email: bookingData.tenant_email || "",
+              ic_passport: bookingData.tenant_ic_passport || "",
+              gender: bookingData.tenant_gender || "",
+              nationality: bookingData.tenant_nationality || "",
+              occupation: bookingData.occupation || "",
+              company: bookingData.company || "",
+              position: bookingData.position || "",
+              monthly_salary: bookingData.monthly_salary || 0,
+              car_plate: bookingData.car_plate || "",
+              emergency_1_name: bookingData.emergency_1_name || "",
+              emergency_1_phone: bookingData.emergency_1_phone || "",
+              emergency_1_relationship: bookingData.emergency_1_relationship || "",
+              emergency_2_name: bookingData.emergency_2_name || "",
+              emergency_2_phone: bookingData.emergency_2_phone || "",
+              emergency_2_relationship: bookingData.emergency_2_relationship || "",
+              doc_passport: bookingData.doc_passport || [],
+              doc_offer_letter: bookingData.doc_offer_letter || [],
+              doc_transfer_slip: bookingData.doc_transfer_slip || [],
+              booking_id: id,
+            }).select("id").single();
+            if (tErr) console.error("Failed to create tenant:", tErr);
+            tenantId = newTenant?.id || "";
+          }
+
+          // Create tenant_rooms binding if room exists
+          if (tenantId && room_id) {
+            await supabase.from("tenant_rooms").insert({
+              tenant_id: tenantId,
+              room_id: room_id,
+              move_in_date: bookingData.move_in_date || null,
+              contract_months: bookingData.contract_months || 12,
+              status: "active",
+            });
+          }
+
+          // Create tenant_rooms for carparks too
+          if (tenantId && carParkIds && carParkIds.length > 0) {
+            for (const cpId of carParkIds) {
+              await supabase.from("tenant_rooms").insert({
+                tenant_id: tenantId,
+                room_id: cpId,
+                move_in_date: bookingData.move_in_date || null,
+                contract_months: bookingData.contract_months || 12,
+                status: "active",
+              });
+            }
+          }
+        }
       }
 
-      // On reject: release room back to Available + release car parks
-      if (status === "rejected" && room_id) {
-        await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
+      // ─── REJECT: release room + carparks back to Available ───
+      if (status === "rejected") {
+        if (room_id) {
+          await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
+        }
         if (carParkIds && carParkIds.length > 0) {
           for (const cpId of carParkIds) {
             await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", cpId);
+          }
+        }
+      }
+
+      // ─── CANCEL: release pending holds, handle forfeit ───
+      if (status === "cancelled") {
+        if (room_id) {
+          // Only release if room is still Pending (not yet moved in)
+          const { data: roomData } = await supabase.from("rooms").select("status").eq("id", room_id).single();
+          if (roomData?.status === "Pending") {
+            await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
+          }
+        }
+        if (carParkIds && carParkIds.length > 0) {
+          for (const cpId of carParkIds) {
+            const { data: cpData } = await supabase.from("rooms").select("status").eq("id", cpId).single();
+            if (cpData?.status === "Pending") {
+              await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", cpId);
+            }
+          }
+        }
+        // Cancel related move-in if it exists and is still ready_for_move_in
+        const { data: moveIns } = await supabase
+          .from("move_ins")
+          .select("id, status")
+          .eq("booking_id", id)
+          .eq("status", "ready_for_move_in");
+        if (moveIns && moveIns.length > 0) {
+          for (const mi of moveIns) {
+            await supabase.from("move_ins").update({
+              status: "rejected",
+              cancel_reason: reject_reason || "Booking cancelled",
+            }).eq("id", mi.id);
           }
         }
       }
@@ -146,6 +288,8 @@ export function useUpdateBookingStatus() {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       qc.invalidateQueries({ queryKey: ["rooms"] });
       qc.invalidateQueries({ queryKey: ["units"] });
+      qc.invalidateQueries({ queryKey: ["move_ins"] });
+      qc.invalidateQueries({ queryKey: ["tenants"] });
     },
   });
 }

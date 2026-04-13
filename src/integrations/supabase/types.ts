@@ -100,6 +100,7 @@ export type Database = {
       bookings: {
         Row: {
           access_card_count: number
+          booking_type: string
           car_plate: string
           company: string
           contract_months: number
@@ -128,6 +129,7 @@ export type Database = {
           pax_staying: number
           position: string
           reject_reason: string
+          resolution_type: string
           reviewed_at: string | null
           reviewed_by: string | null
           room_id: string | null
@@ -146,6 +148,7 @@ export type Database = {
         }
         Insert: {
           access_card_count?: number
+          booking_type?: string
           car_plate?: string
           company?: string
           contract_months?: number
@@ -174,6 +177,7 @@ export type Database = {
           pax_staying?: number
           position?: string
           reject_reason?: string
+          resolution_type?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           room_id?: string | null
@@ -192,6 +196,7 @@ export type Database = {
         }
         Update: {
           access_card_count?: number
+          booking_type?: string
           car_plate?: string
           company?: string
           contract_months?: number
@@ -220,6 +225,7 @@ export type Database = {
           pax_staying?: number
           position?: string
           reject_reason?: string
+          resolution_type?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           room_id?: string | null
