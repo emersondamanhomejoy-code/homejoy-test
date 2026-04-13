@@ -739,7 +739,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
                     <TableCell className="text-right font-medium">RM{f.total}</TableCell>
                   </TableRow>
                 ))}
-                {carparkFees.map((f, i) => (
+                {numCarparks > 0 && carparkFees.map((f, i) => (
                   <TableRow key={`cf-${i}`}>
                     <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
                     <TableCell className="text-right font-medium">RM{f.total}</TableCell>
