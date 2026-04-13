@@ -10,7 +10,6 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { logActivity } from "@/hooks/useActivityLog";
-import { logActivity } from "@/hooks/useActivityLog";
 import { useCondos } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { UnitsTableView } from "@/components/UnitsTableView";
