@@ -241,6 +241,7 @@ export function TenantsContent() {
       const map: Record<string, any> = {
         name: t.name,
         phone: t.phone,
+        email: t.email,
         gender: t.gender,
         nationality: t.nationality,
         occupation: t.occupation,
