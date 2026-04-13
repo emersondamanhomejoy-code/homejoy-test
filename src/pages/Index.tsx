@@ -470,7 +470,7 @@ export default function Index() {
   // ─── ROOM DETAIL ───
   if (page === "detail" && selectedRoom) {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => selectedBuilding ? setPage("building") : setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -592,7 +592,7 @@ export default function Index() {
     const set = (field: string, value: string) => setBookingForm({ ...f, [field]: value });
 
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
           <button onClick={() => setPage("detail")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Room Detail</button>
@@ -897,7 +897,7 @@ export default function Index() {
   // ─── BOOKING SUCCESS ───
   if (page === "booking-success" && bookingSubmitted) {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
         <div className="max-w-3xl mx-auto bg-card rounded-lg shadow-lg p-8 space-y-6 animate-fade-in">
           <div className="text-center">
@@ -929,7 +929,7 @@ export default function Index() {
   // ─── MY BOOKINGS PAGE ───
   if (page === "myBookings") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
@@ -946,7 +946,7 @@ export default function Index() {
   // ─── MY DEALS PAGE ───
   if (page === "myDeals") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
@@ -960,7 +960,7 @@ export default function Index() {
   // ─── MY MOVE-INS PAGE ───
   if (page === "myMoveIns") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
@@ -974,7 +974,7 @@ export default function Index() {
   // ─── MY ACCOUNT PAGE ───
   if (page === "myAccount") {
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Dashboard</button>
@@ -1002,7 +1002,7 @@ export default function Index() {
     const buildingCarParks = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available" && r.building === selectedBuilding).length;
 
     return (
-      <OldDashboardLayout>
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 overflow-auto text-foreground">
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
           <button onClick={() => setPage("dashboard")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
