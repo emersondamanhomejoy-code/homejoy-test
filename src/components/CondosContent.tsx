@@ -35,6 +35,10 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [viewing, setViewing] = useState<Condo | null>(null);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [hasAvailableUnits, setHasAvailableUnits] = useState("");
+  const [hasAvailableRooms, setHasAvailableRooms] = useState("");
+  const [hasAvailableCarparks, setHasAvailableCarparks] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
