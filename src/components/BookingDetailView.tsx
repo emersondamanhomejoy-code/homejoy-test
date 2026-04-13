@@ -222,7 +222,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           {sectionCard("📋", "Booking Summary", (
             <div>
               {infoRow("Booking ID", <span className="font-mono text-xs">{b.id}</span>)}
+              {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
               {infoRow("Status", statusBadge(b.status))}
+              {b.resolution_type && infoRow("Resolution", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
               {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
               {infoRow("Agent", getAgentName(b.submitted_by))}
               {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
@@ -426,7 +428,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             <AlertDialogTitle>Approve Booking?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to approve this booking for <strong>{b.tenant_name}</strong>?
-              The room will be marked as Occupied.
+              Room/carpark will be marked as <strong>Pending</strong>, a Move-in record will be auto-created, and a tenant record will be created.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
