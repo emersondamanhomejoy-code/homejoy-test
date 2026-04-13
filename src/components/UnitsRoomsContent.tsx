@@ -21,7 +21,7 @@ import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { labelClass } from "@/lib/ui-constants";
+import { labelClass, inputClass } from "@/lib/ui-constants";
 
 export function UnitsRoomsContent() {
   const { data: units = [], isLoading } = useUnits();
