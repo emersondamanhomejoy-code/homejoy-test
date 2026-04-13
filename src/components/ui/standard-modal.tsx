@@ -1,4 +1,4 @@
-import { ReactNode, useState, useCallback } from "react";
+import { ReactNode, useState, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -78,9 +78,9 @@ export function StandardModal({
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4">{children}</div>
-          </ScrollArea>
+          </div>
 
           {/* Sticky footer */}
           <div className="border-t px-6 py-4 flex items-center justify-between gap-3 shrink-0 bg-background">
