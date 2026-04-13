@@ -347,7 +347,6 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                             <StatusBadge status={rc.status || "Available"} />
                           </div>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Photos" onClick={() => navigate(`/photos/${room.id}`)}><Eye className="h-3.5 w-3.5" /></Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditingRoomId(room.id)}><Pencil className="h-3.5 w-3.5" /></Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirmRoom(room.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                           </div>
