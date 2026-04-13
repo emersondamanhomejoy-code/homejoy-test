@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { useClaims, useUpdateClaimStatus, Claim } from "@/hooks/useClaims";
+import { useClaims, useUpdateClaimStatus, useUpdateClaim, Claim, ClaimItem } from "@/hooks/useClaims";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
-import { useBookings } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
@@ -14,10 +13,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, Trash2, X, ChevronLeft, ChevronRight, Check, Ban, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserInfo { id: string; email: string; name: string; }
@@ -26,7 +26,7 @@ export function ClaimsPage() {
   const { user, role } = useAuth();
   const { data: allClaims = [], isLoading } = useClaims();
   const updateClaimStatus = useUpdateClaimStatus();
-  const { data: allBookings = [] } = useBookings();
+  const updateClaim = useUpdateClaim();
   const { data: roomsData = [] } = useRooms();
   const isBossManager = role === "boss" || role === "manager";
 
@@ -35,6 +35,7 @@ export function ClaimsPage() {
   const [agentFilter, setAgentFilter] = useState<string[]>([]);
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
+  const [payoutFilter, setPayoutFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
@@ -43,11 +44,15 @@ export function ClaimsPage() {
 
   const [viewClaim, setViewClaim] = useState<Claim | null>(null);
   const [editClaim, setEditClaim] = useState<Claim | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState<Claim | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState<Claim | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState<Claim | null>(null);
+  const [selectedUndoItems, setSelectedUndoItems] = useState<string[]>([]);
+  const [showUndoDialog, setShowUndoDialog] = useState(false);
 
   const [users, setUsers] = useState<UserInfo[]>([]);
   useEffect(() => {
@@ -64,6 +69,10 @@ export function ClaimsPage() {
   const agentOptions = useMemo(() => [...new Set(users.map(u => u.name || u.email).filter(Boolean))].sort(), [users]);
   const locationOptions = useMemo(() => [...new Set(roomsData.map(r => r.location).filter(Boolean))].sort(), [roomsData]);
   const buildingOptions = useMemo(() => [...new Set(roomsData.map(r => r.building).filter(Boolean))].sort(), [roomsData]);
+  const payoutOptions = useMemo(() => {
+    const dates = allClaims.map(c => c.payout_date).filter(Boolean) as string[];
+    return [...new Set(dates)].sort();
+  }, [allClaims]);
 
   const filtered = useMemo(() => {
     let list = allClaims;
@@ -73,20 +82,25 @@ export function ClaimsPage() {
       list = list.filter(c => c.id.toLowerCase().includes(s) || c.description.toLowerCase().includes(s) || getAgentName(c.agent_id).toLowerCase().includes(s));
     }
     if (agentFilter.length) list = list.filter(c => agentFilter.includes(getAgentName(c.agent_id)));
+    if (payoutFilter.length) list = list.filter(c => c.payout_date && payoutFilter.includes(c.payout_date));
     if (dateFrom) list = list.filter(c => c.created_at >= dateFrom);
     if (dateTo) list = list.filter(c => c.created_at <= dateTo + "T23:59:59");
     return sortData(list, (c: Claim, key: string) => {
-      const map: Record<string, any> = { id: c.id, agent: getAgentName(c.agent_id), amount: c.amount, status: c.status, created_at: c.created_at };
+      const map: Record<string, any> = {
+        id: c.id, agent: getAgentName(c.agent_id), rooms: (c.claim_items || []).length,
+        amount: c.amount, status: c.status, payout_date: c.payout_date || "", created_at: c.created_at
+      };
       return map[key];
     });
-  }, [allClaims, statusFilter, search, sort, agentFilter, dateFrom, dateTo, users]);
+  }, [allClaims, statusFilter, search, sort, agentFilter, payoutFilter, dateFrom, dateTo, users]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const handleApprove = async (c: Claim) => {
     if (!user) return;
-    await updateClaimStatus.mutateAsync({ id: c.id, status: "approved", reviewed_by: user.id });
+    const history = [...(c.history || []), { action: "approved", by: user.email, at: new Date().toISOString() }];
+    await updateClaimStatus.mutateAsync({ id: c.id, status: "approved", reviewed_by: user.id, history });
     await logActivity("approve_claim", "claim", c.id, { amount: c.amount });
     toast.success("Claim approved");
     setViewClaim(null);
@@ -95,36 +109,103 @@ export function ClaimsPage() {
   const handleReject = async () => {
     if (!user || !showRejectDialog || !rejectReason.trim()) { toast.error("Reject reason required"); return; }
     const c = showRejectDialog;
-    await updateClaimStatus.mutateAsync({ id: c.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason });
+    const history = [...(c.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
+    await updateClaimStatus.mutateAsync({ id: c.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, history });
     await logActivity("reject_claim", "claim", c.id, { amount: c.amount, reason: rejectReason });
     toast.success("Claim rejected");
-    setShowRejectDialog(null);
-    setRejectReason("");
-    setViewClaim(null);
+    setShowRejectDialog(null); setRejectReason("");
+    setViewClaim(null); setEditClaim(null);
   };
 
   const handleCancel = async () => {
     if (!user || !showCancelDialog || !cancelReason.trim()) { toast.error("Cancel reason required"); return; }
     const c = showCancelDialog;
-    await updateClaimStatus.mutateAsync({ id: c.id, status: "cancelled", reviewed_by: user.id, reject_reason: cancelReason });
+    const history = [...(c.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
+    await updateClaimStatus.mutateAsync({ id: c.id, status: "cancelled", reviewed_by: user.id, cancel_reason: cancelReason, history });
+    // Return claim items to claimable
+    if (c.claim_items?.length) {
+      for (const item of c.claim_items) {
+        await supabase.from("claim_items").update({ status: "claimable" }).eq("id", item.id);
+      }
+    }
     await logActivity("cancel_claim", "claim", c.id, { amount: c.amount, reason: cancelReason });
-    toast.success("Claim cancelled");
-    setShowCancelDialog(null);
-    setCancelReason("");
-    setViewClaim(null);
+    toast.success("Claim cancelled — items returned to claimable");
+    setShowCancelDialog(null); setCancelReason("");
+    setViewClaim(null); setEditClaim(null);
   };
 
   const handleDelete = async () => {
     if (!showDeleteDialog) return;
-    await supabase.from("claims").delete().eq("id", showDeleteDialog.id);
-    await logActivity("delete_claim", "claim", showDeleteDialog.id, { amount: showDeleteDialog.amount });
-    toast.success("Claim deleted");
+    const c = showDeleteDialog;
+    // Return claim items to claimable
+    if (c.claim_items?.length) {
+      for (const item of c.claim_items) {
+        await supabase.from("claim_items").update({ status: "claimable" }).eq("id", item.id);
+      }
+    }
+    await supabase.from("claim_items").delete().eq("claim_id", c.id);
+    await supabase.from("claims").delete().eq("id", c.id);
+    await logActivity("delete_claim", "claim", c.id, { amount: c.amount });
+    toast.success("Claim deleted — items returned to claimable");
     setShowDeleteDialog(null);
+    setViewClaim(null); setEditClaim(null);
+  };
+
+  const handleUndoItems = async () => {
+    if (!user || !viewClaim || selectedUndoItems.length === 0) return;
+    const c = viewClaim;
+    for (const itemId of selectedUndoItems) {
+      await supabase.from("claim_items").update({ status: "claimable" }).eq("id", itemId);
+    }
+    const remainingItems = (c.claim_items || []).filter(i => !selectedUndoItems.includes(i.id));
+    const newAmount = remainingItems.reduce((s, i) => s + Number(i.amount), 0);
+    const history = [...(c.history || []), { action: "adjusted", by: user.email, at: new Date().toISOString(), removed_items: selectedUndoItems.length }];
+    const newStatus = remainingItems.length === 0 ? "cancelled" : "adjusted";
+    await updateClaim.mutateAsync({ id: c.id, amount: newAmount, status: newStatus, history });
+    await logActivity("adjust_claim", "claim", c.id, { removed_items: selectedUndoItems.length, new_amount: newAmount });
+    toast.success(`${selectedUndoItems.length} item(s) returned to claimable`);
+    setSelectedUndoItems([]);
+    setShowUndoDialog(false);
     setViewClaim(null);
   };
 
-  const hasActiveFilters = agentFilter.length > 0 || locationFilter.length > 0 || buildingFilter.length > 0 || dateFrom || dateTo;
-  const clearFilters = () => { setAgentFilter([]); setLocationFilter([]); setBuildingFilter([]); setDateFrom(""); setDateTo(""); };
+  const openEdit = (c: Claim) => {
+    setEditClaim(c);
+    setEditForm({
+      description: c.description,
+      bank_name: c.bank_name,
+      bank_account: c.bank_account,
+      account_holder: c.account_holder,
+      payout_date: c.payout_date || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editClaim || !user) return;
+    setSaving(true);
+    try {
+      const history = [...(editClaim.history || []), { action: "edited", by: user.email, at: new Date().toISOString() }];
+      await updateClaim.mutateAsync({
+        id: editClaim.id,
+        description: editForm.description,
+        bank_name: editForm.bank_name,
+        bank_account: editForm.bank_account,
+        account_holder: editForm.account_holder,
+        payout_date: editForm.payout_date || null,
+        history,
+      });
+      await logActivity("edit_claim", "claim", editClaim.id, { agent: getAgentName(editClaim.agent_id) });
+      toast.success("Claim updated");
+      setEditClaim(null);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasActiveFilters = agentFilter.length > 0 || locationFilter.length > 0 || buildingFilter.length > 0 || payoutFilter.length > 0 || dateFrom || dateTo;
+  const clearFilters = () => { setAgentFilter([]); setLocationFilter([]); setBuildingFilter([]); setPayoutFilter([]); setDateFrom(""); setDateTo(""); };
 
   const sectionCard = (emoji: string, title: string, children: React.ReactNode) => (
     <div className="bg-muted/50 rounded-lg p-4 space-y-3">
@@ -138,9 +219,55 @@ export function ClaimsPage() {
       <span className="font-medium text-right">{value || "—"}</span>
     </div>
   );
+  const ic = "px-4 py-3 rounded-lg border bg-secondary text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full text-sm";
+  const lbl = "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
 
-  const renderClaimModal = (claim: Claim, editable: boolean) => {
-    const linkedBooking = allBookings.find(b => b.id === claim.booking_id);
+  const renderClaimItems = (items: ClaimItem[], editable: boolean, showUndo: boolean) => (
+    <div className="rounded-lg border bg-card overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {showUndo && <TableHead className="w-10"></TableHead>}
+            <TableHead>Room</TableHead>
+            <TableHead>Building</TableHead>
+            <TableHead>Unit</TableHead>
+            <TableHead>Tenant</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.length === 0 ? (
+            <TableRow><TableCell colSpan={showUndo ? 7 : 6} className="text-center text-muted-foreground py-4">No claim items</TableCell></TableRow>
+          ) : items.map(item => (
+            <TableRow key={item.id}>
+              {showUndo && (
+                <TableCell>
+                  <Checkbox
+                    checked={selectedUndoItems.includes(item.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedUndoItems(prev =>
+                        checked ? [...prev, item.id] : prev.filter(id => id !== item.id)
+                      );
+                    }}
+                  />
+                </TableCell>
+              )}
+              <TableCell className="text-sm">{item.room}</TableCell>
+              <TableCell className="text-sm">{item.building}</TableCell>
+              <TableCell className="text-sm">{item.unit}</TableCell>
+              <TableCell className="text-sm">{item.tenant_name}</TableCell>
+              <TableCell className="font-medium">RM{Number(item.amount).toLocaleString()}</TableCell>
+              <TableCell><StatusBadge status={item.status} /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  const renderViewModal = (claim: Claim) => {
+    const items = claim.claim_items || [];
     return (
       <div className="space-y-5 py-4">
         {sectionCard("📋", "Claim Summary", (
@@ -148,54 +275,77 @@ export function ClaimsPage() {
             {infoRow("Claim ID", <span className="font-mono text-xs">{claim.id}</span>)}
             {infoRow("Agent", getAgentName(claim.agent_id))}
             {infoRow("Status", <StatusBadge status={claim.status} />)}
-            {infoRow("Amount", `RM${Number(claim.amount).toLocaleString()}`)}
+            {infoRow("Total Amount", `RM${Number(claim.amount).toLocaleString()}`)}
+            {infoRow("Payout Date", claim.payout_date ? format(new Date(claim.payout_date), "dd MMM yyyy") : "—")}
             {infoRow("Submitted At", format(new Date(claim.created_at), "dd MMM yyyy, HH:mm"))}
             {claim.reviewed_at && infoRow("Reviewed At", format(new Date(claim.reviewed_at), "dd MMM yyyy, HH:mm"))}
           </div>
         ))}
-        {linkedBooking && sectionCard("📋", "Linked Booking", (
-          <div>
-            {infoRow("Tenant", linkedBooking.tenant_name)}
-            {infoRow("Room", `${linkedBooking.room?.building || ""} ${linkedBooking.room?.unit || ""} ${linkedBooking.room?.room || ""}`)}
-            {infoRow("Move-in Date", linkedBooking.move_in_date)}
-            {infoRow("Duration", `${linkedBooking.contract_months} months`)}
+
+        {sectionCard("📦", `Claim Items (${items.length})`, (
+          <div className="space-y-3">
+            {renderClaimItems(items, false, claim.status === "approved" && isBossManager)}
+            <div className="flex justify-between text-sm font-semibold pt-2 border-t border-border">
+              <span>Total ({items.length} items)</span>
+              <span>RM{items.reduce((s, i) => s + Number(i.amount), 0).toLocaleString()}</span>
+            </div>
+            {claim.status === "approved" && isBossManager && selectedUndoItems.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setShowUndoDialog(true)}>
+                <Undo2 className="h-3 w-3 mr-1" /> Undo {selectedUndoItems.length} Selected Item(s)
+              </Button>
+            )}
           </div>
         ))}
-        {sectionCard("💰", "Details", (
+
+        {sectionCard("💰", "Bank Details", (
           <div>
             {infoRow("Description", claim.description)}
-            {infoRow("Bank", claim.bank_name ? `${claim.bank_name} · ${claim.bank_account} · ${claim.account_holder}` : "—")}
+            {infoRow("Bank", claim.bank_name || "—")}
+            {infoRow("Account", claim.bank_account || "—")}
+            {infoRow("Holder", claim.account_holder || "—")}
           </div>
         ))}
+
         {claim.reject_reason && (
           <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm">
-            <span className="font-semibold">Reject/Cancel Reason:</span> {claim.reject_reason}
+            <span className="font-semibold">Reject Reason:</span> {claim.reject_reason}
           </div>
         )}
-        {/* History */}
-        {((claim as any).history || []).length > 0 && sectionCard("📜", "History", (
+        {claim.cancel_reason && (
+          <div className="bg-muted text-muted-foreground rounded-lg p-4 text-sm">
+            <span className="font-semibold">Cancel Reason:</span> {claim.cancel_reason}
+          </div>
+        )}
+
+        {(claim.history || []).length > 0 && sectionCard("📜", "History", (
           <div className="space-y-2">
-            {((claim as any).history || []).map((h: any, i: number) => (
+            {(claim.history || []).map((h: any, i: number) => (
               <div key={i} className="text-xs bg-background rounded-lg border p-3">
                 <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
                 {h.reason && <div className="text-muted-foreground mt-1">Reason: {h.reason}</div>}
+                {h.removed_items && <div className="text-muted-foreground mt-1">{h.removed_items} item(s) removed</div>}
               </div>
             ))}
           </div>
         ))}
-        {/* Actions */}
+
+        {/* Action buttons */}
         {claim.status === "pending" && (
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => handleApprove(claim)} className="bg-emerald-600 hover:bg-emerald-700 text-white">✅ Approve</Button>
-            <Button variant="destructive" onClick={() => { setShowRejectDialog(claim); }}>❌ Reject</Button>
-            <Button variant="outline" onClick={() => { setShowCancelDialog(claim); }}>🚫 Cancel</Button>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button onClick={() => handleApprove(claim)} size="sm"><Check className="h-3 w-3 mr-1" /> Approve</Button>
+            <Button variant="destructive" size="sm" onClick={() => setShowRejectDialog(claim)}><X className="h-3 w-3 mr-1" /> Reject</Button>
+            <Button variant="outline" size="sm" onClick={() => setShowCancelDialog(claim)}><Ban className="h-3 w-3 mr-1" /> Cancel</Button>
           </div>
         )}
         {(claim.status === "rejected" || claim.status === "cancelled") && (
-          <Button variant="outline" className="text-destructive" onClick={() => setShowDeleteDialog(claim)}>🗑️ Delete</Button>
+          <Button variant="outline" size="sm" className="text-destructive" onClick={() => setShowDeleteDialog(claim)}>
+            <Trash2 className="h-3 w-3 mr-1" /> Delete
+          </Button>
         )}
         {claim.status === "approved" && isBossManager && (
-          <Button variant="outline" className="text-muted-foreground" onClick={() => { setShowCancelDialog(claim); }}>🔄 Adjust / Cancel (Manager Override)</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowCancelDialog(claim)}>
+            <Undo2 className="h-3 w-3 mr-1" /> Adjust / Cancel (Override)
+          </Button>
         )}
       </div>
     );
@@ -205,11 +355,69 @@ export function ClaimsPage() {
     <div className="space-y-4">
       {/* View Modal */}
       {viewClaim && (
-        <Dialog open={!!viewClaim} onOpenChange={(open) => { if (!open) setViewClaim(null); }}>
+        <Dialog open={!!viewClaim} onOpenChange={(open) => { if (!open) { setViewClaim(null); setSelectedUndoItems([]); } }}>
           <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>View Claim</DialogTitle></DialogHeader>
             <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
-              {renderClaimModal(allClaims.find(c => c.id === viewClaim.id) || viewClaim, false)}
+              {renderViewModal(allClaims.find(c => c.id === viewClaim.id) || viewClaim)}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Edit Modal */}
+      {editClaim && (
+        <Dialog open={!!editClaim} onOpenChange={(open) => { if (!open && !saving) setEditClaim(null); }}>
+          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
+            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Edit Claim — {getAgentName(editClaim.agent_id)}</DialogTitle></DialogHeader>
+            <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
+              <div className="space-y-5 py-4">
+                {sectionCard("📋", "Claim Summary (Read-Only)", (
+                  <div>
+                    {infoRow("Claim ID", <span className="font-mono text-xs">{editClaim.id}</span>)}
+                    {infoRow("Agent", getAgentName(editClaim.agent_id))}
+                    {infoRow("Status", <StatusBadge status={editClaim.status} />)}
+                    {infoRow("Total Amount", `RM${Number(editClaim.amount).toLocaleString()}`)}
+                    {infoRow("Submitted At", format(new Date(editClaim.created_at), "dd MMM yyyy, HH:mm"))}
+                  </div>
+                ))}
+
+                {sectionCard("📦", `Claim Items (${(editClaim.claim_items || []).length})`, (
+                  renderClaimItems(editClaim.claim_items || [], true, false)
+                ))}
+
+                {sectionCard("✏️", "Editable Details", (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className={lbl}>Description</label>
+                      <Textarea className="bg-secondary" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={2} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className={lbl}>Payout Date</label>
+                      <Input type="date" className="bg-secondary" value={editForm.payout_date} onChange={e => setEditForm({ ...editForm, payout_date: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <label className={lbl}>Bank Name</label>
+                        <input className={ic} value={editForm.bank_name} onChange={e => setEditForm({ ...editForm, bank_name: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className={lbl}>Bank Account</label>
+                        <input className={ic} value={editForm.bank_account} onChange={e => setEditForm({ ...editForm, bank_account: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className={lbl}>Account Holder</label>
+                        <input className={ic} value={editForm.account_holder} onChange={e => setEditForm({ ...editForm, account_holder: e.target.value })} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditClaim(null)} disabled={saving}>Cancel</Button>
+                  <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                </DialogFooter>
+              </div>
             </ScrollArea>
           </DialogContent>
         </Dialog>
@@ -230,7 +438,7 @@ export function ClaimsPage() {
       {/* Cancel Dialog */}
       <AlertDialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(null); setCancelReason(""); } }}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Cancel Claim?</AlertDialogTitle><AlertDialogDescription>Enter the cancellation reason.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Cancel Claim?</AlertDialogTitle><AlertDialogDescription>Items will return to claimable.</AlertDialogDescription></AlertDialogHeader>
           <Textarea placeholder="Reason (required)..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} />
           <AlertDialogFooter>
             <AlertDialogCancel>Keep</AlertDialogCancel>
@@ -242,10 +450,24 @@ export function ClaimsPage() {
       {/* Delete Dialog */}
       <AlertDialog open={!!showDeleteDialog} onOpenChange={(open) => { if (!open) setShowDeleteDialog(null); }}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Delete Claim?</AlertDialogTitle><AlertDialogDescription>This cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Delete Claim?</AlertDialogTitle><AlertDialogDescription>This cannot be undone. Items will return to claimable.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Undo Items Dialog */}
+      <AlertDialog open={showUndoDialog} onOpenChange={(open) => { if (!open) setShowUndoDialog(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo Selected Items?</AlertDialogTitle>
+            <AlertDialogDescription>{selectedUndoItems.length} item(s) will be returned to claimable. My Deals and Total Commission will recalculate.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUndoItems}>Confirm Undo</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -259,23 +481,25 @@ export function ClaimsPage() {
       <div className="flex flex-wrap gap-3 items-center">
         <Input placeholder="Search ID, agent, description..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="adjusted">Adjusted</SelectItem>
           </SelectContent>
         </Select>
         {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground"><X className="h-3 w-3 mr-1" /> Clear</Button>}
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <MultiSelectFilter label="Agent" placeholder="All" options={agentOptions} selected={agentFilter} onApply={v => { setAgentFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={v => { setLocationFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={v => { setBuildingFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Payout Window" placeholder="All" options={payoutOptions} selected={payoutFilter} onApply={v => { setPayoutFilter(v); setPage(0); }} />
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date From</label>
           <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
@@ -296,33 +520,35 @@ export function ClaimsPage() {
               <TableRow>
                 <SortableTableHead sortKey="id" currentSort={sort} onSort={handleSort}>Claim ID</SortableTableHead>
                 <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
-                <SortableTableHead sortKey="amount" currentSort={sort} onSort={handleSort}>Amount</SortableTableHead>
+                <SortableTableHead sortKey="rooms" currentSort={sort} onSort={handleSort}>Rooms</SortableTableHead>
+                <SortableTableHead sortKey="amount" currentSort={sort} onSort={handleSort}>Total Amount</SortableTableHead>
                 <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+                <SortableTableHead sortKey="payout_date" currentSort={sort} onSort={handleSort}>Payout Date</SortableTableHead>
                 <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted</SortableTableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-muted-foreground py-8 text-center">No claims found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-muted-foreground py-8 text-center">No claims found</TableCell></TableRow>
               ) : paged.map(c => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-mono text-xs text-center">{c.id.slice(0, 8)}</TableCell>
-                  <TableCell className="text-sm text-center">{getAgentName(c.agent_id)}</TableCell>
-                  <TableCell className="font-medium text-center">RM{Number(c.amount).toLocaleString()}</TableCell>
-                  <TableCell className="text-center"><StatusBadge status={c.status} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(c.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
+                  <TableCell className="font-mono text-xs">{c.id.slice(0, 8)}</TableCell>
+                  <TableCell className="text-sm">{getAgentName(c.agent_id)}</TableCell>
+                  <TableCell className="text-sm">{(c.claim_items || []).length}</TableCell>
+                  <TableCell className="font-medium">RM{Number(c.amount).toLocaleString()}</TableCell>
+                  <TableCell><StatusBadge status={c.status} /></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.payout_date ? format(new Date(c.payout_date), "dd MMM yyyy") : "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{format(new Date(c.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-center">
                       <Button variant="ghost" size="icon" onClick={() => setViewClaim(c)} title="View"><Eye className="h-4 w-4" /></Button>
-                      {(c.status === "pending") && (
-                        <Button variant="ghost" size="icon" onClick={() => setViewClaim(c)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                      )}
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)} title="Edit"><Pencil className="h-4 w-4" /></Button>
                       {(c.status === "rejected" || c.status === "cancelled") && (
                         <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(c)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
                       {(c.status === "pending" || c.status === "approved") && (
-                        <Button variant="ghost" size="icon" onClick={() => setShowCancelDialog(c)} title="Cancel"><X className="h-4 w-4 text-muted-foreground" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setShowCancelDialog(c)} title="Cancel"><Ban className="h-4 w-4 text-muted-foreground" /></Button>
                       )}
                     </div>
                   </TableCell>
