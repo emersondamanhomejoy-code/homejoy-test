@@ -470,6 +470,7 @@ export function RoomsContent() {
               {/* Header */}
               <div>
                 <div className="text-lg font-semibold">{viewingRoom.building} · {viewingRoom.unit} · {viewingRoom.room}</div>
+                {(viewingRoom as any).room_title && <div className="text-base font-medium mt-0.5">{(viewingRoom as any).room_title}</div>}
                 <div className="text-sm text-muted-foreground">{viewingRoom.location}</div>
               </div>
 
