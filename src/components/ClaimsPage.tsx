@@ -637,11 +637,11 @@ export function ClaimsPage() {
                   </div>
                 ))}
 
-                {sectionCard("📦", "Approved Bookings", (
+                {sectionCard("📦", "Approved Move-ins", (
                   <div className="space-y-3">
                     {availableCreateMoveIns.length === 0 ? (
                       <div className="rounded-lg bg-secondary/30 p-4 text-sm text-muted-foreground">
-                        {createForm.agent_id ? "No eligible approved bookings available for this agent." : "Select an agent first."}
+                        {createForm.agent_id ? "No eligible approved move-ins available for this agent." : "Select an agent first."}
                       </div>
                     ) : (
                       <div className="space-y-2 rounded-lg border bg-secondary/30 p-3 max-h-72 overflow-y-auto">
@@ -672,7 +672,7 @@ export function ClaimsPage() {
                                   <div className="text-sm font-medium">{booking.room?.building} {booking.room?.unit} {booking.room?.room}</div>
                                   <div className="text-sm font-semibold">RM{amount.toLocaleString()}</div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">{booking.tenant_name} · Move-in {booking.move_in_date ? format(new Date(booking.move_in_date), "dd MMM yyyy") : "—"}</div>
+                                <div className="text-xs text-muted-foreground">{booking.tenant_name} · Move-in {booking.booking?.move_in_date ? format(new Date(booking.booking.move_in_date), "dd MMM yyyy") : "—"}</div>
                               </div>
                             </label>
                           );
