@@ -37,6 +37,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const [rejectReason, setRejectReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [cancelResolutionType, setCancelResolutionType] = useState("");
 
   const room = roomsData.find(r => r.id === b.room_id);
   const info = b.room || (room ? { room: room.room, building: room.building, unit: room.unit } : null);
@@ -140,21 +141,23 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   const handleCancel = async () => {
     if (!user || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
+    if (!cancelResolutionType) { toast.error("Please select a resolution type"); return; }
     const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
-    const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
+    const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason, resolution_type: cancelResolutionType }];
     await updateBookingStatus.mutateAsync({
       id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason,
       room_id: b.room_id, carParkIds, history,
-      resolution_type: b.status === "approved" ? "forfeit" : "",
+      resolution_type: cancelResolutionType,
     });
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "cancel_booking", entity_type: "booking", entity_id: b.id,
-      details: { tenant_name: b.tenant_name, reason: cancelReason, resolution_type: b.status === "approved" ? "forfeit" : "" },
+      details: { tenant_name: b.tenant_name, reason: cancelReason, resolution_type: cancelResolutionType },
     });
-    toast.success(b.status === "approved" ? "Booking cancelled (Forfeit)" : "Booking cancelled");
+    toast.success(`Booking cancelled (${cancelResolutionType})`);
     setShowCancelDialog(false);
+    setCancelResolutionType("");
     onOpenChange(false);
   };
 
@@ -462,18 +465,30 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       </Dialog>
 
       {/* Cancel Dialog */}
-      <Dialog open={showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(false); setCancelReason(""); } }}>
+      <Dialog open={showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(false); setCancelReason(""); setCancelResolutionType(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Cancel Booking</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">Please enter the reason for cancelling this booking. This is required.</p>
-            <Textarea placeholder="Enter cancel reason..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} />
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Resolution Type *</label>
+              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cancelResolutionType} onChange={e => setCancelResolutionType(e.target.value)}>
+                <option value="">— Select —</option>
+                <option value="forfeit">Forfeit</option>
+                <option value="withdrawn">Withdrawn</option>
+                <option value="duplicate">Duplicate</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Reason *</label>
+              <Textarea placeholder="Enter cancel reason..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3} />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCancelDialog(false); setCancelReason(""); }}>Go Back</Button>
-            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Booking</Button>
+            <Button variant="outline" onClick={() => { setShowCancelDialog(false); setCancelReason(""); setCancelResolutionType(""); }}>Go Back</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim() || !cancelResolutionType}>Cancel Booking</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
