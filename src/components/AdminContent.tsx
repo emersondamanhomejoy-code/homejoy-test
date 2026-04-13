@@ -124,7 +124,7 @@ const emptyUnit = {
 };
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "bookings" | "claims" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "movein" | "claims" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
