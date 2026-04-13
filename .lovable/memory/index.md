@@ -7,6 +7,7 @@ Each unit has 5 rooms (A-E), rooms independently available/unavailable.
 Lovable Cloud backend. Roles: admin, agent, super_admin.
 
 ## Memories
+- [Core business flow](mem://features/business-flow) — Location→Building→Unit→Room→Booking→Approval→MoveIn→Payout→MoveOut
 - [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
 - [Status system](mem://features/status-system) — Canonical statuses for rooms, bookings, move-ins with DB constraints
 - [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission types
