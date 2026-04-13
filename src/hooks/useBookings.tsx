@@ -43,6 +43,7 @@ export interface Booking {
   reviewed_at: string | null;
   reject_reason: string;
   move_in_cost: Record<string, number>;
+  history: any[];
   created_at: string;
   updated_at: string;
   // joined
@@ -79,6 +80,7 @@ export function useUpdateBookingStatus() {
       tenant_race,
       pax_staying,
       carParkIds,
+      history,
     }: {
       id: string;
       status: "approved" | "rejected" | "cancelled";
@@ -90,15 +92,18 @@ export function useUpdateBookingStatus() {
       tenant_race?: string;
       pax_staying?: number;
       carParkIds?: string[];
+      history?: any[];
     }) => {
+      const updates: Record<string, any> = {
+        status,
+        reviewed_by,
+        reviewed_at: new Date().toISOString(),
+        reject_reason: reject_reason || "",
+      };
+      if (history !== undefined) updates.history = history;
       const { error } = await supabase
         .from("bookings")
-        .update({
-          status,
-          reviewed_by,
-          reviewed_at: new Date().toISOString(),
-          reject_reason: reject_reason || "",
-        })
+        .update(updates)
         .eq("id", id);
       if (error) throw error;
 
