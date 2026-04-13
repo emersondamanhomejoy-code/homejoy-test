@@ -1,25 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
-import { useRooms, useUnits } from "@/hooks/useRooms";
+import { useRooms } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Eye, Pencil, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus } from "lucide-react";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
+import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { StandardTable } from "@/components/ui/standard-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { BookingDetailView } from "@/components/BookingDetailView";
 import { BookingEditView } from "@/components/BookingEditView";
 import { CreateBookingDialog } from "@/components/CreateBookingDialog";
+import { labelClass } from "@/lib/ui-constants";
 import { toast } from "sonner";
 
 interface UserInfo {
@@ -40,6 +40,7 @@ export function BookingsContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filters
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
@@ -50,7 +51,6 @@ export function BookingsContent() {
   const [dateTo, setDateTo] = useState("");
 
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
-  const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
@@ -119,8 +119,10 @@ export function BookingsContent() {
     });
   }, [allBookings, statusFilter, search, sort, locationFilter, buildingFilter, unitFilter, roomFilter, agentFilter, dateFrom, dateTo, roomsData, agents, users]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
+
+  const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom !== "" || dateTo !== "" || statusFilter !== "all";
+  const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); setStatusFilter("all"); setSearch(""); setPage(0); };
 
   const statusBadge = (status: string) => {
     const cls = status === "pending" ? "bg-yellow-500/20 text-yellow-600" : status === "approved" ? "bg-green-500/20 text-green-600" : status === "cancelled" ? "bg-gray-500/20 text-gray-500" : "bg-red-500/20 text-red-600";
@@ -151,9 +153,6 @@ export function BookingsContent() {
     toast.success("Booking deleted");
     setShowDeleteDialog(null);
   };
-
-  const hasActiveFilters = locationFilter.length > 0 || buildingFilter.length > 0 || unitFilter.length > 0 || roomFilter.length > 0 || agentFilter.length > 0 || dateFrom || dateTo;
-  const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); };
 
   return (
     <StandardPageLayout title="Bookings" actionLabel="Create Booking" actionIcon={<Plus className="h-4 w-4" />} onAction={() => setShowCreateDialog(true)}>
@@ -202,117 +201,96 @@ export function BookingsContent() {
         onConfirm={handleDelete}
       />
 
-      {/* Search + Status filter */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <Input placeholder="Search name, ID, building..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
-        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-muted-foreground"><X className="h-3 w-3 mr-1" /> Clear Filters</Button>
-        )}
-      </div>
-
-      {/* Advanced Filters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* Filters */}
+      <StandardFilterBar
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(0); }}
+        placeholder="Search name, ID, building..."
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearAllFilters}
+      >
+        <div className="space-y-1.5">
+          <label className={labelClass}>Status</label>
+          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={v => { setLocationFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={v => { setBuildingFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Unit" placeholder="All" options={unitOptions} selected={unitFilter} onApply={v => { setUnitFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Room" placeholder="All" options={roomOptions} selected={roomFilter} onApply={v => { setRoomFilter(v); setPage(0); }} />
         <MultiSelectFilter label="Agent" placeholder="All" options={agentOptions} selected={agentFilter} onApply={v => { setAgentFilter(v); setPage(0); }} />
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date From</label>
-          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
+          <label className={labelClass}>Date From</label>
+          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10 w-[150px]" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date To</label>
-          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="h-10" />
+          <label className={labelClass}>Date To</label>
+          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="h-10 w-[150px]" />
         </div>
-      </div>
+      </StandardFilterBar>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Loading bookings...</div>
-      ) : (
-        <div className="rounded-lg border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableTableHead sortKey="id" currentSort={sort} onSort={handleSort}>Booking ID</SortableTableHead>
-                <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
-                <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
-                <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
-                <SortableTableHead sortKey="monthly_salary" currentSort={sort} onSort={handleSort}>Final Rental</SortableTableHead>
-                <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
-                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted At</SortableTableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-muted-foreground py-8">No bookings found</TableCell></TableRow>
-              ) : (
-                paged.map(b => {
-                  const info = getRoomInfo(b);
-                  return (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-mono text-xs text-center">{b.id.slice(0, 8)}</TableCell>
-                      <TableCell className="text-center">{info?.building || "—"}</TableCell>
-                      <TableCell className="text-center">{info?.unit || "—"}</TableCell>
-                      <TableCell className="text-center">{info?.room || "—"}</TableCell>
-                      <TableCell className="font-medium text-center">{b.tenant_name}</TableCell>
-                      <TableCell className="text-center">RM{b.monthly_salary || 0}</TableCell>
-                      <TableCell className="text-center">{statusBadge(b.status)}</TableCell>
-                      <TableCell className="text-sm text-center">{getAgentName(b.submitted_by)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 justify-center">
-                          <ActionButtons actions={[
-                            { type: "view", onClick: () => setViewBooking(b) },
-                            { type: "edit", onClick: () => setEditBooking(b), show: b.status === "pending" || b.status === "rejected" },
-                            { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "pending" || b.status === "approved" },
-                            { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "pending" && b.status !== "approved" },
-                          ]} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span>Show</span>
-          <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(0); }}>
-            <SelectTrigger className="w-[70px] h-8"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
-          <span>of {filtered.length}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <span className="px-2">{page + 1} / {totalPages}</span>
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-      </div>
+      <StandardTable
+        columns={
+          <TableRow className="bg-muted/30">
+            <SortableTableHead sortKey="id" currentSort={sort} onSort={handleSort}>Booking ID</SortableTableHead>
+            <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
+            <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
+            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+            <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
+            <SortableTableHead sortKey="monthly_salary" currentSort={sort} onSort={handleSort}>Final Rental</SortableTableHead>
+            <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+            <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
+            <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted At</SortableTableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        }
+        isEmpty={filtered.length === 0}
+        emptyMessage="No bookings found."
+        total={filtered.length}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        isLoading={isLoading}
+        showCount
+        countLabel="booking(s)"
+      >
+        {paged.map(b => {
+          const info = getRoomInfo(b);
+          return (
+            <TableRow key={b.id}>
+              <TableCell className="font-mono text-xs text-center">{b.id.slice(0, 8)}</TableCell>
+              <TableCell className="text-center">{info?.building || "—"}</TableCell>
+              <TableCell className="text-center">{info?.unit || "—"}</TableCell>
+              <TableCell className="text-center">{info?.room || "—"}</TableCell>
+              <TableCell className="font-medium text-center">{b.tenant_name}</TableCell>
+              <TableCell className="text-center">RM{b.monthly_salary || 0}</TableCell>
+              <TableCell className="text-center">{statusBadge(b.status)}</TableCell>
+              <TableCell className="text-sm text-center">{getAgentName(b.submitted_by)}</TableCell>
+              <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
+              <TableCell>
+                <div className="flex gap-1 justify-center">
+                  <ActionButtons actions={[
+                    { type: "view", onClick: () => setViewBooking(b) },
+                    { type: "edit", onClick: () => setEditBooking(b), show: b.status === "pending" || b.status === "rejected" },
+                    { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "pending" || b.status === "approved" },
+                    { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "pending" && b.status !== "approved" },
+                  ]} />
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </StandardTable>
     </StandardPageLayout>
   );
 }
