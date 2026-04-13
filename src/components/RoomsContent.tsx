@@ -201,7 +201,7 @@ export function RoomsContent() {
         search={search}
         onSearchChange={(v) => { setSearch(v); setPage(1); }}
         placeholder="Search by room, unit, building, location..."
-        hasActiveFilters={hasFilters}
+        hasActiveFilters={hasFilters || false}
         onClearFilters={clearFilters}
       >
           <MultiSelectFilter label="Location" placeholder="All Locations" options={locations} selected={selectedLocations}
@@ -361,18 +361,15 @@ export function RoomsContent() {
       </div>
 
       {/* Delete confirm */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive / Remove this room?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. The room will be permanently deleted.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remove</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
+        title="Archive / Remove this room?"
+        description="This action cannot be undone. The room will be permanently deleted."
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* View Room Dialog */}
       <Dialog open={!!viewingRoom} onOpenChange={() => setViewingRoom(null)}>
