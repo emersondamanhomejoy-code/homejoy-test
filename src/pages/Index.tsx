@@ -994,7 +994,32 @@ export default function Index() {
     );
   }
 
-  // ─── DASHBOARD ───
+  // ─── EARNINGS PAGE ───
+  if (page === "earnings") {
+    return (
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <ComingSoonPlaceholder title="Earnings" />
+          </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
+  // ─── ANNOUNCEMENTS PAGE (AGENT) ───
+  if (page === "announcements") {
+    return (
+      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
+        <div className="flex-1 p-6 overflow-auto text-foreground">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+            <ComingSoonPlaceholder title="Announcements" />
+          </div>
+        </div>
+      </OldDashboardLayout>
+    );
+  }
+
   const availableCarParksCount = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available").length;
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
