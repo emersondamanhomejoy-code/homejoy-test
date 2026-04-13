@@ -1,19 +1,19 @@
 # Project Memory
 
 ## Core
-HOMEJOY Operations Portal — room rental management system.
+HOMEJOY Agent Portal — room rental management system.
 Google OAuth only, no email/password auth.
-Lovable Cloud backend. Roles: super_admin, admin, agent.
-Claims module deprecated. Workflow: Booking → Move-in → Done.
-No pets allowed in units (max_pets always 0).
+Each unit has 5 rooms (A-E), rooms independently available/unavailable.
+Lovable Cloud backend. Roles: admin, agent, super_admin.
 
 ## Memories
-- [Room structure](mem://features/rooms) — Unit→dynamic rooms, carparks in rooms table
-- [Role hierarchy](mem://features/roles) — Super Admin > Admin > Agent permissions
-- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission config
-- [Building access](mem://features/building-access) — Pedestrian, carpark, motorcycle access rules
-- [Bookings](mem://features/bookings) — Agent/customer submit booking, admin approves/rejects
-- [Tenant selection](mem://features/tenant-selection) — Select existing or create new tenant in booking
-- [Form dialogs](mem://design/form-dialogs) — Modal-based forms, no side drawers
-- [No pets](mem://constraints/no-pets) — max_pets always 0
-- [Area filter](mem://features/area-filter) — Valid area names for locations
+- [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
+- [Status system](mem://features/status-system) — Canonical statuses for rooms, bookings, move-ins with DB constraints
+- [Commission tiers](mem://features/commission-tiers) — Per-agent customizable commission types
+- [Area filter](mem://features/area-filter) — Valid area names for unit locations
+- [Bookings](mem://features/bookings) — Agent/customer submit booking requests, admin approves/rejects
+- [Building access](mem://features/building-access) — Building access item configuration
+- [Roles](mem://features/roles) — User role system
+- [Tenant selection](mem://features/tenant-selection) — Tenant linking in bookings
+- [Form dialog pattern](mem://design/form-dialogs) — Modal patterns for add/edit forms
+- [No pets](mem://constraints/no-pets) — Pet feature removed

@@ -125,7 +125,7 @@ export function BookingsContent() {
   const clearAllFilters = () => { setLocationFilter([]); setBuildingFilter([]); setUnitFilter([]); setRoomFilter([]); setAgentFilter([]); setDateFrom(""); setDateTo(""); setStatusFilter("all"); setSearch(""); setPage(0); };
 
   const statusBadge = (status: string) => {
-    const cls = status === "pending" ? "bg-yellow-500/20 text-yellow-600" : status === "approved" ? "bg-green-500/20 text-green-600" : status === "cancelled" ? "bg-gray-500/20 text-gray-500" : "bg-red-500/20 text-red-600";
+    const cls = status === "submitted" ? "bg-yellow-500/20 text-yellow-600" : status === "approved" ? "bg-green-500/20 text-green-600" : status === "cancelled" ? "bg-gray-500/20 text-gray-500" : "bg-red-500/20 text-red-600";
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${cls}`}>{status.toUpperCase()}</span>;
   };
 
@@ -144,7 +144,7 @@ export function BookingsContent() {
   const handleDelete = async () => {
     if (!showDeleteDialog) return;
     const b = showDeleteDialog;
-    if (b.room_id && b.status === "pending") {
+    if (b.room_id && b.status === "submitted") {
       await supabase.from("rooms").update({ status: "Available" }).eq("id", b.room_id);
     }
     await supabase.from("bookings").delete().eq("id", b.id);
@@ -215,7 +215,7 @@ export function BookingsContent() {
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="submitted">Submitted</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -281,9 +281,9 @@ export function BookingsContent() {
                 <div className="flex gap-1 justify-center">
                   <ActionButtons actions={[
                     { type: "view", onClick: () => setViewBooking(b) },
-                    { type: "edit", onClick: () => setEditBooking(b), show: b.status === "pending" || b.status === "rejected" },
-                    { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "pending" || b.status === "approved" },
-                    { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "pending" && b.status !== "approved" },
+                    { type: "edit", onClick: () => setEditBooking(b), show: b.status === "submitted" || b.status === "rejected" },
+                    { type: "cancel", onClick: () => setShowCancelDialog(b), show: b.status === "submitted" || b.status === "approved" },
+                    { type: "delete", onClick: () => setShowDeleteDialog(b), show: b.status !== "submitted" && b.status !== "approved" },
                   ]} />
                 </div>
               </TableCell>

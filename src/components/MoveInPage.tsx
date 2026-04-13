@@ -215,7 +215,7 @@ export function MoveInPage() {
         agreement_signed: createForm.agreement_signed,
         payment_method: createForm.payment_method,
         receipt_path: createForm.receipt_path,
-        status: "pending_review",
+        status: "submitted",
         history,
       });
       await logActivity("create_move_in", "move_in", selectedCreateBooking.id, {
@@ -545,7 +545,7 @@ export function MoveInPage() {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending_review">Pending Review</SelectItem>
+            <SelectItem value="submitted">Submitted</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -605,16 +605,16 @@ export function MoveInPage() {
                   <TableCell>
                     <div className="flex justify-center gap-1">
                       <Button variant="ghost" size="icon" onClick={() => setViewItem(item)} title="View"><Eye className="h-4 w-4" /></Button>
-                      {(item.status === "pending_review" || item.status === "rejected") && (
+                      {(item.status === "submitted" || item.status === "rejected") && (
                         <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Edit"><Pencil className="h-4 w-4" /></Button>
                       )}
-                      {item.status === "pending_review" && (
+                      {item.status === "submitted" && (
                         <>
                           <Button variant="ghost" size="icon" onClick={() => handleApprove(item)} title="Approve"><Check className="h-4 w-4 text-primary" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => setShowRejectDialog(item)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                         </>
                       )}
-                      {(item.status === "pending_review" || item.status === "approved") && (
+                      {(item.status === "submitted" || item.status === "approved") && (
                         <Button variant="ghost" size="icon" onClick={() => setShowCancelDialog(item)} title="Cancel"><Ban className="h-4 w-4 text-muted-foreground" /></Button>
                       )}
                     </div>

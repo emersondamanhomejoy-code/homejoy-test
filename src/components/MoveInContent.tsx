@@ -61,7 +61,7 @@ export function MoveInContent() {
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="submitted">Submitted</SelectItem>
           </SelectContent>
         </Select>
       </StandardFilterBar>

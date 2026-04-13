@@ -50,7 +50,7 @@ export function AdminContent({ tab }: AdminContentProps) {
   return (
     <div className="space-y-6">
       {tab === "dashboard" && (() => {
-        const pendingBookings = allBookings.filter(b => b.status === "pending");
+        const pendingBookings = allBookings.filter(b => b.status === "submitted");
         const approvedBookings = allBookings.filter(b => b.status === "approved");
         const rejectedBookings = allBookings.filter(b => b.status === "rejected");
         const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park").length ?? 0), 0);
@@ -96,7 +96,7 @@ export function AdminContent({ tab }: AdminContentProps) {
               <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <div className="text-xl font-bold">{b.tenant_name}</div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${b.status === "pending" ? "bg-yellow-500/20 text-yellow-600" : b.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{b.status.toUpperCase()}</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${b.status === "submitted" ? "bg-yellow-500/20 text-yellow-600" : b.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{b.status.toUpperCase()}</span>
                 </div>
                 {b.room && <div className="text-sm text-muted-foreground">{b.room.building} · {b.room.unit} · {b.room.room}</div>}
 
@@ -160,7 +160,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                   ))}
                 </div>
 
-                {b.status === "pending" && (
+                {b.status === "submitted" && (
                   <div className="flex flex-col gap-3 pt-4 border-t border-border">
                     <div className="flex gap-2">
                       <button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
