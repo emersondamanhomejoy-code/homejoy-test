@@ -252,7 +252,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const handleUnlinkTenant = () => {
     setSelectedTenantId(null);
     setLinkedTenantDocs({ passport: "", offerLetter: "" });
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles({ bookingFeeReceipt: null, passport: null, offerLetter: null });
     setForm(prev => ({ ...prev, tenantName: "", phone: "", email: "", icPassport: "", gender: "", nationality: "", occupation: "",
       emergency1Name: "", emergency1Phone: "", emergency1Relationship: "",
       emergency2Name: "", emergency2Phone: "", emergency2Relationship: "" }));
@@ -356,7 +356,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const resetForm = () => {
     setForm(initialForm);
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles({ bookingFeeReceipt: null, passport: null, offerLetter: null });
     setLinkedTenantDocs({ passport: "", offerLetter: "" });
     setSelectedTenantId(null);
   };
@@ -372,7 +372,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
   const hasReceipt = uploadedFiles.bookingFeeReceipt != null;
 
   const removeReceipt = () => {
-    setUploadedFiles({ bookingFeeReceipt: null });
+    setUploadedFiles(prev => ({ ...prev, bookingFeeReceipt: null }));
   };
 
   const formIsDirty = !!(form.tenantName.trim() || form.roomId || form.agentId);
@@ -631,7 +631,7 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
                   <span className="text-muted-foreground">Choose File</span>
                   <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => {
                     const file = e.target.files?.[0];
-                    if (file) setUploadedFiles({ bookingFeeReceipt: file });
+                    if (file) setUploadedFiles(prev => ({ ...prev, bookingFeeReceipt: file }));
                     e.target.value = "";
                   }} />
                 </label>
