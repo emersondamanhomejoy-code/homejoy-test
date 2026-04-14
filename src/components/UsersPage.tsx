@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
@@ -127,7 +128,10 @@ export function UsersPage() {
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const createUser = async () => {
-    if (!newAgent.email.trim()) { toast.error("Email is required"); return; }
+    const rules: Record<string, (v: any) => string | null> = {
+      email: () => !newAgent.email.trim() ? "Email is required" : null,
+    };
+    if (!userCreateValidation.validate({ email: newAgent.email }, rules)) return;
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();

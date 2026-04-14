@@ -22,6 +22,7 @@ import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { Eye, Pencil, Trash2, X, ChevronLeft, ChevronRight, Check, Ban, Undo2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface UserInfo {
   id: string;
@@ -286,10 +287,9 @@ export function ClaimsPage() {
   };
 
   const handleReject = async () => {
-    if (!user || !showRejectDialog || !rejectReason.trim()) {
-      toast.error("Reject reason required");
-      return;
-    }
+    if (!user || !showRejectDialog) return;
+    const rules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
+    if (!claimRejectValidation.validate({ rejectReason }, rules)) return;
     const claim = showRejectDialog;
     const history = [...(claim.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
     await updateClaimStatus.mutateAsync({ id: claim.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, history });
@@ -302,10 +302,9 @@ export function ClaimsPage() {
   };
 
   const handleCancel = async () => {
-    if (!user || !showCancelDialog || !cancelReason.trim()) {
-      toast.error("Cancel reason required");
-      return;
-    }
+    if (!user || !showCancelDialog) return;
+    const rules = { cancelReason: () => !cancelReason.trim() ? "Cancel reason is required" : null };
+    if (!claimCancelValidation.validate({ cancelReason }, rules)) return;
     const claim = showCancelDialog;
     const history = [...(claim.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
     await updateClaimStatus.mutateAsync({ id: claim.id, status: "cancelled", reviewed_by: user.id, cancel_reason: cancelReason, history });
@@ -360,14 +359,12 @@ export function ClaimsPage() {
   };
 
   const handleCreate = async () => {
-    if (!user || !createForm.agent_id || createForm.selectedMoveInIds.length === 0) {
-      toast.error("Please select an agent and at least one approved move-in");
-      return;
-    }
-    if (!createForm.description.trim()) {
-      toast.error("Description is required");
-      return;
-    }
+    const rules: Record<string, (v: any) => string | null> = {
+      agent_id: () => !createForm.agent_id ? "Please select an agent" : null,
+      selectedMoveInIds: () => createForm.selectedMoveInIds.length === 0 ? "Please select at least one approved move-in" : null,
+      description: () => !createForm.description.trim() ? "Description is required" : null,
+    };
+    if (!claimCreateValidation.validate(createForm, rules)) return;
 
     setSaving(true);
     try {

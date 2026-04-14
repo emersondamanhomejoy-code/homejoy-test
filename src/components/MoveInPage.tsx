@@ -620,9 +620,10 @@ export function MoveInPage() {
               This will reverse the approved move-in for <strong>{showReverseDialog?.tenant_name}</strong>.
               Occupancy will be removed and room set back to Pending.
             </p>
-            <div className="space-y-1">
+            <div className="space-y-1" data-field="reverseReason">
               <label className="text-sm font-medium">Reason *</label>
-              <Textarea placeholder="Why is this move-in being reversed?" value={reverseReason} onChange={(e) => setReverseReason(e.target.value)} rows={3} />
+              <Textarea className={fieldClass("", !!reverseValidation.errors.reverseReason)} placeholder="Why is this move-in being reversed?" value={reverseReason} onChange={(e) => { setReverseReason(e.target.value); reverseValidation.clearError("reverseReason"); }} rows={3} />
+              <FieldError error={reverseValidation.errors.reverseReason} />
             </div>
           </div>
           <DialogFooter>
