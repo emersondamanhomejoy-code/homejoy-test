@@ -290,7 +290,7 @@ export function AnnouncementsContent({ isAgent = false }: { isAgent?: boolean })
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Announcements</h2>
+        <h2 className="text-2xl font-extrabold">Announcements</h2>
         {isAdmin && <Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Create</Button>}
       </div>
 
