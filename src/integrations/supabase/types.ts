@@ -676,6 +676,66 @@ export type Database = {
           },
         ]
       }
+      move_outs: {
+        Row: {
+          asset_type: string
+          building: string
+          created_at: string
+          created_by: string | null
+          effective_date: string
+          history: Json
+          id: string
+          move_out_type: string
+          next_status: string
+          reason: string
+          room: string
+          room_id: string | null
+          status: string
+          tenant_id: string | null
+          tenant_name: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          asset_type?: string
+          building?: string
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string
+          history?: Json
+          id?: string
+          move_out_type?: string
+          next_status?: string
+          reason?: string
+          room?: string
+          room_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          tenant_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          building?: string
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string
+          history?: Json
+          id?: string
+          move_out_type?: string
+          next_status?: string
+          reason?: string
+          room?: string
+          room_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          tenant_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payouts: {
         Row: {
           agent_id: string
