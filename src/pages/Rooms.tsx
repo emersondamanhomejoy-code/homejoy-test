@@ -40,6 +40,7 @@ export default function Rooms() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { sort, handleSort, sortData } = useTableSort("building");
   const [showBooking, setShowBooking] = useState(false);
+  const [bookingRoomId, setBookingRoomId] = useState("");
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
     else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
@@ -278,7 +279,7 @@ export default function Rooms() {
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
-                                <Button size="sm" onClick={() => setShowBooking(true)}>
+                                <Button size="sm" onClick={() => { setBookingRoomId(room.id); setShowBooking(true); }}>
                                   Book
                                 </Button>
                               </TableCell>
@@ -336,7 +337,7 @@ export default function Rooms() {
           </main>
         </div>
       </div>
-      <CreateBookingDialog open={showBooking} onOpenChange={setShowBooking} />
+      <CreateBookingDialog open={showBooking} onOpenChange={o => { setShowBooking(o); if (!o) setBookingRoomId(""); }} preSelectedRoomId={bookingRoomId} />
     </SidebarProvider>
   );
 }
