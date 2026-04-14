@@ -610,6 +610,7 @@ export function UsersPage() {
               <div>
                 {infoRow("Name", viewUser.emergency_contact_name)}
                 {infoRow("Phone", viewUser.emergency_contact_phone)}
+                {infoRow("Relationship", viewUser.emergency_contact_relationship)}
               </div>
             ))}
 
@@ -625,6 +626,16 @@ export function UsersPage() {
               <div>
                 {infoRow("Type", commSummary(viewUser))}
                 <div className="mt-2">{renderCommissionTiersSummary(viewUser)}</div>
+              </div>
+            ))}
+
+            {viewUser.roles.includes("agent") && sectionCard("🏦", "Bank Details", (
+              <div>
+                {infoRow("Bank Name", viewUser.bank_name)}
+                {infoRow("Account Number", viewUser.bank_account)}
+                {infoRow("Bank Proof", viewUser.bank_proof ? (
+                  <a href={viewUser.bank_proof} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View Proof</a>
+                ) : "Not uploaded")}
               </div>
             ))}
           </div>
