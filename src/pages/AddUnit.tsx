@@ -13,6 +13,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
+import { toast } from "sonner";
 
 const bedTypeMaxPax: Record<string, number> = {
   Single: 1, "Super Single": 1, Queen: 2, King: 2,
@@ -62,6 +64,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const [carparkRecords, setCarparkRecords] = useState<LocalCarpark[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "room" | "carpark"; key: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const { errors, validate, clearError, clearAllErrors } = useFormValidation();
 
   // Reset all state when modal opens
   useEffect(() => {
@@ -106,8 +109,8 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const saveRoom = (key: number) => {
     const room = roomRecords.find(r => r._key === key);
     if (!room) return;
-    if (room.room_category !== "Studio" && !room.bed_type.trim()) { alert("Bed Type is required."); return; }
-    if (!room.rent || room.rent <= 0) { alert("Rent must be greater than 0."); return; }
+    if (room.room_category !== "Studio" && !room.bed_type.trim()) { toast.error("Bed Type is required."); return; }
+    if (!room.rent || room.rent <= 0) { toast.error("Rent must be greater than 0."); return; }
     setRoomRecords(prev => prev.map(r => r._key === key ? { ...r, _editing: false } : r));
   };
 

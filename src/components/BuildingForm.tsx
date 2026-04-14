@@ -380,6 +380,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       }
     >
       <div className="space-y-8">
+        <FormErrorBanner errors={errors} />
         {/* Section 1: Basic Information */}
         <div className="bg-card rounded-lg border p-6 space-y-5">
           <h2 className="text-lg font-bold">Basic Information</h2>
@@ -414,9 +415,10 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
             </div>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
+            <div data-field="name">
               <label className={labelClass}>Building Name *</label>
-              <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={form.name} onChange={e => updateField("name", e.target.value)} />
+              <input className={fieldClass(`${inputClass} w-full`, !!errors.name)} placeholder="e.g. The Robertson" value={form.name} onChange={e => { updateField("name", e.target.value); clearError("name"); }} />
+              <FieldError error={errors.name} />
             </div>
             <div>
               <label className={labelClass}>Location *</label>
