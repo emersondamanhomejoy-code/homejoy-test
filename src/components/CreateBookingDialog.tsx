@@ -423,23 +423,31 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
           {/* 2. Room Selection */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             {sectionTitle("🏠", "Room")}
-            <div className="space-y-1">
-              <label className={lbl}>Select Room *</label>
-              <SearchableSelect
-                options={roomOptions}
-                value={form.roomId}
-                onChange={v => {
-                  const room = roomsData.find(r => r.id === v);
-                  setForm(prev => ({
-                    ...prev, roomId: v,
-                    exactRental: room ? String(room.rent) : "",
-                    parkingCount: "0", carParkSelections: [],
-                  }));
-                }}
-                placeholder="— Select Room —"
-                searchPlaceholder="Search by building, unit, room..."
-              />
-            </div>
+            {isAgent && preSelectedRoomId && selectedRoom ? (
+              <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Selected Room</div>
+                <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}{(selectedRoom as any).room_title ? ` — ${(selectedRoom as any).room_title}` : ""}</div>
+                <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className={lbl}>Select Room *</label>
+                <SearchableSelect
+                  options={roomOptions}
+                  value={form.roomId}
+                  onChange={v => {
+                    const room = roomsData.find(r => r.id === v);
+                    setForm(prev => ({
+                      ...prev, roomId: v,
+                      exactRental: room ? String(room.rent) : "",
+                      parkingCount: "0", carParkSelections: [],
+                    }));
+                  }}
+                  placeholder="— Select Room —"
+                  searchPlaceholder="Search by building, unit, room..."
+                />
+              </div>
+            )}
             {selectedRoom && (
               <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
                 <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}{(selectedRoom as any).room_title ? ` — ${(selectedRoom as any).room_title}` : ""}</div>
