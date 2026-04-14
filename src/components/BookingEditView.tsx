@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { inputClass, labelClass } from "@/lib/ui-constants";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface AccessItem {
   id: string;
@@ -31,7 +32,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const { data: unitsData = [] } = useUnits();
   const { data: condosData = [] } = useCondos();
   const [saving, setSaving] = useState(false);
-
+  const { errors, validate, clearError } = useFormValidation();
   const existingDocs = booking.documents as any;
   const existingCarParks: { roomId: string; carPlate: string }[] = existingDocs?.carParkSelections || [];
 
@@ -61,7 +62,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const [roomSearch, setRoomSearch] = useState("");
   const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
 
-  const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+  const set = (k: string, v: string) => { setForm(prev => ({ ...prev, [k]: v })); clearError(k); };
 
   // Track dirty state
   const initialFormRef = useMemo(() => ({
@@ -181,8 +182,19 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const selectedCarParkIds = form.carParkSelections.map(s => s.roomId).filter(Boolean);
 
   const handleSave = async () => {
-    if (!form.tenantName.trim() || !form.phone.trim()) { toast.error("Tenant name and phone are required"); return; }
-    if (!form.moveInDate) { toast.error("Move-in date is required"); return; }
+    const rules: Record<string, (v: any) => string | null> = {
+      tenantName: () => !form.tenantName.trim() ? "Tenant name is required" : null,
+      phone: () => !form.phone.trim() ? "Phone is required" : null,
+      moveInDate: () => !form.moveInDate ? "Move-in date is required" : null,
+      gender: () => !form.gender ? "Gender is required" : null,
+      emergency1Name: () => !form.emergency1Name.trim() ? "Required" : null,
+      emergency1Phone: () => !form.emergency1Phone.trim() ? "Required" : null,
+      emergency1Relationship: () => !form.emergency1Relationship.trim() ? "Required" : null,
+      emergency2Name: () => !form.emergency2Name.trim() ? "Required" : null,
+      emergency2Phone: () => !form.emergency2Phone.trim() ? "Required" : null,
+      emergency2Relationship: () => !form.emergency2Relationship.trim() ? "Required" : null,
+    };
+    if (!validate(form, rules)) return;
     setSaving(true);
     try {
       const moveInCost = {

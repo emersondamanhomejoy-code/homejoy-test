@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GripVertical, Plus, Trash2, Pencil, Save } from "lucide-react";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 /* ── Access data shapes ── */
 export interface AccessItem {
@@ -97,6 +98,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   const [uploading, setUploading] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const { errors, validate, clearError } = useFormValidation();
 
   const inputClass = sharedInputClass;
   const labelClass = sharedLabelClass;
@@ -109,7 +111,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     JSON.stringify(motorcycleItems) !== JSON.stringify(initialMotorcycle);
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert("Building name is required"); return; }
+    if (!validate(form, { name: (v) => !v?.trim() ? "Building name is required" : null })) return;
     try {
       const payload: any = {
         ...form,
@@ -126,7 +128,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       }
       onClose();
     } catch (e: any) {
-      alert(e.message || "Failed to save building");
+      toast.error(e.message || "Failed to save building");
     }
   };
 
