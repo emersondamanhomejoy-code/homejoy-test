@@ -297,8 +297,19 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
         hideCancel
         footer={<Button variant="outline" onClick={() => setViewing(null)}>Close</Button>}
       >
-        {viewing && (
+        {viewing && (() => {
+          const allViewExpanded = Object.values(viewSections).every(Boolean);
+          const toggleAllView = () => {
+            const newVal = !allViewExpanded;
+            setViewSections({ details: newVal, photos: newVal, pedestrian: newVal, carpark: newVal, motorcycle: newVal, visitor: newVal });
+          };
+          return (
           <div className="space-y-5">
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" onClick={toggleAllView} className="text-xs text-muted-foreground">
+                  {allViewExpanded ? "Collapse All" : "Expand All"}
+                </Button>
+              </div>
               {/* Lightbox */}
               {photoLightbox && (
                 <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPhotoLightbox(null)}>
@@ -462,7 +473,8 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                 )}
               </div>
           </div>
-        )}
+          );
+        })()}
       </StandardModal>
     </StandardPageLayout>
   );
