@@ -135,8 +135,8 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   };
 
   const MAX_PHOTOS = 10;
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const uploadPhoto = async (file: File) => {
-    if (form.photos.length >= MAX_PHOTOS) { toast.error(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
