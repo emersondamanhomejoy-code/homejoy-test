@@ -1238,6 +1238,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_room_pending: { Args: { room_ids: string[] }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "agent" | "boss" | "manager" | "super_admin"
