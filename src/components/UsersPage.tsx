@@ -532,7 +532,7 @@ export function UsersPage() {
         size="lg"
         isDirty={!!newAgent.email || !!newAgent.name}
         footer={
-          <Button onClick={createUser} disabled={saving}>{saving ? "Sending..." : "Send Invite"}</Button>
+          <Button onClick={createUser} disabled={saving}>{saving ? "Sending..." : "Submit"}</Button>
         }
       >
         <div className="space-y-5">
@@ -656,7 +656,7 @@ export function UsersPage() {
         size="lg"
         isDirty={!!editUser}
         footer={
-          <Button onClick={saveProfile} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+          <Button onClick={saveProfile} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
         }
       >
         {editUser && (

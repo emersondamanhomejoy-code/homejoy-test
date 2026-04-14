@@ -502,7 +502,7 @@ export function TenantsContent() {
         title="Edit Tenant"
         size="md"
         isDirty={JSON.stringify(editForm) !== JSON.stringify(editingTenant)}
-        footer={<Button onClick={saveTenant}>Save Changes</Button>}
+        footer={<Button onClick={saveTenant}>Save</Button>}
       >
         <TenantForm form={editForm} setField={setField} uploadedFiles={editUploadedFiles} setUploadedFiles={setEditUploadedFiles}
           existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm as any} errors={editValidation.errors} clearError={editValidation.clearError} />
@@ -543,7 +543,7 @@ export function TenantsContent() {
         title="Add Tenant"
         size="md"
         isDirty={!!addForm.name || !!addForm.phone}
-        footer={<Button onClick={saveNewTenant}>Add Tenant</Button>}
+        footer={<Button onClick={saveNewTenant}>Save</Button>}
       >
         <TenantForm form={addForm} setField={setAddField} uploadedFiles={addUploadedFiles} setUploadedFiles={setAddUploadedFiles}
           existingDocs={{ passport: "", offerLetter: "" }} errors={addValidation.errors} clearError={addValidation.clearError} />

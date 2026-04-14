@@ -422,7 +422,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
         size="lg"
         isDirty={formIsDirty}
         footer={
-          <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Submitting..." : "Create Booking"}</Button>
+          <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</Button>
         }
       >
         <div className="space-y-5">

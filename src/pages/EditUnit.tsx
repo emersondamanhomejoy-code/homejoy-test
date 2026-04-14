@@ -205,7 +205,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
         open={open} onOpenChange={onOpenChange}
         title={`Edit Unit — ${unit.building} · ${unit.unit}`}
         size="xl" isDirty={isDirty}
-        footer={<Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</Button>}
+        footer={<Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>}
       >
         <FormErrorBanner errors={errors} />
         <Accordion type="multiple" defaultValue={["unit-info", "rooms", "carparks"]} className="space-y-2">

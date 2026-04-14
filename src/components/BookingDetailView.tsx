@@ -225,9 +225,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     if (b.status === "submitted") {
       return (
         <>
-          <Button variant="outline" className="text-muted-foreground" onClick={() => setShowCancelDialog(true)}>Cancel</Button>
+          <Button variant="ghost" className="hover:bg-accent/20 hover:text-accent" onClick={() => setShowCancelDialog(true)}>Cancel</Button>
           <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>Reject</Button>
-          <Button onClick={() => setShowApproveDialog(true)} className="bg-green-600 hover:bg-green-700 text-white">Approve</Button>
+          <Button onClick={() => setShowApproveDialog(true)} className="bg-accent hover:bg-accent/90 text-accent-foreground">Approve</Button>
         </>
       );
     }
@@ -474,7 +474,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, Go Back</AlertDialogCancel>
-            <AlertDialogAction onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogAction onClick={handleApprove} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               Yes, Approve
             </AlertDialogAction>
           </AlertDialogFooter>
