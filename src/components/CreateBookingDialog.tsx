@@ -426,11 +426,12 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
         }
       >
         <div className="space-y-5">
+          <FormErrorBanner errors={errors} />
           {/* 1. Agent Selection — hidden for agents */}
           {!isAgent && (
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               {sectionTitle("👤", "Agent")}
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="agentId">
                 <label className={lbl}>Select Agent *</label>
                 <SearchableSelect
                   options={agentOptions}
@@ -439,6 +440,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                   placeholder="— Select Agent —"
                   searchPlaceholder="Search by name or email..."
                 />
+                <FieldError error={errors.agentId} />
               </div>
             </div>
           )}
@@ -453,7 +455,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                 <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="roomId">
                 <label className={lbl}>Select Room *</label>
                 <SearchableSelect
                   options={roomOptions}
@@ -465,10 +467,12 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                       exactRental: room ? String(room.rent) : "",
                       parkingCount: "0", carParkSelections: [],
                     }));
+                    clearError("roomId");
                   }}
                   placeholder="— Select Room —"
                   searchPlaceholder="Search by building, unit, room..."
                 />
+                <FieldError error={errors.roomId} />
               </div>
             )}
             {selectedRoom && !(isAgent && preSelectedRoomId) && (
