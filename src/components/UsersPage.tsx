@@ -45,6 +45,11 @@ export function UsersPage() {
   const [fetching, setFetching] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [agentTypeFilter, setAgentTypeFilter] = useState("all");
+  const [hasBankFilter, setHasBankFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
