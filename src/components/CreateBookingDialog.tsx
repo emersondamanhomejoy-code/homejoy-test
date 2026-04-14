@@ -350,11 +350,13 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
       });
       if (dbErr) throw dbErr;
 
-      await supabase.from("rooms").update({ status: "Pending" }).eq("id", form.roomId);
+      const roomIdsToSetPending = [form.roomId, ...form.carParkSelections.slice(0, parkingCount).map(s => s.roomId).filter(Boolean)];
+      await supabase.rpc("set_room_pending", { room_ids: roomIdsToSetPending });
+      // Update car park tenant info (admin-only, best-effort for agents)
       for (const sel of form.carParkSelections.slice(0, parkingCount)) {
         if (sel.roomId) {
           await supabase.from("rooms").update({
-            status: "Pending", tenant_gender: `${form.tenantName} (${form.gender || ""})`,
+            tenant_gender: `${form.tenantName} (${form.gender || ""})`,
           }).eq("id", sel.roomId);
         }
       }
