@@ -38,7 +38,7 @@ export function BookingsContent() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [statusTab, setStatusTab] = useState<string>("all");
+  const [statusTab, setStatusTab] = useState<string>("submitted");
   const [bookingTypeFilter, setBookingTypeFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
