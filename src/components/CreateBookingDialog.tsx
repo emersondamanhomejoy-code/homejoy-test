@@ -483,9 +483,10 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
             )}
             {selectedRoom && (
               <div className="grid md:grid-cols-2 gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1" data-field="exactRental">
                   <label className={lbl}>Exact Rental (RM) *</label>
-                  <input className={`${ic} w-full`} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
+                  <input className={fieldClass(`${ic} w-full`, !!errors.exactRental)} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
+                  <FieldError error={errors.exactRental} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>How many pax staying *</label>
@@ -495,9 +496,10 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1" data-field="moveInDate">
                   <label className={lbl}>Move-in Date *</label>
-                  <input className={`${ic} w-full`} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                  <input className={fieldClass(`${ic} w-full`, !!errors.moveInDate)} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                  <FieldError error={errors.moveInDate} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Tenancy Duration *</label>
