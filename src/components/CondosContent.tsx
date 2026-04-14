@@ -40,8 +40,9 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [hasAvailableRooms, setHasAvailableRooms] = useState("");
   const [hasAvailableCarparks, setHasAvailableCarparks] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
+  const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
   const toggleViewSection = (key: string) => setViewSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const [photoLightbox, setPhotoLightbox] = useState<string | null>(null);
 
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
