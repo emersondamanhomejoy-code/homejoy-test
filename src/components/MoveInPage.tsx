@@ -602,6 +602,7 @@ export function MoveInPage() {
             <Textarea className={fieldClass("", !!rejectValidation.errors.rejectReason)} placeholder="Reject reason (required)..." value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); rejectValidation.clearError("rejectReason"); }} rows={3} />
             <FieldError error={rejectValidation.errors.rejectReason} />
           </div>
+          <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleReject} disabled={!rejectReason.trim()} className="bg-destructive text-destructive-foreground">Reject</AlertDialogAction>
           </AlertDialogFooter>
