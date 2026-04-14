@@ -437,14 +437,17 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied!`));
   };
 
+  const nc = "(not configured yet)";
+  const val = (v: string | undefined | null) => v?.trim() || nc;
+
   const formatAccessItems = (label: string, items: AccessItem[]) => {
-    if (!items || items.length === 0) return [];
+    if (!items || items.length === 0) return [`\n${label}: ${nc}`];
     return [
       `\n${label}:`,
       ...items.map(a => {
         const parts = [a.access_type];
         if (a.locations && a.locations.length > 0) parts.push(`@ ${a.locations.join(", ")}`);
-        parts.push(`— ${a.provided_by}`);
+        parts.push(`— ${a.provided_by || nc}`);
         if (a.chargeable_type && a.chargeable_type !== "none" && a.chargeable_type !== "Not Chargeable") {
           parts.push(`(${a.chargeable_type}${a.price > 0 ? ` RM${a.price}` : ""})`);
         }
@@ -456,36 +459,34 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
 
   const copyBuildingDetails = () => {
     const lines = [
-      `Building: ${unit.building}`,
-      `Location: ${unit.location}`,
-      ...(condo ? [
-        condo.address ? `Address: ${condo.address}` : "",
-        condo.gps_link ? `GPS: ${condo.gps_link}` : "",
-        condo.amenities ? `Amenities: ${condo.amenities}` : "",
-        condo.parking_info ? `Parking: ${condo.parking_info}` : "",
-        condo.arrival_instruction ? `Arrival: ${condo.arrival_instruction}` : "",
-      ].filter(Boolean) : []),
+      `Building: ${val(unit.building)}`,
+      `Location: ${val(unit.location)}`,
+      `Address: ${val(condo?.address)}`,
+      `GPS: ${val(condo?.gps_link)}`,
+      `Amenities: ${val(condo?.amenities)}`,
+      `Parking: ${val(condo?.parking_info)}`,
+      `Arrival: ${val(condo?.arrival_instruction)}`,
       ...formatAccessItems("Pedestrian Access", allAccess.pedestrian),
       ...formatAccessItems("Car Park Access", allAccess.carpark),
       ...formatAccessItems("Motorcycle Access", allAccess.motorcycle),
-      ...(condo?.visitor_car_parking ? [`Visitor Car Parking: ${condo.visitor_car_parking}`] : []),
-      ...(condo?.visitor_motorcycle_parking ? [`Visitor Motorcycle Parking: ${condo.visitor_motorcycle_parking}`] : []),
+      `Visitor Car Parking: ${val(condo?.visitor_car_parking)}`,
+      `Visitor Motorcycle Parking: ${val(condo?.visitor_motorcycle_parking)}`,
     ];
     copyToClipboard(lines.join("\n"), "Building details");
   };
 
   const copyUnitDetails = () => {
     const lines = [
-      `Unit: ${unit.unit}`,
-      `Type: ${unit.unit_type}`,
+      `Unit: ${val(unit.unit)}`,
+      `Type: ${val(unit.unit_type)}`,
       `Max Occupants: ${unit.unit_max_pax}`,
       `Deposit: ${depMul} months`,
       `Admin Fee: RM${adminFee}`,
-      `Meter: ${(unit as any).meter_type} · RM${(unit as any).meter_rate}/kWh`,
-      unit.passcode ? `Passcode: ${unit.passcode}` : "",
-      (unit as any).wifi_name ? `WiFi: ${(unit as any).wifi_name}` : "",
-      (unit as any).wifi_password ? `WiFi PW: ${(unit as any).wifi_password}` : "",
-    ].filter(Boolean);
+      `Meter: ${val((unit as any).meter_type)} · RM${(unit as any).meter_rate}/kWh`,
+      `Passcode: ${val(unit.passcode)}`,
+      `WiFi: ${val((unit as any).wifi_name)}`,
+      `WiFi PW: ${val((unit as any).wifi_password)}`,
+    ];
     copyToClipboard(lines.join("\n"), "Unit details");
   };
 
