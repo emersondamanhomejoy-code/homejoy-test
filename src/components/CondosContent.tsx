@@ -170,14 +170,16 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     return [];
   };
 
+  const notConfigured = "(not configured yet)";
+
   const formatAccessText = (items: AccessItem[], title: string, showLocations: boolean) => {
-    if (!items || items.length === 0) return `${title}: None`;
+    if (!items || items.length === 0) return `${title}: ${notConfigured}`;
     const lines = items.map((item, i) => {
       const isNone = item.access_type === "None";
       let line = `${i + 1}. ${item.access_type}`;
       if (showLocations && item.locations?.length) line += ` @ ${item.locations.join(", ")}`;
       if (!isNone) {
-        line += `\n   Provided by: ${item.provided_by}`;
+        line += `\n   Provided by: ${item.provided_by || notConfigured}`;
         const chargeLabel = CHARGEABLE_LABELS[item.chargeable_type] || "Not Chargeable";
         line += `\n   Chargeable: ${chargeLabel}`;
         if (item.chargeable_type !== "none" && item.price > 0) line += ` (RM${item.price})`;
@@ -193,23 +195,25 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     toast.success(`${label} copied to clipboard`);
   };
 
+  const val = (v: string | undefined | null) => v?.trim() || notConfigured;
+
   const copyBuildingDetails = (condo: Condo) => {
     const lines = [
-      `Building: ${condo.name}`,
-      `Location: ${condo.location?.name || "—"}`,
-      `Address: ${condo.address || "—"}`,
-      `GPS: ${condo.gps_link || "—"}`,
-      condo.description ? `Description: ${condo.description}` : null,
-      condo.amenities ? `Amenities: ${condo.amenities}` : null,
-    ].filter(Boolean);
+      `Building: ${val(condo.name)}`,
+      `Location: ${val(condo.location?.name)}`,
+      `Address: ${val(condo.address)}`,
+      `GPS: ${val(condo.gps_link)}`,
+      `Description: ${val(condo.description)}`,
+      `Amenities: ${val(condo.amenities)}`,
+    ];
     copyToClipboard(lines.join("\n"), "Building details");
   };
 
   const copyVisitorInfo = (condo: Condo) => {
     const lines = [
-      `Visitor Car Parking: ${(condo as any).visitor_car_parking || "—"}`,
-      `Visitor Motorcycle Parking: ${(condo as any).visitor_motorcycle_parking || "—"}`,
-      `Arrival Instruction: ${(condo as any).arrival_instruction || "—"}`,
+      `Visitor Car Parking: ${val((condo as any).visitor_car_parking)}`,
+      `Visitor Motorcycle Parking: ${val((condo as any).visitor_motorcycle_parking)}`,
+      `Arrival Instruction: ${val((condo as any).arrival_instruction)}`,
     ];
     copyToClipboard(lines.join("\n"), "Visitor/Parking info");
   };
