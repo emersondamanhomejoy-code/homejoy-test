@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useCondos, useDeleteCondo, Condo } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
@@ -44,6 +44,21 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
   const toggleViewSection = (key: string) => setViewSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [photoLightboxIndex, setPhotoLightboxIndex] = useState<number | null>(null);
+
+  // Keyboard navigation for photo lightbox
+  const lightboxPhotos = viewing?.photos as string[] | undefined;
+  const lightboxPhotoCount = lightboxPhotos?.length ?? 0;
+
+  useEffect(() => {
+    if (photoLightboxIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPhotoLightboxIndex(null);
+      if (e.key === "ArrowLeft" && photoLightboxIndex > 0) setPhotoLightboxIndex(photoLightboxIndex - 1);
+      if (e.key === "ArrowRight" && photoLightboxIndex < lightboxPhotoCount - 1) setPhotoLightboxIndex(photoLightboxIndex + 1);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [photoLightboxIndex, lightboxPhotoCount]);
 
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
