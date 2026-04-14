@@ -486,7 +486,7 @@ export function MoveInPage() {
                 {isAdmin && viewItem.status === "submitted" && (
                   <>
                     <Button variant="destructive" onClick={() => { setViewItem(null); setShowRejectDialog(viewItem); }}>Reject</Button>
-                    <Button onClick={() => { setViewItem(null); setShowApproveDialog(viewItem); }} className="bg-green-600 hover:bg-green-700 text-white">Approve</Button>
+                    <Button onClick={() => { setViewItem(null); setShowApproveDialog(viewItem); }} className="bg-accent hover:bg-accent/90 text-accent-foreground">Approve</Button>
                   </>
                 )}
                 {isAdmin && viewItem.status === "approved" && (
@@ -584,7 +584,7 @@ export function MoveInPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleApprove} disabled={saving} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogAction onClick={handleApprove} disabled={saving} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               Yes, Approve
             </AlertDialogAction>
           </AlertDialogFooter>

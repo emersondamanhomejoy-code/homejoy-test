@@ -168,7 +168,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                 {b.status === "submitted" && (
                   <div className="flex flex-col gap-3 pt-4 border-t border-border">
                     <div className="flex gap-2">
-                      <button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
+                      <button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50">✅ Approve</button>
                     </div>
                     <div className="flex gap-2" data-field="rejectReason">
                       <input className={fieldClass(inputClass + " flex-1", !!adminRejectValidation.errors.rejectReason)} placeholder="Reject reason..." value={rejectReason} onChange={e => { setRejectReason(e.target.value); adminRejectValidation.clearError("rejectReason"); }} />

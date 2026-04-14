@@ -474,7 +474,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, Go Back</AlertDialogCancel>
-            <AlertDialogAction onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogAction onClick={handleApprove} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               Yes, Approve
             </AlertDialogAction>
           </AlertDialogFooter>
