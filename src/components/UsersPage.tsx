@@ -207,7 +207,11 @@ export function UsersPage() {
           phone: editForm.phone, address: editForm.address,
           emergency_contact_name: editForm.emergency_contact_name,
           emergency_contact_phone: editForm.emergency_contact_phone,
+          emergency_contact_relationship: editForm.emergency_contact_relationship,
           ic_document: editForm.ic_document,
+          bank_name: editForm.bank_name,
+          bank_account: editForm.bank_account,
+          bank_proof: editForm.bank_proof,
         },
       });
       if (editUser.roles.includes("agent") && editForm.commission_type) {
