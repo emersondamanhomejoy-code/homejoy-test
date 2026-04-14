@@ -677,9 +677,10 @@ export function UsersPage() {
             ))}
 
             {sectionCard("🚨", "Emergency Contact", (
-              <div className="grid md:grid-cols-2 gap-3">
+              <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={`${ic} w-full`} value={editForm.emergency_contact_name} onChange={e => setEditForm({ ...editForm, emergency_contact_name: e.target.value })} /></div>
                 <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={`${ic} w-full`} value={editForm.emergency_contact_phone} onChange={e => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} value={editForm.emergency_contact_relationship} onChange={e => setEditForm({ ...editForm, emergency_contact_relationship: e.target.value })} /></div>
               </div>
             ))}
 
@@ -709,7 +710,24 @@ export function UsersPage() {
                 <p className="text-xs text-muted-foreground mt-2">⚠️ Changes only apply to future claims. Approved historical commissions are not affected.</p>
               </>
             ))}
-          </div>
+
+            {editUser.roles.includes("agent") && sectionCard("🏦", "Bank Details", (
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="space-y-1"><label className={lbl}>Bank Name</label><input className={`${ic} w-full`} value={editForm.bank_name} onChange={e => setEditForm({ ...editForm, bank_name: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Account Number</label><input className={`${ic} w-full`} value={editForm.bank_account} onChange={e => setEditForm({ ...editForm, bank_account: e.target.value })} /></div>
+                <div className="md:col-span-2 space-y-1">
+                  <label className={lbl}>Bank Proof</label>
+                  {editForm.bank_proof ? (
+                    <div className="flex items-center gap-2">
+                      <a href={editForm.bank_proof} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View current proof</a>
+                      <span className="text-xs text-muted-foreground">Upload via Documents section</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No bank proof uploaded</p>
+                  )}
+                </div>
+              </div>
+            ))}
         )}
       </StandardModal>
 
