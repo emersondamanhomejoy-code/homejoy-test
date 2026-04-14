@@ -675,8 +675,8 @@ export function MoveOutPage() {
           </>
         }
       >
-        <FormErrorBanner errors={moveOutValidation.errors} />
         <div className="space-y-6">
+          <FormErrorBanner errors={moveOutValidation.errors} />
           {/* Section A: Move Out Target */}
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Move Out Target</h3>
