@@ -46,6 +46,12 @@ export function LocationsContent() {
 
   const openCreate = () => { setEditingId(null); setName(""); setInitialName(""); clearAllErrors(); setShowForm(true); };
   const openEdit = (loc: { id: string; name: string }) => { setEditingId(loc.id); setName(loc.name); setInitialName(loc.name); clearAllErrors(); setShowForm(true); };
+  const resetFormState = useCallback(() => {
+    setName("");
+    setInitialName("");
+    setEditingId(null);
+    clearAllErrors();
+  }, [clearAllErrors]);
 
   const handleSave = async () => {
     const rules = { name: (v: any) => !name.trim() ? "Location name is required" : null };
@@ -85,7 +91,8 @@ export function LocationsContent() {
       {/* Add/Edit Modal */}
       <StandardModal
         open={showForm}
-        onOpenChange={(open) => { if (!open) { setShowForm(false); setName(""); setEditingId(null); clearAllErrors(); } }}
+        onOpenChange={(open) => { if (!open) setShowForm(false); }}
+        onAfterClose={resetFormState}
         title={editingId ? "Edit Location" : "Add Location"}
         size="sm"
         isDirty={isDirty}

@@ -50,6 +50,7 @@ export function StandardModal({
   footer,
   hideCancel = false,
   className,
+  onAfterClose,
 }: StandardModalProps) {
   const [showDiscard, setShowDiscard] = useState(false);
 
@@ -63,7 +64,14 @@ export function StandardModal({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => {
+          if (!o) {
+            handleClose();
+          }
+        }}
+      >
         <DialogContent
           className={cn(
             sizeMap[size],
@@ -73,6 +81,12 @@ export function StandardModal({
           )}
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
+          onAnimationEnd={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.dataset.state === "closed") {
+              onAfterClose?.();
+            }
+          }}
           hideClose
         >
           <DialogHeader className="px-6 pt-6 pb-0 shrink-0">
@@ -83,7 +97,6 @@ export function StandardModal({
             <div className="px-6 py-4">{children}</div>
           </div>
 
-          {/* Sticky footer */}
           <div className="border-t px-6 py-4 flex items-center justify-between gap-3 shrink-0 bg-background">
             <div>
               {!hideCancel && (

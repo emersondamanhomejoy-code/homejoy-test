@@ -11,3 +11,5 @@ All "Add" and "Edit" forms across the admin panel use Dialog (modal) overlays in
 - Uses shadcn Dialog + AlertDialog + ScrollArea components
 
 **Reset on close**: When any floating window/modal/dialog is closed, ALL internal state (collapsed sections, form fields, selections, etc.) must reset to their default/initial values on reopen. Never persist UI state between open/close cycles.
+
+**No title flash on close**: For add/edit dialogs, do not clear mode-specific state (like editingId) during close. Keep the current title/content stable through the close animation, and reset state only after the modal finishes closing via an after-close callback.
