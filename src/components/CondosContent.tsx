@@ -60,6 +60,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [photoLightboxIndex, lightboxPhotoCount]);
 
+  const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
     for (const c of condos) {
       const condoUnits = units.filter(u => u.building === c.name);
