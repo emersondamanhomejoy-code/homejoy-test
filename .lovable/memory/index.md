@@ -10,6 +10,7 @@ Lovable Cloud backend. Roles: admin, agent.
 - [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
 - [Button standards](mem://design/button-standards) — Save/Cancel/Delete colors, Expand/Collapse styling
 - [Stat card standards](mem://design/stat-cards) — Use StatCard component for all metric/summary cards
+- [Photo lightbox](mem://design/photo-lightbox) — createPortal + z-[100] + keyboard nav for all photo viewers
 - [Form dialogs](mem://design/form-dialogs) — Modal form layout patterns
 - [Form validation](mem://design/form-validation) — Field validation patterns
 - [UI/UX requirements](mem://design/ui-ux-requirements) — General UI standards
