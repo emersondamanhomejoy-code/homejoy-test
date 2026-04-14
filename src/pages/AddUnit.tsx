@@ -262,7 +262,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
                             const ext = file.name.split('.').pop();
                             const path = `common/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                             const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                            if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                            if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
                             newPaths.push(path);
                           }
                           if (newPaths.length > 0) updateField("common_photos", [...form.common_photos, ...newPaths]);
@@ -454,7 +454,7 @@ function RoomInlineForm({ room, onChange, onSave, onCancel }: {
                   const ext = file.name.split('.').pop();
                   const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                   const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                  if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
                   newPaths.push(path);
                 }
                 if (newPaths.length > 0) onChange("photos", [...(room.photos || []), ...newPaths]);
@@ -600,7 +600,7 @@ function CarparkInlineForm({ carpark, onChange, onSave, onCancel }: {
                   const ext = file.name.split('.').pop();
                   const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                   const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                  if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
                   newPaths.push(path);
                 }
                 if (newPaths.length > 0) onChange("photos", [...((carpark as any).photos || []), ...newPaths]);

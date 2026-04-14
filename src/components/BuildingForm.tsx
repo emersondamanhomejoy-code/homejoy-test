@@ -135,7 +135,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
 
   const MAX_PHOTOS = 10;
   const uploadPhoto = async (file: File) => {
-    if (form.photos.length >= MAX_PHOTOS) { alert(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
+    if (form.photos.length >= MAX_PHOTOS) { toast.error(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
@@ -143,7 +143,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       const { error } = await supabase.storage.from("room-photos").upload(path, file);
       if (error) throw error;
       setForm(prev => ({ ...prev, photos: [...prev.photos, path] }));
-    } catch (e: any) { alert(e.message || "Upload failed"); } finally { setUploading(false); }
+    } catch (e: any) { toast.error(e.message || "Upload failed"); } finally { setUploading(false); }
   };
   const removePhoto = (index: number) => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
 
@@ -407,7 +407,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
                     const files = Array.from(e.target.files || []);
                     const remaining = MAX_PHOTOS - form.photos.length;
                     for (const f of files.slice(0, remaining)) await uploadPhoto(f);
-                    if (files.length > remaining) alert(`Only ${remaining} more photo(s) can be added.`);
+                    if (files.length > remaining) toast.error(`Only ${remaining} more photo(s) can be added.`);
                     e.target.value = "";
                   }} />
                 </label>
