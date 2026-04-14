@@ -26,6 +26,7 @@ interface AccessItem {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedRoomId?: string;
 }
 
 interface UserInfo {
@@ -51,7 +52,7 @@ const initialForm = {
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
 };
 
-export function CreateBookingDialog({ open, onOpenChange }: Props) {
+export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: Props) {
   const { user, role } = useAuth();
   const isAgent = role === "agent";
   const queryClient = useQueryClient();
