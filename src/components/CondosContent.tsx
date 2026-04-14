@@ -152,6 +152,50 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     return [];
   };
 
+  const formatAccessText = (items: AccessItem[], title: string, showLocations: boolean) => {
+    if (!items || items.length === 0) return `${title}: None`;
+    const lines = items.map((item, i) => {
+      const isNone = item.access_type === "None";
+      let line = `${i + 1}. ${item.access_type}`;
+      if (showLocations && item.locations?.length) line += ` @ ${item.locations.join(", ")}`;
+      if (!isNone) {
+        line += `\n   Provided by: ${item.provided_by}`;
+        const chargeLabel = CHARGEABLE_LABELS[item.chargeable_type] || "Not Chargeable";
+        line += `\n   Chargeable: ${chargeLabel}`;
+        if (item.chargeable_type !== "none" && item.price > 0) line += ` (RM${item.price})`;
+        if (item.instruction) line += `\n   Note: ${item.instruction}`;
+      }
+      return line;
+    });
+    return `${title}:\n${lines.join("\n")}`;
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  const copyBuildingDetails = (condo: Condo) => {
+    const lines = [
+      `Building: ${condo.name}`,
+      `Location: ${condo.location?.name || "—"}`,
+      `Address: ${condo.address || "—"}`,
+      `GPS: ${condo.gps_link || "—"}`,
+      condo.description ? `Description: ${condo.description}` : null,
+      condo.amenities ? `Amenities: ${condo.amenities}` : null,
+    ].filter(Boolean);
+    copyToClipboard(lines.join("\n"), "Building details");
+  };
+
+  const copyVisitorInfo = (condo: Condo) => {
+    const lines = [
+      `Visitor Car Parking: ${(condo as any).visitor_car_parking || "—"}`,
+      `Visitor Motorcycle Parking: ${(condo as any).visitor_motorcycle_parking || "—"}`,
+      `Arrival Instruction: ${(condo as any).arrival_instruction || "—"}`,
+    ];
+    copyToClipboard(lines.join("\n"), "Visitor/Parking info");
+  };
+
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
