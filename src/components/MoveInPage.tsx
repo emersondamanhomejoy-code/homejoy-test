@@ -20,6 +20,7 @@ import { SortableTableHead, useTableSort } from "@/components/SortableTableHead"
 import { Eye, Pencil, Check, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface UserInfo { id: string; email: string; name: string; }
 
@@ -156,7 +157,8 @@ export function MoveInPage() {
       toast.error("This booking has been terminated. You cannot submit this move-in.");
       return;
     }
-    if (!editForm.payment_method) { toast.error("Payment method is required"); return; }
+    const submitRules = { payment_method: (v: any) => !editForm.payment_method ? "Payment method is required" : null };
+    if (!submitValidation.validate({ payment_method: editForm.payment_method }, submitRules)) return;
     setSaving(true);
     try {
       const history = [...(item.history || []), { action: "submitted", by: user.email, at: new Date().toISOString() }];
@@ -274,10 +276,9 @@ export function MoveInPage() {
 
   // ─── ADMIN REJECT ───
   const handleReject = async () => {
-    if (!user || !showRejectDialog || !rejectReason.trim()) {
-      toast.error("Reject reason required");
-      return;
-    }
+    if (!user || !showRejectDialog) return;
+    const rejectRules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
+    if (!rejectValidation.validate({ rejectReason }, rejectRules)) return;
     const item = showRejectDialog;
     const history = [...(item.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
     await updateMoveIn.mutateAsync({
@@ -296,10 +297,9 @@ export function MoveInPage() {
 
   // ─── ADMIN REVERSE ───
   const handleReverse = async () => {
-    if (!user || !showReverseDialog || !reverseReason.trim()) {
-      toast.error("Reverse reason required");
-      return;
-    }
+    if (!user || !showReverseDialog) return;
+    const reverseRules = { reverseReason: () => !reverseReason.trim() ? "Reverse reason is required" : null };
+    if (!reverseValidation.validate({ reverseReason }, reverseRules)) return;
     const item = showReverseDialog;
     setSaving(true);
     try {

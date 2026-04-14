@@ -12,6 +12,7 @@ import { logActivity } from "@/hooks/useActivityLog";
 import { UnitsRoomsContent } from "@/components/UnitsRoomsContent";
 import { BookingsContent } from "@/components/BookingsContent";
 import { inputClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -81,7 +82,8 @@ export function AdminContent({ tab }: AdminContentProps) {
         };
 
         const handleReject = async (booking: Booking) => {
-          if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
+          const rejectRules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
+          if (!user || !adminRejectValidation.validate({ rejectReason }, rejectRules)) return;
           try {
             await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
             logActivity("reject_booking", "booking", booking.id, { tenant: booking.tenant_name, reason: rejectReason });

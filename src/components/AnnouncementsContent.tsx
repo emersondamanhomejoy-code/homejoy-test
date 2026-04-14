@@ -17,6 +17,7 @@ import { Plus, Pencil, Trash2, Eye, Upload, ChevronLeft, ChevronRight, X } from 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { inputClass, labelClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface Announcement {
   id: string;
@@ -121,8 +122,11 @@ export function AnnouncementsContent({ isAgent = false }: { isAgent?: boolean })
     }
   };
 
+  const { errors, validate, clearError, clearAllErrors } = useFormValidation();
+
   const handleSave = async () => {
-    if (!form.title.trim()) { toast.error("Title required"); return; }
+    const rules = { title: (v: any) => !form.title.trim() ? "Title is required" : null };
+    if (!validate({ title: form.title }, rules)) return;
     setSaving(true);
     try {
       if (editingId) {
@@ -211,7 +215,8 @@ export function AnnouncementsContent({ isAgent = false }: { isAgent?: boolean })
           <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>{editingId ? "Edit" : "Create"} Announcement</DialogTitle></DialogHeader>
           <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
             <div className="space-y-4 py-4">
-              <div className="space-y-1"><label className={lbl}>Title *</label><input className={`${ic} w-full`} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+              <FormErrorBanner errors={errors} />
+              <div className="space-y-1" data-field="title"><label className={lbl}>Title *</label><input className={fieldClass(`${ic} w-full`, !!errors.title)} value={form.title} onChange={e => { setForm({ ...form, title: e.target.value }); clearError("title"); }} /><FieldError error={errors.title} /></div>
               <div className="space-y-1"><label className={lbl}>Description</label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></div>
               <div className="space-y-1">
                 <label className={lbl}>Image</label>
