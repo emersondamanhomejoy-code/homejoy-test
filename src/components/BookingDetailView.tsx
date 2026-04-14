@@ -185,6 +185,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     onOpenChange(false);
   };
 
+  const docSection = (label: string, paths: any) => {
     const arr = Array.isArray(paths) ? paths : [];
     if (arr.length === 0) return null;
     return (
