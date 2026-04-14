@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { MoveInPage } from "@/components/MoveInPage";
 import { MoveOutPage } from "@/components/MoveOutPage";
 import { UsersPage } from "@/components/UsersPage";
@@ -76,17 +77,17 @@ export function AdminContent({ tab }: AdminContentProps) {
             });
             logActivity("approve_booking", "booking", booking.id, { tenant: booking.tenant_name });
             setSelectedBooking(null);
-          } catch (e: any) { alert(e.message); }
+          } catch (e: any) { toast.error(e.message || "Failed to approve booking"); }
         };
 
         const handleReject = async (booking: Booking) => {
-          if (!user || !rejectReason.trim()) { alert("Please enter a reject reason"); return; }
+          if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
           try {
             await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
             logActivity("reject_booking", "booking", booking.id, { tenant: booking.tenant_name, reason: rejectReason });
             setSelectedBooking(null);
             setRejectReason("");
-          } catch (e: any) { alert(e.message); }
+          } catch (e: any) { toast.error(e.message || "Failed to reject booking"); }
         };
 
         if (selectedBooking) {

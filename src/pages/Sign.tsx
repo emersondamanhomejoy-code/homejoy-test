@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import SignatureCanvas from "react-signature-canvas";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +64,7 @@ export default function SignPage() {
 
   const handleSign = async () => {
     if (!sigRef.current || sigRef.current.isEmpty()) {
-      alert("Please sign before submitting.");
+      toast.error("Please sign before submitting.");
       return;
     }
     setSubmitting(true);
@@ -81,7 +82,7 @@ export default function SignPage() {
       if (err) throw err;
       setDone(true);
     } catch (e: any) {
-      alert(e.message || "Failed to submit signature");
+      toast.error(e.message || "Failed to submit signature");
     } finally {
       setSubmitting(false);
     }
