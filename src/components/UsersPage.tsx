@@ -26,8 +26,9 @@ interface UserWithRoles {
   roles: string[]; commission_type: string; commission_config: CommissionConfig | null;
   name: string; display_name: string; phone: string; address: string;
   profile_picture_url: string; ic_document: string;
-  emergency_contact_name: string; emergency_contact_phone: string;
+  emergency_contact_name: string; emergency_contact_phone: string; emergency_contact_relationship: string;
   frozen: boolean; frozen_at: string | null;
+  bank_name: string; bank_account: string; bank_proof: string;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
