@@ -52,7 +52,8 @@ const initialForm = {
 };
 
 export function CreateBookingDialog({ open, onOpenChange }: Props) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAgent = role === "agent";
   const queryClient = useQueryClient();
   const { data: roomsData = [] } = useRooms();
   const { data: unitsData = [] } = useUnits();
