@@ -51,16 +51,20 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
 
   // Derive move-in status display
   const moveInStatusDisplay = useMemo(() => {
-    if (b.status === "rejected" || b.status === "cancelled") return "Not Proceeded";
-    if (b.status === "approved" && relatedMoveIn) {
+    if (b.status === "rejected") return "Not Proceeded";
+    if (b.status === "cancelled") {
+      // If move-in is closed or doesn't exist, show "Not Proceeded"
+      if (!relatedMoveIn || relatedMoveIn.status === "closed" || relatedMoveIn.status === "rejected") return "Not Proceeded";
+    }
+    if ((b.status === "approved" || b.status === "cancelled") && relatedMoveIn) {
       const s = relatedMoveIn.status;
       const map: Record<string, string> = {
         ready_for_move_in: "Ready for Move-in",
         submitted: "Submitted",
         approved: "Approved",
-        rejected: "Rejected",
+        rejected: "Not Proceeded",
         reversed: "Reversed",
-        closed: "Closed",
+        closed: "Not Proceeded",
       };
       return map[s] || s;
     }
@@ -211,7 +215,12 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       );
     }
     if (b.status === "rejected") {
-      return null; // Close only via modal Cancel button
+      return (
+        <>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <Button variant="outline" onClick={handleResubmit}>Resubmit</Button>
+        </>
+      );
     }
     if (b.status === "approved") {
       // Only show terminate if move-in is NOT yet approved
@@ -268,8 +277,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
               {infoRow("Building", info?.building)}
               {infoRow("Unit", info?.unit)}
               {infoRow("Room", info?.room)}
+              {infoRow("Room Title", room?.room_title)}
               {infoRow("Room Status", room?.status)}
-              {infoRow("Exact Rental", `RM ${moveInCost?.advance || 0}`)}
+              {infoRow("Exact Rental", `RM ${moveInCost?.advance || room?.rent || 0}`)}
               {infoRow("Pax Staying", b.pax_staying)}
               {infoRow("Tenancy Duration", `${b.contract_months} months`)}
               {infoRow("Move-in Date", b.move_in_date)}
@@ -487,7 +497,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
               <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cancelResolutionType} onChange={e => setCancelResolutionType(e.target.value)}>
                 <option value="">— Select —</option>
                 <option value="forfeit">Forfeit</option>
-                <option value="withdrawn">Withdrawn</option>
+                <option value="tenant_withdrawn">Tenant Withdrawn</option>
+                <option value="admin_error">Admin Error</option>
+                <option value="wrong_room">Wrong Room</option>
                 <option value="duplicate">Duplicate</option>
                 <option value="other">Other</option>
               </select>
@@ -499,7 +511,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCancelDialog(false); setCancelReason(""); setCancelResolutionType(""); }}>Go Back</Button>
-            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim() || !cancelResolutionType}>Cancel Booking</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim() || !cancelResolutionType}>
+              {b.status === "approved" ? "Terminate Booking" : "Cancel Booking"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
