@@ -675,8 +675,8 @@ export function MoveOutPage() {
           </>
         }
       >
-        <FormErrorBanner errors={moveOutValidation.errors} />
         <div className="space-y-6">
+          <FormErrorBanner errors={moveOutValidation.errors} />
           {/* Section A: Move Out Target */}
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Move Out Target</h3>
@@ -736,7 +736,6 @@ export function MoveOutPage() {
                 <label className={lbl}>Effective Date *</label>
                 <Input type="date" className={fieldClass("", !!moveOutValidation.errors.effective_date)} value={form.effective_date} onChange={e => { updateForm({ effective_date: e.target.value }); moveOutValidation.clearError("effective_date"); }} />
                 <FieldError error={moveOutValidation.errors.effective_date} />
-              </div>
               </div>
               <div className="space-y-1">
                 <label className={lbl}>Move Out Type *</label>
