@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { inputClass, labelClass } from "@/lib/ui-constants";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface AccessItem {
   id: string;
@@ -31,7 +32,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const { data: unitsData = [] } = useUnits();
   const { data: condosData = [] } = useCondos();
   const [saving, setSaving] = useState(false);
-
+  const { errors, validate, clearError } = useFormValidation();
   const existingDocs = booking.documents as any;
   const existingCarParks: { roomId: string; carPlate: string }[] = existingDocs?.carParkSelections || [];
 
@@ -61,7 +62,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const [roomSearch, setRoomSearch] = useState("");
   const [carParkSearch, setCarParkSearch] = useState<Record<number, string>>({});
 
-  const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+  const set = (k: string, v: string) => { setForm(prev => ({ ...prev, [k]: v })); clearError(k); };
 
   // Track dirty state
   const initialFormRef = useMemo(() => ({
@@ -181,8 +182,19 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
   const selectedCarParkIds = form.carParkSelections.map(s => s.roomId).filter(Boolean);
 
   const handleSave = async () => {
-    if (!form.tenantName.trim() || !form.phone.trim()) { toast.error("Tenant name and phone are required"); return; }
-    if (!form.moveInDate) { toast.error("Move-in date is required"); return; }
+    const rules: Record<string, (v: any) => string | null> = {
+      tenantName: () => !form.tenantName.trim() ? "Tenant name is required" : null,
+      phone: () => !form.phone.trim() ? "Phone is required" : null,
+      moveInDate: () => !form.moveInDate ? "Move-in date is required" : null,
+      gender: () => !form.gender ? "Gender is required" : null,
+      emergency1Name: () => !form.emergency1Name.trim() ? "Required" : null,
+      emergency1Phone: () => !form.emergency1Phone.trim() ? "Required" : null,
+      emergency1Relationship: () => !form.emergency1Relationship.trim() ? "Required" : null,
+      emergency2Name: () => !form.emergency2Name.trim() ? "Required" : null,
+      emergency2Phone: () => !form.emergency2Phone.trim() ? "Required" : null,
+      emergency2Relationship: () => !form.emergency2Relationship.trim() ? "Required" : null,
+    };
+    if (!validate(form, rules)) return;
     setSaving(true);
     try {
       const moveInCost = {
@@ -277,6 +289,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
       }
     >
       <div className="space-y-5">
+        <FormErrorBanner errors={errors} />
         {/* Room */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
           {sectionTitle("🏠", "Room")}
@@ -324,9 +337,10 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
                   ))}
                 </select>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="moveInDate">
                 <label className={labelClass}>Move-in Date *</label>
-                <input className={inputClass} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                <input className={fieldClass(inputClass, !!errors.moveInDate)} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                <FieldError error={errors.moveInDate} />
               </div>
             </div>
           )}
@@ -398,14 +412,15 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
           {sectionTitle("👤", "Tenant Details")}
           <div className="grid md:grid-cols-2 gap-3">
-            <div className="space-y-1"><label className={labelClass}>Full Name *</label><input className={inputClass} value={form.tenantName} onChange={e => set("tenantName", e.target.value)} /></div>
+            <div className="space-y-1" data-field="tenantName"><label className={labelClass}>Full Name *</label><input className={fieldClass(inputClass, !!errors.tenantName)} value={form.tenantName} onChange={e => set("tenantName", e.target.value)} /><FieldError error={errors.tenantName} /></div>
             <div className="space-y-1"><label className={labelClass}>NRIC/Passport No</label><input className={inputClass} value={form.icPassport} onChange={e => set("icPassport", e.target.value)} /></div>
             <div className="space-y-1"><label className={labelClass}>Email</label><input className={inputClass} type="email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
-            <div className="space-y-1"><label className={labelClass}>Contact No *</label><input className={inputClass} value={form.phone} onChange={e => set("phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={labelClass}>Gender *</label>
-              <select className={inputClass} value={form.gender} onChange={e => set("gender", e.target.value)}>
+            <div className="space-y-1" data-field="phone"><label className={labelClass}>Contact No *</label><input className={fieldClass(inputClass, !!errors.phone)} value={form.phone} onChange={e => set("phone", e.target.value)} /><FieldError error={errors.phone} /></div>
+            <div className="space-y-1" data-field="gender"><label className={labelClass}>Gender *</label>
+              <select className={fieldClass(inputClass, !!errors.gender)} value={form.gender} onChange={e => set("gender", e.target.value)}>
                 <option value="">Select</option><option>Male</option><option>Female</option><option>Couple</option>
               </select>
+              <FieldError error={errors.gender} />
             </div>
             <div className="space-y-1"><label className={labelClass}>Nationality</label><input className={inputClass} value={form.nationality} onChange={e => set("nationality", e.target.value)} /></div>
             <div className="space-y-1"><label className={labelClass}>Occupation</label><input className={inputClass} value={form.occupation} onChange={e => set("occupation", e.target.value)} /></div>
@@ -418,15 +433,15 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="text-sm font-semibold">Contact 1 *</div>
-              <div className="space-y-1"><label className={labelClass}>Name</label><input className={inputClass} value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /></div>
-              <div className="space-y-1"><label className={labelClass}>Phone</label><input className={inputClass} value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /></div>
-              <div className="space-y-1"><label className={labelClass}>Relationship</label><input className={inputClass} value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /></div>
+              <div className="space-y-1" data-field="emergency1Name"><label className={labelClass}>Name</label><input className={fieldClass(inputClass, !!errors.emergency1Name)} value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} /><FieldError error={errors.emergency1Name} /></div>
+              <div className="space-y-1" data-field="emergency1Phone"><label className={labelClass}>Phone</label><input className={fieldClass(inputClass, !!errors.emergency1Phone)} value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} /><FieldError error={errors.emergency1Phone} /></div>
+              <div className="space-y-1" data-field="emergency1Relationship"><label className={labelClass}>Relationship</label><input className={fieldClass(inputClass, !!errors.emergency1Relationship)} value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} /><FieldError error={errors.emergency1Relationship} /></div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-semibold">Contact 2 *</div>
-              <div className="space-y-1"><label className={labelClass}>Name</label><input className={inputClass} value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /></div>
-              <div className="space-y-1"><label className={labelClass}>Phone</label><input className={inputClass} value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /></div>
-              <div className="space-y-1"><label className={labelClass}>Relationship</label><input className={inputClass} value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /></div>
+              <div className="space-y-1" data-field="emergency2Name"><label className={labelClass}>Name</label><input className={fieldClass(inputClass, !!errors.emergency2Name)} value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} /><FieldError error={errors.emergency2Name} /></div>
+              <div className="space-y-1" data-field="emergency2Phone"><label className={labelClass}>Phone</label><input className={fieldClass(inputClass, !!errors.emergency2Phone)} value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} /><FieldError error={errors.emergency2Phone} /></div>
+              <div className="space-y-1" data-field="emergency2Relationship"><label className={labelClass}>Relationship</label><input className={fieldClass(inputClass, !!errors.emergency2Relationship)} value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} /><FieldError error={errors.emergency2Relationship} /></div>
             </div>
           </div>
         </div>

@@ -12,6 +12,7 @@ import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface AccessItem {
   id: string;
@@ -66,6 +67,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string }>({ passport: "", offerLetter: "" });
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | "passport" | "offerLetter" | null>(null);
+  const { errors, validate, clearError, clearAllErrors } = useFormValidation();
 
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
   useEffect(() => {
@@ -96,7 +98,10 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
     fetchAgents();
   }, [open]);
 
-  const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+  const set = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    clearError(field);
+  };
 
   // Auto-set agent + pre-selected room when current user is an agent
   useEffect(() => {
@@ -277,21 +282,30 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
 
   const handleSubmit = async () => {
     if (!user) return;
-    if (!form.agentId) { toast.error("Please select an agent"); return; }
-    if (!form.roomId) { toast.error("Please select a room"); return; }
-    if (!form.exactRental || Number(form.exactRental) <= 0) { toast.error("Please enter exact rental"); return; }
-    if (!form.tenantName.trim()) { toast.error("Please fill in tenant name"); return; }
-    if (!form.phone.trim()) { toast.error("Please fill in contact number"); return; }
-    if (!form.moveInDate) { toast.error("Please select move-in date"); return; }
-    if (!form.gender) { toast.error("Please select gender"); return; }
-    if (!form.emergency1Name || !form.emergency1Phone || !form.emergency1Relationship) { toast.error("Please complete Emergency Contact 1"); return; }
-    if (!form.emergency2Name || !form.emergency2Phone || !form.emergency2Relationship) { toast.error("Please complete Emergency Contact 2"); return; }
+
+    const rules: Record<string, (v: any) => string | null> = {
+      agentId: () => !form.agentId ? "Please select an agent" : null,
+      roomId: () => !form.roomId ? "Please select a room" : null,
+      exactRental: () => !form.exactRental || Number(form.exactRental) <= 0 ? "Please enter exact rental" : null,
+      tenantName: () => !form.tenantName.trim() ? "Please fill in tenant name" : null,
+      phone: () => !form.phone.trim() ? "Please fill in contact number" : null,
+      moveInDate: () => !form.moveInDate ? "Please select move-in date" : null,
+      gender: () => !form.gender ? "Please select gender" : null,
+      emergency1Name: () => !form.emergency1Name.trim() ? "Required" : null,
+      emergency1Phone: () => !form.emergency1Phone.trim() ? "Required" : null,
+      emergency1Relationship: () => !form.emergency1Relationship.trim() ? "Required" : null,
+      emergency2Name: () => !form.emergency2Name.trim() ? "Required" : null,
+      emergency2Phone: () => !form.emergency2Phone.trim() ? "Required" : null,
+      emergency2Relationship: () => !form.emergency2Relationship.trim() ? "Required" : null,
+    };
 
     const parkingCount = Number(form.parkingCount) || 0;
     for (let i = 0; i < parkingCount; i++) {
-      if (!form.carParkSelections[i]?.roomId) { toast.error(`Please select car park lot ${i + 1}`); return; }
-      if (!form.carParkSelections[i]?.carPlate.trim()) { toast.error(`Please fill in car plate for parking ${i + 1}`); return; }
+      rules[`carParkLot${i}`] = () => !form.carParkSelections[i]?.roomId ? `Please select car park lot ${i + 1}` : null;
+      rules[`carPlate${i}`] = () => !form.carParkSelections[i]?.carPlate.trim() ? `Please fill in car plate for parking ${i + 1}` : null;
     }
+
+    if (!validate(form, rules)) return;
 
     setSubmitting(true);
     try {
@@ -378,6 +392,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
     setUploadedFiles({ bookingFeeReceipt: null, passport: null, offerLetter: null });
     setLinkedTenantDocs({ passport: "", offerLetter: "" });
     setSelectedTenantId(null);
+    clearAllErrors();
   };
 
   const ic = sharedInputClass;
@@ -411,11 +426,12 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
         }
       >
         <div className="space-y-5">
+          <FormErrorBanner errors={errors} />
           {/* 1. Agent Selection — hidden for agents */}
           {!isAgent && (
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               {sectionTitle("👤", "Agent")}
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="agentId">
                 <label className={lbl}>Select Agent *</label>
                 <SearchableSelect
                   options={agentOptions}
@@ -424,6 +440,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                   placeholder="— Select Agent —"
                   searchPlaceholder="Search by name or email..."
                 />
+                <FieldError error={errors.agentId} />
               </div>
             </div>
           )}
@@ -438,7 +455,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                 <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="roomId">
                 <label className={lbl}>Select Room *</label>
                 <SearchableSelect
                   options={roomOptions}
@@ -450,10 +467,12 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                       exactRental: room ? String(room.rent) : "",
                       parkingCount: "0", carParkSelections: [],
                     }));
+                    clearError("roomId");
                   }}
                   placeholder="— Select Room —"
                   searchPlaceholder="Search by building, unit, room..."
                 />
+                <FieldError error={errors.roomId} />
               </div>
             )}
             {selectedRoom && !(isAgent && preSelectedRoomId) && (
@@ -464,9 +483,10 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
             )}
             {selectedRoom && (
               <div className="grid md:grid-cols-2 gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1" data-field="exactRental">
                   <label className={lbl}>Exact Rental (RM) *</label>
-                  <input className={`${ic} w-full`} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
+                  <input className={fieldClass(`${ic} w-full`, !!errors.exactRental)} type="number" value={form.exactRental} onChange={e => set("exactRental", e.target.value)} />
+                  <FieldError error={errors.exactRental} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>How many pax staying *</label>
@@ -476,9 +496,10 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1" data-field="moveInDate">
                   <label className={lbl}>Move-in Date *</label>
-                  <input className={`${ic} w-full`} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                  <input className={fieldClass(`${ic} w-full`, !!errors.moveInDate)} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                  <FieldError error={errors.moveInDate} />
                 </div>
                 <div className="space-y-1">
                   <label className={lbl}>Tenancy Duration *</label>
@@ -592,14 +613,15 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                 )}
 
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1" data-field="tenantName"><label className={lbl}>Full Name *</label><input className={fieldClass(`${ic} w-full`, !!errors.tenantName)} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.tenantName} /></div>
                   <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
                   <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Gender *</label>
-                    <select className={`${ic} w-full`} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
+                  <div className="space-y-1" data-field="phone"><label className={lbl}>Contact No *</label><input className={fieldClass(`${ic} w-full`, !!errors.phone)} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.phone} /></div>
+                  <div className="space-y-1" data-field="gender"><label className={lbl}>Gender *</label>
+                    <select className={fieldClass(`${ic} w-full`, !!errors.gender)} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
                       <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
                     </select>
+                    <FieldError error={errors.gender} />
                   </div>
                   <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
                   <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
@@ -680,15 +702,15 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="text-sm font-semibold">Contact 1 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1" data-field="emergency1Name"><label className={lbl}>Name</label><input className={fieldClass(`${ic} w-full`, !!errors.emergency1Name)} placeholder="Name" value={form.emergency1Name} onChange={e => set("emergency1Name", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.emergency1Name} /></div>
+                    <div className="space-y-1" data-field="emergency1Phone"><label className={lbl}>Phone</label><input className={fieldClass(`${ic} w-full`, !!errors.emergency1Phone)} placeholder="Phone" value={form.emergency1Phone} onChange={e => set("emergency1Phone", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.emergency1Phone} /></div>
+                    <div className="space-y-1" data-field="emergency1Relationship"><label className={lbl}>Relationship</label><input className={fieldClass(`${ic} w-full`, !!errors.emergency1Relationship)} placeholder="e.g. Father" value={form.emergency1Relationship} onChange={e => set("emergency1Relationship", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.emergency1Relationship} /></div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm font-semibold">Contact 2 *</div>
-                    <div className="space-y-1"><label className={lbl}>Name</label><input className={`${ic} w-full`} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Phone</label><input className={`${ic} w-full`} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                    <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /></div>
+                    <div className="space-y-1" data-field="emergency2Name"><label className={lbl}>Name</label><input className={fieldClass(`${ic} w-full`, !!errors.emergency2Name)} placeholder="Name" value={form.emergency2Name} onChange={e => set("emergency2Name", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.emergency2Name} /></div>
+                    <div className="space-y-1" data-field="emergency2Phone"><label className={lbl}>Phone</label><input className={fieldClass(`${ic} w-full`, !!errors.emergency2Phone)} placeholder="Phone" value={form.emergency2Phone} onChange={e => set("emergency2Phone", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.emergency2Phone} /></div>
+                    <div className="space-y-1" data-field="emergency2Relationship"><label className={lbl}>Relationship</label><input className={fieldClass(`${ic} w-full`, !!errors.emergency2Relationship)} placeholder="e.g. Spouse" value={form.emergency2Relationship} onChange={e => set("emergency2Relationship", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.emergency2Relationship} /></div>
                   </div>
                 </div>
               </AccordionContent>

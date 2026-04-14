@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { GripVertical, Plus, Trash2, Pencil, Save } from "lucide-react";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
+import { toast } from "sonner";
 
 /* ── Access data shapes ── */
 export interface AccessItem {
@@ -97,6 +99,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   const [uploading, setUploading] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const { errors, validate, clearError } = useFormValidation();
 
   const inputClass = sharedInputClass;
   const labelClass = sharedLabelClass;
@@ -109,7 +112,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     JSON.stringify(motorcycleItems) !== JSON.stringify(initialMotorcycle);
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert("Building name is required"); return; }
+    if (!validate(form, { name: (v) => !v?.trim() ? "Building name is required" : null })) return;
     try {
       const payload: any = {
         ...form,
@@ -126,13 +129,13 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       }
       onClose();
     } catch (e: any) {
-      alert(e.message || "Failed to save building");
+      toast.error(e.message || "Failed to save building");
     }
   };
 
   const MAX_PHOTOS = 10;
   const uploadPhoto = async (file: File) => {
-    if (form.photos.length >= MAX_PHOTOS) { alert(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
+    if (form.photos.length >= MAX_PHOTOS) { toast.error(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
@@ -140,7 +143,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       const { error } = await supabase.storage.from("room-photos").upload(path, file);
       if (error) throw error;
       setForm(prev => ({ ...prev, photos: [...prev.photos, path] }));
-    } catch (e: any) { alert(e.message || "Upload failed"); } finally { setUploading(false); }
+    } catch (e: any) { toast.error(e.message || "Upload failed"); } finally { setUploading(false); }
   };
   const removePhoto = (index: number) => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
 
@@ -377,6 +380,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       }
     >
       <div className="space-y-8">
+        <FormErrorBanner errors={errors} />
         {/* Section 1: Basic Information */}
         <div className="bg-card rounded-lg border p-6 space-y-5">
           <h2 className="text-lg font-bold">Basic Information</h2>
@@ -403,7 +407,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
                     const files = Array.from(e.target.files || []);
                     const remaining = MAX_PHOTOS - form.photos.length;
                     for (const f of files.slice(0, remaining)) await uploadPhoto(f);
-                    if (files.length > remaining) alert(`Only ${remaining} more photo(s) can be added.`);
+                    if (files.length > remaining) toast.error(`Only ${remaining} more photo(s) can be added.`);
                     e.target.value = "";
                   }} />
                 </label>
@@ -411,9 +415,10 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
             </div>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
+            <div data-field="name">
               <label className={labelClass}>Building Name *</label>
-              <input className={`${inputClass} w-full`} placeholder="e.g. The Robertson" value={form.name} onChange={e => updateField("name", e.target.value)} />
+              <input className={fieldClass(`${inputClass} w-full`, !!errors.name)} placeholder="e.g. The Robertson" value={form.name} onChange={e => { updateField("name", e.target.value); clearError("name"); }} />
+              <FieldError error={errors.name} />
             </div>
             <div>
               <label className={labelClass}>Location *</label>

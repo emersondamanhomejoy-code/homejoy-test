@@ -13,6 +13,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
+import { toast } from "sonner";
 
 const bedTypeMaxPax: Record<string, number> = {
   Single: 1, "Super Single": 1, Queen: 2, King: 2,
@@ -62,6 +64,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const [carparkRecords, setCarparkRecords] = useState<LocalCarpark[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "room" | "carpark"; key: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const { errors, validate, clearError, clearAllErrors } = useFormValidation();
 
   // Reset all state when modal opens
   useEffect(() => {
@@ -106,8 +109,8 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const saveRoom = (key: number) => {
     const room = roomRecords.find(r => r._key === key);
     if (!room) return;
-    if (room.room_category !== "Studio" && !room.bed_type.trim()) { alert("Bed Type is required."); return; }
-    if (!room.rent || room.rent <= 0) { alert("Rent must be greater than 0."); return; }
+    if (room.room_category !== "Studio" && !room.bed_type.trim()) { toast.error("Bed Type is required."); return; }
+    if (!room.rent || room.rent <= 0) { toast.error("Rent must be greater than 0."); return; }
     setRoomRecords(prev => prev.map(r => r._key === key ? { ...r, _editing: false } : r));
   };
 
@@ -168,21 +171,18 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
 
   // ── Save ──
   const saveUnit = async () => {
-    const missingFields: string[] = [];
-    if (!form.building.trim()) missingFields.push("Building");
-    if (!form.location.trim()) missingFields.push("Location");
-    if (!form.unit.trim()) missingFields.push("Unit Number");
-    if (!Number.isFinite(form.unit_max_pax) || form.unit_max_pax < 1) missingFields.push("Maximum Occupants");
-
     const editingRooms = roomRecords.filter(r => r._editing);
-    if (editingRooms.length > 0) { alert("Please save or cancel all room entries before saving the unit."); return; }
+    if (editingRooms.length > 0) { toast.error("Please save or cancel all room entries before saving the unit."); return; }
     const editingCPs = carparkRecords.filter(c => c._editing);
-    if (editingCPs.length > 0) { alert("Please save or cancel all carpark entries before saving the unit."); return; }
+    if (editingCPs.length > 0) { toast.error("Please save or cancel all carpark entries before saving the unit."); return; }
 
-    if (missingFields.length > 0) {
-      alert(`Please complete the required fields:\n• ${missingFields.join("\n• ")}`);
-      return;
-    }
+    const rules: Record<string, (v: any) => string | null> = {
+      building: () => !form.building.trim() ? "Building is required" : null,
+      location: () => !form.location.trim() ? "Location is required" : null,
+      unit: () => !form.unit.trim() ? "Unit Number is required" : null,
+      unit_max_pax: () => !Number.isFinite(form.unit_max_pax) || form.unit_max_pax < 1 ? "Maximum Occupants must be at least 1" : null,
+    };
+    if (!validate(form, rules)) return;
 
     setSaving(true);
     try {
@@ -203,7 +203,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
       logActivity("create_unit", "unit", "", { building: form.building, unit: form.unit });
       onOpenChange(false);
     } catch (e: any) {
-      alert(e.message || "Failed to save unit");
+      toast.error(e.message || "Failed to save unit");
     } finally {
       setSaving(false);
     }
@@ -225,6 +225,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
           </Button>
         }
       >
+        <FormErrorBanner errors={errors} />
         <Accordion type="multiple" defaultValue={["unit-info", "rooms", "carparks"]} className="space-y-2">
           {/* ── Unit Information ── */}
           <AccordionItem value="unit-info" className="border rounded-lg px-4">
@@ -261,7 +262,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
                             const ext = file.name.split('.').pop();
                             const path = `common/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                             const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                            if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                            if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
                             newPaths.push(path);
                           }
                           if (newPaths.length > 0) updateField("common_photos", [...form.common_photos, ...newPaths]);
@@ -273,23 +274,27 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div>
+                  <div data-field="building">
                     <Label className="text-xs text-muted-foreground">Building *</Label>
-                    <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
+                    <select className={fieldClass(`${inputClass} w-full`, !!errors.building)} value={form.building} onChange={e => {
                       const condo = condosList.find(c => c.name === e.target.value);
                       setForm(prev => ({ ...prev, building: e.target.value, location: condo?.location?.name || "" }));
+                      clearError("building"); clearError("location");
                     }}>
                       <option value="">— Select Building —</option>
                       {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
+                    <FieldError error={errors.building} />
                   </div>
-                  <div>
+                  <div data-field="location">
                     <Label className="text-xs text-muted-foreground">Location *</Label>
-                    <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly placeholder="Select a building above" />
+                    <input className={fieldClass(`${inputClass} w-full bg-muted cursor-not-allowed`, !!errors.location)} value={form.location} readOnly placeholder="Select a building above" />
+                    <FieldError error={errors.location} />
                   </div>
-                  <div>
+                  <div data-field="unit">
                     <Label className="text-xs text-muted-foreground">Unit Number *</Label>
-                    <input className={`${inputClass} w-full`} placeholder="e.g. A-17-8" value={form.unit} onChange={e => updateField("unit", e.target.value)} />
+                    <input className={fieldClass(`${inputClass} w-full`, !!errors.unit)} placeholder="e.g. A-17-8" value={form.unit} onChange={e => { updateField("unit", e.target.value); clearError("unit"); }} />
+                    <FieldError error={errors.unit} />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Unit Type *</Label>
@@ -449,7 +454,7 @@ function RoomInlineForm({ room, onChange, onSave, onCancel }: {
                   const ext = file.name.split('.').pop();
                   const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                   const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                  if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
                   newPaths.push(path);
                 }
                 if (newPaths.length > 0) onChange("photos", [...(room.photos || []), ...newPaths]);
@@ -595,7 +600,7 @@ function CarparkInlineForm({ carpark, onChange, onSave, onCancel }: {
                   const ext = file.name.split('.').pop();
                   const path = `rooms/temp_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                   const { error } = await supabase.storage.from("room-photos").upload(path, file);
-                  if (error) { alert(`Upload failed: ${error.message}`); continue; }
+                  if (error) { toast.error(`Upload failed: ${error.message}`); continue; }
                   newPaths.push(path);
                 }
                 if (newPaths.length > 0) onChange("photos", [...((carpark as any).photos || []), ...newPaths]);
