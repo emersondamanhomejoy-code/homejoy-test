@@ -552,13 +552,15 @@ export function TenantsContent() {
 
 // ─── Tenant Form (shared by Add & Edit) ───
 
-function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingDocs, onRemoveDoc }: {
+function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingDocs, onRemoveDoc, errors, clearError }: {
   form: Partial<Tenant>;
   setField: (key: keyof Tenant, value: any) => void;
   uploadedFiles: { passport: File | null; offerLetter: File | null };
   setUploadedFiles: React.Dispatch<React.SetStateAction<{ passport: File | null; offerLetter: File | null }>>;
   existingDocs: { passport: string; offerLetter: string };
   onRemoveDoc?: (key: "passport" | "offerLetter") => void;
+  errors?: Record<string, string>;
+  clearError?: (field: string) => void;
 }) {
   const renderFileField = (key: "passport" | "offerLetter", label: string) => {
     const hasNewFile = uploadedFiles[key] != null;
@@ -594,13 +596,14 @@ function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingD
 
   return (
     <div className="space-y-4">
+      {errors && <FormErrorBanner errors={errors} />}
       <div className="bg-muted/50 rounded-lg p-4 space-y-3">
         <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
         <div className="grid md:grid-cols-2 gap-3">
-          <div className="space-y-1"><label className={labelClass}>Full Name *</label><Input value={form.name || ""} onChange={e => setField("name", e.target.value)} /></div>
+          <div className="space-y-1" data-field="name"><label className={labelClass}>Full Name *</label><Input className={fieldClass("", !!errors?.name)} value={form.name || ""} onChange={e => { setField("name", e.target.value); clearError?.("name"); }} /><FieldError error={errors?.name} /></div>
           <div className="space-y-1"><label className={labelClass}>NRIC / Passport No</label><Input value={form.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
           <div className="space-y-1"><label className={labelClass}>Email</label><Input value={form.email || ""} onChange={e => setField("email", e.target.value)} /></div>
-          <div className="space-y-1"><label className={labelClass}>Contact No *</label><Input value={form.phone || ""} onChange={e => setField("phone", e.target.value)} /></div>
+          <div className="space-y-1" data-field="phone"><label className={labelClass}>Contact No *</label><Input className={fieldClass("", !!errors?.phone)} value={form.phone || ""} onChange={e => { setField("phone", e.target.value); clearError?.("phone"); }} /><FieldError error={errors?.phone} /></div>
           <div className="space-y-1">
             <label className={labelClass}>Gender</label>
             <Select value={form.gender || ""} onValueChange={v => setField("gender", v)}>
