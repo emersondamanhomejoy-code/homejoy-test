@@ -45,7 +45,21 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const toggleViewSection = (key: string) => setViewSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [photoLightboxIndex, setPhotoLightboxIndex] = useState<number | null>(null);
 
-  const condoStats = useMemo(() => {
+  // Keyboard navigation for photo lightbox
+  const lightboxPhotos = viewing?.photos as string[] | undefined;
+  const lightboxPhotoCount = lightboxPhotos?.length ?? 0;
+
+  useEffect(() => {
+    if (photoLightboxIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPhotoLightboxIndex(null);
+      if (e.key === "ArrowLeft" && photoLightboxIndex > 0) setPhotoLightboxIndex(photoLightboxIndex - 1);
+      if (e.key === "ArrowRight" && photoLightboxIndex < lightboxPhotoCount - 1) setPhotoLightboxIndex(photoLightboxIndex + 1);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [photoLightboxIndex, lightboxPhotoCount]);
+
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
     for (const c of condos) {
       const condoUnits = units.filter(u => u.building === c.name);
