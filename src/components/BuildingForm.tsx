@@ -100,7 +100,13 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const { errors, validate, clearError } = useFormValidation();
-  const [detailsOpen, setDetailsOpen] = useState(!isEdit);
+  const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>({ details: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
+  const toggleSection = (key: string) => setSectionsOpen(prev => ({ ...prev, [key]: !prev[key] }));
+  const allExpanded = Object.values(sectionsOpen).every(Boolean);
+  const toggleAllSections = () => {
+    const newVal = !allExpanded;
+    setSectionsOpen({ details: newVal, pedestrian: newVal, carpark: newVal, motorcycle: newVal, visitor: newVal });
+  };
 
   const inputClass = sharedInputClass;
   const labelClass = sharedLabelClass;
@@ -343,27 +349,33 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
 
   const renderAccessSection = (
     title: string,
+    sectionKey: string,
     accessTypes: string[],
     items: AccessItem[],
     setItems: React.Dispatch<React.SetStateAction<AccessItem[]>>,
     defaultType: string,
     showLocations: boolean = false,
   ) => (
-    <div className="bg-card rounded-lg border p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="bg-card rounded-lg border overflow-hidden">
+      <button type="button" onClick={() => toggleSection(sectionKey)} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
         <h2 className="text-lg font-bold">{title}</h2>
-        <Button type="button" variant="outline" size="sm" onClick={() => addItem(setItems, defaultType)}>
-          <Plus className="h-4 w-4 mr-1" /> Add
-        </Button>
-      </div>
-      {items.length === 0 && (
-        <div className="text-sm text-muted-foreground text-center py-6 border-2 border-dashed rounded-lg">
-          No access items added. Click "Add" to configure access.
+        <div className="flex items-center gap-2">
+          <span onClick={e => { e.stopPropagation(); addItem(setItems, defaultType); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-primary hover:bg-secondary transition-colors cursor-pointer">
+            <Plus className="h-3.5 w-3.5" /> Add
+          </span>
+          {sectionsOpen[sectionKey] ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+        </div>
+      </button>
+      {sectionsOpen[sectionKey] && (
+        <div className="px-6 pb-6 space-y-3">
+          {items.length === 0 && (
+            <div className="text-sm text-muted-foreground text-center py-6 border-2 border-dashed rounded-lg">
+              No access items added. Click "Add" to configure access.
+            </div>
+          )}
+          {items.map((item, i) => renderAccessItem(item, items, setItems, accessTypes, showLocations, i))}
         </div>
       )}
-      <div className="space-y-3">
-        {items.map((item, i) => renderAccessItem(item, items, setItems, accessTypes, showLocations, i))}
-      </div>
     </div>
   );
 
@@ -381,14 +393,19 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       }
     >
       <div className="space-y-8">
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" size="sm" onClick={toggleAllSections} className="text-xs text-muted-foreground">
+            {allExpanded ? "Collapse All" : "Expand All"}
+          </Button>
+        </div>
         <FormErrorBanner errors={errors} />
         {/* Section 1: Building Details */}
         <div className="bg-card rounded-lg border overflow-hidden">
-          <button type="button" onClick={() => setDetailsOpen(v => !v)} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
+          <button type="button" onClick={() => toggleSection("details")} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
             <h2 className="text-lg font-bold">Building Details</h2>
-            {detailsOpen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+            {sectionsOpen.details ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
           </button>
-          {detailsOpen && (
+          {sectionsOpen.details && (
             <div className="px-6 pb-6 space-y-5">
               <div>
                 <div className="flex items-center justify-between">
@@ -462,27 +479,35 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
           )}
         </div>
 
-        {renderAccessSection("Pedestrian Access", PEDESTRIAN_ACCESS_TYPES, pedestrianItems, setPedestrianItems, "Access Card", true)}
-        {renderAccessSection("Car Park Access", CARPARK_ACCESS_TYPES, carparkItems, setCarparkItems, "RFID")}
-        {renderAccessSection("Motorcycle Access", MOTORCYCLE_ACCESS_TYPES, motorcycleItems, setMotorcycleItems, "RFID")}
-
-        <div className="bg-card rounded-lg border p-6 space-y-5">
-          <h2 className="text-lg font-bold">Visitor / Parking Info</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Visitor Car Parking Info</label>
-              <textarea className={`${inputClass} w-full h-24`} placeholder="Where visitors can park, rate, time limit..." value={form.visitor_car_parking} onChange={e => updateField("visitor_car_parking", e.target.value)} />
+        {/* Visitor / Parking Info - Collapsible */}
+        <div className="bg-card rounded-lg border overflow-hidden">
+          <button type="button" onClick={() => toggleSection("visitor")} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
+            <h2 className="text-lg font-bold">Visitor / Parking Info</h2>
+            {sectionsOpen.visitor ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+          </button>
+          {sectionsOpen.visitor && (
+            <div className="px-6 pb-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Visitor Car Parking Info</label>
+                  <textarea className={`${inputClass} w-full h-24`} placeholder="Where visitors can park, rate, time limit..." value={form.visitor_car_parking} onChange={e => updateField("visitor_car_parking", e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelClass}>Visitor Motorcycle Parking Info</label>
+                  <textarea className={`${inputClass} w-full h-24`} placeholder="Motorcycle parking instructions..." value={form.visitor_motorcycle_parking} onChange={e => updateField("visitor_motorcycle_parking", e.target.value)} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Access / Arrival Instruction</label>
+                  <textarea className={`${inputClass} w-full h-28`} placeholder="Step-by-step arrival instructions that agents can copy and send to tenants..." value={form.arrival_instruction} onChange={e => updateField("arrival_instruction", e.target.value)} />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Visitor Motorcycle Parking Info</label>
-              <textarea className={`${inputClass} w-full h-24`} placeholder="Motorcycle parking instructions..." value={form.visitor_motorcycle_parking} onChange={e => updateField("visitor_motorcycle_parking", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>Access / Arrival Instruction</label>
-              <textarea className={`${inputClass} w-full h-28`} placeholder="Step-by-step arrival instructions that agents can copy and send to tenants..." value={form.arrival_instruction} onChange={e => updateField("arrival_instruction", e.target.value)} />
-            </div>
-          </div>
+          )}
         </div>
+
+        {renderAccessSection("Pedestrian Access", "pedestrian", PEDESTRIAN_ACCESS_TYPES, pedestrianItems, setPedestrianItems, "Access Card", true)}
+        {renderAccessSection("Car Park Access", "carpark", CARPARK_ACCESS_TYPES, carparkItems, setCarparkItems, "RFID")}
+        {renderAccessSection("Motorcycle Access", "motorcycle", MOTORCYCLE_ACCESS_TYPES, motorcycleItems, setMotorcycleItems, "RFID")}
       </div>
     </StandardModal>
   );
