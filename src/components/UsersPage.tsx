@@ -257,9 +257,11 @@ export function UsersPage() {
     setEditForm({
       name: u.name, display_name: u.display_name || "", phone: u.phone, address: u.address,
       emergency_contact_name: u.emergency_contact_name || "", emergency_contact_phone: u.emergency_contact_phone || "",
+      emergency_contact_relationship: u.emergency_contact_relationship || "",
       ic_document: u.ic_document || "",
       commission_type: u.commission_type,
       commission_config: u.commission_config ? { ...u.commission_config, tiers: u.commission_config.tiers?.map(t => ({ ...t })) } : defaultConfigs[u.commission_type],
+      bank_name: u.bank_name || "", bank_account: u.bank_account || "", bank_proof: u.bank_proof || "",
     });
   };
 
