@@ -86,7 +86,7 @@ export function StandardModal({
           <div className="border-t px-6 py-4 flex items-center justify-between gap-3 shrink-0 bg-background">
             <div>
               {!hideCancel && (
-                <Button variant="outline" onClick={handleClose}>
+                <Button variant="ghost" onClick={handleClose} className="hover:bg-accent/20 hover:text-accent">
                   Cancel
                 </Button>
               )}

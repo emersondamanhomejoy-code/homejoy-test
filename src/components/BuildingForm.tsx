@@ -388,7 +388,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       isDirty={isDirty}
       footer={
         <Button onClick={handleSave} disabled={createCondo.isPending || updateCondo.isPending}>
-          {createCondo.isPending || updateCondo.isPending ? "Saving..." : "Save Building"}
+          {createCondo.isPending || updateCondo.isPending ? "Saving..." : "Save"}
         </Button>
       }
     >
