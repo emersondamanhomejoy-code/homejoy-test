@@ -737,7 +737,6 @@ export function MoveOutPage() {
                 <Input type="date" className={fieldClass("", !!moveOutValidation.errors.effective_date)} value={form.effective_date} onChange={e => { updateForm({ effective_date: e.target.value }); moveOutValidation.clearError("effective_date"); }} />
                 <FieldError error={moveOutValidation.errors.effective_date} />
               </div>
-              </div>
               <div className="space-y-1">
                 <label className={lbl}>Move Out Type *</label>
                 <Select value={form.move_out_type || "none"} onValueChange={v => v !== "none" && updateForm({ move_out_type: v })}>
