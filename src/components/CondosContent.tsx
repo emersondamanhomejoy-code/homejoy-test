@@ -6,7 +6,7 @@ import { useUnits } from "@/hooks/useRooms";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronRight, Copy } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Copy, ExternalLink } from "lucide-react";
 import { AccessItem } from "@/components/BuildingForm";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
