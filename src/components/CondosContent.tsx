@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useCondos, useDeleteCondo, Condo } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
@@ -330,8 +331,8 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {photoLightboxIndex !== null && viewing.photos && viewing.photos.length > 0 && (() => {
                 const photos = viewing.photos;
                 const currentUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${photos[photoLightboxIndex]}`;
-                return (
-                  <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPhotoLightboxIndex(null)}>
+                return createPortal(
+                  <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setPhotoLightboxIndex(null)}>
                     <img src={currentUrl} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
                     <button onClick={() => setPhotoLightboxIndex(null)} className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70">✕</button>
                     <div className="absolute bottom-4 text-white text-sm">{photoLightboxIndex + 1} / {photos.length}</div>
@@ -341,7 +342,8 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                     {photoLightboxIndex < photos.length - 1 && (
                       <button onClick={e => { e.stopPropagation(); setPhotoLightboxIndex(photoLightboxIndex + 1); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">›</button>
                     )}
-                  </div>
+                  </div>,
+                  document.body
                 );
               })()}
 
