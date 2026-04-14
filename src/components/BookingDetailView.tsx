@@ -87,6 +87,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         : status === "Ready for Move-in" ? "bg-blue-500/20 text-blue-600"
         : status === "Approved" ? "bg-green-500/20 text-green-600"
         : status === "Submitted" ? "bg-yellow-500/20 text-yellow-600"
+        : status === "Closed" ? "bg-orange-500/20 text-orange-600"
         : status === "Pending Booking Review" ? "bg-muted text-muted-foreground"
         : "bg-orange-500/20 text-orange-600";
     } else {
