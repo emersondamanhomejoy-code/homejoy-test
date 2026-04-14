@@ -91,6 +91,9 @@ export function ClaimsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<Claim | null>(null);
   const [selectedUndoItems, setSelectedUndoItems] = useState<string[]>([]);
   const [showUndoDialog, setShowUndoDialog] = useState(false);
+  const claimRejectValidation = useFormValidation();
+  const claimCancelValidation = useFormValidation();
+  const claimCreateValidation = useFormValidation();
 
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [agentConfigs, setAgentConfigs] = useState<Record<string, AgentCommissionConfig>>({});

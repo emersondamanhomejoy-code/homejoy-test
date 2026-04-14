@@ -29,6 +29,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   const [pageSize, setPageSize] = useState(10);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const cancelValidation = useFormValidation();
 
   // Only show bookings submitted by this agent
   const myBookings = useMemo(() => {

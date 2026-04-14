@@ -61,6 +61,7 @@ export function UsersPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<UserWithRoles | null>(null);
   const [saving, setSaving] = useState(false);
   const [freezingId, setFreezingId] = useState<string | null>(null);
+  const userCreateValidation = useFormValidation();
 
   const [newAgent, setNewAgent] = useState({
     email: "", name: "", display_name: "", phone: "", address: "",
