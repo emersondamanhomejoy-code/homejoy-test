@@ -20,6 +20,8 @@ import { TenantsContent } from "@/components/TenantsContent";
 import { MoveInPage } from "@/components/MoveInPage";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
+import { AnnouncementsContent } from "@/components/AnnouncementsContent";
+import { MoveOutPage } from "@/components/MoveOutPage";
 import { Condo } from "@/hooks/useCondos";
 
 function ComingSoonPlaceholder({ title }: { title: string }) {
@@ -1015,7 +1017,7 @@ export default function Index() {
       <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <ComingSoonPlaceholder title="Announcements" />
+            <AnnouncementsContent isAgent={true} />
           </div>
         </div>
       </OldDashboardLayout>
@@ -1130,9 +1132,9 @@ export default function Index() {
              adminTab === "tenants" ? <TenantsContent /> :
              adminTab === "movein" ? <MoveInPage /> :
              adminTab === "bookings" ? <BookingsContent /> :
-             adminTab === "moveout" ? <ComingSoonPlaceholder title="Move Out" /> :
+             adminTab === "moveout" ? <MoveOutPage /> :
              adminTab === "payouts" ? <PayoutsContent /> :
-             adminTab === "announcements" ? <ComingSoonPlaceholder title="Announcements" /> :
+             adminTab === "announcements" ? <AnnouncementsContent /> :
              <AdminContent tab={adminTab as any} />}
           </div>
         )}

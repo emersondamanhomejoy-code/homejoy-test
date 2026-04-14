@@ -25,18 +25,33 @@ interface ActivityLog {
   created_at: string;
 }
 
-const MODULE_OPTIONS = ["booking", "move_in", "claim", "user", "unit", "room", "building", "location"];
-const ACTION_OPTIONS = ["create", "edit", "approve", "reject", "cancel", "delete", "undo"];
+const MODULE_OPTIONS = [
+  "booking", "move_in", "move_out", "room", "unit", "building", "location",
+  "tenant", "user", "claim", "payout", "earning", "announcement", "system",
+];
+const ACTION_OPTIONS = [
+  "create", "edit", "submit", "approve", "reject", "cancel", "reverse",
+  "close", "delete", "move_out", "generate_payout", "mark_paid",
+  "freeze", "unfreeze", "invite",
+];
 const ROLE_OPTIONS = ["super_admin", "admin", "agent"];
 
 const ACTION_COLORS: Record<string, string> = {
   create: "bg-emerald-100 text-emerald-800",
   edit: "bg-blue-100 text-blue-800",
+  submit: "bg-indigo-100 text-indigo-800",
   approve: "bg-green-100 text-green-800",
   reject: "bg-red-100 text-red-800",
   cancel: "bg-orange-100 text-orange-800",
+  reverse: "bg-amber-100 text-amber-800",
+  close: "bg-slate-100 text-slate-800",
   delete: "bg-red-200 text-red-900",
-  undo: "bg-yellow-100 text-yellow-800",
+  move_out: "bg-purple-100 text-purple-800",
+  generate_payout: "bg-violet-100 text-violet-800",
+  mark_paid: "bg-emerald-100 text-emerald-800",
+  freeze: "bg-blue-100 text-blue-800",
+  unfreeze: "bg-cyan-100 text-cyan-800",
+  invite: "bg-teal-100 text-teal-800",
 };
 
 export function ActivityLogPage() {
@@ -156,25 +171,52 @@ export function ActivityLogPage() {
         <Dialog open={!!viewLog} onOpenChange={(open) => { if (!open) setViewLog(null); }}>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Activity Detail</DialogTitle></DialogHeader>
-            <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
+             <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-80px)]">
               <div className="space-y-4 py-4">
                 <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date/Time</span><span className="font-medium">{format(new Date(viewLog.created_at), "dd MMM yyyy, HH:mm:ss")}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">User</span><span className="font-medium">{viewLog.actor_email}</span></div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Event Info</div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Timestamp</span><span className="font-medium">{format(new Date(viewLog.created_at), "dd MMM yyyy, HH:mm:ss")}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Actor</span><span className="font-medium">{viewLog.actor_email}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Role</span><span className="font-medium capitalize">{viewLog.details?.actor_role || "—"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Module</span><span className="font-medium capitalize">{viewLog.entity_type.replace(/_/g, " ")}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Action</span><span className="font-medium">{getActionBadge(viewLog.action)}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Module</span><span className="font-medium capitalize">{viewLog.entity_type.replace("_", " ")}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Target ID</span><span className="font-mono text-xs">{viewLog.entity_id || "—"}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Target Name / Summary</span><span className="font-medium">{detailSummary(viewLog) || "—"}</span></div>
-                  {detailReason(viewLog) && (
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Reason / Notes</span><span className="font-medium text-destructive">{detailReason(viewLog)}</span></div>
-                  )}
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Record Type</span><span className="font-medium capitalize">{viewLog.entity_type.replace(/_/g, " ")}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Record Reference</span><span className="font-mono text-xs">{viewLog.entity_id || "—"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Summary</span><span className="font-medium">{detailSummary(viewLog) || "—"}</span></div>
                   {viewLog.ip_address && (
                     <div className="flex justify-between text-sm"><span className="text-muted-foreground">IP Address</span><span className="font-mono text-xs">{viewLog.ip_address}</span></div>
                   )}
                 </div>
+
+                {/* Before / After */}
+                {(viewLog.details?.before || viewLog.details?.after) && (
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {viewLog.details?.before && (
+                      <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-4">
+                        <div className="text-xs font-bold uppercase tracking-wider text-red-600 mb-2">Before</div>
+                        <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all">{JSON.stringify(viewLog.details.before, null, 2)}</pre>
+                      </div>
+                    )}
+                    {viewLog.details?.after && (
+                      <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-4">
+                        <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2">After</div>
+                        <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all">{JSON.stringify(viewLog.details.after, null, 2)}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Reason / Notes */}
+                {detailReason(viewLog) && (
+                  <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-2">Reason / Notes</div>
+                    <p className="text-sm">{detailReason(viewLog)}</p>
+                  </div>
+                )}
+
+                {/* Full Details */}
                 <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="text-sm font-bold mb-2">Full Details</div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Full Details</div>
                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all">{JSON.stringify(viewLog.details, null, 2)}</pre>
                 </div>
               </div>
