@@ -52,7 +52,8 @@ const initialForm = {
 };
 
 export function CreateBookingDialog({ open, onOpenChange }: Props) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAgent = role === "agent";
   const queryClient = useQueryClient();
   const { data: roomsData = [] } = useRooms();
   const { data: unitsData = [] } = useUnits();
@@ -96,9 +97,18 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
+  // Auto-set agent when current user is an agent
+  useEffect(() => {
+    if (isAgent && user?.id && open) {
+      setForm(prev => ({ ...prev, agentId: user.id }));
+    }
+  }, [isAgent, user?.id, open]);
+
   // Reset room selection when agent changes (available rooms may differ)
   useEffect(() => {
-    setForm(prev => ({ ...prev, roomId: "", carParkSelections: [] }));
+    if (!isAgent) {
+      setForm(prev => ({ ...prev, roomId: "", carParkSelections: [] }));
+    }
   }, [form.agentId]);
 
 
@@ -392,20 +402,22 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
         }
       >
         <div className="space-y-5">
-          {/* 1. Agent Selection */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            {sectionTitle("👤", "Agent")}
-            <div className="space-y-1">
-              <label className={lbl}>Select Agent *</label>
-              <SearchableSelect
-                options={agentOptions}
-                value={form.agentId}
-                onChange={v => set("agentId", v)}
-                placeholder="— Select Agent —"
-                searchPlaceholder="Search by name or email..."
-              />
+          {/* 1. Agent Selection — hidden for agents */}
+          {!isAgent && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              {sectionTitle("👤", "Agent")}
+              <div className="space-y-1">
+                <label className={lbl}>Select Agent *</label>
+                <SearchableSelect
+                  options={agentOptions}
+                  value={form.agentId}
+                  onChange={v => set("agentId", v)}
+                  placeholder="— Select Agent —"
+                  searchPlaceholder="Search by name or email..."
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 2. Room Selection */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
