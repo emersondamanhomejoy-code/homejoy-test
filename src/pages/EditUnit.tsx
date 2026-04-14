@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
 import { Plus, Pencil, Eye, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 const OPTIONAL_FEATURES = ["Balcony", "Private Bathroom", "Window"];
 const bedTypeMaxPax: Record<string, number> = { Single: 1, "Super Single": 1, Queen: 2, King: 2 };
@@ -42,6 +43,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const [deleteConfirmRoom, setDeleteConfirmRoom] = useState<string | null>(null);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [roomEdits, setRoomEdits] = useState<Record<string, Record<string, any>>>({});
+  const { errors, validate, clearError } = useFormValidation();
 
   useEffect(() => {
     if (unit && !form) {
@@ -106,7 +108,11 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const handleSave = async () => {
-    if (!form.building?.trim() || !form.unit?.trim()) { toast.error("Building and Unit Number are required."); return; }
+    const rules: Record<string, (v: any) => string | null> = {
+      building: () => !form.building?.trim() ? "Building is required" : null,
+      unit: () => !form.unit?.trim() ? "Unit Number is required" : null,
+    };
+    if (!validate(form, rules)) return;
     if (editingRoomId) { toast.error("Please save or cancel the room you're editing first."); return; }
     setSaving(true);
     try {
