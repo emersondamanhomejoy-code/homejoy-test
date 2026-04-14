@@ -394,7 +394,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     >
       <div className="space-y-8">
         <div className="flex justify-end">
-          <Button type="button" variant="ghost" size="sm" onClick={toggleAllSections} className="text-xs text-muted-foreground">
+          <Button type="button" variant="outline" size="sm" onClick={toggleAllSections} className="text-xs">
             {allExpanded ? "Collapse All" : "Expand All"}
           </Button>
         </div>
