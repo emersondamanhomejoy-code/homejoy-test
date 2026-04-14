@@ -167,7 +167,24 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     onOpenChange(false);
   };
 
-  const docSection = (label: string, paths: any) => {
+  const handleResubmit = async () => {
+    if (!user) return;
+    const history = [...(b.history || []), { action: "resubmitted", by: user.email, at: new Date().toISOString() }];
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: "submitted", reject_reason: "", reviewed_by: null, reviewed_at: null, history, updated_at: new Date().toISOString() })
+      .eq("id", b.id);
+    if (error) { toast.error("Failed to resubmit"); return; }
+    await supabase.from("activity_logs").insert({
+      actor_id: user.id, actor_email: user.email || "",
+      action: "resubmit_booking", entity_type: "booking", entity_id: b.id,
+      details: { tenant_name: b.tenant_name },
+    });
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    toast.success("Booking resubmitted");
+    onOpenChange(false);
+  };
+
     const arr = Array.isArray(paths) ? paths : [];
     if (arr.length === 0) return null;
     return (
