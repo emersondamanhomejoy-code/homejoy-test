@@ -70,8 +70,9 @@ export function UsersPage() {
 
   const [editForm, setEditForm] = useState({
     name: "", display_name: "", phone: "", address: "",
-    emergency_contact_name: "", emergency_contact_phone: "",
+    emergency_contact_name: "", emergency_contact_phone: "", emergency_contact_relationship: "",
     ic_document: "", commission_type: "", commission_config: null as CommissionConfig | null,
+    bank_name: "", bank_account: "", bank_proof: "",
   });
 
   const profilePicRef = useRef<HTMLInputElement>(null);
