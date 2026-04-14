@@ -308,11 +308,11 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
       {/* View Dialog */}
       <StandardModal
         open={!!viewing}
-        onOpenChange={(open) => { if (!open) setViewing(null); }}
+        onOpenChange={(open) => { if (!open) { setViewing(null); setViewSections({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true }); } }}
         title="Building Details"
         size="lg"
         hideCancel
-        footer={<Button variant="outline" onClick={() => setViewing(null)}>Close</Button>}
+        footer={<Button variant="outline" onClick={() => { setViewing(null); setViewSections({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true }); }}>Close</Button>}
       >
         {viewing && (() => {
           const allViewExpanded = Object.values(viewSections).every(Boolean);
