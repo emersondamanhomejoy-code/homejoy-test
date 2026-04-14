@@ -621,6 +621,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                     <select className={fieldClass(`${ic} w-full`, !!errors.gender)} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
                       <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
                     </select>
+                    <FieldError error={errors.gender} />
                   </div>
                   <div className="space-y-1"><label className={lbl}>Nationality</label><input className={`${ic} w-full`} placeholder="Nationality" value={form.nationality} onChange={e => set("nationality", e.target.value)} disabled={isLinkedTenant} /></div>
                   <div className="space-y-1"><label className={lbl}>Occupation</label><input className={`${ic} w-full`} placeholder="Occupation" value={form.occupation} onChange={e => set("occupation", e.target.value)} disabled={isLinkedTenant} /></div>
