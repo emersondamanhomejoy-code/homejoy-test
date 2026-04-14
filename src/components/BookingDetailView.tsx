@@ -212,7 +212,12 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       return null; // Close only via modal Cancel button
     }
     if (b.status === "approved") {
-      return null; // Close only
+      // Only show terminate if move-in is NOT yet approved
+      const moveInAlreadyApproved = relatedMoveIn?.status === "approved";
+      if (moveInAlreadyApproved) return null;
+      return (
+        <Button variant="destructive" onClick={() => setShowCancelDialog(true)}>Terminate Booking</Button>
+      );
     }
     return null; // cancelled — close only
   };
