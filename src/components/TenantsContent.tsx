@@ -24,6 +24,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { inputClass, labelClass } from "@/lib/ui-constants";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 // ─── Types ───
 
@@ -266,6 +267,8 @@ export function TenantsContent() {
   };
 
   // ── CRUD helpers ──
+  const addValidation = useFormValidation();
+  const editValidation = useFormValidation();
 
   const uploadFile = async (file: File, folder: string): Promise<string> => {
     const ext = file.name.split(".").pop();
@@ -282,11 +285,17 @@ export function TenantsContent() {
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
     setEditExistingDocs({ passport: docP, offerLetter: docO });
     setEditUploadedFiles({ passport: null, offerLetter: null });
+    editValidation.clearAllErrors();
   };
   const setField = (key: keyof Tenant, value: any) => setEditForm(prev => ({ ...prev, [key]: value }));
 
   const saveTenant = async () => {
     if (!editingTenant) return;
+    const rules = {
+      name: (v: any) => !editForm.name?.trim() ? "Full Name is required" : null,
+      phone: (v: any) => !editForm.phone?.trim() ? "Contact number is required" : null,
+    };
+    if (!editValidation.validate(editForm, rules)) return;
     try {
       const passportPath = editUploadedFiles.passport ? await uploadFile(editUploadedFiles.passport, "passport") : editExistingDocs.passport;
       const offerPath = editUploadedFiles.offerLetter ? await uploadFile(editUploadedFiles.offerLetter, "offer-letter") : editExistingDocs.offerLetter;
@@ -320,13 +329,17 @@ export function TenantsContent() {
   const openAdd = () => {
     setAddForm({});
     setAddUploadedFiles({ passport: null, offerLetter: null });
+    addValidation.clearAllErrors();
     setAddingTenant(true);
   };
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
 
   const saveNewTenant = async () => {
-    if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
-    if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
+    const rules = {
+      name: (v: any) => !addForm.name?.trim() ? "Full Name is required" : null,
+      phone: (v: any) => !addForm.phone?.trim() ? "Contact number is required" : null,
+    };
+    if (!addValidation.validate(addForm, rules)) return;
     try {
       const passportPath = addUploadedFiles.passport ? await uploadFile(addUploadedFiles.passport, "passport") : "";
       const offerPath = addUploadedFiles.offerLetter ? await uploadFile(addUploadedFiles.offerLetter, "offer-letter") : "";
@@ -492,7 +505,7 @@ export function TenantsContent() {
         footer={<Button onClick={saveTenant}>Save Changes</Button>}
       >
         <TenantForm form={editForm} setField={setField} uploadedFiles={editUploadedFiles} setUploadedFiles={setEditUploadedFiles}
-          existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm as any} />
+          existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm as any} errors={editValidation.errors} clearError={editValidation.clearError} />
       </StandardModal>
 
       {/* Edit doc remove confirm */}
@@ -533,7 +546,7 @@ export function TenantsContent() {
         footer={<Button onClick={saveNewTenant}>Add Tenant</Button>}
       >
         <TenantForm form={addForm} setField={setAddField} uploadedFiles={addUploadedFiles} setUploadedFiles={setAddUploadedFiles}
-          existingDocs={{ passport: "", offerLetter: "" }} />
+          existingDocs={{ passport: "", offerLetter: "" }} errors={addValidation.errors} clearError={addValidation.clearError} />
       </StandardModal>
     </StandardPageLayout>
   );
@@ -541,13 +554,15 @@ export function TenantsContent() {
 
 // ─── Tenant Form (shared by Add & Edit) ───
 
-function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingDocs, onRemoveDoc }: {
+function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingDocs, onRemoveDoc, errors, clearError }: {
   form: Partial<Tenant>;
   setField: (key: keyof Tenant, value: any) => void;
   uploadedFiles: { passport: File | null; offerLetter: File | null };
   setUploadedFiles: React.Dispatch<React.SetStateAction<{ passport: File | null; offerLetter: File | null }>>;
   existingDocs: { passport: string; offerLetter: string };
   onRemoveDoc?: (key: "passport" | "offerLetter") => void;
+  errors?: Record<string, string>;
+  clearError?: (field: string) => void;
 }) {
   const renderFileField = (key: "passport" | "offerLetter", label: string) => {
     const hasNewFile = uploadedFiles[key] != null;
@@ -583,13 +598,14 @@ function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingD
 
   return (
     <div className="space-y-4">
+      {errors && <FormErrorBanner errors={errors} />}
       <div className="bg-muted/50 rounded-lg p-4 space-y-3">
         <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
         <div className="grid md:grid-cols-2 gap-3">
-          <div className="space-y-1"><label className={labelClass}>Full Name *</label><Input value={form.name || ""} onChange={e => setField("name", e.target.value)} /></div>
+          <div className="space-y-1" data-field="name"><label className={labelClass}>Full Name *</label><Input className={fieldClass("", !!errors?.name)} value={form.name || ""} onChange={e => { setField("name", e.target.value); clearError?.("name"); }} /><FieldError error={errors?.name} /></div>
           <div className="space-y-1"><label className={labelClass}>NRIC / Passport No</label><Input value={form.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
           <div className="space-y-1"><label className={labelClass}>Email</label><Input value={form.email || ""} onChange={e => setField("email", e.target.value)} /></div>
-          <div className="space-y-1"><label className={labelClass}>Contact No *</label><Input value={form.phone || ""} onChange={e => setField("phone", e.target.value)} /></div>
+          <div className="space-y-1" data-field="phone"><label className={labelClass}>Contact No *</label><Input className={fieldClass("", !!errors?.phone)} value={form.phone || ""} onChange={e => { setField("phone", e.target.value); clearError?.("phone"); }} /><FieldError error={errors?.phone} /></div>
           <div className="space-y-1">
             <label className={labelClass}>Gender</label>
             <Select value={form.gender || ""} onValueChange={v => setField("gender", v)}>
