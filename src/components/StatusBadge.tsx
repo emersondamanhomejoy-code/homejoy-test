@@ -64,12 +64,18 @@ export function StatusBadge({ status, availableDate, className }: { status: stri
       ? `Available on ${formatShortDate(availableDate)}`
       : status;
 
+  // Format snake_case statuses for display
+  const displayLabel = label === "ready_for_move_in" ? "Ready for Move-in"
+    : label === "closed" ? "Closed"
+    : label === "reversed" ? "Reversed"
+    : label;
+
   // Normalize: try exact match first, then lowercase
   const style = normalizedStyles[status] || normalizedStyles[status.toLowerCase()] || fallback;
 
   return (
     <Badge variant="secondary" className={cn("font-medium border-0 whitespace-nowrap", style, className)}>
-      {label}
+      {displayLabel}
     </Badge>
   );
 }
