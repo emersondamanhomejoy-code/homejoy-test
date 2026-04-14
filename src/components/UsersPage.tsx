@@ -420,6 +420,49 @@ export function UsersPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Status</label>
+          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="frozen">Frozen</SelectItem>
+              <SelectItem value="pending">Pending Invite</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Agent Type</label>
+          <Select value={agentTypeFilter} onValueChange={v => { setAgentTypeFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Agent Type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="internal_basic">Internal Basic</SelectItem>
+              <SelectItem value="internal_full">Internal Full</SelectItem>
+              <SelectItem value="external">External</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Bank Details</label>
+          <Select value={hasBankFilter} onValueChange={v => { setHasBankFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Bank" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="yes">Has Bank</SelectItem>
+              <SelectItem value="no">No Bank</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Created From</label>
+          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10 w-[140px]" />
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Created To</label>
+          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="h-10 w-[140px]" />
+        </div>
       </StandardFilterBar>
 
       <StandardTable
