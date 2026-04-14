@@ -44,7 +44,7 @@ export function MoveInPage() {
   const { data: allBookings = [] } = useBookings();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("submitted");
   const [agentFilter, setAgentFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
