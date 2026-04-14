@@ -463,9 +463,6 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               </div>
           </div>
         )}
-              </div>
-          </div>
-        )}
       </StandardModal>
     </StandardPageLayout>
   );
