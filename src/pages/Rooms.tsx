@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
 import { SidebarProvider } from "@/components/ui/sidebar";
