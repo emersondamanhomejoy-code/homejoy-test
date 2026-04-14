@@ -613,12 +613,12 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                 )}
 
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /></div>
+                  <div className="space-y-1" data-field="tenantName"><label className={lbl}>Full Name *</label><input className={fieldClass(`${ic} w-full`, !!errors.tenantName)} placeholder="Full Name" value={form.tenantName} onChange={e => set("tenantName", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.tenantName} /></div>
                   <div className="space-y-1"><label className={lbl}>NRIC/Passport No</label><input className={`${ic} w-full`} placeholder="NRIC/Passport No" value={form.icPassport} onChange={e => set("icPassport", e.target.value)} disabled={isLinkedTenant} /></div>
                   <div className="space-y-1"><label className={lbl}>Email</label><input className={`${ic} w-full`} type="email" placeholder="Email" value={form.email} onChange={e => set("email", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Contact No *</label><input className={`${ic} w-full`} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /></div>
-                  <div className="space-y-1"><label className={lbl}>Gender *</label>
-                    <select className={`${ic} w-full`} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
+                  <div className="space-y-1" data-field="phone"><label className={lbl}>Contact No *</label><input className={fieldClass(`${ic} w-full`, !!errors.phone)} placeholder="Contact No" value={form.phone} onChange={e => set("phone", e.target.value)} disabled={isLinkedTenant} /><FieldError error={errors.phone} /></div>
+                  <div className="space-y-1" data-field="gender"><label className={lbl}>Gender *</label>
+                    <select className={fieldClass(`${ic} w-full`, !!errors.gender)} value={form.gender} onChange={e => set("gender", e.target.value)} disabled={isLinkedTenant}>
                       <option value="">Select Gender</option><option>Male</option><option>Female</option><option>Couple</option>
                     </select>
                   </div>
