@@ -12,6 +12,7 @@ import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface AccessItem {
   id: string;
@@ -66,6 +67,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
   const [linkedTenantDocs, setLinkedTenantDocs] = useState<{ passport: string; offerLetter: string }>({ passport: "", offerLetter: "" });
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [docRemoveConfirm, setDocRemoveConfirm] = useState<"bookingFeeReceipt" | "passport" | "offerLetter" | null>(null);
+  const { errors, validate, clearError, clearAllErrors } = useFormValidation();
 
   const [existingTenants, setExistingTenants] = useState<any[]>([]);
   useEffect(() => {
@@ -96,7 +98,10 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
     fetchAgents();
   }, [open]);
 
-  const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+  const set = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    clearError(field);
+  };
 
   // Auto-set agent + pre-selected room when current user is an agent
   useEffect(() => {
@@ -277,21 +282,30 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
 
   const handleSubmit = async () => {
     if (!user) return;
-    if (!form.agentId) { toast.error("Please select an agent"); return; }
-    if (!form.roomId) { toast.error("Please select a room"); return; }
-    if (!form.exactRental || Number(form.exactRental) <= 0) { toast.error("Please enter exact rental"); return; }
-    if (!form.tenantName.trim()) { toast.error("Please fill in tenant name"); return; }
-    if (!form.phone.trim()) { toast.error("Please fill in contact number"); return; }
-    if (!form.moveInDate) { toast.error("Please select move-in date"); return; }
-    if (!form.gender) { toast.error("Please select gender"); return; }
-    if (!form.emergency1Name || !form.emergency1Phone || !form.emergency1Relationship) { toast.error("Please complete Emergency Contact 1"); return; }
-    if (!form.emergency2Name || !form.emergency2Phone || !form.emergency2Relationship) { toast.error("Please complete Emergency Contact 2"); return; }
+
+    const rules: Record<string, (v: any) => string | null> = {
+      agentId: () => !form.agentId ? "Please select an agent" : null,
+      roomId: () => !form.roomId ? "Please select a room" : null,
+      exactRental: () => !form.exactRental || Number(form.exactRental) <= 0 ? "Please enter exact rental" : null,
+      tenantName: () => !form.tenantName.trim() ? "Please fill in tenant name" : null,
+      phone: () => !form.phone.trim() ? "Please fill in contact number" : null,
+      moveInDate: () => !form.moveInDate ? "Please select move-in date" : null,
+      gender: () => !form.gender ? "Please select gender" : null,
+      emergency1Name: () => !form.emergency1Name.trim() ? "Required" : null,
+      emergency1Phone: () => !form.emergency1Phone.trim() ? "Required" : null,
+      emergency1Relationship: () => !form.emergency1Relationship.trim() ? "Required" : null,
+      emergency2Name: () => !form.emergency2Name.trim() ? "Required" : null,
+      emergency2Phone: () => !form.emergency2Phone.trim() ? "Required" : null,
+      emergency2Relationship: () => !form.emergency2Relationship.trim() ? "Required" : null,
+    };
 
     const parkingCount = Number(form.parkingCount) || 0;
     for (let i = 0; i < parkingCount; i++) {
-      if (!form.carParkSelections[i]?.roomId) { toast.error(`Please select car park lot ${i + 1}`); return; }
-      if (!form.carParkSelections[i]?.carPlate.trim()) { toast.error(`Please fill in car plate for parking ${i + 1}`); return; }
+      rules[`carParkLot${i}`] = () => !form.carParkSelections[i]?.roomId ? `Please select car park lot ${i + 1}` : null;
+      rules[`carPlate${i}`] = () => !form.carParkSelections[i]?.carPlate.trim() ? `Please fill in car plate for parking ${i + 1}` : null;
     }
+
+    if (!validate(form, rules)) return;
 
     setSubmitting(true);
     try {
@@ -378,6 +392,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
     setUploadedFiles({ bookingFeeReceipt: null, passport: null, offerLetter: null });
     setLinkedTenantDocs({ passport: "", offerLetter: "" });
     setSelectedTenantId(null);
+    clearAllErrors();
   };
 
   const ic = sharedInputClass;
