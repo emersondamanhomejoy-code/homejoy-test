@@ -338,7 +338,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               )}
 
               {/* 2. Building Photos */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("photos")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Building Photos</h3>
                   <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               </div>
 
               {/* 3. Building Details - Collapsible */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("details")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Building Details</h3>
                   <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               </div>
 
               {/* 4. Visitor / Parking Info */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("visitor")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Visitor / Parking Info</h3>
                   <div className="flex items-center gap-2">
@@ -426,7 +426,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               </div>
 
               {/* 5. Pedestrian Access */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("pedestrian")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Pedestrian Access</h3>
                   <div className="flex items-center gap-2">
@@ -442,7 +442,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               </div>
 
               {/* 6. Car Park Access */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("carpark")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Car Park Access</h3>
                   <div className="flex items-center gap-2">
@@ -458,7 +458,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               </div>
 
               {/* 7. Motorcycle Access */}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("motorcycle")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Motorcycle Access</h3>
                   <div className="flex items-center gap-2">
