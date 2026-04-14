@@ -278,7 +278,7 @@ export default function Rooms() {
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
-                                <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
+                                <Button size="sm" onClick={() => setShowBooking(true)}>
                                   Book
                                 </Button>
                               </TableCell>
