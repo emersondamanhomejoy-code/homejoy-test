@@ -374,7 +374,7 @@ export function PayoutsContent() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Payouts</h2>
+        <h2 className="text-2xl font-extrabold">Payouts</h2>
         <Button onClick={() => setShowReportDialog(true)}><FileText className="h-4 w-4 mr-1" /> Generate Report</Button>
       </div>
 

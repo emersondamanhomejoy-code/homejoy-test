@@ -637,7 +637,7 @@ export function MoveInPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Move In</h2>
+        <h2 className="text-2xl font-extrabold">Move In</h2>
       </div>
 
       {/* Status Tabs */}

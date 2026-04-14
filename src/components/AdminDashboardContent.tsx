@@ -66,7 +66,7 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="text-2xl font-extrabold">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(), "EEEE, dd MMMM yyyy")}</p>
       </div>
 

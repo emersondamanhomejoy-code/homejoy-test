@@ -848,7 +848,7 @@ export function ClaimsPage() {
       </AlertDialog>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Claims</h2>
+        <h2 className="text-2xl font-extrabold">Claims</h2>
         {canCreate && <Button onClick={() => setCreateOpen(true)}><Plus className="mr-1 h-4 w-4" /> Create</Button>}
       </div>
 

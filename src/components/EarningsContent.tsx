@@ -125,7 +125,7 @@ export function EarningsContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">Earnings</h2>
+        <h2 className="text-2xl font-extrabold">Earnings</h2>
         <p className="text-sm text-muted-foreground mt-1">Commission records from your completed deals.</p>
       </div>
 

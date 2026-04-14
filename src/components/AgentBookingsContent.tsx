@@ -190,7 +190,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">My Bookings</h2>
+      <h2 className="text-2xl font-extrabold">My Bookings</h2>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">

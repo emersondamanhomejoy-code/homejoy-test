@@ -454,7 +454,7 @@ export function MoveOutPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Move Out</h2>
+          <h2 className="text-2xl font-extrabold">Move Out</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Manage official occupancy release for rooms and carparks.</p>
         </div>
         <Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Add Move Out</Button>
