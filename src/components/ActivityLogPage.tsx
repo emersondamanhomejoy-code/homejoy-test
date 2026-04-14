@@ -25,18 +25,33 @@ interface ActivityLog {
   created_at: string;
 }
 
-const MODULE_OPTIONS = ["booking", "move_in", "claim", "user", "unit", "room", "building", "location"];
-const ACTION_OPTIONS = ["create", "edit", "approve", "reject", "cancel", "delete", "undo"];
+const MODULE_OPTIONS = [
+  "booking", "move_in", "move_out", "room", "unit", "building", "location",
+  "tenant", "user", "claim", "payout", "earning", "announcement", "system",
+];
+const ACTION_OPTIONS = [
+  "create", "edit", "submit", "approve", "reject", "cancel", "reverse",
+  "close", "delete", "move_out", "generate_payout", "mark_paid",
+  "freeze", "unfreeze", "invite",
+];
 const ROLE_OPTIONS = ["super_admin", "admin", "agent"];
 
 const ACTION_COLORS: Record<string, string> = {
   create: "bg-emerald-100 text-emerald-800",
   edit: "bg-blue-100 text-blue-800",
+  submit: "bg-indigo-100 text-indigo-800",
   approve: "bg-green-100 text-green-800",
   reject: "bg-red-100 text-red-800",
   cancel: "bg-orange-100 text-orange-800",
+  reverse: "bg-amber-100 text-amber-800",
+  close: "bg-slate-100 text-slate-800",
   delete: "bg-red-200 text-red-900",
-  undo: "bg-yellow-100 text-yellow-800",
+  move_out: "bg-purple-100 text-purple-800",
+  generate_payout: "bg-violet-100 text-violet-800",
+  mark_paid: "bg-emerald-100 text-emerald-800",
+  freeze: "bg-blue-100 text-blue-800",
+  unfreeze: "bg-cyan-100 text-cyan-800",
+  invite: "bg-teal-100 text-teal-800",
 };
 
 export function ActivityLogPage() {
