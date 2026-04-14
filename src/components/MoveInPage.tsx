@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { useMoveIns, useUpdateMoveIn, useCreateMoveIn, MoveIn } from "@/hooks/useMoveIns";
+import { useMoveIns, useUpdateMoveIn, MoveIn } from "@/hooks/useMoveIns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
-import { useBookings, Booking } from "@/hooks/useBookings";
+import { useBookings, Booking, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
@@ -17,31 +17,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Eye, Pencil, Check, X, Ban, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Eye, Pencil, Check, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
-interface UserInfo {
-  id: string;
-  email: string;
-  name: string;
-}
+interface UserInfo { id: string; email: string; name: string; }
+
+const STATUS_TABS = [
+  { value: "all", label: "All" },
+  { value: "ready_for_move_in", label: "Ready for Move-in" },
+  { value: "submitted", label: "Submitted" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "closed", label: "Closed" },
+  { value: "reversed", label: "Reversed" },
+];
 
 export function MoveInPage() {
   const { user, role } = useAuth();
-  const canCreate = role === "admin" || role === "super_admin";
+  const isAdmin = role === "admin" || role === "super_admin";
+  const isAgent = role === "agent";
+  const queryClient = useQueryClient();
   const { data: moveIns = [], isLoading } = useMoveIns();
   const updateMoveIn = useUpdateMoveIn();
-  const createMoveIn = useCreateMoveIn();
   const { data: roomsData = [] } = useRooms();
-  const { data: approvedBookings = [] } = useBookings("approved");
+  const { data: allBookings = [] } = useBookings();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState<string[]>([]);
-  const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
-  const [unitFilter, setUnitFilter] = useState<string[]>([]);
-  const [roomFilter, setRoomFilter] = useState<string[]>([]);
   const [agentFilter, setAgentFilter] = useState<string[]>([]);
+  const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
+  const [locationFilter, setLocationFilter] = useState<string[]>([]);
+  const [bookingTypeFilter, setBookingTypeFilter] = useState<string[]>([]);
   const [paymentFilter, setPaymentFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -51,13 +58,12 @@ export function MoveInPage() {
 
   const [viewItem, setViewItem] = useState<MoveIn | null>(null);
   const [editItem, setEditItem] = useState<MoveIn | null>(null);
-  const [editForm, setEditForm] = useState({ agreement_signed: false, payment_method: "", receipt_path: "" });
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ booking_id: "", agent_id: "", agreement_signed: false, payment_method: "", receipt_path: "" });
+  const [editForm, setEditForm] = useState({ agreement_signed: false, payment_method: "", remarks: "" });
+  const [showApproveDialog, setShowApproveDialog] = useState<MoveIn | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState<MoveIn | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [showCancelDialog, setShowCancelDialog] = useState<MoveIn | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
+  const [showReverseDialog, setShowReverseDialog] = useState<MoveIn | null>(null);
+  const [reverseReason, setReverseReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -68,86 +74,154 @@ export function MoveInPage() {
   }, []);
 
   const getAgentName = (id: string) => {
-    const matched = users.find((item) => item.id === id);
+    const matched = users.find((u) => u.id === id);
     return matched?.name || matched?.email || id.slice(0, 8);
   };
 
-  const locationOptions = useMemo(() => [...new Set(roomsData.map((r) => r.location).filter(Boolean))].sort(), [roomsData]);
-  const buildingOptions = useMemo(() => [...new Set(roomsData.map((r) => r.building).filter(Boolean))].sort(), [roomsData]);
-  const unitOptions = useMemo(() => [...new Set(roomsData.map((r) => r.unit).filter(Boolean))].sort(), [roomsData]);
-  const roomOptions = useMemo(() => [...new Set(roomsData.map((r) => r.room).filter(Boolean))].sort(), [roomsData]);
-  const agentOptions = useMemo(() => [...new Set(users.map((u) => u.name || u.email).filter(Boolean))].sort(), [users]);
-  const paymentOptions = useMemo(() => [...new Set(moveIns.map((m) => m.payment_method).filter(Boolean))].sort(), [moveIns]);
+  // Get booking for a move-in
+  const getBooking = (bookingId: string | null) => allBookings.find(b => b.id === bookingId);
 
-  const existingMoveInBookingIds = useMemo(() => new Set(moveIns.map((m) => m.booking_id).filter(Boolean)), [moveIns]);
-  const agentUsers = useMemo(
-    () => users.filter((u) => approvedBookings.some((b) => b.submitted_by === u.id)),
-    [users, approvedBookings],
-  );
-  const availableCreateBookings = useMemo(() => {
-    if (!createForm.agent_id) return [] as Booking[];
-    return approvedBookings.filter(
-      (booking) => booking.submitted_by === createForm.agent_id && !existingMoveInBookingIds.has(booking.id),
-    );
-  }, [approvedBookings, createForm.agent_id, existingMoveInBookingIds]);
-  const selectedCreateBooking = useMemo(
-    () => availableCreateBookings.find((booking) => booking.id === createForm.booking_id) || null,
-    [availableCreateBookings, createForm.booking_id],
-  );
+  // Get room details
+  const getRoom = (roomId: string | null) => roomsData.find(r => r.id === roomId);
+
+  const locationOptions = useMemo(() => [...new Set(roomsData.map(r => r.location).filter(Boolean))].sort(), [roomsData]);
+  const buildingOptions = useMemo(() => [...new Set(roomsData.map(r => r.building).filter(Boolean))].sort(), [roomsData]);
+  const agentOptions = useMemo(() => [...new Set(users.map(u => u.name || u.email).filter(Boolean))].sort(), [users]);
+  const paymentOptions = ["EasyRenz App", "Bank Transfer"];
+
+  // Status counts
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: moveIns.length };
+    moveIns.forEach(m => { counts[m.status] = (counts[m.status] || 0) + 1; });
+    return counts;
+  }, [moveIns]);
 
   const filtered = useMemo(() => {
     let list = moveIns;
-    if (statusFilter !== "all") list = list.filter((item) => item.status === statusFilter);
+    if (statusFilter !== "all") list = list.filter(m => m.status === statusFilter);
     if (search.trim()) {
-      const keyword = search.toLowerCase();
-      list = list.filter((item) => item.tenant_name.toLowerCase().includes(keyword) || item.id.toLowerCase().includes(keyword));
+      const s = search.toLowerCase();
+      list = list.filter(m => {
+        const room = getRoom(m.room_id);
+        return m.tenant_name.toLowerCase().includes(s) ||
+          (m.room?.building || "").toLowerCase().includes(s) ||
+          (m.room?.unit || "").toLowerCase().includes(s) ||
+          (m.room?.room || "").toLowerCase().includes(s) ||
+          (room?.room_title || "").toLowerCase().includes(s);
+      });
     }
-    if (locationFilter.length) list = list.filter((item) => {
-      const room = roomsData.find((roomItem) => roomItem.id === item.room_id);
+    if (agentFilter.length) list = list.filter(m => agentFilter.includes(getAgentName(m.agent_id)));
+    if (buildingFilter.length) list = list.filter(m => m.room && buildingFilter.includes(m.room.building));
+    if (locationFilter.length) list = list.filter(m => {
+      const room = getRoom(m.room_id);
       return room && locationFilter.includes(room.location);
     });
-    if (buildingFilter.length) list = list.filter((item) => item.room && buildingFilter.includes(item.room.building));
-    if (unitFilter.length) list = list.filter((item) => item.room && unitFilter.includes(item.room.unit));
-    if (roomFilter.length) list = list.filter((item) => item.room && roomFilter.includes(item.room.room));
-    if (agentFilter.length) list = list.filter((item) => agentFilter.includes(getAgentName(item.agent_id)));
-    if (paymentFilter.length) list = list.filter((item) => paymentFilter.includes(item.payment_method));
-    if (dateFrom) list = list.filter((item) => item.created_at >= dateFrom);
-    if (dateTo) list = list.filter((item) => item.created_at <= `${dateTo}T23:59:59`);
+    if (bookingTypeFilter.length) list = list.filter(m => {
+      const booking = getBooking(m.booking_id);
+      return booking && bookingTypeFilter.includes(booking.booking_type);
+    });
+    if (paymentFilter.length) list = list.filter(m => paymentFilter.includes(m.payment_method));
+    if (dateFrom) list = list.filter(m => m.created_at >= dateFrom);
+    if (dateTo) list = list.filter(m => m.created_at <= `${dateTo}T23:59:59`);
 
     return sortData(list, (item: MoveIn, key: string) => {
+      const room = getRoom(item.room_id);
+      const booking = getBooking(item.booking_id);
       const sortable: Record<string, string> = {
-        id: item.id,
         tenant_name: item.tenant_name,
         agent: getAgentName(item.agent_id),
         building: item.room?.building || "",
         unit: item.room?.unit || "",
         room: item.room?.room || "",
+        room_title: room?.room_title || "",
+        booking_type: booking?.booking_type || "",
         status: item.status,
-        agreement_signed: item.agreement_signed ? "Yes" : "No",
         payment_method: item.payment_method,
         created_at: item.created_at,
+        updated_at: item.updated_at,
       };
       return sortable[key] || "";
     });
-  }, [moveIns, statusFilter, search, locationFilter, buildingFilter, unitFilter, roomFilter, agentFilter, paymentFilter, dateFrom, dateTo, roomsData, sort, users]);
+  }, [moveIns, statusFilter, search, agentFilter, buildingFilter, locationFilter, bookingTypeFilter, paymentFilter, dateFrom, dateTo, roomsData, allBookings, sort, users]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  const handleApprove = async (item: MoveIn) => {
+  // ─── AGENT SUBMIT ───
+  const handleAgentSubmit = async (item: MoveIn) => {
     if (!user) return;
-    const history = [...(item.history || []), { action: "approved", by: user.email, at: new Date().toISOString() }];
-    await updateMoveIn.mutateAsync({
-      id: item.id,
-      status: "approved",
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-      history,
-    });
-    await logActivity("approve_move_in", "move_in", item.id, { tenant_name: item.tenant_name });
-    toast.success("Move-in approved");
+    // Check if related booking was terminated
+    const booking = getBooking(item.booking_id);
+    if (booking && booking.status === "cancelled") {
+      toast.error("This booking has been terminated. You cannot submit this move-in.");
+      return;
+    }
+    if (!editForm.payment_method) { toast.error("Payment method is required"); return; }
+    setSaving(true);
+    try {
+      const history = [...(item.history || []), { action: "submitted", by: user.email, at: new Date().toISOString() }];
+      await updateMoveIn.mutateAsync({
+        id: item.id,
+        status: "submitted",
+        agreement_signed: editForm.agreement_signed,
+        payment_method: editForm.payment_method,
+        history,
+        updated_at: new Date().toISOString(),
+      });
+      await logActivity("submit_move_in", "move_in", item.id, { tenant_name: item.tenant_name });
+      toast.success("Move-in submitted");
+      setEditItem(null);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to submit");
+    } finally {
+      setSaving(false);
+    }
   };
 
+  // ─── ADMIN APPROVE ───
+  const handleApprove = async () => {
+    if (!user || !showApproveDialog) return;
+    const item = showApproveDialog;
+    setSaving(true);
+    try {
+      const history = [...(item.history || []), { action: "approved", by: user.email, at: new Date().toISOString() }];
+      await updateMoveIn.mutateAsync({
+        id: item.id,
+        status: "approved",
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+        history,
+      });
+
+      // Set room to Occupied
+      if (item.room_id) {
+        await supabase.from("rooms").update({ status: "Occupied" }).eq("id", item.room_id);
+      }
+
+      // Set carpark rooms to Occupied if any
+      const booking = getBooking(item.booking_id);
+      if (booking) {
+        const docs = booking.documents as any;
+        const carParkSelections: { roomId: string }[] = docs?.carParkSelections || [];
+        for (const cp of carParkSelections) {
+          if (cp.roomId) {
+            await supabase.from("rooms").update({ status: "Occupied" }).eq("id", cp.roomId);
+          }
+        }
+      }
+
+      await logActivity("approve_move_in", "move_in", item.id, { tenant_name: item.tenant_name });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      toast.success("Move-in approved — room set to Occupied");
+      setShowApproveDialog(null);
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ─── ADMIN REJECT ───
   const handleReject = async () => {
     if (!user || !showRejectDialog || !rejectReason.trim()) {
       toast.error("Reject reason required");
@@ -169,67 +243,64 @@ export function MoveInPage() {
     setRejectReason("");
   };
 
-  const handleCancel = async () => {
-    if (!user || !showCancelDialog || !cancelReason.trim()) {
-      toast.error("Cancel reason required");
+  // ─── ADMIN REVERSE ───
+  const handleReverse = async () => {
+    if (!user || !showReverseDialog || !reverseReason.trim()) {
+      toast.error("Reverse reason required");
       return;
     }
-    const item = showCancelDialog;
-    const history = [...(item.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
-    await updateMoveIn.mutateAsync({
-      id: item.id,
-      status: "cancelled",
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-      cancel_reason: cancelReason,
-      history,
-    });
-    await logActivity("cancel_move_in", "move_in", item.id, { tenant_name: item.tenant_name, reason: cancelReason });
-    toast.success("Move-in cancelled");
-    setShowCancelDialog(null);
-    setCancelReason("");
-  };
-
-  const handleCreate = async () => {
-    if (!user || !createForm.agent_id || !selectedCreateBooking) {
-      toast.error("Please select an agent and approved booking");
-      return;
-    }
-    if (!createForm.payment_method) {
-      toast.error("Payment method is required");
-      return;
-    }
-    if (createForm.payment_method === "Bank Transfer" && !createForm.receipt_path.trim()) {
-      toast.error("Receipt path is required for bank transfer");
-      return;
-    }
-
+    const item = showReverseDialog;
     setSaving(true);
     try {
-      const history = [{ action: "created", by: user.email, at: new Date().toISOString(), created_for_agent: getAgentName(createForm.agent_id) }];
-      await createMoveIn.mutateAsync({
-        booking_id: selectedCreateBooking.id,
-        room_id: selectedCreateBooking.room_id,
-        agent_id: createForm.agent_id,
-        tenant_name: selectedCreateBooking.tenant_name,
-        agreement_signed: createForm.agreement_signed,
-        payment_method: createForm.payment_method,
-        receipt_path: createForm.receipt_path,
-        status: "submitted",
+      const history = [...(item.history || []), { action: "reversed", by: user.email, at: new Date().toISOString(), reason: reverseReason }];
+      await updateMoveIn.mutateAsync({
+        id: item.id,
+        status: "reversed",
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+        reject_reason: reverseReason,
         history,
       });
-      await logActivity("create_move_in", "move_in", selectedCreateBooking.id, {
-        tenant_name: selectedCreateBooking.tenant_name,
-        building: selectedCreateBooking.room?.building,
-        unit: selectedCreateBooking.room?.unit,
-        room: selectedCreateBooking.room?.room,
-        agent: getAgentName(createForm.agent_id),
-      });
-      toast.success("Move-in created");
-      setCreateOpen(false);
-      setCreateForm({ booking_id: "", agent_id: "", agreement_signed: false, payment_method: "", receipt_path: "" });
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create move-in");
+
+      // Release room back to Pending (was Occupied from approval)
+      if (item.room_id) {
+        await supabase.from("rooms").update({ status: "Pending" }).eq("id", item.room_id);
+      }
+
+      // Release carparks
+      const booking = getBooking(item.booking_id);
+      if (booking) {
+        const docs = booking.documents as any;
+        const carParkSelections: { roomId: string }[] = docs?.carParkSelections || [];
+        for (const cp of carParkSelections) {
+          if (cp.roomId) {
+            await supabase.from("rooms").update({ status: "Pending" }).eq("id", cp.roomId);
+          }
+        }
+      }
+
+      // Remove tenant_rooms binding created by approval
+      if (item.booking_id) {
+        const { data: tenantRooms } = await supabase
+          .from("tenant_rooms")
+          .select("id")
+          .eq("room_id", item.room_id || "")
+          .eq("status", "active");
+        if (tenantRooms && tenantRooms.length > 0) {
+          for (const tr of tenantRooms) {
+            await supabase.from("tenant_rooms").update({ status: "reversed" }).eq("id", tr.id);
+          }
+        }
+      }
+
+      await logActivity("reverse_move_in", "move_in", item.id, { tenant_name: item.tenant_name, reason: reverseReason });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant_rooms"] });
+      toast.success("Move-in reversed — occupancy removed");
+      setShowReverseDialog(null);
+      setReverseReason("");
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
     } finally {
       setSaving(false);
     }
@@ -240,7 +311,7 @@ export function MoveInPage() {
     setEditForm({
       agreement_signed: item.agreement_signed,
       payment_method: item.payment_method,
-      receipt_path: item.receipt_path,
+      remarks: "",
     });
   };
 
@@ -249,41 +320,29 @@ export function MoveInPage() {
     setSaving(true);
     try {
       const history = [...(editItem.history || []), { action: "edited", by: user.email, at: new Date().toISOString() }];
-      await updateMoveIn.mutateAsync({ id: editItem.id, ...editForm, history });
+      await updateMoveIn.mutateAsync({
+        id: editItem.id,
+        agreement_signed: editForm.agreement_signed,
+        payment_method: editForm.payment_method,
+        history,
+        updated_at: new Date().toISOString(),
+      });
       await logActivity("edit_move_in", "move_in", editItem.id, { tenant_name: editItem.tenant_name });
       toast.success("Move-in updated");
       setEditItem(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
     } finally {
       setSaving(false);
     }
   };
 
-  const hasActiveFilters =
-    locationFilter.length > 0 ||
-    buildingFilter.length > 0 ||
-    unitFilter.length > 0 ||
-    roomFilter.length > 0 ||
-    agentFilter.length > 0 ||
-    paymentFilter.length > 0 ||
-    Boolean(dateFrom) ||
-    Boolean(dateTo);
+  const hasActiveFilters = agentFilter.length > 0 || buildingFilter.length > 0 || locationFilter.length > 0 || bookingTypeFilter.length > 0 || paymentFilter.length > 0 || Boolean(dateFrom) || Boolean(dateTo);
+  const clearFilters = () => { setAgentFilter([]); setBuildingFilter([]); setLocationFilter([]); setBookingTypeFilter([]); setPaymentFilter([]); setDateFrom(""); setDateTo(""); };
 
-  const clearFilters = () => {
-    setLocationFilter([]);
-    setBuildingFilter([]);
-    setUnitFilter([]);
-    setRoomFilter([]);
-    setAgentFilter([]);
-    setPaymentFilter([]);
-    setDateFrom("");
-    setDateTo("");
-  };
-
-  const sectionCard = (emoji: string, title: string, children: React.ReactNode) => (
+  const sectionCard = (title: string, children: React.ReactNode) => (
     <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-      <div className="flex items-center gap-2 border-b border-border pb-2 text-base font-bold">{emoji} {title}</div>
+      <div className="flex items-center gap-2 border-b border-border pb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">{title}</div>
       {children}
     </div>
   );
@@ -298,176 +357,111 @@ export function MoveInPage() {
   const fieldClassName = "w-full rounded-lg border bg-secondary px-4 py-3 text-sm text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
   const labelClassName = "text-xs font-semibold uppercase tracking-wider text-muted-foreground";
 
+  // Check if move-in is blocked (booking terminated)
+  const isMoveInBlocked = (item: MoveIn) => {
+    if (item.status === "closed") return true;
+    const booking = getBooking(item.booking_id);
+    return booking?.status === "cancelled";
+  };
+
   return (
     <div className="space-y-4">
-      {createOpen && (
-        <Dialog open={createOpen} onOpenChange={(open) => !saving && setCreateOpen(open)}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0">
+      {/* View Dialog */}
+      {viewItem && (() => {
+        const room = getRoom(viewItem.room_id);
+        const booking = getBooking(viewItem.booking_id);
+        return (
+          <Dialog open={Boolean(viewItem)} onOpenChange={(open) => !open && setViewItem(null)}>
+            <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+              <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>View Move-In</DialogTitle></DialogHeader>
+              <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
+                <div className="space-y-4 py-4">
+                  {sectionCard("Move-In Summary", (
+                    <div>
+                      {infoRow("Move-In ID", <span className="font-mono text-xs">{viewItem.id.slice(0, 8)}…</span>)}
+                      {infoRow("Status", <StatusBadge status={viewItem.status} />)}
+                      {infoRow("Tenant", viewItem.tenant_name)}
+                      {infoRow("Agent", getAgentName(viewItem.agent_id))}
+                      {booking && infoRow("Booking Type", BOOKING_TYPE_LABELS[(booking.booking_type || "room_only") as BookingType])}
+                      {infoRow("Agreement Signed", viewItem.agreement_signed ? "Yes ✅" : "No ❌")}
+                      {infoRow("Payment Method", viewItem.payment_method || "—")}
+                      {infoRow("Created At", format(new Date(viewItem.created_at), "dd MMM yyyy, HH:mm"))}
+                      {viewItem.reviewed_at && infoRow("Reviewed At", format(new Date(viewItem.reviewed_at), "dd MMM yyyy, HH:mm"))}
+                      {viewItem.reviewed_by && infoRow("Reviewed By", getAgentName(viewItem.reviewed_by))}
+                    </div>
+                  ))}
+
+                  {sectionCard("Room & Parking", (
+                    <div>
+                      {infoRow("Building", viewItem.room?.building)}
+                      {infoRow("Unit", viewItem.room?.unit)}
+                      {infoRow("Room", viewItem.room?.room)}
+                      {infoRow("Room Title", room?.room_title)}
+                      {infoRow("Room Status", room?.status)}
+                      {booking && infoRow("Move-in Date", booking.move_in_date)}
+                      {booking && infoRow("Contract", `${booking.contract_months} months`)}
+                    </div>
+                  ))}
+
+                  {viewItem.reject_reason && (
+                    <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+                      <span className="font-semibold">Reject Reason:</span> {viewItem.reject_reason}
+                    </div>
+                  )}
+                  {viewItem.cancel_reason && (
+                    <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+                      <span className="font-semibold">Close / Cancel Reason:</span> {viewItem.cancel_reason}
+                    </div>
+                  )}
+
+                  {(viewItem.history || []).length > 0 && sectionCard("History", (
+                    <div className="space-y-2">
+                      {(viewItem.history || []).map((h: any, i: number) => (
+                        <div key={i} className="rounded-lg border bg-background p-3 text-xs">
+                          <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
+                          {h.reason && <div className="mt-1 text-muted-foreground">Reason: {h.reason}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <DialogFooter className="px-6 pb-6">
+                <Button variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+                {/* Admin actions in view */}
+                {isAdmin && viewItem.status === "submitted" && (
+                  <>
+                    <Button variant="destructive" onClick={() => { setViewItem(null); setShowRejectDialog(viewItem); }}>Reject</Button>
+                    <Button onClick={() => { setViewItem(null); setShowApproveDialog(viewItem); }} className="bg-green-600 hover:bg-green-700 text-white">Approve</Button>
+                  </>
+                )}
+                {isAdmin && viewItem.status === "approved" && (
+                  <Button variant="destructive" onClick={() => { setViewItem(null); setShowReverseDialog(viewItem); }}>
+                    <RotateCcw className="h-4 w-4 mr-1" /> Reverse Record
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
+
+      {/* Edit/Submit Dialog (Agent) */}
+      {editItem && (
+        <Dialog open={Boolean(editItem)} onOpenChange={(open) => !open && !saving && setEditItem(null)}>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] p-0" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-0">
-              <DialogTitle>Create Move-In</DialogTitle>
+              <DialogTitle>{editItem.status === "ready_for_move_in" || editItem.status === "rejected" ? "Submit Move-In" : "Edit Move-In"} — {editItem.tenant_name}</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
               <div className="space-y-5 py-4">
-                {sectionCard("👤", "Assign Agent", (
-                  <div className="space-y-1">
-                    <label className={labelClassName}>Agent</label>
-                    <select
-                      className={fieldClassName}
-                      value={createForm.agent_id}
-                      onChange={(e) => setCreateForm({ booking_id: "", agent_id: e.target.value, agreement_signed: false, payment_method: "", receipt_path: "" })}
-                    >
-                      <option value="">Select agent</option>
-                      {agentUsers.map((agent) => (
-                        <option key={agent.id} value={agent.id}>{agent.name || agent.email}</option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-
-                {sectionCard("📋", "Approved Booking", (
-                  <div className="space-y-1">
-                    <label className={labelClassName}>Booking</label>
-                    <select
-                      className={fieldClassName}
-                      value={createForm.booking_id}
-                      disabled={!createForm.agent_id}
-                      onChange={(e) => setCreateForm((current) => ({ ...current, booking_id: e.target.value }))}
-                    >
-                      <option value="">Select approved booking</option>
-                      {availableCreateBookings.map((booking) => (
-                        <option key={booking.id} value={booking.id}>
-                          {booking.tenant_name} — {booking.room?.building} {booking.room?.unit} {booking.room?.room}
-                        </option>
-                      ))}
-                    </select>
-                    {createForm.agent_id && availableCreateBookings.length === 0 && (
-                      <p className="text-xs text-muted-foreground">No eligible approved bookings available for this agent.</p>
-                    )}
-                  </div>
-                ))}
-
-                {selectedCreateBooking && sectionCard("🏠", "Booking Summary", (
-                  <div>
-                    {infoRow("Tenant", selectedCreateBooking.tenant_name)}
-                    {infoRow("Building", selectedCreateBooking.room?.building)}
-                    {infoRow("Unit", selectedCreateBooking.room?.unit)}
-                    {infoRow("Room", selectedCreateBooking.room?.room)}
-                    {infoRow("Move In Date", selectedCreateBooking.move_in_date ? format(new Date(selectedCreateBooking.move_in_date), "dd MMM yyyy") : "—")}
-                  </div>
-                ))}
-
-                {sectionCard("✅", "Confirmation", (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <label className={labelClassName}>Agreement Signed</label>
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4"
-                        checked={createForm.agreement_signed}
-                        onChange={(e) => setCreateForm((current) => ({ ...current, agreement_signed: e.target.checked }))}
-                      />
-                      <span className="text-sm">{createForm.agreement_signed ? "Yes" : "No"}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <label className={labelClassName}>Payment Method</label>
-                      <select
-                        className={fieldClassName}
-                        value={createForm.payment_method}
-                        onChange={(e) => setCreateForm((current) => ({ ...current, payment_method: e.target.value }))}
-                      >
-                        <option value="">Select payment method</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Online Payment">Online Payment</option>
-                      </select>
-                    </div>
-                    {createForm.payment_method === "Bank Transfer" && (
-                      <div className="space-y-1">
-                        <label className={labelClassName}>Receipt Path</label>
-                        <Input
-                          value={createForm.receipt_path}
-                          onChange={(e) => setCreateForm((current) => ({ ...current, receipt_path: e.target.value }))}
-                          placeholder="Upload path..."
-                          className="bg-secondary"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={saving}>Cancel</Button>
-                  <Button onClick={handleCreate} disabled={saving}>{saving ? "Creating..." : "Create Move-In"}</Button>
-                </DialogFooter>
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {viewItem && (
-        <Dialog open={Boolean(viewItem)} onOpenChange={(open) => !open && setViewItem(null)}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>View Move-In</DialogTitle></DialogHeader>
-            <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
-              <div className="space-y-5 py-4">
-                {sectionCard("📋", "Move-In Summary", (
-                  <div>
-                    {infoRow("Move-In ID", <span className="font-mono text-xs">{viewItem.id}</span>)}
-                    {infoRow("Status", <StatusBadge status={viewItem.status} />)}
-                    {infoRow("Tenant", viewItem.tenant_name)}
-                    {infoRow("Agent", getAgentName(viewItem.agent_id))}
-                    {infoRow("Submitted At", format(new Date(viewItem.created_at), "dd MMM yyyy, HH:mm"))}
-                    {viewItem.reviewed_at && infoRow("Reviewed At", format(new Date(viewItem.reviewed_at), "dd MMM yyyy, HH:mm"))}
-                  </div>
-                ))}
-                {sectionCard("🏠", "Room", (
-                  <div>
-                    {infoRow("Building", viewItem.room?.building)}
-                    {infoRow("Unit", viewItem.room?.unit)}
-                    {infoRow("Room", viewItem.room?.room)}
-                  </div>
-                ))}
-                {sectionCard("✅", "Confirmation", (
-                  <div>
-                    {infoRow("Agreement Signed", viewItem.agreement_signed ? "Yes ✅" : "No ❌")}
-                    {infoRow("Payment Method", viewItem.payment_method || "—")}
-                    {viewItem.receipt_path && infoRow("Receipt", viewItem.receipt_path)}
-                  </div>
-                ))}
-                {viewItem.reject_reason && (
-                  <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
-                    <span className="font-semibold">Reject Reason:</span> {viewItem.reject_reason}
+                {isMoveInBlocked(editItem) && (
+                  <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive font-medium">
+                    ⚠️ This booking has been terminated. No further submissions are allowed.
                   </div>
                 )}
-                {viewItem.cancel_reason && (
-                  <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-                    <span className="font-semibold">Cancel Reason:</span> {viewItem.cancel_reason}
-                  </div>
-                )}
-                {(viewItem.history || []).length > 0 && sectionCard("📜", "History", (
-                  <div className="space-y-2">
-                    {(viewItem.history || []).map((historyItem: any, index: number) => (
-                      <div key={index} className="rounded-lg border bg-background p-3 text-xs">
-                        <span className="font-semibold capitalize">{historyItem.action}</span> by {historyItem.by} — {historyItem.at ? format(new Date(historyItem.at), "dd MMM yyyy, HH:mm") : ""}
-                        {historyItem.reason && <div className="mt-1 text-muted-foreground">Reason: {historyItem.reason}</div>}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
 
-      {editItem && (
-        <Dialog open={Boolean(editItem)} onOpenChange={(open) => !open && !saving && setEditItem(null)}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Edit Move-In — {editItem.tenant_name}</DialogTitle></DialogHeader>
-            <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
-              <div className="space-y-5 py-4">
-                {sectionCard("✅", "Confirmation Details", (
+                {sectionCard("Confirmation Details", (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <label className={labelClassName}>Agreement Signed</label>
@@ -475,30 +469,46 @@ export function MoveInPage() {
                         type="checkbox"
                         className="h-4 w-4"
                         checked={editForm.agreement_signed}
-                        onChange={(e) => setEditForm((current) => ({ ...current, agreement_signed: e.target.checked }))}
+                        onChange={(e) => setEditForm(f => ({ ...f, agreement_signed: e.target.checked }))}
+                        disabled={isMoveInBlocked(editItem)}
                       />
                       <span className="text-sm">{editForm.agreement_signed ? "Yes" : "No"}</span>
                     </div>
                     <div className="space-y-1">
-                      <label className={labelClassName}>Payment Method</label>
-                      <select className={fieldClassName} value={editForm.payment_method} onChange={(e) => setEditForm((current) => ({ ...current, payment_method: e.target.value }))}>
-                        <option value="">Select</option>
-                        <option value="Cash">Cash</option>
+                      <label className={labelClassName}>Payment Method *</label>
+                      <select
+                        className={fieldClassName}
+                        value={editForm.payment_method}
+                        onChange={(e) => setEditForm(f => ({ ...f, payment_method: e.target.value }))}
+                        disabled={isMoveInBlocked(editItem)}
+                      >
+                        <option value="">Select payment method</option>
+                        <option value="EasyRenz App">EasyRenz App</option>
                         <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Online Payment">Online Payment</option>
                       </select>
                     </div>
-                    {editForm.payment_method === "Bank Transfer" && (
-                      <div className="space-y-1">
-                        <label className={labelClassName}>Receipt Path</label>
-                        <Input className="bg-secondary" value={editForm.receipt_path} onChange={(e) => setEditForm((current) => ({ ...current, receipt_path: e.target.value }))} placeholder="Upload path..." />
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <label className={labelClassName}>Remarks</label>
+                      <Textarea
+                        placeholder="Any remarks..."
+                        value={editForm.remarks}
+                        onChange={(e) => setEditForm(f => ({ ...f, remarks: e.target.value }))}
+                        rows={2}
+                        disabled={isMoveInBlocked(editItem)}
+                      />
+                    </div>
                   </div>
                 ))}
+
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditItem(null)} disabled={saving}>Cancel</Button>
-                  <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                  {(editItem.status === "ready_for_move_in" || editItem.status === "rejected") && !isMoveInBlocked(editItem) ? (
+                    <Button onClick={() => handleAgentSubmit(editItem)} disabled={saving || !editForm.payment_method}>
+                      {saving ? "Submitting..." : "Submit Move-In"}
+                    </Button>
+                  ) : !isMoveInBlocked(editItem) ? (
+                    <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                  ) : null}
                 </DialogFooter>
               </div>
             </ScrollArea>
@@ -506,6 +516,26 @@ export function MoveInPage() {
         </Dialog>
       )}
 
+      {/* Approve Dialog */}
+      <AlertDialog open={Boolean(showApproveDialog)} onOpenChange={(open) => !open && setShowApproveDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Move-In?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Approve move-in for <strong>{showApproveDialog?.tenant_name}</strong>?
+              Room/carpark will be set to <strong>Occupied</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApprove} disabled={saving} className="bg-green-600 hover:bg-green-700">
+              Yes, Approve
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Dialog */}
       <AlertDialog open={Boolean(showRejectDialog)} onOpenChange={(open) => !open && (setShowRejectDialog(null), setRejectReason(""))}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -520,53 +550,75 @@ export function MoveInPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={Boolean(showCancelDialog)} onOpenChange={(open) => !open && (setShowCancelDialog(null), setCancelReason(""))}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Move-In?</AlertDialogTitle>
-            <AlertDialogDescription>Please enter the reason for cancellation.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <Textarea placeholder="Cancel reason (required)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Move-In</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Reverse Dialog */}
+      <Dialog open={Boolean(showReverseDialog)} onOpenChange={(open) => { if (!open) { setShowReverseDialog(null); setReverseReason(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reverse Move-In</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              This will reverse the approved move-in for <strong>{showReverseDialog?.tenant_name}</strong>.
+              Occupancy will be removed and room set back to Pending.
+            </p>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Reason *</label>
+              <Textarea placeholder="Why is this move-in being reversed?" value={reverseReason} onChange={(e) => setReverseReason(e.target.value)} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowReverseDialog(null); setReverseReason(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleReverse} disabled={!reverseReason.trim() || saving}>
+              {saving ? "Reversing..." : "Reverse Move-In"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Move In</h2>
-        {canCreate && <Button onClick={() => setCreateOpen(true)}><Plus className="mr-1 h-4 w-4" /> Create</Button>}
       </div>
 
+      {/* Status Tabs */}
+      <div className="flex flex-wrap gap-2">
+        {STATUS_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => { setStatusFilter(tab.value); setPage(0); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              statusFilter === tab.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            {tab.label} {statusCounts[tab.value] ? `(${statusCounts[tab.value]})` : "(0)"}
+          </button>
+        ))}
+      </div>
+
+      {/* Search + Agent Filter */}
       <div className="flex flex-wrap items-center gap-3">
-        <Input placeholder="Search tenant, ID..." className="max-w-xs" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} />
-        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(0); }}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <Input placeholder="Search tenant, building, unit, room..." className="max-w-xs" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} />
+        <MultiSelectFilter label="Agent" placeholder="All" options={agentOptions} selected={agentFilter} onApply={(v) => { setAgentFilter(v); setPage(0); }} />
         {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground"><X className="mr-1 h-3 w-3" /> Clear</Button>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
-        <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={(value) => { setLocationFilter(value); setPage(0); }} />
-        <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={(value) => { setBuildingFilter(value); setPage(0); }} />
-        <MultiSelectFilter label="Unit" placeholder="All" options={unitOptions} selected={unitFilter} onApply={(value) => { setUnitFilter(value); setPage(0); }} />
-        <MultiSelectFilter label="Room" placeholder="All" options={roomOptions} selected={roomFilter} onApply={(value) => { setRoomFilter(value); setPage(0); }} />
-        <MultiSelectFilter label="Agent" placeholder="All" options={agentOptions} selected={agentFilter} onApply={(value) => { setAgentFilter(value); setPage(0); }} />
-        <MultiSelectFilter label="Payment" placeholder="All" options={paymentOptions} selected={paymentFilter} onApply={(value) => { setPaymentFilter(value); setPage(0); }} />
+      {/* Advanced Filters */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
+        <MultiSelectFilter label="Booking Type" placeholder="All" options={["room_only", "room_carpark", "carpark_only"]} selected={bookingTypeFilter} onApply={(v) => { setBookingTypeFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={(v) => { setBuildingFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={(v) => { setLocationFilter(v); setPage(0); }} />
+        <MultiSelectFilter label="Payment" placeholder="All" options={paymentOptions} selected={paymentFilter} onApply={(v) => { setPaymentFilter(v); setPage(0); }} />
         <div className="space-y-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date From</label>
           <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
         </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date To</label>
+          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} className="h-10" />
+        </div>
       </div>
 
+      {/* Table */}
       {isLoading ? (
         <div className="py-10 text-center text-muted-foreground">Loading...</div>
       ) : (
@@ -574,62 +626,70 @@ export function MoveInPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortableTableHead sortKey="id" currentSort={sort} onSort={handleSort}>Move-In ID</SortableTableHead>
-                <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
-                <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
                 <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                 <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
                 <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
+                <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>
+                <SortableTableHead sortKey="booking_type" currentSort={sort} onSort={handleSort}>Booking Type</SortableTableHead>
+                <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant</SortableTableHead>
                 <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                <SortableTableHead sortKey="agreement_signed" currentSort={sort} onSort={handleSort}>Agreement</SortableTableHead>
-                <SortableTableHead sortKey="payment_method" currentSort={sort} onSort={handleSort}>Payment</SortableTableHead>
-                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted</SortableTableHead>
+                <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
+                <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Created</SortableTableHead>
+                <SortableTableHead sortKey="updated_at" currentSort={sort} onSort={handleSort}>Updated</SortableTableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
                 <TableRow><TableCell colSpan={11} className="py-8 text-center text-muted-foreground">No move-ins found</TableCell></TableRow>
-              ) : paged.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-mono text-xs">{item.id.slice(0, 8)}</TableCell>
-                  <TableCell className="font-medium">{item.tenant_name}</TableCell>
-                  <TableCell className="text-sm">{getAgentName(item.agent_id)}</TableCell>
-                  <TableCell>{item.room?.building || "—"}</TableCell>
-                  <TableCell>{item.room?.unit || "—"}</TableCell>
-                  <TableCell>{item.room?.room || "—"}</TableCell>
-                  <TableCell><StatusBadge status={item.status} /></TableCell>
-                  <TableCell>{item.agreement_signed ? "✅" : "❌"}</TableCell>
-                  <TableCell className="text-sm">{item.payment_method || "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{format(new Date(item.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => setViewItem(item)} title="View"><Eye className="h-4 w-4" /></Button>
-                      {(item.status === "submitted" || item.status === "rejected") && (
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                      )}
-                      {item.status === "submitted" && (
-                        <>
-                          <Button variant="ghost" size="icon" onClick={() => handleApprove(item)} title="Approve"><Check className="h-4 w-4 text-primary" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => setShowRejectDialog(item)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
-                        </>
-                      )}
-                      {(item.status === "submitted" || item.status === "approved") && (
-                        <Button variant="ghost" size="icon" onClick={() => setShowCancelDialog(item)} title="Cancel"><Ban className="h-4 w-4 text-muted-foreground" /></Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              ) : paged.map((item) => {
+                const room = getRoom(item.room_id);
+                const booking = getBooking(item.booking_id);
+                const blocked = isMoveInBlocked(item);
+                return (
+                  <TableRow key={item.id} className={blocked ? "opacity-50" : ""}>
+                    <TableCell>{item.room?.building || "—"}</TableCell>
+                    <TableCell>{item.room?.unit || "—"}</TableCell>
+                    <TableCell>{item.room?.room || "—"}</TableCell>
+                    <TableCell className="text-sm">{room?.room_title || "—"}</TableCell>
+                    <TableCell className="text-sm">{booking ? BOOKING_TYPE_LABELS[(booking.booking_type || "room_only") as BookingType] : "—"}</TableCell>
+                    <TableCell className="font-medium">{item.tenant_name}</TableCell>
+                    <TableCell><StatusBadge status={item.status} /></TableCell>
+                    <TableCell className="text-sm">{getAgentName(item.agent_id)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(item.created_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(item.updated_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell>
+                      <div className="flex justify-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setViewItem(item)} title="View"><Eye className="h-4 w-4" /></Button>
+                        {/* Agent can edit/submit if ready_for_move_in or rejected, and not blocked */}
+                        {(item.status === "ready_for_move_in" || item.status === "rejected" || item.status === "submitted") && !blocked && (
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Edit/Submit"><Pencil className="h-4 w-4" /></Button>
+                        )}
+                        {/* Admin actions */}
+                        {isAdmin && item.status === "submitted" && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => setShowApproveDialog(item)} title="Approve"><Check className="h-4 w-4 text-primary" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => setShowRejectDialog(item)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                          </>
+                        )}
+                        {isAdmin && item.status === "approved" && (
+                          <Button variant="ghost" size="icon" onClick={() => setShowReverseDialog(item)} title="Reverse"><RotateCcw className="h-4 w-4 text-orange-500" /></Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
       )}
 
+      {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span>Show</span>
-          <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(0); }}>
+          <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}>
             <SelectTrigger className="h-8 w-[70px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="10">10</SelectItem>
@@ -640,9 +700,9 @@ export function MoveInPage() {
           <span>of {filtered.length}</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage((current) => current - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
           <span className="px-2">{page + 1} / {totalPages}</span>
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage((current) => current + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
     </div>
