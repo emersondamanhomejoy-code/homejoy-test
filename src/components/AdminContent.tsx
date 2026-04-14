@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { MoveInPage } from "@/components/MoveInPage";
+import { MoveOutPage } from "@/components/MoveOutPage";
 import { UsersPage } from "@/components/UsersPage";
 import { ActivityLogPage } from "@/components/ActivityLogPage";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,7 +32,7 @@ function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean;
 }
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "bookings" | "movein" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "movein" | "moveout" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
@@ -254,6 +255,8 @@ export function AdminContent({ tab }: AdminContentProps) {
       {tab === "bookings" && <BookingsContent />}
 
       {tab === "movein" && <MoveInPage />}
+
+      {tab === "moveout" && <MoveOutPage />}
 
       {tab === "users" && <UsersPage />}
 

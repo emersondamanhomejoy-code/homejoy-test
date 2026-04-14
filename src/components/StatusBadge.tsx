@@ -19,7 +19,11 @@ const statusStyles: Record<string, string> = {
   // New workflow statuses
   Submitted: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
   "Ready for Move-in": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
+  ready_for_move_in: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
   Reversed: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  reversed: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  Closed: "bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400",
+  closed: "bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400",
   Completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
 
   // Payout / Earnings statuses
@@ -60,12 +64,18 @@ export function StatusBadge({ status, availableDate, className }: { status: stri
       ? `Available on ${formatShortDate(availableDate)}`
       : status;
 
+  // Format snake_case statuses for display
+  const displayLabel = label === "ready_for_move_in" ? "Ready for Move-in"
+    : label === "closed" ? "Closed"
+    : label === "reversed" ? "Reversed"
+    : label;
+
   // Normalize: try exact match first, then lowercase
   const style = normalizedStyles[status] || normalizedStyles[status.toLowerCase()] || fallback;
 
   return (
     <Badge variant="secondary" className={cn("font-medium border-0 whitespace-nowrap", style, className)}>
-      {label}
+      {displayLabel}
     </Badge>
   );
 }
