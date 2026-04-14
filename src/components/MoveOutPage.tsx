@@ -662,8 +662,8 @@ export function MoveOutPage() {
         isDirty={isDirty}
         footer={
           <>
-            <Button variant="outline" onClick={handleSaveDraft} disabled={saving || !form.tenant_name || !form.move_out_type}>
-              {saving ? "Saving..." : "Save as Draft"}
+            <Button variant="ghost" onClick={handleSaveDraft} disabled={saving || !form.tenant_name || !form.move_out_type} className="hover:bg-accent/20 hover:text-accent">
+              {saving ? "Saving..." : "Save Draft"}
             </Button>
             <Button
               variant="destructive"

@@ -221,7 +221,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
         isDirty={isDirty}
         footer={
           <Button onClick={saveUnit} disabled={saving}>
-            {saving ? "Saving..." : "Save Unit & Rooms"}
+            {saving ? "Saving..." : "Save"}
           </Button>
         }
       >

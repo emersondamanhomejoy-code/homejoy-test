@@ -284,7 +284,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
       isDirty={isDirty}
       footer={
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? "Saving..." : "Save"}
         </Button>
       }
     >
