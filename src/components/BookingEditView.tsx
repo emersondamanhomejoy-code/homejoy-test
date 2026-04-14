@@ -289,6 +289,7 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
       }
     >
       <div className="space-y-5">
+        <FormErrorBanner errors={errors} />
         {/* Room */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
           {sectionTitle("🏠", "Room")}
@@ -336,9 +337,10 @@ export function BookingEditView({ booking, open, onOpenChange }: Props) {
                   ))}
                 </select>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="moveInDate">
                 <label className={labelClass}>Move-in Date *</label>
-                <input className={inputClass} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                <input className={fieldClass(inputClass, !!errors.moveInDate)} type="date" value={form.moveInDate} onChange={e => set("moveInDate", e.target.value)} />
+                <FieldError error={errors.moveInDate} />
               </div>
             </div>
           )}
