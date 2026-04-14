@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -38,7 +39,7 @@ export default function Rooms() {
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { sort, handleSort, sortData } = useTableSort("building");
-
+  const [showBooking, setShowBooking] = useState(false);
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
     else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
@@ -277,7 +278,7 @@ export default function Rooms() {
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
-                                <Button size="sm" onClick={() => navigate(`/book/${room.id}`)}>
+                                <Button size="sm" onClick={() => setShowBooking(true)}>
                                   Book
                                 </Button>
                               </TableCell>
@@ -335,6 +336,7 @@ export default function Rooms() {
           </main>
         </div>
       </div>
+      <CreateBookingDialog open={showBooking} onOpenChange={setShowBooking} />
     </SidebarProvider>
   );
 }
