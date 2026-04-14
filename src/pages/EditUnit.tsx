@@ -207,6 +207,7 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
         size="xl" isDirty={isDirty}
         footer={<Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</Button>}
       >
+        <FormErrorBanner errors={errors} />
         <Accordion type="multiple" defaultValue={["unit-info", "rooms", "carparks"]} className="space-y-2">
           {/* ── Unit Information ── */}
           <AccordionItem value="unit-info" className="border rounded-lg px-4">
@@ -254,23 +255,26 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div>
+                  <div data-field="building">
                     <Label className="text-xs text-muted-foreground">Building *</Label>
-                    <select className={`${inputClass} w-full`} value={form.building} onChange={e => {
+                    <select className={fieldClass(`${inputClass} w-full`, !!errors.building)} value={form.building} onChange={e => {
                       const condo = condosList.find(c => c.name === e.target.value);
                       setForm((prev: any) => ({ ...prev, building: e.target.value, location: condo?.location?.name || prev.location }));
+                      clearError("building");
                     }}>
                       <option value="">— Select Building —</option>
                       {condosList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
+                    <FieldError error={errors.building} />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Location</Label>
                     <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={form.location} readOnly />
                   </div>
-                  <div>
+                  <div data-field="unit">
                     <Label className="text-xs text-muted-foreground">Unit Number *</Label>
-                    <input className={`${inputClass} w-full`} value={form.unit} onChange={e => updateField("unit", e.target.value)} />
+                    <input className={fieldClass(`${inputClass} w-full`, !!errors.unit)} value={form.unit} onChange={e => { updateField("unit", e.target.value); clearError("unit"); }} />
+                    <FieldError error={errors.unit} />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Unit Type *</Label>
