@@ -26,6 +26,7 @@ interface AccessItem {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedRoomId?: string;
 }
 
 interface UserInfo {
@@ -51,7 +52,7 @@ const initialForm = {
   emergency2Name: "", emergency2Phone: "", emergency2Relationship: "",
 };
 
-export function CreateBookingDialog({ open, onOpenChange }: Props) {
+export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: Props) {
   const { user, role } = useAuth();
   const isAgent = role === "agent";
   const queryClient = useQueryClient();
@@ -97,12 +98,18 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
-  // Auto-set agent when current user is an agent
+  // Auto-set agent + pre-selected room when current user is an agent
   useEffect(() => {
     if (isAgent && user?.id && open) {
-      setForm(prev => ({ ...prev, agentId: user.id }));
+      const updates: Record<string, any> = { agentId: user.id };
+      if (preSelectedRoomId) {
+        updates.roomId = preSelectedRoomId;
+        const room = roomsData.find(r => r.id === preSelectedRoomId);
+        if (room) updates.exactRental = String(room.rent);
+      }
+      setForm(prev => ({ ...prev, ...updates }));
     }
-  }, [isAgent, user?.id, open]);
+  }, [isAgent, user?.id, open, preSelectedRoomId, roomsData]);
 
   // Reset room selection when agent changes (available rooms may differ)
   useEffect(() => {
@@ -422,23 +429,31 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
           {/* 2. Room Selection */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             {sectionTitle("🏠", "Room")}
-            <div className="space-y-1">
-              <label className={lbl}>Select Room *</label>
-              <SearchableSelect
-                options={roomOptions}
-                value={form.roomId}
-                onChange={v => {
-                  const room = roomsData.find(r => r.id === v);
-                  setForm(prev => ({
-                    ...prev, roomId: v,
-                    exactRental: room ? String(room.rent) : "",
-                    parkingCount: "0", carParkSelections: [],
-                  }));
-                }}
-                placeholder="— Select Room —"
-                searchPlaceholder="Search by building, unit, room..."
-              />
-            </div>
+            {isAgent && preSelectedRoomId && selectedRoom ? (
+              <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Selected Room</div>
+                <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}{(selectedRoom as any).room_title ? ` — ${(selectedRoom as any).room_title}` : ""}</div>
+                <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className={lbl}>Select Room *</label>
+                <SearchableSelect
+                  options={roomOptions}
+                  value={form.roomId}
+                  onChange={v => {
+                    const room = roomsData.find(r => r.id === v);
+                    setForm(prev => ({
+                      ...prev, roomId: v,
+                      exactRental: room ? String(room.rent) : "",
+                      parkingCount: "0", carParkSelections: [],
+                    }));
+                  }}
+                  placeholder="— Select Room —"
+                  searchPlaceholder="Search by building, unit, room..."
+                />
+              </div>
+            )}
             {selectedRoom && (
               <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
                 <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}{(selectedRoom as any).room_title ? ` — ${(selectedRoom as any).room_title}` : ""}</div>
