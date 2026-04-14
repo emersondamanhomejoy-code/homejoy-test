@@ -503,7 +503,7 @@ export function TenantsContent() {
         footer={<Button onClick={saveTenant}>Save Changes</Button>}
       >
         <TenantForm form={editForm} setField={setField} uploadedFiles={editUploadedFiles} setUploadedFiles={setEditUploadedFiles}
-          existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm as any} />
+          existingDocs={editExistingDocs} onRemoveDoc={setEditDocRemoveConfirm as any} errors={editValidation.errors} clearError={editValidation.clearError} />
       </StandardModal>
 
       {/* Edit doc remove confirm */}
@@ -544,7 +544,7 @@ export function TenantsContent() {
         footer={<Button onClick={saveNewTenant}>Add Tenant</Button>}
       >
         <TenantForm form={addForm} setField={setAddField} uploadedFiles={addUploadedFiles} setUploadedFiles={setAddUploadedFiles}
-          existingDocs={{ passport: "", offerLetter: "" }} />
+          existingDocs={{ passport: "", offerLetter: "" }} errors={addValidation.errors} clearError={addValidation.clearError} />
       </StandardModal>
     </StandardPageLayout>
   );
