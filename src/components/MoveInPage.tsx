@@ -508,7 +508,8 @@ export function MoveInPage() {
               <DialogTitle>{editItem.status === "ready_for_move_in" || editItem.status === "rejected" ? "Submit Move-In" : "Edit Move-In"} — {editItem.tenant_name}</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
-              <div className="space-y-5 py-4">
+               <div className="space-y-5 py-4">
+                <FormErrorBanner errors={submitValidation.errors} />
                 {isMoveInBlocked(editItem) && (
                   <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive font-medium">
                     ⚠️ This booking has been terminated. No further submissions are allowed.
@@ -528,18 +529,19 @@ export function MoveInPage() {
                       />
                       <span className="text-sm">{editForm.agreement_signed ? "Yes" : "No"}</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1" data-field="payment_method">
                       <label className={labelClassName}>Payment Method *</label>
                       <select
-                        className={fieldClassName}
+                        className={fieldClass(fieldClassName, !!submitValidation.errors.payment_method)}
                         value={editForm.payment_method}
-                        onChange={(e) => setEditForm(f => ({ ...f, payment_method: e.target.value }))}
+                        onChange={(e) => { setEditForm(f => ({ ...f, payment_method: e.target.value })); submitValidation.clearError("payment_method"); }}
                         disabled={isMoveInBlocked(editItem)}
                       >
                         <option value="">Select payment method</option>
                         <option value="EasyRenz App">EasyRenz App</option>
                         <option value="Bank Transfer">Bank Transfer</option>
                       </select>
+                      <FieldError error={submitValidation.errors.payment_method} />
                     </div>
                     <div className="space-y-1">
                       <label className={labelClassName}>Remarks</label>
@@ -596,8 +598,10 @@ export function MoveInPage() {
             <AlertDialogTitle>Reject Move-In?</AlertDialogTitle>
             <AlertDialogDescription>Please enter the reason for rejection.</AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea placeholder="Reject reason (required)..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} />
-          <AlertDialogFooter>
+          <div data-field="rejectReason">
+            <Textarea className={fieldClass("", !!rejectValidation.errors.rejectReason)} placeholder="Reject reason (required)..." value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); rejectValidation.clearError("rejectReason"); }} rows={3} />
+            <FieldError error={rejectValidation.errors.rejectReason} />
+          </div>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleReject} disabled={!rejectReason.trim()} className="bg-destructive text-destructive-foreground">Reject</AlertDialogAction>
           </AlertDialogFooter>
