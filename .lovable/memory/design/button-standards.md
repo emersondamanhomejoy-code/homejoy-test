@@ -16,5 +16,9 @@ type: design
 - **Approve**: bg-accent hover:bg-accent/90 text-accent-foreground (green via accent token)
 - **Save Draft / secondary non-dangerous**: variant="ghost" with same green hover as cancel
 
+## Expand/Collapse All Buttons
+- variant="outline" size="sm" className="text-xs bg-card"
+- bg-card gives white background for contrast against modal grey
+
 ## Never use hardcoded colors
 Use design tokens (bg-accent, bg-destructive, bg-primary) not bg-green-600, bg-red-500 etc.
