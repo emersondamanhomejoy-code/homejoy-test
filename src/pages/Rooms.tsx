@@ -336,6 +336,7 @@ export default function Rooms() {
           </main>
         </div>
       </div>
+      <CreateBookingDialog open={showBooking} onOpenChange={setShowBooking} />
     </SidebarProvider>
   );
 }
