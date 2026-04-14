@@ -449,6 +449,95 @@ export type Database = {
           },
         ]
       }
+      earnings: {
+        Row: {
+          agent_id: string
+          booking_id: string | null
+          building: string
+          commission_amount: number
+          commission_type: string
+          created_at: string
+          exact_rental: number
+          id: string
+          move_in_id: string | null
+          pay_cycle: string
+          payout_id: string | null
+          room: string
+          room_id: string | null
+          status: string
+          tenant_name: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          booking_id?: string | null
+          building?: string
+          commission_amount?: number
+          commission_type?: string
+          created_at?: string
+          exact_rental?: number
+          id?: string
+          move_in_id?: string | null
+          pay_cycle?: string
+          payout_id?: string | null
+          room?: string
+          room_id?: string | null
+          status?: string
+          tenant_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          booking_id?: string | null
+          building?: string
+          commission_amount?: number
+          commission_type?: string
+          created_at?: string
+          exact_rental?: number
+          id?: string
+          move_in_id?: string | null
+          pay_cycle?: string
+          payout_id?: string | null
+          room?: string
+          room_id?: string | null
+          status?: string
+          tenant_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "earnings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "earnings_move_in_id_fkey"
+            columns: ["move_in_id"]
+            isOneToOne: false
+            referencedRelation: "move_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "earnings_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "earnings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           created_at: string
@@ -541,6 +630,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payouts: {
+        Row: {
+          agent_id: string
+          agent_name: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          deal_count: number
+          generated_by: string | null
+          id: string
+          notes: string
+          paid_at: string | null
+          pay_cycle: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          agent_name?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          deal_count?: number
+          generated_by?: string | null
+          id?: string
+          notes?: string
+          paid_at?: string | null
+          pay_cycle?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          deal_count?: number
+          generated_by?: string | null
+          id?: string
+          notes?: string
+          paid_at?: string | null
+          pay_cycle?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

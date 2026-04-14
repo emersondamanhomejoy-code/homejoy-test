@@ -28,7 +28,11 @@ const statusStyles: Record<string, string> = {
 
   // Payout / Earnings statuses
   Paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
   Generated: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+  draft: "bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400",
+  Draft: "bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400",
+  pending: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
 
   // Adjusted (claims legacy)
   adjusted: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",

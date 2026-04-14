@@ -210,9 +210,60 @@ export function MoveInPage() {
         }
       }
 
+      // Auto-create earnings record
+      if (booking) {
+        // Fetch agent's commission config
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("commission_type, commission_config")
+          .eq("user_id", item.agent_id)
+          .eq("role", "agent")
+          .single();
+
+        const commType = roleData?.commission_type || "internal_basic";
+        const commConfig = roleData?.commission_config as any;
+        const rent = booking.monthly_salary || 0;
+        const duration = booking.contract_months || 12;
+        const durationMultiplier = duration / 12;
+
+        let commissionAmount = 0;
+        if (commType === "external") {
+          commissionAmount = Math.round(rent * (commConfig?.percentage ?? 100) / 100 * durationMultiplier);
+        } else if (commType === "internal_full") {
+          const tiers = commConfig?.tiers || [{ min: 1, max: 300, percentage: 70 }];
+          const tier = tiers.find((t: any) => true); // use first match
+          commissionAmount = Math.round(rent * (tier?.percentage ?? 70) / 100 * durationMultiplier);
+        } else {
+          const tiers = commConfig?.tiers || [{ min: 1, max: 5, amount: 200 }];
+          const tier = tiers.find((t: any) => true);
+          commissionAmount = Math.round((tier?.amount ?? 200) * durationMultiplier);
+        }
+
+        const room = getRoom(item.room_id);
+        const now = new Date();
+        const payCycle = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+        await supabase.from("earnings").insert({
+          agent_id: item.agent_id,
+          booking_id: item.booking_id,
+          move_in_id: item.id,
+          room_id: item.room_id,
+          tenant_name: item.tenant_name,
+          building: room?.building || item.room?.building || "",
+          unit: room?.unit || item.room?.unit || "",
+          room: room?.room || item.room?.room || "",
+          exact_rental: rent,
+          commission_type: commType,
+          commission_amount: commissionAmount,
+          status: "pending",
+          pay_cycle: payCycle,
+        });
+      }
+
       await logActivity("approve_move_in", "move_in", item.id, { tenant_name: item.tenant_name });
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      toast.success("Move-in approved — room set to Occupied");
+      queryClient.invalidateQueries({ queryKey: ["earnings"] });
+      toast.success("Move-in approved — room set to Occupied, earnings created");
       setShowApproveDialog(null);
     } catch (e: any) {
       toast.error(e.message || "Failed");

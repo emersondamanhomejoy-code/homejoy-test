@@ -7,6 +7,8 @@ import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBooking
 import { AgentBookingsContent } from "@/components/AgentBookingsContent";
 import { MyDealsContent } from "@/components/MyDealsContent";
 import { AgentMoveInsContent } from "@/components/AgentMoveInsContent";
+import { EarningsContent } from "@/components/EarningsContent";
+import { PayoutsContent } from "@/components/PayoutsContent";
 import { supabase } from "@/integrations/supabase/client";
 import { OldDashboardLayout } from "@/components/OldDashboardLayout";
 import { AdminContent } from "@/components/AdminContent";
@@ -1000,7 +1002,7 @@ export default function Index() {
       <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
         <div className="flex-1 p-6 overflow-auto text-foreground">
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <ComingSoonPlaceholder title="Earnings" />
+            <EarningsContent />
           </div>
         </div>
       </OldDashboardLayout>
@@ -1129,7 +1131,7 @@ export default function Index() {
              adminTab === "movein" ? <MoveInPage /> :
              adminTab === "bookings" ? <BookingsContent /> :
              adminTab === "moveout" ? <ComingSoonPlaceholder title="Move Out" /> :
-             adminTab === "payouts" ? <ComingSoonPlaceholder title="Payouts" /> :
+             adminTab === "payouts" ? <PayoutsContent /> :
              adminTab === "announcements" ? <ComingSoonPlaceholder title="Announcements" /> :
              <AdminContent tab={adminTab as any} />}
           </div>
