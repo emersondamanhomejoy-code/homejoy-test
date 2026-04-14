@@ -20,6 +20,8 @@ import { TenantsContent } from "@/components/TenantsContent";
 import { MoveInPage } from "@/components/MoveInPage";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
+import { AnnouncementsContent } from "@/components/AnnouncementsContent";
+import { MoveOutPage } from "@/components/MoveOutPage";
 import { Condo } from "@/hooks/useCondos";
 
 function ComingSoonPlaceholder({ title }: { title: string }) {
