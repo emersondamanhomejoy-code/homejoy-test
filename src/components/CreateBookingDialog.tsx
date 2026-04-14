@@ -402,20 +402,22 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
         }
       >
         <div className="space-y-5">
-          {/* 1. Agent Selection */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            {sectionTitle("👤", "Agent")}
-            <div className="space-y-1">
-              <label className={lbl}>Select Agent *</label>
-              <SearchableSelect
-                options={agentOptions}
-                value={form.agentId}
-                onChange={v => set("agentId", v)}
-                placeholder="— Select Agent —"
-                searchPlaceholder="Search by name or email..."
-              />
+          {/* 1. Agent Selection — hidden for agents */}
+          {!isAgent && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              {sectionTitle("👤", "Agent")}
+              <div className="space-y-1">
+                <label className={lbl}>Select Agent *</label>
+                <SearchableSelect
+                  options={agentOptions}
+                  value={form.agentId}
+                  onChange={v => set("agentId", v)}
+                  placeholder="— Select Agent —"
+                  searchPlaceholder="Search by name or email..."
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 2. Room Selection */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
