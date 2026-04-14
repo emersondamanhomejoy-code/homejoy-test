@@ -135,8 +135,8 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   };
 
   const MAX_PHOTOS = 10;
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const uploadPhoto = async (file: File) => {
-    if (form.photos.length >= MAX_PHOTOS) { toast.error(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
@@ -146,7 +146,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       setForm(prev => ({ ...prev, photos: [...prev.photos, path] }));
     } catch (e: any) { toast.error(e.message || "Upload failed"); } finally { setUploading(false); }
   };
-  const removePhoto = (index: number) => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
+  const removePhoto = (index: number) => { setPhotoError(null); setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) })); };
 
   const handleDragStart = (i: number) => setDragIndex(i);
   const handleDragOver = (e: React.DragEvent, i: number) => { e.preventDefault(); setDragOverIndex(i); };
@@ -412,13 +412,21 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
                       <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
                         const files = Array.from(e.target.files || []);
                         const remaining = MAX_PHOTOS - form.photos.length;
-                        for (const f of files.slice(0, remaining)) await uploadPhoto(f);
-                        if (files.length > remaining) toast.error(`Only ${remaining} more photo(s) can be added.`);
+                        if (files.length > remaining) {
+                          setPhotoError(remaining === 0
+                            ? `Maximum ${MAX_PHOTOS} photos reached. Remove a photo before adding more.`
+                            : `You selected ${files.length} photo(s) but only ${remaining} slot(s) remaining. Please select ${remaining} or fewer.`);
+                          e.target.value = "";
+                          return;
+                        }
+                        setPhotoError(null);
+                        for (const f of files) await uploadPhoto(f);
                         e.target.value = "";
                       }} />
                     </label>
                   )}
                 </div>
+                {photoError && <p className="text-sm text-destructive mt-1">{photoError}</p>}
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div data-field="name">
