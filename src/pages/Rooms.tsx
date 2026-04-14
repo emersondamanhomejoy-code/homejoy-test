@@ -39,7 +39,7 @@ export default function Rooms() {
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { sort, handleSort, sortData } = useTableSort("building");
-
+  const [showBooking, setShowBooking] = useState(false);
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
     else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
