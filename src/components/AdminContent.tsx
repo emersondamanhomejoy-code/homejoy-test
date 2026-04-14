@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { MoveInPage } from "@/components/MoveInPage";
+import { MoveOutPage } from "@/components/MoveOutPage";
 import { UsersPage } from "@/components/UsersPage";
 import { ActivityLogPage } from "@/components/ActivityLogPage";
 import { useAuth } from "@/hooks/useAuth";
