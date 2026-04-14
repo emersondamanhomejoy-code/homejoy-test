@@ -66,6 +66,9 @@ export function MoveInPage() {
   const [showReverseDialog, setShowReverseDialog] = useState<MoveIn | null>(null);
   const [reverseReason, setReverseReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const submitValidation = useFormValidation();
+  const rejectValidation = useFormValidation();
+  const reverseValidation = useFormValidation();
 
   const [users, setUsers] = useState<UserInfo[]>([]);
   useEffect(() => {

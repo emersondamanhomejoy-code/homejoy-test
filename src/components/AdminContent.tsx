@@ -49,6 +49,7 @@ export function AdminContent({ tab }: AdminContentProps) {
   const updateBookingStatus = useUpdateBookingStatus();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const adminRejectValidation = useFormValidation();
 
   return (
     <div className="space-y-6">
