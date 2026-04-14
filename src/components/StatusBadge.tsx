@@ -19,7 +19,11 @@ const statusStyles: Record<string, string> = {
   // New workflow statuses
   Submitted: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
   "Ready for Move-in": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
+  ready_for_move_in: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
   Reversed: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  reversed: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  Closed: "bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400",
+  closed: "bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400",
   Completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
 
   // Payout / Earnings statuses
