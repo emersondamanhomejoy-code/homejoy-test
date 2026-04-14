@@ -1118,7 +1118,7 @@ export default function Index() {
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
         {/* Admin Content for non-dashboard tabs */}
         {isAdmin && adminTab !== "dashboard" && (
-          <div className="max-w-5xl mx-auto">
+          <div>
             {adminTab === "locations" ? <LocationsContent /> :
              adminTab === "condos" ? (
                <>
