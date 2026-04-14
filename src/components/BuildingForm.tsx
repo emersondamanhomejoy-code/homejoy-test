@@ -3,7 +3,7 @@ import { useLocations } from "@/hooks/useLocations";
 import { useCreateCondo, useUpdateCondo, Condo, CondoInput } from "@/hooks/useCondos";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { GripVertical, Plus, Trash2, Pencil, Save } from "lucide-react";
+import { GripVertical, Plus, Trash2, Pencil, Save, ChevronDown, ChevronRight } from "lucide-react";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { inputClass as sharedInputClass, labelClass as sharedLabelClass } from "@/lib/ui-constants";
 import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
@@ -100,6 +100,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const { errors, validate, clearError } = useFormValidation();
+  const [detailsOpen, setDetailsOpen] = useState(!isEdit);
 
   const inputClass = sharedInputClass;
   const labelClass = sharedLabelClass;
@@ -381,69 +382,76 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     >
       <div className="space-y-8">
         <FormErrorBanner errors={errors} />
-        {/* Section 1: Basic Information */}
-        <div className="bg-card rounded-lg border p-6 space-y-5">
-          <h2 className="text-lg font-bold">Basic Information</h2>
-          <div>
-            <div className="flex items-center justify-between">
-              <label className={labelClass}>Building Photos ({form.photos.length}/{MAX_PHOTOS})</label>
-              <span className="text-xs text-muted-foreground">Drag to reorder</span>
-            </div>
-            <div className="grid grid-cols-5 gap-3 mt-2">
-              {form.photos.map((path, i) => (
-                <div key={path} draggable onDragStart={() => handleDragStart(i)} onDragOver={(e) => handleDragOver(e, i)} onDrop={() => handleDrop(i)} onDragEnd={handleDragEnd}
-                  className={`relative group cursor-grab active:cursor-grabbing transition-all ${dragOverIndex === i ? "ring-2 ring-primary scale-105" : ""} ${dragIndex === i ? "opacity-50" : ""}`}>
-                  <div className="absolute top-1 left-1 z-10 bg-black/50 rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><GripVertical className="h-3.5 w-3.5 text-white" /></div>
-                  <div className="absolute top-1 left-7 z-10 bg-black/50 rounded px-1.5 py-0.5 text-[10px] text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">{i + 1}</div>
-                  <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Photo ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
-                  <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+        {/* Section 1: Building Details */}
+        <div className="bg-card rounded-lg border overflow-hidden">
+          <button type="button" onClick={() => setDetailsOpen(v => !v)} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
+            <h2 className="text-lg font-bold">Building Details</h2>
+            {detailsOpen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+          </button>
+          {detailsOpen && (
+            <div className="px-6 pb-6 space-y-5">
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className={labelClass}>Building Photos ({form.photos.length}/{MAX_PHOTOS})</label>
+                  <span className="text-xs text-muted-foreground">Drag to reorder</span>
                 </div>
-              ))}
-              {form.photos.length < MAX_PHOTOS && (
-                <label className="h-28 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                  <span className="text-2xl text-muted-foreground">+</span>
-                  <span className="text-xs text-muted-foreground mt-1">{uploading ? "Uploading..." : "Add Photo"}</span>
-                  <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
-                    const files = Array.from(e.target.files || []);
-                    const remaining = MAX_PHOTOS - form.photos.length;
-                    for (const f of files.slice(0, remaining)) await uploadPhoto(f);
-                    if (files.length > remaining) toast.error(`Only ${remaining} more photo(s) can be added.`);
-                    e.target.value = "";
-                  }} />
-                </label>
-              )}
+                <div className="grid grid-cols-5 gap-3 mt-2">
+                  {form.photos.map((path, i) => (
+                    <div key={path} draggable onDragStart={() => handleDragStart(i)} onDragOver={(e) => handleDragOver(e, i)} onDrop={() => handleDrop(i)} onDragEnd={handleDragEnd}
+                      className={`relative group cursor-grab active:cursor-grabbing transition-all ${dragOverIndex === i ? "ring-2 ring-primary scale-105" : ""} ${dragIndex === i ? "opacity-50" : ""}`}>
+                      <div className="absolute top-1 left-1 z-10 bg-black/50 rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><GripVertical className="h-3.5 w-3.5 text-white" /></div>
+                      <div className="absolute top-1 left-7 z-10 bg-black/50 rounded px-1.5 py-0.5 text-[10px] text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">{i + 1}</div>
+                      <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Photo ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
+                      <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                    </div>
+                  ))}
+                  {form.photos.length < MAX_PHOTOS && (
+                    <label className="h-28 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                      <span className="text-2xl text-muted-foreground">+</span>
+                      <span className="text-xs text-muted-foreground mt-1">{uploading ? "Uploading..." : "Add Photo"}</span>
+                      <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        const remaining = MAX_PHOTOS - form.photos.length;
+                        for (const f of files.slice(0, remaining)) await uploadPhoto(f);
+                        if (files.length > remaining) toast.error(`Only ${remaining} more photo(s) can be added.`);
+                        e.target.value = "";
+                      }} />
+                    </label>
+                  )}
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div data-field="name">
+                  <label className={labelClass}>Building Name *</label>
+                  <input className={fieldClass(`${inputClass} w-full`, !!errors.name)} placeholder="e.g. The Robertson" value={form.name} onChange={e => { updateField("name", e.target.value); clearError("name"); }} />
+                  <FieldError error={errors.name} />
+                </div>
+                <div>
+                  <label className={labelClass}>Location *</label>
+                  <select className={`${inputClass} w-full`} value={form.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
+                    <option value="">— Select Location —</option>
+                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Address</label>
+                  <input className={`${inputClass} w-full`} placeholder="Full address" value={form.address} onChange={e => updateField("address", e.target.value)} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>GPS Link</label>
+                  <input className={`${inputClass} w-full`} placeholder="Google Maps link" value={form.gps_link} onChange={e => updateField("gps_link", e.target.value)} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Description</label>
+                  <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={form.description} onChange={e => updateField("description", e.target.value)} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Amenities</label>
+                  <textarea className={`${inputClass} w-full h-20`} placeholder="Swimming pool, gym, playground, mini mart..." value={form.amenities} onChange={e => updateField("amenities", e.target.value)} />
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div data-field="name">
-              <label className={labelClass}>Building Name *</label>
-              <input className={fieldClass(`${inputClass} w-full`, !!errors.name)} placeholder="e.g. The Robertson" value={form.name} onChange={e => { updateField("name", e.target.value); clearError("name"); }} />
-              <FieldError error={errors.name} />
-            </div>
-            <div>
-              <label className={labelClass}>Location *</label>
-              <select className={`${inputClass} w-full`} value={form.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
-                <option value="">— Select Location —</option>
-                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>Address</label>
-              <input className={`${inputClass} w-full`} placeholder="Full address" value={form.address} onChange={e => updateField("address", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>GPS Link</label>
-              <input className={`${inputClass} w-full`} placeholder="Google Maps link" value={form.gps_link} onChange={e => updateField("gps_link", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>Description</label>
-              <textarea className={`${inputClass} w-full h-24`} placeholder="Description of the building, nearby facilities..." value={form.description} onChange={e => updateField("description", e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>Amenities</label>
-              <textarea className={`${inputClass} w-full h-20`} placeholder="Swimming pool, gym, playground, mini mart..." value={form.amenities} onChange={e => updateField("amenities", e.target.value)} />
-            </div>
-          </div>
+          )}
         </div>
 
         {renderAccessSection("Pedestrian Access", PEDESTRIAN_ACCESS_TYPES, pedestrianItems, setPedestrianItems, "Access Card", true)}
