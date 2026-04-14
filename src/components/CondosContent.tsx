@@ -6,7 +6,7 @@ import { useUnits } from "@/hooks/useRooms";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronRight, Copy } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Copy, ExternalLink } from "lucide-react";
 import { AccessItem } from "@/components/BuildingForm";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
@@ -40,8 +40,9 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [hasAvailableRooms, setHasAvailableRooms] = useState("");
   const [hasAvailableCarparks, setHasAvailableCarparks] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
+  const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
   const toggleViewSection = (key: string) => setViewSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const [photoLightbox, setPhotoLightbox] = useState<string | null>(null);
 
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
@@ -298,39 +299,15 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
       >
         {viewing && (
           <div className="space-y-5">
-              {viewing.photos && viewing.photos.length > 0 && (
-                <div className="grid grid-cols-4 gap-3">
-                  {viewing.photos.map((path, i) => (
-                    <img key={path} src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`} alt={`Photo ${i + 1}`} className="h-28 w-full object-cover rounded-lg" />
-                  ))}
+              {/* Lightbox */}
+              {photoLightbox && (
+                <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPhotoLightbox(null)}>
+                  <img src={photoLightbox} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
+                  <button onClick={() => setPhotoLightbox(null)} className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70">✕</button>
                 </div>
               )}
 
-              {/* Building Details - Collapsible */}
-              <div className="border rounded-lg overflow-hidden">
-                <button type="button" onClick={() => toggleViewSection("details")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Building Details</h3>
-                  <div className="flex items-center gap-2">
-                    <span onClick={e => { e.stopPropagation(); copyBuildingDetails(viewing); }} className="p-1 rounded hover:bg-secondary transition-colors cursor-pointer" title="Copy building details">
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                    </span>
-                    {viewSections.details ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                </button>
-                {viewSections.details && (
-                  <div className="px-4 pb-4">
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                      <div><span className="text-muted-foreground">Building Name:</span> <span className="font-medium">{viewing.name}</span></div>
-                      <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{viewing.location?.name || "—"}</span></div>
-                      <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{viewing.address || "—"}</span></div>
-                      <div className="col-span-2"><span className="text-muted-foreground">GPS Link:</span> {viewing.gps_link ? <a href={viewing.gps_link} target="_blank" rel="noreferrer" className="text-primary underline">{viewing.gps_link}</a> : <span className="font-medium">—</span>}</div>
-                      <div className="col-span-2"><span className="text-muted-foreground">Description:</span> <span className="font-medium">{viewing.description || "—"}</span></div>
-                      <div className="col-span-2"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{viewing.amenities || "—"}</span></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
+              {/* 1. Stat Cards */}
               {viewStats && (
                 <div className="grid grid-cols-3 gap-3">
                   {[
@@ -349,61 +326,79 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                 </div>
               )}
 
-              {/* Pedestrian Access - Collapsible with Copy */}
+              {/* 2. Building Photos */}
               <div className="border rounded-lg overflow-hidden">
-                <button type="button" onClick={() => toggleViewSection("pedestrian")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Pedestrian Access</h3>
+                <button type="button" onClick={() => toggleViewSection("photos")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+                  <h3 className="text-sm font-bold text-foreground">Building Photos</h3>
                   <div className="flex items-center gap-2">
-                    <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "pedestrian"), "Pedestrian Access", true), "Pedestrian access"); }} className="p-1 rounded hover:bg-secondary transition-colors cursor-pointer" title="Copy pedestrian access">
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span
+                      onClick={e => {
+                        e.stopPropagation();
+                        const url = `${window.location.origin}/building-photos/${viewing.id}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success("Building photo link copied");
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer"
+                      title="Copy building photo link"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Copy Link
                     </span>
-                    {viewSections.pedestrian ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    {viewSections.photos ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </button>
-                {viewSections.pedestrian && (
-                  <div className="px-4 pb-4">{renderViewAccessItems(getAccessItems(viewing, "pedestrian"), true)}</div>
+                {viewSections.photos && (
+                  <div className="px-4 pb-4">
+                    {viewing.photos && viewing.photos.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-3">
+                        {viewing.photos.map((path, i) => (
+                          <img
+                            key={path}
+                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`}
+                            alt={`Photo ${i + 1}`}
+                            className="h-28 w-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setPhotoLightbox(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No photos uploaded</p>
+                    )}
+                  </div>
                 )}
               </div>
 
-              {/* Car Park Access - Collapsible with Copy */}
+              {/* 3. Building Details - Collapsible */}
               <div className="border rounded-lg overflow-hidden">
-                <button type="button" onClick={() => toggleViewSection("carpark")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Car Park Access</h3>
+                <button type="button" onClick={() => toggleViewSection("details")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+                  <h3 className="text-sm font-bold text-foreground">Building Details</h3>
                   <div className="flex items-center gap-2">
-                    <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "carpark"), "Car Park Access", false), "Car park access"); }} className="p-1 rounded hover:bg-secondary transition-colors cursor-pointer" title="Copy car park access">
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span onClick={e => { e.stopPropagation(); copyBuildingDetails(viewing); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy building details">
+                      <Copy className="h-3.5 w-3.5" /> Copy Details
                     </span>
-                    {viewSections.carpark ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    {viewSections.details ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </button>
-                {viewSections.carpark && (
-                  <div className="px-4 pb-4">{renderViewAccessItems(getAccessItems(viewing, "carpark"), false)}</div>
+                {viewSections.details && (
+                  <div className="px-4 pb-4">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                      <div><span className="text-muted-foreground">Building Name:</span> <span className="font-medium">{viewing.name}</span></div>
+                      <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{viewing.location?.name || "—"}</span></div>
+                      <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{viewing.address || "—"}</span></div>
+                      <div className="col-span-2"><span className="text-muted-foreground">GPS Link:</span> {viewing.gps_link ? <a href={viewing.gps_link} target="_blank" rel="noreferrer" className="text-primary underline">{viewing.gps_link}</a> : <span className="font-medium">—</span>}</div>
+                      <div className="col-span-2"><span className="text-muted-foreground">Description:</span> <span className="font-medium">{viewing.description || "—"}</span></div>
+                      <div className="col-span-2"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{viewing.amenities || "—"}</span></div>
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Motorcycle Access - Collapsible with Copy */}
-              <div className="border rounded-lg overflow-hidden">
-                <button type="button" onClick={() => toggleViewSection("motorcycle")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Motorcycle Access</h3>
-                  <div className="flex items-center gap-2">
-                    <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "motorcycle"), "Motorcycle Access", false), "Motorcycle access"); }} className="p-1 rounded hover:bg-secondary transition-colors cursor-pointer" title="Copy motorcycle access">
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                    </span>
-                    {viewSections.motorcycle ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                </button>
-                {viewSections.motorcycle && (
-                  <div className="px-4 pb-4">{renderViewAccessItems(getAccessItems(viewing, "motorcycle"), false)}</div>
-                )}
-              </div>
-
-              {/* Visitor / Parking Info - Collapsible with Copy */}
+              {/* 4. Visitor / Parking Info */}
               <div className="border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("visitor")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                   <h3 className="text-sm font-bold text-foreground">Visitor / Parking Info</h3>
                   <div className="flex items-center gap-2">
-                    <span onClick={e => { e.stopPropagation(); copyVisitorInfo(viewing); }} className="p-1 rounded hover:bg-secondary transition-colors cursor-pointer" title="Copy visitor/parking info">
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span onClick={e => { e.stopPropagation(); copyVisitorInfo(viewing); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy visitor/parking info">
+                      <Copy className="h-3.5 w-3.5" /> Copy Info
                     </span>
                     {viewSections.visitor ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
@@ -416,6 +411,54 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                       <div className="col-span-2"><span className="text-muted-foreground">Arrival Instruction:</span> <span className="font-medium whitespace-pre-wrap">{(viewing as any).arrival_instruction || "—"}</span></div>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* 5. Pedestrian Access */}
+              <div className="border rounded-lg overflow-hidden">
+                <button type="button" onClick={() => toggleViewSection("pedestrian")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+                  <h3 className="text-sm font-bold text-foreground">Pedestrian Access</h3>
+                  <div className="flex items-center gap-2">
+                    <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "pedestrian"), "Pedestrian Access", true), "Pedestrian access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy pedestrian access">
+                      <Copy className="h-3.5 w-3.5" /> Copy Access
+                    </span>
+                    {viewSections.pedestrian ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </button>
+                {viewSections.pedestrian && (
+                  <div className="px-4 pb-4">{renderViewAccessItems(getAccessItems(viewing, "pedestrian"), true)}</div>
+                )}
+              </div>
+
+              {/* 6. Car Park Access */}
+              <div className="border rounded-lg overflow-hidden">
+                <button type="button" onClick={() => toggleViewSection("carpark")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+                  <h3 className="text-sm font-bold text-foreground">Car Park Access</h3>
+                  <div className="flex items-center gap-2">
+                    <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "carpark"), "Car Park Access", false), "Car park access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy car park access">
+                      <Copy className="h-3.5 w-3.5" /> Copy Access
+                    </span>
+                    {viewSections.carpark ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </button>
+                {viewSections.carpark && (
+                  <div className="px-4 pb-4">{renderViewAccessItems(getAccessItems(viewing, "carpark"), false)}</div>
+                )}
+              </div>
+
+              {/* 7. Motorcycle Access */}
+              <div className="border rounded-lg overflow-hidden">
+                <button type="button" onClick={() => toggleViewSection("motorcycle")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+                  <h3 className="text-sm font-bold text-foreground">Motorcycle Access</h3>
+                  <div className="flex items-center gap-2">
+                    <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "motorcycle"), "Motorcycle Access", false), "Motorcycle access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy motorcycle access">
+                      <Copy className="h-3.5 w-3.5" /> Copy Access
+                    </span>
+                    {viewSections.motorcycle ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </button>
+                {viewSections.motorcycle && (
+                  <div className="px-4 pb-4">{renderViewAccessItems(getAccessItems(viewing, "motorcycle"), false)}</div>
                 )}
               </div>
           </div>

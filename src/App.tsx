@@ -10,6 +10,7 @@ import SetPassword from "./pages/SetPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import RoomPhotos from "./pages/RoomPhotos.tsx";
 import CommonPhotos from "./pages/CommonPhotos.tsx";
+import BuildingPhotos from "./pages/BuildingPhotos.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
 import Login from "./pages/Login.tsx";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/sign/:token" element={<Sign />} />
            <Route path="/photos/:roomId" element={<RoomPhotos />} />
            <Route path="/common/:unitId" element={<CommonPhotos />} />
+           <Route path="/building-photos/:condoId" element={<BuildingPhotos />} />
            <Route path="/view/:unitId" element={<PublicUnitView />} />
             <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
