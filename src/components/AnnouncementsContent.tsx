@@ -166,7 +166,7 @@ export function AnnouncementsContent({ isAgent = false }: { isAgent?: boolean })
     const popups = announcements.filter(a => a.active && a.use_as_popup).sort((a, b) => a.popup_order - b.popup_order);
     return (
       <div className="space-y-6">
-        <h2 className="text-xl font-bold">Announcements</h2>
+        <h2 className="text-2xl font-extrabold">Announcements</h2>
         {banners.length > 0 && (
           <div className="space-y-3">
             {banners.map(b => (
@@ -290,7 +290,7 @@ export function AnnouncementsContent({ isAgent = false }: { isAgent?: boolean })
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Announcements</h2>
+        <h2 className="text-2xl font-extrabold">Announcements</h2>
         {isAdmin && <Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Create</Button>}
       </div>
 

@@ -124,7 +124,7 @@ export function AgentMoveInsContent() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">My Move-ins</h2>
+          <h2 className="text-2xl font-extrabold">My Move-ins</h2>
           <p className="text-sm text-muted-foreground mt-1">Submit move-in completion for approved bookings.</p>
         </div>
         {pendingMoveInBookings.length > 0 && (

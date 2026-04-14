@@ -159,7 +159,7 @@ export function UnitsRoomsContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Units</h2>
+        <h2 className="text-2xl font-extrabold">Units</h2>
         <Button onClick={() => setAddUnitOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Add Unit
         </Button>

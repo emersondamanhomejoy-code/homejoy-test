@@ -29,7 +29,7 @@ function ComingSoonPlaceholder({ title }: { title: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="text-4xl mb-4">🚧</div>
-      <h2 className="text-xl font-bold text-foreground">{title}</h2>
+      <h2 className="text-2xl font-extrabold">{title}</h2>
       <p className="text-muted-foreground mt-2">This feature is coming soon.</p>
     </div>
   );
