@@ -149,7 +149,7 @@ export function UnitsRoomsContent() {
     try {
       await deleteUnit.mutateAsync(deleteConfirm);
     } catch (e: any) {
-      alert(e.message || "Failed to delete unit");
+      toast.error(e.message || "Failed to delete unit");
     }
     setDeleteConfirm(null);
   };

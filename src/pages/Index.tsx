@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -336,7 +337,7 @@ export default function Index() {
 
   const generateSignatureLink = async () => {
     const error = validateBooking();
-    if (error) { alert(error); return; }
+    if (error) { toast.error(error); return; }
     if (!selectedRoom || !user) return;
     setSubmitting(true);
     try {
@@ -355,7 +356,7 @@ export default function Index() {
       setSignatureToken(data.token);
       setSignatureSigned(false);
     } catch (e: any) {
-      alert(e.message || "Failed to generate signature link");
+      toast.error(e.message || "Failed to generate signature link");
     } finally {
       setSubmitting(false);
     }
@@ -367,13 +368,13 @@ export default function Index() {
     try {
       const { data } = await supabase.from("booking_signatures").select("signed").eq("token", signatureToken).single();
       if (data?.signed) setSignatureSigned(true);
-      else alert("Tenant has not signed yet. Please wait.");
-    } catch { alert("Failed to check signature status."); }
+      else toast.info("Tenant has not signed yet. Please wait.");
+    } catch { toast.error("Failed to check signature status."); }
     finally { setCheckingSignature(false); }
   };
 
   const submitBooking = async () => {
-    if (!signatureSigned) { alert("Tenant must sign before submitting."); return; }
+    if (!signatureSigned) { toast.error("Tenant must sign before submitting."); return; }
     if (!selectedRoom || !user) return;
     setSubmitting(true);
     try {
@@ -468,7 +469,7 @@ export default function Index() {
       setBookingSubmitted({ room: selectedRoom, announcement: bookingAnnouncement(selectedRoom) });
       setPage("booking-success");
     } catch (e: any) {
-      alert(e.message || "Failed to submit booking");
+      toast.error(e.message || "Failed to submit booking");
     } finally {
       setSubmitting(false);
     }
@@ -504,7 +505,7 @@ export default function Index() {
                     onClick={() => {
                       const url = `${window.location.origin}/photos/${selectedRoom.id}`;
                       navigator.clipboard.writeText(url);
-                      alert("Photo link copied!");
+                      toast.success("Photo link copied!");
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
                   >
@@ -515,7 +516,7 @@ export default function Index() {
                       onClick={() => {
                         const url = `${window.location.origin}/common/${selectedRoom.unit_id}`;
                         navigator.clipboard.writeText(url);
-                        alert("Common area link copied!");
+                        toast.success("Common area link copied!");
                       }}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
                     >
@@ -947,7 +948,7 @@ export default function Index() {
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             <AgentBookingsContent onEditBooking={(booking) => {
               // TODO: Pre-fill booking form and navigate to edit mode
-              alert("Edit & Resubmit feature coming soon. Booking ID: " + booking.id.slice(0, 8));
+              toast.info("Edit & Resubmit feature coming soon. Booking ID: " + booking.id.slice(0, 8));
             }} />
           </div>
         </div>

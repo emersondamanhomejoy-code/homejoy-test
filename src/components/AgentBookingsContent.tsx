@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -156,8 +157,8 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                 />
                 <Button
                   onClick={async () => {
-                    if (!user || !cancelReason.trim()) { alert("Please enter a cancel reason"); return; }
-                    if (!confirm("Are you sure you want to cancel this booking? Booking fee is non-refundable.")) return;
+                    if (!user || !cancelReason.trim()) { toast.error("Please enter a cancel reason"); return; }
+                    if (!window.confirm("Are you sure you want to cancel this booking? Booking fee is non-refundable.")) return;
                     await updateBookingStatus.mutateAsync({
                       id: b.id,
                       status: "cancelled" as any,

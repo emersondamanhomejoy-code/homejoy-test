@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useCondos, useDeleteCondo, Condo } from "@/hooks/useCondos";
 import { useLocations } from "@/hooks/useLocations";
 import { useUnits } from "@/hooks/useRooms";
@@ -64,7 +65,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    try { await deleteCondo.mutateAsync(deleteId); } catch (e: any) { alert(e.message); }
+    try { await deleteCondo.mutateAsync(deleteId); } catch (e: any) { toast.error(e.message || "Failed to delete building"); }
     setDeleteId(null);
   };
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation } from "@/hooks/useLocations";
 import { useCondos } from "@/hooks/useCondos";
 import { useUnits } from "@/hooks/useRooms";
@@ -45,7 +46,7 @@ export function LocationsContent() {
   const openEdit = (loc: { id: string; name: string }) => { setEditingId(loc.id); setName(loc.name); setInitialName(loc.name); setShowForm(true); };
 
   const handleSave = async () => {
-    if (!name.trim()) { alert("Location name is required"); return; }
+    if (!name.trim()) { toast.error("Location name is required"); return; }
     try {
       if (editingId) {
         await updateLocation.mutateAsync({ id: editingId, name: name.trim() });
@@ -53,12 +54,12 @@ export function LocationsContent() {
         await createLocation.mutateAsync(name.trim());
       }
       setShowForm(false); setName(""); setEditingId(null);
-    } catch (e: any) { alert(e.message || "Failed to save location"); }
+    } catch (e: any) { toast.error(e.message || "Failed to save location"); }
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    try { await deleteLocation.mutateAsync(deleteId); } catch (e: any) { alert(e.message || "Failed to delete location"); }
+    try { await deleteLocation.mutateAsync(deleteId); } catch (e: any) { toast.error(e.message || "Failed to delete location"); }
     setDeleteId(null);
   };
 
