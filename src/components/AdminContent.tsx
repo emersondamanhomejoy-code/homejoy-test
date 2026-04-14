@@ -32,7 +32,7 @@ function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean;
 }
 
 interface AdminContentProps {
-  tab: "dashboard" | "units" | "bookings" | "movein" | "users" | "activity";
+  tab: "dashboard" | "units" | "bookings" | "movein" | "moveout" | "users" | "activity";
 }
 
 export function AdminContent({ tab }: AdminContentProps) {
