@@ -146,7 +146,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
       setForm(prev => ({ ...prev, photos: [...prev.photos, path] }));
     } catch (e: any) { toast.error(e.message || "Upload failed"); } finally { setUploading(false); }
   };
-  const removePhoto = (index: number) => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
+  const removePhoto = (index: number) => { setPhotoError(null); setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) })); };
 
   const handleDragStart = (i: number) => setDragIndex(i);
   const handleDragOver = (e: React.DragEvent, i: number) => { e.preventDefault(); setDragOverIndex(i); };
