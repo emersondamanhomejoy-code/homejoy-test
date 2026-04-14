@@ -267,6 +267,8 @@ export function TenantsContent() {
   };
 
   // ── CRUD helpers ──
+  const addValidation = useFormValidation();
+  const editValidation = useFormValidation();
 
   const uploadFile = async (file: File, folder: string): Promise<string> => {
     const ext = file.name.split(".").pop();
