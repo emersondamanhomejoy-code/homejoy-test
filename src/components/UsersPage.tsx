@@ -101,15 +101,27 @@ export function UsersPage() {
   const filtered = useMemo(() => {
     let list = users;
     if (roleFilter !== "all") list = list.filter(u => u.roles.includes(roleFilter));
+    if (statusFilter !== "all") {
+      if (statusFilter === "active") list = list.filter(u => u.confirmed && !u.frozen);
+      else if (statusFilter === "frozen") list = list.filter(u => u.frozen);
+      else if (statusFilter === "pending") list = list.filter(u => !u.confirmed);
+    }
+    if (agentTypeFilter !== "all") list = list.filter(u => u.roles.includes("agent") && u.commission_type === agentTypeFilter);
+    if (hasBankFilter !== "all") {
+      if (hasBankFilter === "yes") list = list.filter(u => u.bank_name && u.bank_account);
+      else list = list.filter(u => !u.bank_name || !u.bank_account);
+    }
+    if (dateFrom) list = list.filter(u => u.created_at >= dateFrom);
+    if (dateTo) list = list.filter(u => u.created_at <= dateTo + "T23:59:59");
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.display_name || "").toLowerCase().includes(s));
+      list = list.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.display_name || "").toLowerCase().includes(s) || (u.phone || "").includes(s));
     }
     return sortData(list, (u: UserWithRoles, key: string) => {
       const map: Record<string, any> = { name: u.name, email: u.email, role: u.roles.join(","), commission_type: u.commission_type, created_at: u.created_at };
       return map[key];
     });
-  }, [users, roleFilter, search, sort]);
+  }, [users, roleFilter, statusFilter, agentTypeFilter, hasBankFilter, dateFrom, dateTo, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
