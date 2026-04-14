@@ -256,6 +256,8 @@ export function AdminContent({ tab }: AdminContentProps) {
 
       {tab === "movein" && <MoveInPage />}
 
+      {tab === "moveout" && <MoveOutPage />}
+
       {tab === "users" && <UsersPage />}
 
       {tab === "activity" && canViewActivityLog && <ActivityLogPage />}
