@@ -268,17 +268,18 @@ export function useUpdateBookingStatus() {
             }
           }
         }
-        // Cancel related move-in if it exists and is still ready_for_move_in
+        // Close related move-in records (ready_for_move_in or submitted)
         const { data: moveIns } = await supabase
           .from("move_ins")
           .select("id, status")
           .eq("booking_id", id)
-          .eq("status", "ready_for_move_in");
+          .in("status", ["ready_for_move_in", "submitted"]);
         if (moveIns && moveIns.length > 0) {
           for (const mi of moveIns) {
             await supabase.from("move_ins").update({
-              status: "rejected",
-              cancel_reason: reject_reason || "Booking cancelled",
+              status: "closed",
+              cancel_reason: reject_reason || "Booking terminated",
+              history: [{ action: "closed_from_booking_termination", by: reviewed_by, at: new Date().toISOString(), reason: reject_reason }],
             }).eq("id", mi.id);
           }
         }
