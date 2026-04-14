@@ -701,7 +701,6 @@ export function ClaimsPage() {
                       <Textarea className={fieldClass("bg-secondary", !!claimCreateValidation.errors.description)} rows={3} value={createForm.description} onChange={(e) => { setCreateForm((current) => ({ ...current, description: e.target.value })); claimCreateValidation.clearError("description"); }} />
                       <FieldError error={claimCreateValidation.errors.description} />
                     </div>
-                    </div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                       <div className="space-y-1">
                         <label className={labelClassName}>Bank Name</label>
@@ -804,6 +803,7 @@ export function ClaimsPage() {
             <Textarea className={fieldClass("", !!claimRejectValidation.errors.rejectReason)} placeholder="Reason (required)..." value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); claimRejectValidation.clearError("rejectReason"); }} rows={3} />
             <FieldError error={claimRejectValidation.errors.rejectReason} />
           </div>
+          <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleReject} disabled={!rejectReason.trim()} className="bg-destructive text-destructive-foreground">Reject</AlertDialogAction>
           </AlertDialogFooter>
@@ -817,6 +817,7 @@ export function ClaimsPage() {
             <Textarea className={fieldClass("", !!claimCancelValidation.errors.cancelReason)} placeholder="Reason (required)..." value={cancelReason} onChange={(e) => { setCancelReason(e.target.value); claimCancelValidation.clearError("cancelReason"); }} rows={3} />
             <FieldError error={claimCancelValidation.errors.cancelReason} />
           </div>
+          <AlertDialogFooter>
             <AlertDialogCancel>Keep</AlertDialogCancel>
             <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Claim</AlertDialogAction>
           </AlertDialogFooter>
