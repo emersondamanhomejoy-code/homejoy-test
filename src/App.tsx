@@ -36,6 +36,7 @@ const App = () => (
           <Route path="/sign/:token" element={<Sign />} />
            <Route path="/photos/:roomId" element={<RoomPhotos />} />
            <Route path="/common/:unitId" element={<CommonPhotos />} />
+           <Route path="/building-photos/:condoId" element={<BuildingPhotos />} />
            <Route path="/view/:unitId" element={<PublicUnitView />} />
             <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
