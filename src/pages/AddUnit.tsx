@@ -171,21 +171,18 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
 
   // ── Save ──
   const saveUnit = async () => {
-    const missingFields: string[] = [];
-    if (!form.building.trim()) missingFields.push("Building");
-    if (!form.location.trim()) missingFields.push("Location");
-    if (!form.unit.trim()) missingFields.push("Unit Number");
-    if (!Number.isFinite(form.unit_max_pax) || form.unit_max_pax < 1) missingFields.push("Maximum Occupants");
-
     const editingRooms = roomRecords.filter(r => r._editing);
-    if (editingRooms.length > 0) { alert("Please save or cancel all room entries before saving the unit."); return; }
+    if (editingRooms.length > 0) { toast.error("Please save or cancel all room entries before saving the unit."); return; }
     const editingCPs = carparkRecords.filter(c => c._editing);
-    if (editingCPs.length > 0) { alert("Please save or cancel all carpark entries before saving the unit."); return; }
+    if (editingCPs.length > 0) { toast.error("Please save or cancel all carpark entries before saving the unit."); return; }
 
-    if (missingFields.length > 0) {
-      alert(`Please complete the required fields:\n• ${missingFields.join("\n• ")}`);
-      return;
-    }
+    const rules: Record<string, (v: any) => string | null> = {
+      building: () => !form.building.trim() ? "Building is required" : null,
+      location: () => !form.location.trim() ? "Location is required" : null,
+      unit: () => !form.unit.trim() ? "Unit Number is required" : null,
+      unit_max_pax: () => !Number.isFinite(form.unit_max_pax) || form.unit_max_pax < 1 ? "Maximum Occupants must be at least 1" : null,
+    };
+    if (!validate(form, rules)) return;
 
     setSaving(true);
     try {
@@ -206,7 +203,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
       logActivity("create_unit", "unit", "", { building: form.building, unit: form.unit });
       onOpenChange(false);
     } catch (e: any) {
-      alert(e.message || "Failed to save unit");
+      toast.error(e.message || "Failed to save unit");
     } finally {
       setSaving(false);
     }
