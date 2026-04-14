@@ -285,6 +285,7 @@ export function TenantsContent() {
     const docO = Array.isArray(t.doc_offer_letter) && t.doc_offer_letter.length > 0 ? t.doc_offer_letter[0] : "";
     setEditExistingDocs({ passport: docP, offerLetter: docO });
     setEditUploadedFiles({ passport: null, offerLetter: null });
+    editValidation.clearAllErrors();
   };
   const setField = (key: keyof Tenant, value: any) => setEditForm(prev => ({ ...prev, [key]: value }));
 
@@ -328,6 +329,7 @@ export function TenantsContent() {
   const openAdd = () => {
     setAddForm({});
     setAddUploadedFiles({ passport: null, offerLetter: null });
+    addValidation.clearAllErrors();
     setAddingTenant(true);
   };
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
