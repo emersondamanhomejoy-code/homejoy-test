@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
@@ -60,6 +61,7 @@ export function UsersPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<UserWithRoles | null>(null);
   const [saving, setSaving] = useState(false);
   const [freezingId, setFreezingId] = useState<string | null>(null);
+  const userCreateValidation = useFormValidation();
 
   const [newAgent, setNewAgent] = useState({
     email: "", name: "", display_name: "", phone: "", address: "",
@@ -127,7 +129,10 @@ export function UsersPage() {
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const createUser = async () => {
-    if (!newAgent.email.trim()) { toast.error("Email is required"); return; }
+    const rules: Record<string, (v: any) => string | null> = {
+      email: () => !newAgent.email.trim() ? "Email is required" : null,
+    };
+    if (!userCreateValidation.validate({ email: newAgent.email }, rules)) return;
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -531,6 +536,7 @@ export function UsersPage() {
         }
       >
         <div className="space-y-5">
+          <FormErrorBanner errors={userCreateValidation.errors} />
           {sectionCard("👤", "User Details", (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -542,7 +548,7 @@ export function UsersPage() {
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
                 <div className="space-y-1"><label className={lbl}>Display Name</label><input className={`${ic} w-full`} placeholder="Optional" value={newAgent.display_name} onChange={e => setNewAgent({ ...newAgent, display_name: e.target.value })} /></div>
-                <div className="space-y-1"><label className={lbl}>Email *</label><input className={`${ic} w-full`} type="email" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                <div className="space-y-1" data-field="email"><label className={lbl}>Email *</label><input className={fieldClass(`${ic} w-full`, !!userCreateValidation.errors.email)} type="email" value={newAgent.email} onChange={e => { setNewAgent({ ...newAgent, email: e.target.value }); userCreateValidation.clearError("email"); }} /><FieldError error={userCreateValidation.errors.email} /></div>
                 <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={`${ic} w-full`} value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
                 <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={`${ic} w-full`} value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
               </div>

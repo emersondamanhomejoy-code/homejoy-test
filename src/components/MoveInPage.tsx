@@ -20,6 +20,7 @@ import { SortableTableHead, useTableSort } from "@/components/SortableTableHead"
 import { Eye, Pencil, Check, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface UserInfo { id: string; email: string; name: string; }
 
@@ -65,6 +66,9 @@ export function MoveInPage() {
   const [showReverseDialog, setShowReverseDialog] = useState<MoveIn | null>(null);
   const [reverseReason, setReverseReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const submitValidation = useFormValidation();
+  const rejectValidation = useFormValidation();
+  const reverseValidation = useFormValidation();
 
   const [users, setUsers] = useState<UserInfo[]>([]);
   useEffect(() => {
@@ -156,7 +160,8 @@ export function MoveInPage() {
       toast.error("This booking has been terminated. You cannot submit this move-in.");
       return;
     }
-    if (!editForm.payment_method) { toast.error("Payment method is required"); return; }
+    const submitRules = { payment_method: (v: any) => !editForm.payment_method ? "Payment method is required" : null };
+    if (!submitValidation.validate({ payment_method: editForm.payment_method }, submitRules)) return;
     setSaving(true);
     try {
       const history = [...(item.history || []), { action: "submitted", by: user.email, at: new Date().toISOString() }];
@@ -274,10 +279,9 @@ export function MoveInPage() {
 
   // ─── ADMIN REJECT ───
   const handleReject = async () => {
-    if (!user || !showRejectDialog || !rejectReason.trim()) {
-      toast.error("Reject reason required");
-      return;
-    }
+    if (!user || !showRejectDialog) return;
+    const rejectRules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
+    if (!rejectValidation.validate({ rejectReason }, rejectRules)) return;
     const item = showRejectDialog;
     const history = [...(item.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
     await updateMoveIn.mutateAsync({
@@ -296,10 +300,9 @@ export function MoveInPage() {
 
   // ─── ADMIN REVERSE ───
   const handleReverse = async () => {
-    if (!user || !showReverseDialog || !reverseReason.trim()) {
-      toast.error("Reverse reason required");
-      return;
-    }
+    if (!user || !showReverseDialog) return;
+    const reverseRules = { reverseReason: () => !reverseReason.trim() ? "Reverse reason is required" : null };
+    if (!reverseValidation.validate({ reverseReason }, reverseRules)) return;
     const item = showReverseDialog;
     setSaving(true);
     try {
@@ -505,7 +508,8 @@ export function MoveInPage() {
               <DialogTitle>{editItem.status === "ready_for_move_in" || editItem.status === "rejected" ? "Submit Move-In" : "Edit Move-In"} — {editItem.tenant_name}</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
-              <div className="space-y-5 py-4">
+               <div className="space-y-5 py-4">
+                <FormErrorBanner errors={submitValidation.errors} />
                 {isMoveInBlocked(editItem) && (
                   <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive font-medium">
                     ⚠️ This booking has been terminated. No further submissions are allowed.
@@ -525,18 +529,19 @@ export function MoveInPage() {
                       />
                       <span className="text-sm">{editForm.agreement_signed ? "Yes" : "No"}</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1" data-field="payment_method">
                       <label className={labelClassName}>Payment Method *</label>
                       <select
-                        className={fieldClassName}
+                        className={fieldClass(fieldClassName, !!submitValidation.errors.payment_method)}
                         value={editForm.payment_method}
-                        onChange={(e) => setEditForm(f => ({ ...f, payment_method: e.target.value }))}
+                        onChange={(e) => { setEditForm(f => ({ ...f, payment_method: e.target.value })); submitValidation.clearError("payment_method"); }}
                         disabled={isMoveInBlocked(editItem)}
                       >
                         <option value="">Select payment method</option>
                         <option value="EasyRenz App">EasyRenz App</option>
                         <option value="Bank Transfer">Bank Transfer</option>
                       </select>
+                      <FieldError error={submitValidation.errors.payment_method} />
                     </div>
                     <div className="space-y-1">
                       <label className={labelClassName}>Remarks</label>
@@ -593,7 +598,10 @@ export function MoveInPage() {
             <AlertDialogTitle>Reject Move-In?</AlertDialogTitle>
             <AlertDialogDescription>Please enter the reason for rejection.</AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea placeholder="Reject reason (required)..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} />
+          <div data-field="rejectReason">
+            <Textarea className={fieldClass("", !!rejectValidation.errors.rejectReason)} placeholder="Reject reason (required)..." value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); rejectValidation.clearError("rejectReason"); }} rows={3} />
+            <FieldError error={rejectValidation.errors.rejectReason} />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleReject} disabled={!rejectReason.trim()} className="bg-destructive text-destructive-foreground">Reject</AlertDialogAction>
@@ -612,9 +620,10 @@ export function MoveInPage() {
               This will reverse the approved move-in for <strong>{showReverseDialog?.tenant_name}</strong>.
               Occupancy will be removed and room set back to Pending.
             </p>
-            <div className="space-y-1">
+            <div className="space-y-1" data-field="reverseReason">
               <label className="text-sm font-medium">Reason *</label>
-              <Textarea placeholder="Why is this move-in being reversed?" value={reverseReason} onChange={(e) => setReverseReason(e.target.value)} rows={3} />
+              <Textarea className={fieldClass("", !!reverseValidation.errors.reverseReason)} placeholder="Why is this move-in being reversed?" value={reverseReason} onChange={(e) => { setReverseReason(e.target.value); reverseValidation.clearError("reverseReason"); }} rows={3} />
+              <FieldError error={reverseValidation.errors.reverseReason} />
             </div>
           </div>
           <DialogFooter>

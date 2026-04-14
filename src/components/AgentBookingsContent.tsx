@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -28,6 +29,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   const [pageSize, setPageSize] = useState(10);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const cancelValidation = useFormValidation();
 
   // Only show bookings submitted by this agent
   const myBookings = useMemo(() => {
@@ -149,16 +151,20 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                 ⚠️ Booking fee is <strong>non-refundable</strong> once paid. Please confirm with the tenant before cancelling.
               </div>
               <div className="flex gap-2">
-                <Input
-                  placeholder="Cancel reason (required)..."
-                  value={cancelReason}
-                  onChange={e => setCancelReason(e.target.value)}
-                  className="flex-1"
-                />
+                <div data-field="cancelReason">
+                  <Input
+                    placeholder="Cancel reason (required)..."
+                    value={cancelReason}
+                    onChange={e => { setCancelReason(e.target.value); cancelValidation.clearError("cancelReason"); }}
+                    className={fieldClass("flex-1", !!cancelValidation.errors.cancelReason)}
+                  />
+                  <FieldError error={cancelValidation.errors.cancelReason} />
+                </div>
                 <Button
                   onClick={async () => {
-                    if (!user || !cancelReason.trim()) { toast.error("Please enter a cancel reason"); return; }
-                    if (!window.confirm("Are you sure you want to cancel this booking? Booking fee is non-refundable.")) return;
+                    const rules = { cancelReason: () => !cancelReason.trim() ? "Please enter a cancel reason" : null };
+                    if (!cancelValidation.validate({ cancelReason }, rules)) return;
+                    if (!user) return;
                     await updateBookingStatus.mutateAsync({
                       id: b.id,
                       status: "cancelled" as any,

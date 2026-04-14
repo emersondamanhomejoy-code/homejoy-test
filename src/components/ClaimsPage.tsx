@@ -22,6 +22,7 @@ import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { Eye, Pencil, Trash2, X, ChevronLeft, ChevronRight, Check, Ban, Undo2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 interface UserInfo {
   id: string;
@@ -90,6 +91,9 @@ export function ClaimsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<Claim | null>(null);
   const [selectedUndoItems, setSelectedUndoItems] = useState<string[]>([]);
   const [showUndoDialog, setShowUndoDialog] = useState(false);
+  const claimRejectValidation = useFormValidation();
+  const claimCancelValidation = useFormValidation();
+  const claimCreateValidation = useFormValidation();
 
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [agentConfigs, setAgentConfigs] = useState<Record<string, AgentCommissionConfig>>({});
@@ -286,10 +290,9 @@ export function ClaimsPage() {
   };
 
   const handleReject = async () => {
-    if (!user || !showRejectDialog || !rejectReason.trim()) {
-      toast.error("Reject reason required");
-      return;
-    }
+    if (!user || !showRejectDialog) return;
+    const rules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
+    if (!claimRejectValidation.validate({ rejectReason }, rules)) return;
     const claim = showRejectDialog;
     const history = [...(claim.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
     await updateClaimStatus.mutateAsync({ id: claim.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, history });
@@ -302,10 +305,9 @@ export function ClaimsPage() {
   };
 
   const handleCancel = async () => {
-    if (!user || !showCancelDialog || !cancelReason.trim()) {
-      toast.error("Cancel reason required");
-      return;
-    }
+    if (!user || !showCancelDialog) return;
+    const rules = { cancelReason: () => !cancelReason.trim() ? "Cancel reason is required" : null };
+    if (!claimCancelValidation.validate({ cancelReason }, rules)) return;
     const claim = showCancelDialog;
     const history = [...(claim.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason }];
     await updateClaimStatus.mutateAsync({ id: claim.id, status: "cancelled", reviewed_by: user.id, cancel_reason: cancelReason, history });
@@ -360,14 +362,12 @@ export function ClaimsPage() {
   };
 
   const handleCreate = async () => {
-    if (!user || !createForm.agent_id || createForm.selectedMoveInIds.length === 0) {
-      toast.error("Please select an agent and at least one approved move-in");
-      return;
-    }
-    if (!createForm.description.trim()) {
-      toast.error("Description is required");
-      return;
-    }
+    const rules: Record<string, (v: any) => string | null> = {
+      agent_id: () => !createForm.agent_id ? "Please select an agent" : null,
+      selectedMoveInIds: () => createForm.selectedMoveInIds.length === 0 ? "Please select at least one approved move-in" : null,
+      description: () => !createForm.description.trim() ? "Description is required" : null,
+    };
+    if (!claimCreateValidation.validate(createForm, rules)) return;
 
     setSaving(true);
     try {
@@ -620,19 +620,21 @@ export function ClaimsPage() {
             <DialogHeader className="px-6 pt-6 pb-0"><DialogTitle>Create Claim</DialogTitle></DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
               <div className="space-y-5 py-4">
+                <FormErrorBanner errors={claimCreateValidation.errors} />
                 {sectionCard("👤", "Assign Agent", (
-                  <div className="space-y-1">
+                  <div className="space-y-1" data-field="agent_id">
                     <label className={labelClassName}>Agent</label>
                     <select
-                      className={fieldClassName}
+                      className={fieldClass(fieldClassName, !!claimCreateValidation.errors.agent_id)}
                       value={createForm.agent_id}
-                      onChange={(e) => setCreateForm({ agent_id: e.target.value, selectedMoveInIds: [], description: "", bank_name: "", bank_account: "", account_holder: "" })}
+                      onChange={(e) => { setCreateForm({ agent_id: e.target.value, selectedMoveInIds: [], description: "", bank_name: "", bank_account: "", account_holder: "" }); claimCreateValidation.clearError("agent_id"); }}
                     >
                       <option value="">Select agent</option>
                       {agentUsers.map((agent) => (
                         <option key={agent.id} value={agent.id}>{agent.name || agent.email}</option>
                       ))}
                     </select>
+                    <FieldError error={claimCreateValidation.errors.agent_id} />
                     {createForm.agent_id && <p className="text-xs text-muted-foreground">Commission: {getCommissionLabel(createForm.agent_id)}</p>}
                   </div>
                 ))}
@@ -694,9 +696,10 @@ export function ClaimsPage() {
                         <span className="font-semibold">RM{totalCreateAmount.toLocaleString()}</span>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className={labelClassName}>Description</label>
-                      <Textarea className="bg-secondary" rows={3} value={createForm.description} onChange={(e) => setCreateForm((current) => ({ ...current, description: e.target.value }))} />
+                    <div className="space-y-1" data-field="description">
+                      <label className={labelClassName}>Description *</label>
+                      <Textarea className={fieldClass("bg-secondary", !!claimCreateValidation.errors.description)} rows={3} value={createForm.description} onChange={(e) => { setCreateForm((current) => ({ ...current, description: e.target.value })); claimCreateValidation.clearError("description"); }} />
+                      <FieldError error={claimCreateValidation.errors.description} />
                     </div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                       <div className="space-y-1">
@@ -796,7 +799,10 @@ export function ClaimsPage() {
       <AlertDialog open={Boolean(showRejectDialog)} onOpenChange={(open) => !open && (setShowRejectDialog(null), setRejectReason(""))}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Reject Claim?</AlertDialogTitle><AlertDialogDescription>Enter the rejection reason.</AlertDialogDescription></AlertDialogHeader>
-          <Textarea placeholder="Reason (required)..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} />
+          <div data-field="rejectReason">
+            <Textarea className={fieldClass("", !!claimRejectValidation.errors.rejectReason)} placeholder="Reason (required)..." value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); claimRejectValidation.clearError("rejectReason"); }} rows={3} />
+            <FieldError error={claimRejectValidation.errors.rejectReason} />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleReject} disabled={!rejectReason.trim()} className="bg-destructive text-destructive-foreground">Reject</AlertDialogAction>
@@ -807,7 +813,10 @@ export function ClaimsPage() {
       <AlertDialog open={Boolean(showCancelDialog)} onOpenChange={(open) => !open && (setShowCancelDialog(null), setCancelReason(""))}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Cancel Claim?</AlertDialogTitle><AlertDialogDescription>Items will return to claimable.</AlertDialogDescription></AlertDialogHeader>
-          <Textarea placeholder="Reason (required)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} />
+          <div data-field="cancelReason">
+            <Textarea className={fieldClass("", !!claimCancelValidation.errors.cancelReason)} placeholder="Reason (required)..." value={cancelReason} onChange={(e) => { setCancelReason(e.target.value); claimCancelValidation.clearError("cancelReason"); }} rows={3} />
+            <FieldError error={claimCancelValidation.errors.cancelReason} />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep</AlertDialogCancel>
             <AlertDialogAction onClick={handleCancel} disabled={!cancelReason.trim()}>Cancel Claim</AlertDialogAction>

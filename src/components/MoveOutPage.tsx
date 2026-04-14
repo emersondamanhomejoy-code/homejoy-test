@@ -19,6 +19,7 @@ import { Plus, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { inputClass, labelClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 const MOVE_OUT_TYPES = ["Tenancy Ended", "Early Move-out", "Parking Returned", "Internal Transfer", "Eviction", "Other"];
 const NEXT_STATUS_OPTIONS = ["Available", "Available Soon", "Archived"];
@@ -275,12 +276,15 @@ export function MoveOutPage() {
     }
   };
 
-  // Save as draft
+  const moveOutValidation = useFormValidation();
+
   const handleSaveDraft = async () => {
-    if (!form.tenant_name || !form.move_out_type || !form.effective_date) {
-      toast.error("Please fill required fields");
-      return;
-    }
+    const rules: Record<string, (v: any) => string | null> = {
+      tenant_name: () => !form.tenant_name ? "Tenant is required" : null,
+      move_out_type: () => !form.move_out_type ? "Move out type is required" : null,
+      effective_date: () => !form.effective_date ? "Effective date is required" : null,
+    };
+    if (!moveOutValidation.validate(form, rules)) return;
     setSaving(true);
     try {
       const selectedOcc = occupancies.find(o => o.room_id === form.room_id && o.tenant_id === form.tenant_id);
@@ -671,6 +675,7 @@ export function MoveOutPage() {
           </>
         }
       >
+        <FormErrorBanner errors={moveOutValidation.errors} />
         <div className="space-y-6">
           {/* Section A: Move Out Target */}
           <div>
@@ -727,9 +732,11 @@ export function MoveOutPage() {
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Move Out Details</h3>
             <div className="space-y-3">
-              <div className="space-y-1">
+              <div className="space-y-1" data-field="effective_date">
                 <label className={lbl}>Effective Date *</label>
-                <Input type="date" value={form.effective_date} onChange={e => updateForm({ effective_date: e.target.value })} />
+                <Input type="date" className={fieldClass("", !!moveOutValidation.errors.effective_date)} value={form.effective_date} onChange={e => { updateForm({ effective_date: e.target.value }); moveOutValidation.clearError("effective_date"); }} />
+                <FieldError error={moveOutValidation.errors.effective_date} />
+              </div>
               </div>
               <div className="space-y-1">
                 <label className={lbl}>Move Out Type *</label>

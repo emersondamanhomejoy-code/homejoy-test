@@ -12,6 +12,7 @@ import { logActivity } from "@/hooks/useActivityLog";
 import { UnitsRoomsContent } from "@/components/UnitsRoomsContent";
 import { BookingsContent } from "@/components/BookingsContent";
 import { inputClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export function AdminContent({ tab }: AdminContentProps) {
   const updateBookingStatus = useUpdateBookingStatus();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const adminRejectValidation = useFormValidation();
 
   return (
     <div className="space-y-6">
@@ -81,7 +83,8 @@ export function AdminContent({ tab }: AdminContentProps) {
         };
 
         const handleReject = async (booking: Booking) => {
-          if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
+          const rejectRules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
+          if (!user || !adminRejectValidation.validate({ rejectReason }, rejectRules)) return;
           try {
             await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
             logActivity("reject_booking", "booking", booking.id, { tenant: booking.tenant_name, reason: rejectReason });
@@ -167,10 +170,11 @@ export function AdminContent({ tab }: AdminContentProps) {
                     <div className="flex gap-2">
                       <button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">✅ Approve</button>
                     </div>
-                    <div className="flex gap-2">
-                      <input className={inputClass + " flex-1"} placeholder="Reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
-                      <button onClick={() => handleReject(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">❌ Reject</button>
+                    <div className="flex gap-2" data-field="rejectReason">
+                      <input className={fieldClass(inputClass + " flex-1", !!adminRejectValidation.errors.rejectReason)} placeholder="Reject reason..." value={rejectReason} onChange={e => { setRejectReason(e.target.value); adminRejectValidation.clearError("rejectReason"); }} />
+                      <button onClick={() => handleReject(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-50">❌ Reject</button>
                     </div>
+                    <FieldError error={adminRejectValidation.errors.rejectReason} />
                   </div>
                 )}
 

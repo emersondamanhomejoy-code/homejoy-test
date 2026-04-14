@@ -14,6 +14,7 @@ import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
+import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 export function LocationsContent() {
   const { data: locations = [], isLoading } = useLocations();
@@ -29,6 +30,7 @@ export function LocationsContent() {
   const [initialName, setInitialName] = useState("");
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { errors, validate, clearError, clearAllErrors } = useFormValidation();
 
   const locationStats = useMemo(() => {
     const map: Record<string, { buildings: number; units: number; rooms: number }> = {};
@@ -42,11 +44,12 @@ export function LocationsContent() {
     return map;
   }, [locations, condos, units]);
 
-  const openCreate = () => { setEditingId(null); setName(""); setInitialName(""); setShowForm(true); };
-  const openEdit = (loc: { id: string; name: string }) => { setEditingId(loc.id); setName(loc.name); setInitialName(loc.name); setShowForm(true); };
+  const openCreate = () => { setEditingId(null); setName(""); setInitialName(""); clearAllErrors(); setShowForm(true); };
+  const openEdit = (loc: { id: string; name: string }) => { setEditingId(loc.id); setName(loc.name); setInitialName(loc.name); clearAllErrors(); setShowForm(true); };
 
   const handleSave = async () => {
-    if (!name.trim()) { toast.error("Location name is required"); return; }
+    const rules = { name: (v: any) => !name.trim() ? "Location name is required" : null };
+    if (!validate({ name }, rules)) return;
     try {
       if (editingId) {
         await updateLocation.mutateAsync({ id: editingId, name: name.trim() });
@@ -82,7 +85,7 @@ export function LocationsContent() {
       {/* Add/Edit Modal */}
       <StandardModal
         open={showForm}
-        onOpenChange={(open) => { if (!open) { setShowForm(false); setName(""); setEditingId(null); } }}
+        onOpenChange={(open) => { if (!open) { setShowForm(false); setName(""); setEditingId(null); clearAllErrors(); } }}
         title={editingId ? "Edit Location" : "Add Location"}
         size="sm"
         isDirty={isDirty}
@@ -92,7 +95,11 @@ export function LocationsContent() {
           </Button>
         }
       >
-        <input className={`${inputClass} w-full`} placeholder="Location name (e.g. Bukit Jalil)" value={name} onChange={e => setName(e.target.value)} autoFocus />
+        <FormErrorBanner errors={errors} />
+        <div data-field="name">
+          <input className={fieldClass(`${inputClass} w-full`, !!errors.name)} placeholder="Location name (e.g. Bukit Jalil)" value={name} onChange={e => { setName(e.target.value); clearError("name"); }} autoFocus />
+          <FieldError error={errors.name} />
+        </div>
       </StandardModal>
 
       {/* Delete Confirmation */}
