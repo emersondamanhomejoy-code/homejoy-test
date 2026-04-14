@@ -50,6 +50,51 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          image_url: string
+          link: string
+          popup_order: number
+          title: string
+          updated_at: string
+          use_as_banner: boolean
+          use_as_popup: boolean
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          image_url?: string
+          link?: string
+          popup_order?: number
+          title?: string
+          updated_at?: string
+          use_as_banner?: boolean
+          use_as_popup?: boolean
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          image_url?: string
+          link?: string
+          popup_order?: number
+          title?: string
+          updated_at?: string
+          use_as_banner?: boolean
+          use_as_popup?: boolean
+        }
+        Relationships: []
+      }
       booking_signatures: {
         Row: {
           booking_data: Json
@@ -685,11 +730,15 @@ export type Database = {
       profiles: {
         Row: {
           address: string
+          bank_account: string
+          bank_name: string
+          bank_proof: string
           created_at: string
           display_name: string
           email: string
           emergency_contact_name: string
           emergency_contact_phone: string
+          emergency_contact_relationship: string
           frozen: boolean
           frozen_at: string | null
           ic_document: string
@@ -701,11 +750,15 @@ export type Database = {
         }
         Insert: {
           address?: string
+          bank_account?: string
+          bank_name?: string
+          bank_proof?: string
           created_at?: string
           display_name?: string
           email?: string
           emergency_contact_name?: string
           emergency_contact_phone?: string
+          emergency_contact_relationship?: string
           frozen?: boolean
           frozen_at?: string | null
           ic_document?: string
@@ -717,11 +770,15 @@ export type Database = {
         }
         Update: {
           address?: string
+          bank_account?: string
+          bank_name?: string
+          bank_proof?: string
           created_at?: string
           display_name?: string
           email?: string
           emergency_contact_name?: string
           emergency_contact_phone?: string
+          emergency_contact_relationship?: string
           frozen?: boolean
           frozen_at?: string | null
           ic_document?: string

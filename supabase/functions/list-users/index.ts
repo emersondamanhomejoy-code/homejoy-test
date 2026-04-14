@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
 
     // UPDATE PROFILE
     if (action === "update_profile") {
-      const { user_id, name, display_name, phone, address, emergency_contact_name, emergency_contact_phone, ic_document } = body;
+      const { user_id, name, display_name, phone, address, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, ic_document, bank_name, bank_account, bank_proof } = body;
 
       if (!user_id) {
         return new Response(JSON.stringify({ error: "user_id is required" }), {
@@ -257,7 +257,11 @@ Deno.serve(async (req) => {
       if (display_name !== undefined) updateData.display_name = display_name;
       if (emergency_contact_name !== undefined) updateData.emergency_contact_name = emergency_contact_name;
       if (emergency_contact_phone !== undefined) updateData.emergency_contact_phone = emergency_contact_phone;
+      if (emergency_contact_relationship !== undefined) updateData.emergency_contact_relationship = emergency_contact_relationship;
       if (ic_document !== undefined) updateData.ic_document = ic_document;
+      if (bank_name !== undefined) updateData.bank_name = bank_name;
+      if (bank_account !== undefined) updateData.bank_account = bank_account;
+      if (bank_proof !== undefined) updateData.bank_proof = bank_proof;
 
       await supabase.from("profiles").upsert(updateData, { onConflict: "user_id" });
 
@@ -277,7 +281,7 @@ Deno.serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, name, display_name, phone, address, profile_picture_url, ic_document, emergency_contact_name, emergency_contact_phone, frozen, frozen_at");
+      .select("user_id, name, display_name, phone, address, profile_picture_url, ic_document, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, frozen, frozen_at, bank_name, bank_account, bank_proof");
     if (profilesError) throw profilesError;
 
     const result = users.map((u) => {
@@ -300,8 +304,12 @@ Deno.serve(async (req) => {
         ic_document: profile?.ic_document || "",
         emergency_contact_name: profile?.emergency_contact_name || "",
         emergency_contact_phone: profile?.emergency_contact_phone || "",
+        emergency_contact_relationship: profile?.emergency_contact_relationship || "",
         frozen: profile?.frozen || false,
         frozen_at: profile?.frozen_at || null,
+        bank_name: profile?.bank_name || "",
+        bank_account: profile?.bank_account || "",
+        bank_proof: profile?.bank_proof || "",
       };
     });
 

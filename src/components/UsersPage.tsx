@@ -26,8 +26,9 @@ interface UserWithRoles {
   roles: string[]; commission_type: string; commission_config: CommissionConfig | null;
   name: string; display_name: string; phone: string; address: string;
   profile_picture_url: string; ic_document: string;
-  emergency_contact_name: string; emergency_contact_phone: string;
+  emergency_contact_name: string; emergency_contact_phone: string; emergency_contact_relationship: string;
   frozen: boolean; frozen_at: string | null;
+  bank_name: string; bank_account: string; bank_proof: string;
 }
 
 const defaultConfigs: Record<string, CommissionConfig> = {
@@ -44,6 +45,11 @@ export function UsersPage() {
   const [fetching, setFetching] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [agentTypeFilter, setAgentTypeFilter] = useState("all");
+  const [hasBankFilter, setHasBankFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -64,8 +70,9 @@ export function UsersPage() {
 
   const [editForm, setEditForm] = useState({
     name: "", display_name: "", phone: "", address: "",
-    emergency_contact_name: "", emergency_contact_phone: "",
+    emergency_contact_name: "", emergency_contact_phone: "", emergency_contact_relationship: "",
     ic_document: "", commission_type: "", commission_config: null as CommissionConfig | null,
+    bank_name: "", bank_account: "", bank_proof: "",
   });
 
   const profilePicRef = useRef<HTMLInputElement>(null);
@@ -94,15 +101,27 @@ export function UsersPage() {
   const filtered = useMemo(() => {
     let list = users;
     if (roleFilter !== "all") list = list.filter(u => u.roles.includes(roleFilter));
+    if (statusFilter !== "all") {
+      if (statusFilter === "active") list = list.filter(u => u.confirmed && !u.frozen);
+      else if (statusFilter === "frozen") list = list.filter(u => u.frozen);
+      else if (statusFilter === "pending") list = list.filter(u => !u.confirmed);
+    }
+    if (agentTypeFilter !== "all") list = list.filter(u => u.roles.includes("agent") && u.commission_type === agentTypeFilter);
+    if (hasBankFilter !== "all") {
+      if (hasBankFilter === "yes") list = list.filter(u => u.bank_name && u.bank_account);
+      else list = list.filter(u => !u.bank_name || !u.bank_account);
+    }
+    if (dateFrom) list = list.filter(u => u.created_at >= dateFrom);
+    if (dateTo) list = list.filter(u => u.created_at <= dateTo + "T23:59:59");
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.display_name || "").toLowerCase().includes(s));
+      list = list.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.display_name || "").toLowerCase().includes(s) || (u.phone || "").includes(s));
     }
     return sortData(list, (u: UserWithRoles, key: string) => {
       const map: Record<string, any> = { name: u.name, email: u.email, role: u.roles.join(","), commission_type: u.commission_type, created_at: u.created_at };
       return map[key];
     });
-  }, [users, roleFilter, search, sort]);
+  }, [users, roleFilter, statusFilter, agentTypeFilter, hasBankFilter, dateFrom, dateTo, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
@@ -188,7 +207,11 @@ export function UsersPage() {
           phone: editForm.phone, address: editForm.address,
           emergency_contact_name: editForm.emergency_contact_name,
           emergency_contact_phone: editForm.emergency_contact_phone,
+          emergency_contact_relationship: editForm.emergency_contact_relationship,
           ic_document: editForm.ic_document,
+          bank_name: editForm.bank_name,
+          bank_account: editForm.bank_account,
+          bank_proof: editForm.bank_proof,
         },
       });
       if (editUser.roles.includes("agent") && editForm.commission_type) {
@@ -250,9 +273,11 @@ export function UsersPage() {
     setEditForm({
       name: u.name, display_name: u.display_name || "", phone: u.phone, address: u.address,
       emergency_contact_name: u.emergency_contact_name || "", emergency_contact_phone: u.emergency_contact_phone || "",
+      emergency_contact_relationship: u.emergency_contact_relationship || "",
       ic_document: u.ic_document || "",
       commission_type: u.commission_type,
       commission_config: u.commission_config ? { ...u.commission_config, tiers: u.commission_config.tiers?.map(t => ({ ...t })) } : defaultConfigs[u.commission_type],
+      bank_name: u.bank_name || "", bank_account: u.bank_account || "", bank_proof: u.bank_proof || "",
     });
   };
 
@@ -355,7 +380,7 @@ export function UsersPage() {
     );
   };
 
-  const hasFilters = search.trim() !== "" || roleFilter !== "all";
+  const hasFilters = search.trim() !== "" || roleFilter !== "all" || statusFilter !== "all" || agentTypeFilter !== "all" || hasBankFilter !== "all" || Boolean(dateFrom) || Boolean(dateTo);
 
   return (
     <StandardPageLayout
@@ -379,9 +404,9 @@ export function UsersPage() {
       <StandardFilterBar
         search={search}
         onSearchChange={v => { setSearch(v); setPage(0); }}
-        placeholder="Search name, email..."
+        placeholder="Search name, email, phone..."
         hasActiveFilters={hasFilters}
-        onClearFilters={() => { setSearch(""); setRoleFilter("all"); setPage(0); }}
+        onClearFilters={() => { setSearch(""); setRoleFilter("all"); setStatusFilter("all"); setAgentTypeFilter("all"); setHasBankFilter("all"); setDateFrom(""); setDateTo(""); setPage(0); }}
       >
         <div className="space-y-1.5">
           <label className={lbl}>Role</label>
@@ -394,6 +419,49 @@ export function UsersPage() {
               <SelectItem value="super_admin">Super Admin</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Status</label>
+          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="frozen">Frozen</SelectItem>
+              <SelectItem value="pending">Pending Invite</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Agent Type</label>
+          <Select value={agentTypeFilter} onValueChange={v => { setAgentTypeFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Agent Type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="internal_basic">Internal Basic</SelectItem>
+              <SelectItem value="internal_full">Internal Full</SelectItem>
+              <SelectItem value="external">External</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Bank Details</label>
+          <Select value={hasBankFilter} onValueChange={v => { setHasBankFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Bank" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="yes">Has Bank</SelectItem>
+              <SelectItem value="no">No Bank</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Created From</label>
+          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="h-10 w-[140px]" />
+        </div>
+        <div className="space-y-1.5">
+          <label className={lbl}>Created To</label>
+          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="h-10 w-[140px]" />
         </div>
       </StandardFilterBar>
 
@@ -542,6 +610,7 @@ export function UsersPage() {
               <div>
                 {infoRow("Name", viewUser.emergency_contact_name)}
                 {infoRow("Phone", viewUser.emergency_contact_phone)}
+                {infoRow("Relationship", viewUser.emergency_contact_relationship)}
               </div>
             ))}
 
@@ -557,6 +626,16 @@ export function UsersPage() {
               <div>
                 {infoRow("Type", commSummary(viewUser))}
                 <div className="mt-2">{renderCommissionTiersSummary(viewUser)}</div>
+              </div>
+            ))}
+
+            {viewUser.roles.includes("agent") && sectionCard("🏦", "Bank Details", (
+              <div>
+                {infoRow("Bank Name", viewUser.bank_name)}
+                {infoRow("Account Number", viewUser.bank_account)}
+                {infoRow("Bank Proof", viewUser.bank_proof ? (
+                  <a href={viewUser.bank_proof} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View Proof</a>
+                ) : "Not uploaded")}
               </div>
             ))}
           </div>
@@ -598,9 +677,10 @@ export function UsersPage() {
             ))}
 
             {sectionCard("🚨", "Emergency Contact", (
-              <div className="grid md:grid-cols-2 gap-3">
+              <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-1"><label className={lbl}>Contact Name</label><input className={`${ic} w-full`} value={editForm.emergency_contact_name} onChange={e => setEditForm({ ...editForm, emergency_contact_name: e.target.value })} /></div>
                 <div className="space-y-1"><label className={lbl}>Contact Phone</label><input className={`${ic} w-full`} value={editForm.emergency_contact_phone} onChange={e => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Relationship</label><input className={`${ic} w-full`} value={editForm.emergency_contact_relationship} onChange={e => setEditForm({ ...editForm, emergency_contact_relationship: e.target.value })} /></div>
               </div>
             ))}
 
@@ -629,6 +709,24 @@ export function UsersPage() {
                 {renderCommissionEditor(editForm.commission_type, editForm.commission_config || defaultConfigs.internal_basic, (type, config) => setEditForm({ ...editForm, commission_type: type, commission_config: config }))}
                 <p className="text-xs text-muted-foreground mt-2">⚠️ Changes only apply to future claims. Approved historical commissions are not affected.</p>
               </>
+            ))}
+
+            {editUser.roles.includes("agent") && sectionCard("🏦", "Bank Details", (
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="space-y-1"><label className={lbl}>Bank Name</label><input className={`${ic} w-full`} value={editForm.bank_name} onChange={e => setEditForm({ ...editForm, bank_name: e.target.value })} /></div>
+                <div className="space-y-1"><label className={lbl}>Account Number</label><input className={`${ic} w-full`} value={editForm.bank_account} onChange={e => setEditForm({ ...editForm, bank_account: e.target.value })} /></div>
+                <div className="md:col-span-2 space-y-1">
+                  <label className={lbl}>Bank Proof</label>
+                  {editForm.bank_proof ? (
+                    <div className="flex items-center gap-2">
+                      <a href={editForm.bank_proof} target="_blank" rel="noreferrer" className="text-primary underline text-xs">View current proof</a>
+                      <span className="text-xs text-muted-foreground">Upload via Documents section</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No bank proof uploaded</p>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         )}
