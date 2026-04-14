@@ -56,7 +56,7 @@ export function LocationsContent() {
       } else {
         await createLocation.mutateAsync(name.trim());
       }
-      setShowForm(false); setName(""); setEditingId(null);
+      setShowForm(false);
     } catch (e: any) { toast.error(e.message || "Failed to save location"); }
   };
 
