@@ -454,7 +454,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
                 />
               </div>
             )}
-            {selectedRoom && (
+            {selectedRoom && !(isAgent && preSelectedRoomId) && (
               <div className="bg-primary/10 rounded-lg p-3 text-sm space-y-1">
                 <div className="font-semibold">{selectedRoom.building} · {selectedRoom.unit} · {selectedRoom.room}{(selectedRoom as any).room_title ? ` — ${(selectedRoom as any).room_title}` : ""}</div>
                 <div>Listed Rent: <strong>RM{selectedRoom.rent}</strong> · Type: {selectedRoom.room_type} · Max Pax: {selectedRoom.max_pax}</div>
