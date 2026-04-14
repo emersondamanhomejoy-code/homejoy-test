@@ -380,7 +380,7 @@ export function UsersPage() {
     );
   };
 
-  const hasFilters = search.trim() !== "" || roleFilter !== "all";
+  const hasFilters = search.trim() !== "" || roleFilter !== "all" || statusFilter !== "all" || agentTypeFilter !== "all" || hasBankFilter !== "all" || Boolean(dateFrom) || Boolean(dateTo);
 
   return (
     <StandardPageLayout
@@ -404,9 +404,9 @@ export function UsersPage() {
       <StandardFilterBar
         search={search}
         onSearchChange={v => { setSearch(v); setPage(0); }}
-        placeholder="Search name, email..."
+        placeholder="Search name, email, phone..."
         hasActiveFilters={hasFilters}
-        onClearFilters={() => { setSearch(""); setRoleFilter("all"); setPage(0); }}
+        onClearFilters={() => { setSearch(""); setRoleFilter("all"); setStatusFilter("all"); setAgentTypeFilter("all"); setHasBankFilter("all"); setDateFrom(""); setDateTo(""); setPage(0); }}
       >
         <div className="space-y-1.5">
           <label className={lbl}>Role</label>
