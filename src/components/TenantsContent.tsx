@@ -288,6 +288,11 @@ export function TenantsContent() {
 
   const saveTenant = async () => {
     if (!editingTenant) return;
+    const rules = {
+      name: (v: any) => !editForm.name?.trim() ? "Full Name is required" : null,
+      phone: (v: any) => !editForm.phone?.trim() ? "Contact number is required" : null,
+    };
+    if (!editValidation.validate(editForm, rules)) return;
     try {
       const passportPath = editUploadedFiles.passport ? await uploadFile(editUploadedFiles.passport, "passport") : editExistingDocs.passport;
       const offerPath = editUploadedFiles.offerLetter ? await uploadFile(editUploadedFiles.offerLetter, "offer-letter") : editExistingDocs.offerLetter;
@@ -326,8 +331,11 @@ export function TenantsContent() {
   const setAddField = (key: keyof Tenant, value: any) => setAddForm(prev => ({ ...prev, [key]: value }));
 
   const saveNewTenant = async () => {
-    if (!addForm.name?.trim()) { toast.error("Name is required"); return; }
-    if (!addForm.phone?.trim()) { toast.error("Phone is required"); return; }
+    const rules = {
+      name: (v: any) => !addForm.name?.trim() ? "Full Name is required" : null,
+      phone: (v: any) => !addForm.phone?.trim() ? "Contact number is required" : null,
+    };
+    if (!addValidation.validate(addForm, rules)) return;
     try {
       const passportPath = addUploadedFiles.passport ? await uploadFile(addUploadedFiles.passport, "passport") : "";
       const offerPath = addUploadedFiles.offerLetter ? await uploadFile(addUploadedFiles.offerLetter, "offer-letter") : "";
