@@ -37,6 +37,7 @@ interface StandardModalProps {
   /** Hide the default Cancel button in footer */
   hideCancel?: boolean;
   className?: string;
+  onAfterClose?: () => void;
 }
 
 export function StandardModal({
