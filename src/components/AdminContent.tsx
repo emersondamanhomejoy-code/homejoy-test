@@ -12,6 +12,7 @@ import { logActivity } from "@/hooks/useActivityLog";
 import { UnitsRoomsContent } from "@/components/UnitsRoomsContent";
 import { BookingsContent } from "@/components/BookingsContent";
 import { inputClass } from "@/lib/ui-constants";
+import { StatCard } from "@/components/ui/stat-card";
 import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {

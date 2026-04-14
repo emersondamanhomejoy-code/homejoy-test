@@ -11,6 +11,7 @@ import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { StatCard } from "@/components/ui/stat-card";
 
 interface Earning {
   id: string;

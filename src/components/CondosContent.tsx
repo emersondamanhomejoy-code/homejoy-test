@@ -15,6 +15,7 @@ import { StandardTable } from "@/components/ui/standard-table";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
+import { StatCard } from "@/components/ui/stat-card";
 
 const CHARGEABLE_LABELS: Record<string, string> = {
   none: "Not Chargeable",

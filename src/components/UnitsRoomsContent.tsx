@@ -18,6 +18,7 @@ import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ActionButtons } from "@/components/ui/action-buttons";
+import { StatCard } from "@/components/ui/stat-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { labelClass, inputClass } from "@/lib/ui-constants";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";

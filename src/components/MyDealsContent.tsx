@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { StatCard } from "@/components/ui/stat-card";
 
 interface CommissionConfig {
   percentage?: number;
