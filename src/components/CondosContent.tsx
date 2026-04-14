@@ -337,13 +337,12 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                     { label: "Available Rooms", available: viewStats.availableRooms, total: viewStats.totalRooms },
                     { label: "Available Carparks", available: viewStats.availableCarparks, total: viewStats.totalCarparks },
                   ].map(item => (
-                    <div key={item.label} className="bg-card border rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold">
-                        <span className={item.available > 0 ? "text-emerald-600" : ""}>{item.available}</span>
-                        <span className="text-muted-foreground font-normal text-sm">/{item.total}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">{item.label}</div>
-                    </div>
+                    <StatCard
+                      key={item.label}
+                      label={item.label}
+                      value={<><span className={item.available > 0 ? "text-emerald-600" : ""}>{item.available}</span><span className="text-muted-foreground font-normal text-sm">/{item.total}</span></>}
+                      className="text-center"
+                    />
                   ))}
                 </div>
               )}

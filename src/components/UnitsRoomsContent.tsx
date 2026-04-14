@@ -679,23 +679,19 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       </div>
 
       {/* Statistic Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className={`text-2xl font-bold ${remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}`}>
-              {remainingPax}/{unit.unit_max_pax}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">Remaining Pax</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className={`text-2xl font-bold ${remainingCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
-              {remainingCarparks}/{unitCarparks.length}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">Remaining Carpark</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard
+          label="Remaining Pax"
+          value={<>{remainingPax}/{unit.unit_max_pax}</>}
+          valueColor={remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}
+          className="text-center"
+        />
+        <StatCard
+          label="Remaining Carpark"
+          value={<>{remainingCarparks}/{unitCarparks.length}</>}
+          valueColor={remainingCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}
+          className="text-center"
+        />
       </div>
 
       <Accordion type="multiple" defaultValue={["rooms", "carparks", "unit", "building"]} className="space-y-2">

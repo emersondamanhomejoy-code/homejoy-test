@@ -191,27 +191,12 @@ export function AdminContent({ tab }: AdminContentProps) {
         return (
           <div className="space-y-6">
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-card rounded-lg p-4 shadow-sm">
-                <div className="text-2xl font-bold">{totalRooms}</div>
-                <div className="text-xs text-muted-foreground mt-1">Total Rooms</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow-sm">
-                <div className="text-2xl font-bold text-green-600">{availableRooms}</div>
-                <div className="text-xs text-muted-foreground mt-1">Available Rooms</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow-sm">
-                <div className="text-2xl font-bold text-orange-500">{occupiedRooms}</div>
-                <div className="text-xs text-muted-foreground mt-1">Occupied Rooms</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow-sm">
-                <div className="text-2xl font-bold text-blue-500">{availableCarParks} / {totalCarParks}</div>
-                <div className="text-xs text-muted-foreground mt-1">Available Car Parks</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow-sm">
-                <div className="text-2xl font-bold text-yellow-500">{pendingBookings.length}</div>
-                <div className="text-xs text-muted-foreground mt-1">Pending Bookings</div>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <StatCard label="Total Rooms" value={totalRooms} />
+              <StatCard label="Available Rooms" value={availableRooms} valueColor="text-emerald-600" />
+              <StatCard label="Occupied Rooms" value={occupiedRooms} valueColor="text-orange-500" />
+              <StatCard label="Available Car Parks" value={<>{availableCarParks} <span className="text-muted-foreground font-normal text-sm">/ {totalCarParks}</span></>} valueColor="text-blue-500" />
+              <StatCard label="Pending Bookings" value={pendingBookings.length} valueColor="text-yellow-500" />
             </div>
 
             {/* Pending Bookings */}

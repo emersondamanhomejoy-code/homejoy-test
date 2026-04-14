@@ -129,15 +129,9 @@ export function EarningsContent() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-card rounded-lg border p-5">
-          <div className="text-xs font-semibold text-muted-foreground mb-1">Records</div>
-          <div className="text-3xl font-bold text-foreground">{filtered.length}</div>
-        </div>
-        <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-100 dark:border-emerald-900 p-5">
-          <div className="text-xs font-semibold text-emerald-600 mb-1">Total Commission</div>
-          <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">RM {totalAmount.toLocaleString()}</div>
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label="Records" value={filtered.length} />
+        <StatCard label="Total Commission" value={`RM ${totalAmount.toLocaleString()}`} valueColor="text-emerald-600" />
       </div>
 
       {/* Filters */}

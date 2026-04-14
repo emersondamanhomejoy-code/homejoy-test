@@ -13,6 +13,7 @@ import {
   BedDouble, ClipboardList, LogIn, CheckCircle, DollarSign,
   Search, Plus, Upload,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/stat-card";
 
 interface CommissionConfig {
   percentage?: number;
@@ -121,17 +122,15 @@ export default function AgentDashboard() {
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {summaryCards.map(card => (
-                  <button
+                  <StatCard
                     key={card.label}
+                    label={card.label}
+                    value={card.value}
+                    icon={card.icon}
+                    iconColor={card.color}
+                    iconBg={card.bg}
                     onClick={() => navigateToPage(card.tab)}
-                    className="bg-card rounded-lg border p-4 text-left hover:shadow-md hover:border-primary/30 transition-all"
-                  >
-                    <div className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center mb-3`}>
-                      <card.icon className={`h-4 w-4 ${card.color}`} />
-                    </div>
-                    <div className="text-2xl font-bold text-foreground">{card.value}</div>
-                    <div className="text-xs font-medium text-foreground mt-0.5">{card.label}</div>
-                  </button>
+                  />
                 ))}
               </div>
 
