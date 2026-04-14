@@ -42,7 +42,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
   const toggleViewSection = (key: string) => setViewSections(prev => ({ ...prev, [key]: !prev[key] }));
-  const [photoLightbox, setPhotoLightbox] = useState<string | null>(null);
+  const [photoLightboxIndex, setPhotoLightboxIndex] = useState<number | null>(null);
 
   const condoStats = useMemo(() => {
     const map: Record<string, { totalUnits: number; totalRooms: number; totalCarparks: number; availableUnits: number; availableRooms: number; availableCarparks: number }> = {};
@@ -310,13 +310,24 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   {allViewExpanded ? "Collapse All" : "Expand All"}
                 </Button>
               </div>
-              {/* Lightbox */}
-              {photoLightbox && (
-                <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPhotoLightbox(null)}>
-                  <img src={photoLightbox} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
-                  <button onClick={() => setPhotoLightbox(null)} className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70">✕</button>
-                </div>
-              )}
+              {/* Lightbox with prev/next */}
+              {photoLightboxIndex !== null && viewing.photos && viewing.photos.length > 0 && (() => {
+                const photos = viewing.photos;
+                const currentUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${photos[photoLightboxIndex]}`;
+                return (
+                  <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPhotoLightboxIndex(null)}>
+                    <img src={currentUrl} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
+                    <button onClick={() => setPhotoLightboxIndex(null)} className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70">✕</button>
+                    <div className="absolute bottom-4 text-white text-sm">{photoLightboxIndex + 1} / {photos.length}</div>
+                    {photoLightboxIndex > 0 && (
+                      <button onClick={e => { e.stopPropagation(); setPhotoLightboxIndex(photoLightboxIndex - 1); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">‹</button>
+                    )}
+                    {photoLightboxIndex < photos.length - 1 && (
+                      <button onClick={e => { e.stopPropagation(); setPhotoLightboxIndex(photoLightboxIndex + 1); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">›</button>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* 1. Stat Cards */}
               {viewStats && (
@@ -352,7 +363,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                       className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer"
                       title="Copy building photo link"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" /> Copy Link
+                      <Copy className="h-3.5 w-3.5" /> Copy Building Photo Link
                     </span>
                     {viewSections.photos ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
@@ -367,7 +378,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                             src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`}
                             alt={`Photo ${i + 1}`}
                             className="h-28 w-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => setPhotoLightbox(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${path}`)}
+                            onClick={() => setPhotoLightboxIndex(i)}
                           />
                         ))}
                       </div>
@@ -384,7 +395,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <h3 className="text-sm font-bold text-foreground">Building Details</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyBuildingDetails(viewing); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy building details">
-                      <Copy className="h-3.5 w-3.5" /> Copy Details
+                      <Copy className="h-3.5 w-3.5" /> Copy Building Details
                     </span>
                     {viewSections.details ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
@@ -409,7 +420,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <h3 className="text-sm font-bold text-foreground">Visitor / Parking Info</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyVisitorInfo(viewing); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy visitor/parking info">
-                      <Copy className="h-3.5 w-3.5" /> Copy Info
+                      <Copy className="h-3.5 w-3.5" /> Copy Visitor/Parking Info
                     </span>
                     {viewSections.visitor ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
@@ -431,7 +442,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <h3 className="text-sm font-bold text-foreground">Pedestrian Access</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "pedestrian"), "Pedestrian Access", true), "Pedestrian access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy pedestrian access">
-                      <Copy className="h-3.5 w-3.5" /> Copy Access
+                      <Copy className="h-3.5 w-3.5" /> Copy Pedestrian Access
                     </span>
                     {viewSections.pedestrian ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
@@ -447,7 +458,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <h3 className="text-sm font-bold text-foreground">Car Park Access</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "carpark"), "Car Park Access", false), "Car park access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy car park access">
-                      <Copy className="h-3.5 w-3.5" /> Copy Access
+                      <Copy className="h-3.5 w-3.5" /> Copy Car Park Access
                     </span>
                     {viewSections.carpark ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
@@ -463,7 +474,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                   <h3 className="text-sm font-bold text-foreground">Motorcycle Access</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "motorcycle"), "Motorcycle Access", false), "Motorcycle access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy motorcycle access">
-                      <Copy className="h-3.5 w-3.5" /> Copy Access
+                      <Copy className="h-3.5 w-3.5" /> Copy Motorcycle Access
                     </span>
                     {viewSections.motorcycle ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
