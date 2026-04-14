@@ -536,6 +536,7 @@ export function UsersPage() {
         }
       >
         <div className="space-y-5">
+          <FormErrorBanner errors={userCreateValidation.errors} />
           {sectionCard("👤", "User Details", (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -547,7 +548,7 @@ export function UsersPage() {
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1"><label className={lbl}>Full Name *</label><input className={`${ic} w-full`} value={newAgent.name} onChange={e => setNewAgent({ ...newAgent, name: e.target.value })} /></div>
                 <div className="space-y-1"><label className={lbl}>Display Name</label><input className={`${ic} w-full`} placeholder="Optional" value={newAgent.display_name} onChange={e => setNewAgent({ ...newAgent, display_name: e.target.value })} /></div>
-                <div className="space-y-1"><label className={lbl}>Email *</label><input className={`${ic} w-full`} type="email" value={newAgent.email} onChange={e => setNewAgent({ ...newAgent, email: e.target.value })} /></div>
+                <div className="space-y-1" data-field="email"><label className={lbl}>Email *</label><input className={fieldClass(`${ic} w-full`, !!userCreateValidation.errors.email)} type="email" value={newAgent.email} onChange={e => { setNewAgent({ ...newAgent, email: e.target.value }); userCreateValidation.clearError("email"); }} /><FieldError error={userCreateValidation.errors.email} /></div>
                 <div className="space-y-1"><label className={lbl}>Phone Number</label><input className={`${ic} w-full`} value={newAgent.phone} onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })} /></div>
                 <div className="md:col-span-2 space-y-1"><label className={lbl}>Address</label><input className={`${ic} w-full`} value={newAgent.address} onChange={e => setNewAgent({ ...newAgent, address: e.target.value })} /></div>
               </div>
