@@ -60,6 +60,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         approved: "Approved",
         rejected: "Rejected",
         reversed: "Reversed",
+        closed: "Closed",
       };
       return map[s] || s;
     }
