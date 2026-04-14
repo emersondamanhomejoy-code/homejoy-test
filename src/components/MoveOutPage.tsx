@@ -22,7 +22,6 @@ import { inputClass, labelClass } from "@/lib/ui-constants";
 
 const MOVE_OUT_TYPES = ["Tenancy Ended", "Early Move-out", "Parking Returned", "Internal Transfer", "Eviction", "Other"];
 const NEXT_STATUS_OPTIONS = ["Available", "Available Soon", "Archived"];
-const ASSET_TYPES = ["Room", "Carpark", "Room + Carpark"];
 
 interface MoveOut {
   id: string;
@@ -61,7 +60,6 @@ interface ActiveOccupancy {
 const emptyForm = {
   tenant_name: "",
   tenant_id: "" as string,
-  asset_type: "Room",
   building: "",
   unit: "",
   room: "",
@@ -76,7 +74,6 @@ export function MoveOutPage() {
   const { user, role } = useAuth();
   const isAdmin = role === "admin" || role === "super_admin";
   const queryClient = useQueryClient();
-  const ic = inputClass;
   const lbl = labelClass;
 
   // Fetch move_outs
@@ -92,7 +89,7 @@ export function MoveOutPage() {
     },
   });
 
-  // Fetch active occupancies (tenant_rooms + tenant + room info)
+  // Fetch active occupancies
   const { data: occupancies = [] } = useQuery({
     queryKey: ["active_occupancies"],
     queryFn: async () => {
@@ -140,9 +137,7 @@ export function MoveOutPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [assetTypeFilter, setAssetTypeFilter] = useState("all");
   const [buildingFilter, setBuildingFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState("all");
   const [nextStatusFilter, setNextStatusFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [createdFrom, setCreatedFrom] = useState("");
@@ -164,7 +159,6 @@ export function MoveOutPage() {
 
   // Unique values for filters
   const buildings = useMemo(() => [...new Set(moveOuts.map(m => m.building).filter(Boolean))].sort(), [moveOuts]);
-  const locations = useMemo(() => [...new Set(occupancies.map(o => o.location).filter(Boolean))].sort(), [occupancies]);
 
   // Filter
   const filtered = useMemo(() => {
@@ -172,7 +166,6 @@ export function MoveOutPage() {
     if (typeFilter !== "all") list = list.filter(m => m.move_out_type === typeFilter);
     if (dateFrom) list = list.filter(m => m.effective_date >= dateFrom);
     if (dateTo) list = list.filter(m => m.effective_date <= dateTo);
-    if (assetTypeFilter !== "all") list = list.filter(m => m.asset_type === assetTypeFilter);
     if (buildingFilter !== "all") list = list.filter(m => m.building === buildingFilter);
     if (nextStatusFilter !== "all") list = list.filter(m => m.next_status === nextStatusFilter);
     if (statusFilter !== "all") list = list.filter(m => m.status === statusFilter);
@@ -198,16 +191,16 @@ export function MoveOutPage() {
       };
       return map[key] ?? "";
     });
-  }, [moveOuts, typeFilter, dateFrom, dateTo, assetTypeFilter, buildingFilter, nextStatusFilter, statusFilter, createdFrom, createdTo, search, sort]);
+  }, [moveOuts, typeFilter, dateFrom, dateTo, buildingFilter, nextStatusFilter, statusFilter, createdFrom, createdTo, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  const hasFilters = search.trim() !== "" || typeFilter !== "all" || dateFrom !== "" || dateTo !== "" || assetTypeFilter !== "all" || buildingFilter !== "all" || nextStatusFilter !== "all" || statusFilter !== "all" || createdFrom !== "" || createdTo !== "";
+  const hasFilters = search.trim() !== "" || typeFilter !== "all" || dateFrom !== "" || dateTo !== "" || buildingFilter !== "all" || nextStatusFilter !== "all" || statusFilter !== "all" || createdFrom !== "" || createdTo !== "";
 
   const clearAll = () => {
     setSearch(""); setTypeFilter("all"); setDateFrom(""); setDateTo("");
-    setAssetTypeFilter("all"); setBuildingFilter("all"); setNextStatusFilter("all");
+    setBuildingFilter("all"); setNextStatusFilter("all");
     setStatusFilter("all"); setCreatedFrom(""); setCreatedTo(""); setPage(0);
   };
 
@@ -218,8 +211,8 @@ export function MoveOutPage() {
     return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [occupancies]);
 
-  // Rooms available for selected tenant
-  const tenantRooms = useMemo(() => {
+  // Occupied assets for selected tenant
+  const tenantAssets = useMemo(() => {
     if (!form.tenant_id) return [];
     return occupancies.filter(o => o.tenant_id === form.tenant_id);
   }, [occupancies, form.tenant_id]);
@@ -238,7 +231,6 @@ export function MoveOutPage() {
     setForm({
       tenant_name: m.tenant_name,
       tenant_id: m.tenant_id || "",
-      asset_type: m.asset_type,
       building: m.building,
       unit: m.unit,
       room: m.room,
@@ -257,7 +249,7 @@ export function MoveOutPage() {
     setIsDirty(true);
   };
 
-  // When tenant changes, reset room selection
+  // When tenant changes, reset asset selection
   const handleTenantChange = (tenantId: string) => {
     const tenant = tenantOptions.find(t => t[0] === tenantId);
     updateForm({
@@ -270,8 +262,8 @@ export function MoveOutPage() {
     });
   };
 
-  // When room selected
-  const handleRoomSelect = (roomId: string) => {
+  // When asset selected
+  const handleAssetSelect = (roomId: string) => {
     const occ = occupancies.find(o => o.room_id === roomId && o.tenant_id === form.tenant_id);
     if (occ) {
       updateForm({
@@ -291,10 +283,13 @@ export function MoveOutPage() {
     }
     setSaving(true);
     try {
+      const selectedOcc = occupancies.find(o => o.room_id === form.room_id && o.tenant_id === form.tenant_id);
+      const assetType = selectedOcc?.room_type === "Car Park" ? "Carpark" : "Room";
+
       const record = {
         tenant_name: form.tenant_name,
         tenant_id: form.tenant_id || null,
-        asset_type: form.asset_type,
+        asset_type: assetType,
         building: form.building,
         unit: form.unit,
         room: form.room,
@@ -333,15 +328,16 @@ export function MoveOutPage() {
     if (!user) return;
     setSaving(true);
     try {
+      const selectedOcc = occupancies.find(o => o.room_id === form.room_id && o.tenant_id === form.tenant_id);
+      const assetType = selectedOcc?.room_type === "Car Park" ? "Carpark" : "Room";
       const targetId = editingId;
 
-      // If it's a new record, create first
       let recordId = targetId;
       if (!recordId) {
         const { data: inserted, error: insErr } = await supabase.from("move_outs").insert({
           tenant_name: form.tenant_name,
           tenant_id: form.tenant_id || null,
-          asset_type: form.asset_type,
+          asset_type: assetType,
           building: form.building,
           unit: form.unit,
           room: form.room,
@@ -360,13 +356,12 @@ export function MoveOutPage() {
         if (insErr) throw insErr;
         recordId = inserted.id;
       } else {
-        // Update existing draft to completed
         const existing = moveOuts.find(m => m.id === recordId);
         const hist = [...(existing?.history || []), { action: "completed", by: user.email, at: new Date().toISOString() }];
         await supabase.from("move_outs").update({
           tenant_name: form.tenant_name,
           tenant_id: form.tenant_id || null,
-          asset_type: form.asset_type,
+          asset_type: assetType,
           building: form.building,
           unit: form.unit,
           room: form.room,
@@ -401,7 +396,6 @@ export function MoveOutPage() {
           .eq("status", "active");
       }
 
-      // Log activity
       await logActivity("move_out", "room", form.room_id || "", {
         building: form.building,
         unit: form.unit,
@@ -411,7 +405,7 @@ export function MoveOutPage() {
         effective_date: form.effective_date,
         next_status: form.next_status,
         reason: form.reason,
-        asset_type: form.asset_type,
+        asset_type: assetType,
         move_out_id: recordId,
       });
 
@@ -501,16 +495,6 @@ export function MoveOutPage() {
         <CollapsibleContent>
           <div className="bg-card rounded-xl shadow-sm border border-border p-5 mt-2 flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <label className={lbl}>Asset Type</label>
-              <Select value={assetTypeFilter} onValueChange={v => { setAssetTypeFilter(v); setPage(0); }}>
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
               <label className={lbl}>Building</label>
               <Select value={buildingFilter} onValueChange={v => { setBuildingFilter(v); setPage(0); }}>
                 <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
@@ -560,10 +544,9 @@ export function MoveOutPage() {
           <TableRow>
             <SortableTableHead sortKey="effective_date" currentSort={sort} onSort={handleSort}>Effective Date</SortableTableHead>
             <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant</SortableTableHead>
-            <TableHead>Asset Type</TableHead>
             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
             <TableHead>Unit</TableHead>
-            <TableHead>Room</TableHead>
+            <TableHead>Room / Carpark</TableHead>
             <SortableTableHead sortKey="move_out_type" currentSort={sort} onSort={handleSort}>Move Out Type</SortableTableHead>
             <TableHead>Next Status</TableHead>
             <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
@@ -584,7 +567,6 @@ export function MoveOutPage() {
           <TableRow key={m.id} className="hover:bg-muted/30">
             <TableCell className="font-medium">{m.effective_date}</TableCell>
             <TableCell>{m.tenant_name || "—"}</TableCell>
-            <TableCell>{m.asset_type}</TableCell>
             <TableCell>{m.building}</TableCell>
             <TableCell>{m.unit}</TableCell>
             <TableCell>{m.room}</TableCell>
@@ -618,13 +600,11 @@ export function MoveOutPage() {
           }
         >
           <div className="space-y-6">
-            {/* Section A: Summary */}
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Summary</h3>
               <div className="rounded-lg bg-muted/50 p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Move Out ID</span><span className="font-mono text-xs">{viewItem.id.slice(0, 8)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tenant</span><span className="font-medium">{viewItem.tenant_name}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Asset Type</span><span>{viewItem.asset_type}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Effective Date</span><span className="font-medium">{viewItem.effective_date}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Move Out Type</span><span>{viewItem.move_out_type}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Next Status</span><StatusBadge status={viewItem.next_status} /></div>
@@ -634,17 +614,16 @@ export function MoveOutPage() {
               </div>
             </div>
 
-            {/* Section B: Occupancy Target */}
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Occupancy Target</h3>
               <div className="rounded-lg bg-muted/50 p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span>{viewItem.building}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Unit</span><span>{viewItem.unit}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Room / Carpark</span><span>{viewItem.room}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span>{viewItem.asset_type}</span></div>
               </div>
             </div>
 
-            {/* Section C: Notes */}
             {viewItem.reason && (
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Notes</h3>
@@ -652,7 +631,6 @@ export function MoveOutPage() {
               </div>
             )}
 
-            {/* Section D: History */}
             {viewItem.history && (viewItem.history as any[]).length > 0 && (
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">History</h3>
@@ -714,27 +692,17 @@ export function MoveOutPage() {
                 )}
               </div>
 
-              <div className="space-y-1">
-                <label className={lbl}>Asset Type *</label>
-                <Select value={form.asset_type} onValueChange={v => updateForm({ asset_type: v })}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {form.tenant_id && (
                 <div className="space-y-1">
-                  <label className={lbl}>Room / Carpark *</label>
-                  {tenantRooms.length === 0 ? (
+                  <label className={lbl}>Room / Carpark to move out *</label>
+                  {tenantAssets.length === 0 ? (
                     <p className="text-xs text-muted-foreground">No active occupancy found for this tenant.</p>
                   ) : (
-                    <Select value={form.room_id || "none"} onValueChange={v => v !== "none" && handleRoomSelect(v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Select room/carpark" /></SelectTrigger>
+                    <Select value={form.room_id || "none"} onValueChange={v => v !== "none" && handleAssetSelect(v)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Select room or carpark" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" disabled>Select room/carpark</SelectItem>
-                        {tenantRooms.map(r => (
+                        <SelectItem value="none" disabled>Select room or carpark</SelectItem>
+                        {tenantAssets.map(r => (
                           <SelectItem key={r.room_id} value={r.room_id}>
                             {r.building} · {r.unit} · {r.room} ({r.room_type})
                           </SelectItem>
@@ -749,7 +717,7 @@ export function MoveOutPage() {
                 <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span className="font-medium">{form.building}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Unit</span><span className="font-medium">{form.unit}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Room</span><span className="font-medium">{form.room}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Room / Carpark</span><span className="font-medium">{form.room}</span></div>
                 </div>
               )}
             </div>
@@ -806,7 +774,7 @@ export function MoveOutPage() {
                 <p>Are you sure you want to complete this move-out?</p>
                 <div className="rounded-lg bg-muted/50 p-3 space-y-1">
                   <div><strong>Tenant:</strong> {form.tenant_name}</div>
-                  <div><strong>Room:</strong> {form.building} · {form.unit} · {form.room}</div>
+                  <div><strong>Property:</strong> {form.building} · {form.unit} · {form.room}</div>
                   <div><strong>Type:</strong> {form.move_out_type}</div>
                   <div><strong>Effective Date:</strong> {form.effective_date}</div>
                   <div><strong>Next Status:</strong> {form.next_status}</div>
