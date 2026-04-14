@@ -97,9 +97,18 @@ export function CreateBookingDialog({ open, onOpenChange }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
+  // Auto-set agent when current user is an agent
+  useEffect(() => {
+    if (isAgent && user?.id && open) {
+      setForm(prev => ({ ...prev, agentId: user.id }));
+    }
+  }, [isAgent, user?.id, open]);
+
   // Reset room selection when agent changes (available rooms may differ)
   useEffect(() => {
-    setForm(prev => ({ ...prev, roomId: "", carParkSelections: [] }));
+    if (!isAgent) {
+      setForm(prev => ({ ...prev, roomId: "", carParkSelections: [] }));
+    }
   }, [form.agentId]);
 
 
