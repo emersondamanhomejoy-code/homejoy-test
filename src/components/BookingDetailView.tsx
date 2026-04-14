@@ -60,6 +60,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         approved: "Approved",
         rejected: "Rejected",
         reversed: "Reversed",
+        closed: "Closed",
       };
       return map[s] || s;
     }
@@ -86,6 +87,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         : status === "Ready for Move-in" ? "bg-blue-500/20 text-blue-600"
         : status === "Approved" ? "bg-green-500/20 text-green-600"
         : status === "Submitted" ? "bg-yellow-500/20 text-yellow-600"
+        : status === "Closed" ? "bg-orange-500/20 text-orange-600"
         : status === "Pending Booking Review" ? "bg-muted text-muted-foreground"
         : "bg-orange-500/20 text-orange-600";
     } else {
@@ -212,7 +214,12 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       return null; // Close only via modal Cancel button
     }
     if (b.status === "approved") {
-      return null; // Close only
+      // Only show terminate if move-in is NOT yet approved
+      const moveInAlreadyApproved = relatedMoveIn?.status === "approved";
+      if (moveInAlreadyApproved) return null;
+      return (
+        <Button variant="destructive" onClick={() => setShowCancelDialog(true)}>Terminate Booking</Button>
+      );
     }
     return null; // cancelled — close only
   };
@@ -454,7 +461,11 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             <DialogTitle>Reject Booking</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">Please enter the reason for rejecting this booking. This is required.</p>
+            <p className="text-sm text-muted-foreground">
+              {b.status === "approved" 
+                ? "This will cancel the booking, close the related move-in record, and release all pending room/carpark holds."
+                : "Please provide a resolution type and reason for cancelling this booking."}
+            </p>
             <Textarea placeholder="Enter reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3} />
           </div>
           <DialogFooter>
@@ -468,7 +479,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       <Dialog open={showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(false); setCancelReason(""); setCancelResolutionType(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogTitle>{b.status === "approved" ? "Terminate Approved Booking" : "Cancel Booking"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
