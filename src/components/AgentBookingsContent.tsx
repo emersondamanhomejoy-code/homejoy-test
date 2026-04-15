@@ -20,7 +20,7 @@ interface AgentBookingsContentProps {
 export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProps) {
   const { user } = useAuth();
   const { data: allBookings = [], isLoading } = useBookings();
-  const updateBookingStatus = useUpdateBookingStatus();
+  const updateBookingStatus = useUpdateOrderStatus();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
