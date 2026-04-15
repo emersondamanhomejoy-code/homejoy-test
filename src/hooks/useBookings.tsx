@@ -3,12 +3,53 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type BookingType = "room_only" | "room_carpark" | "carpark_only";
 
+export type OrderStatus =
+  | "booking_submitted"
+  | "booking_rejected"
+  | "booking_approved"
+  | "booking_cancelled"
+  | "move_in_submitted"
+  | "move_in_rejected"
+  | "move_in_approved";
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  booking_submitted: "Booking Submitted",
+  booking_rejected: "Booking Rejected",
+  booking_approved: "Booking Approved",
+  booking_cancelled: "Booking Cancelled",
+  move_in_submitted: "Move-in Submitted",
+  move_in_rejected: "Move-in Rejected",
+  move_in_approved: "Move-in Approved",
+};
+
+export const ORDER_STATUS_LIST: OrderStatus[] = [
+  "booking_submitted",
+  "booking_rejected",
+  "booking_approved",
+  "booking_cancelled",
+  "move_in_submitted",
+  "move_in_rejected",
+  "move_in_approved",
+];
+
+/** Valid transitions from each order status */
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  booking_submitted: ["booking_rejected", "booking_approved", "booking_cancelled"],
+  booking_rejected: ["booking_submitted", "booking_approved", "booking_cancelled"],
+  booking_approved: ["move_in_submitted", "booking_cancelled"],
+  move_in_submitted: ["move_in_rejected", "move_in_approved"],
+  move_in_rejected: ["move_in_submitted", "move_in_approved", "booking_cancelled"],
+  move_in_approved: [], // final
+  booking_cancelled: [], // final
+};
+
 export interface Booking {
   id: string;
   room_id: string | null;
   unit_id: string | null;
   booking_type: BookingType;
-  status: "submitted" | "approved" | "rejected" | "cancelled";
+  status: string; // legacy — keep for compatibility but prefer order_status
+  order_status: OrderStatus;
   resolution_type: string;
   tenant_name: string;
   tenant_phone: string;
@@ -48,6 +89,15 @@ export interface Booking {
   reject_reason: string;
   move_in_cost: Record<string, number>;
   history: any[];
+  // Move-in fields (merged from move_ins)
+  agreement_signed: boolean;
+  payment_method: string;
+  receipt_path: string;
+  move_in_agent_id: string | null;
+  move_in_reject_reason: string;
+  move_in_cancel_reason: string;
+  move_in_reviewed_by: string | null;
+  move_in_reviewed_at: string | null;
   created_at: string;
   updated_at: string;
   // joined
@@ -68,7 +118,7 @@ export function useBookings(statusFilter?: string) {
         .from("bookings")
         .select("*, room:rooms(room, building, unit)")
         .order("created_at", { ascending: false });
-      if (statusFilter) q = q.eq("status", statusFilter);
+      if (statusFilter) q = q.eq("order_status", statusFilter);
       const { data, error } = await q;
       if (error) throw error;
       return data as unknown as Booking[];
@@ -76,12 +126,12 @@ export function useBookings(statusFilter?: string) {
   });
 }
 
-export function useUpdateBookingStatus() {
+export function useUpdateOrderStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       id,
-      status,
+      order_status,
       reviewed_by,
       reject_reason,
       room_id,
@@ -95,9 +145,14 @@ export function useUpdateBookingStatus() {
       resolution_type,
       booking_type,
       bookingData,
+      // Move-in fields
+      agreement_signed,
+      payment_method,
+      receipt_path,
+      move_in_reject_reason,
     }: {
       id: string;
-      status: "approved" | "rejected" | "cancelled";
+      order_status: OrderStatus;
       reviewed_by: string;
       reject_reason?: string;
       room_id?: string | null;
@@ -111,29 +166,70 @@ export function useUpdateBookingStatus() {
       resolution_type?: string;
       booking_type?: BookingType;
       bookingData?: Booking;
+      agreement_signed?: boolean;
+      payment_method?: string;
+      receipt_path?: string;
+      move_in_reject_reason?: string;
     }) => {
       const updates: Record<string, any> = {
-        status,
-        reviewed_by,
-        reviewed_at: new Date().toISOString(),
-        reject_reason: reject_reason || "",
+        order_status,
+        updated_at: new Date().toISOString(),
       };
+
+      // Map order_status to legacy status field
+      if (order_status.startsWith("booking_")) {
+        updates.status = order_status.replace("booking_", "");
+      } else if (order_status === "move_in_submitted" || order_status === "move_in_rejected") {
+        updates.status = "approved"; // booking stays approved
+      } else if (order_status === "move_in_approved") {
+        updates.status = "approved";
+      }
+
       if (history !== undefined) updates.history = history;
       if (resolution_type !== undefined) updates.resolution_type = resolution_type;
+
+      // Booking-level review fields
+      if (order_status === "booking_approved" || order_status === "booking_rejected" || order_status === "booking_cancelled") {
+        updates.reviewed_by = reviewed_by;
+        updates.reviewed_at = new Date().toISOString();
+        updates.reject_reason = reject_reason || "";
+      }
+
+      // Move-in fields
+      if (order_status === "move_in_submitted") {
+        if (agreement_signed !== undefined) updates.agreement_signed = agreement_signed;
+        if (payment_method !== undefined) updates.payment_method = payment_method;
+        if (receipt_path !== undefined) updates.receipt_path = receipt_path;
+        updates.move_in_agent_id = reviewed_by;
+      }
+      if (order_status === "move_in_approved") {
+        updates.move_in_reviewed_by = reviewed_by;
+        updates.move_in_reviewed_at = new Date().toISOString();
+      }
+      if (order_status === "move_in_rejected") {
+        updates.move_in_reviewed_by = reviewed_by;
+        updates.move_in_reviewed_at = new Date().toISOString();
+        updates.move_in_reject_reason = move_in_reject_reason || reject_reason || "";
+      }
+
+      // Resubmit clears reject fields
+      if (order_status === "booking_submitted") {
+        updates.reject_reason = "";
+        updates.reviewed_by = null;
+        updates.reviewed_at = null;
+      }
+
       const { error } = await supabase
         .from("bookings")
         .update(updates)
         .eq("id", id);
       if (error) throw error;
 
-      // ─── APPROVE: set room/carpark to Pending, create move-in, create tenant ───
-      if (status === "approved") {
-        // Set room to Pending (NOT Occupied — that happens on move-in approval)
+      // ─── BOOKING APPROVED: set room/carpark to Pending, create tenant ───
+      if (order_status === "booking_approved") {
         if (room_id) {
           await supabase.from("rooms").update({ status: "Pending" }).eq("id", room_id);
         }
-
-        // Set selected car parks to Pending
         if (carParkIds && carParkIds.length > 0) {
           for (const cpId of carParkIds) {
             await supabase.from("rooms").update({
@@ -143,20 +239,8 @@ export function useUpdateBookingStatus() {
           }
         }
 
-        // Auto-create move-in record with ready_for_move_in status
-        const agentId = bookingData?.submitted_by || reviewed_by;
-        await supabase.from("move_ins").insert({
-          booking_id: id,
-          room_id: room_id || null,
-          agent_id: agentId,
-          tenant_name: tenant_name || "",
-          status: "ready_for_move_in",
-          history: [{ action: "created_from_booking_approval", by: reviewed_by, at: new Date().toISOString() }],
-        });
-
         // Create formal tenant record
         if (bookingData) {
-          // Check if tenant already exists by phone + name
           const { data: existingTenant } = await supabase
             .from("tenants")
             .select("id")
@@ -167,7 +251,6 @@ export function useUpdateBookingStatus() {
           let tenantId: string;
           if (existingTenant) {
             tenantId = existingTenant.id;
-            // Update existing tenant with latest info
             await supabase.from("tenants").update({
               email: bookingData.tenant_email || "",
               ic_passport: bookingData.tenant_ic_passport || "",
@@ -213,7 +296,6 @@ export function useUpdateBookingStatus() {
             tenantId = newTenant?.id || "";
           }
 
-          // Create tenant_rooms binding if room exists
           if (tenantId && room_id) {
             await supabase.from("tenant_rooms").insert({
               tenant_id: tenantId,
@@ -223,8 +305,6 @@ export function useUpdateBookingStatus() {
               status: "active",
             });
           }
-
-          // Create tenant_rooms for carparks too
           if (tenantId && carParkIds && carParkIds.length > 0) {
             for (const cpId of carParkIds) {
               await supabase.from("tenant_rooms").insert({
@@ -239,8 +319,8 @@ export function useUpdateBookingStatus() {
         }
       }
 
-      // ─── REJECT: release room + carparks back to Available ───
-      if (status === "rejected") {
+      // ─── BOOKING REJECTED: release room + carparks back to Available ───
+      if (order_status === "booking_rejected") {
         if (room_id) {
           await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
         }
@@ -251,10 +331,72 @@ export function useUpdateBookingStatus() {
         }
       }
 
-      // ─── CANCEL: release pending holds, handle forfeit ───
-      if (status === "cancelled") {
+      // ─── MOVE-IN APPROVED: set room/carpark to Occupied, create earnings ───
+      if (order_status === "move_in_approved") {
         if (room_id) {
-          // Only release if room is still Pending (not yet moved in)
+          await supabase.from("rooms").update({ status: "Occupied" }).eq("id", room_id);
+        }
+        if (bookingData) {
+          const docs = bookingData.documents as any;
+          const carParkSelections: { roomId: string }[] = docs?.carParkSelections || [];
+          for (const cp of carParkSelections) {
+            if (cp.roomId) {
+              await supabase.from("rooms").update({ status: "Occupied" }).eq("id", cp.roomId);
+            }
+          }
+
+          // Auto-create earnings record
+          const agentId = bookingData.submitted_by || reviewed_by;
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("commission_type, commission_config")
+            .eq("user_id", agentId)
+            .eq("role", "agent")
+            .single();
+
+          const commType = roleData?.commission_type || "internal_basic";
+          const commConfig = roleData?.commission_config as any;
+          const rent = bookingData.monthly_salary || 0;
+          const duration = bookingData.contract_months || 12;
+          const durationMultiplier = duration / 12;
+
+          let commissionAmount = 0;
+          if (commType === "external") {
+            commissionAmount = Math.round(rent * (commConfig?.percentage ?? 100) / 100 * durationMultiplier);
+          } else if (commType === "internal_full") {
+            const tiers = commConfig?.tiers || [{ min: 1, max: 300, percentage: 70 }];
+            const tier = tiers.find((t: any) => true);
+            commissionAmount = Math.round(rent * (tier?.percentage ?? 70) / 100 * durationMultiplier);
+          } else {
+            const tiers = commConfig?.tiers || [{ min: 1, max: 5, amount: 200 }];
+            const tier = tiers.find((t: any) => true);
+            commissionAmount = Math.round((tier?.amount ?? 200) * durationMultiplier);
+          }
+
+          const room = bookingData.room;
+          const now = new Date();
+          const payCycle = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+          await supabase.from("earnings").insert({
+            agent_id: agentId,
+            booking_id: id,
+            room_id: room_id || null,
+            tenant_name: bookingData.tenant_name,
+            building: room?.building || "",
+            unit: room?.unit || "",
+            room: room?.room || "",
+            exact_rental: rent,
+            commission_type: commType,
+            commission_amount: commissionAmount,
+            status: "pending",
+            pay_cycle: payCycle,
+          });
+        }
+      }
+
+      // ─── BOOKING CANCELLED: release pending holds ───
+      if (order_status === "booking_cancelled") {
+        if (room_id) {
           const { data: roomData } = await supabase.from("rooms").select("status").eq("id", room_id).single();
           if (roomData?.status === "Pending") {
             await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
@@ -268,29 +410,17 @@ export function useUpdateBookingStatus() {
             }
           }
         }
-        // Close related move-in records (ready_for_move_in or submitted)
-        const { data: moveIns } = await supabase
-          .from("move_ins")
-          .select("id, status")
-          .eq("booking_id", id)
-          .in("status", ["ready_for_move_in", "submitted"]);
-        if (moveIns && moveIns.length > 0) {
-          for (const mi of moveIns) {
-            await supabase.from("move_ins").update({
-              status: "closed",
-              cancel_reason: reject_reason || "Booking terminated",
-              history: [{ action: "closed_from_booking_termination", by: reviewed_by, at: new Date().toISOString(), reason: reject_reason }],
-            }).eq("id", mi.id);
-          }
-        }
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       qc.invalidateQueries({ queryKey: ["rooms"] });
       qc.invalidateQueries({ queryKey: ["units"] });
-      qc.invalidateQueries({ queryKey: ["move_ins"] });
       qc.invalidateQueries({ queryKey: ["tenants"] });
+      qc.invalidateQueries({ queryKey: ["earnings"] });
     },
   });
 }
+
+// Keep legacy hook name for backward compatibility
+export const useUpdateBookingStatus = useUpdateOrderStatus;
