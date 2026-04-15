@@ -394,6 +394,13 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const occupiedCarparks = unitCarparks.filter(r => r.status === "Occupied").length;
   const remainingCarparks = unitCarparks.length - occupiedCarparks;
 
+  // Listen for back-to-unit event from parent footer button
+  React.useEffect(() => {
+    const handler = () => setViewingRoom(null);
+    window.addEventListener('back-to-unit', handler);
+    return () => window.removeEventListener('back-to-unit', handler);
+  }, []);
+
   // Match condo by building name
   const condo = condosData.find(c => c.name === unit.building) || null;
 
