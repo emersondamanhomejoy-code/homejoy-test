@@ -500,10 +500,12 @@ export function RoomsContent() {
 function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Unit[]; assetTab: AssetTab }) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const isCarpark = assetTab === "carparks";
-  const [accordionValues, setAccordionValues] = useState<string[]>(["photos", "details", "status", "summary", "tenant"]);
+  const [accordionValues, setAccordionValues] = useState<string[]>(["photos", "details", "status", "summary", "tenant", "booking"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [linkedTenant, setLinkedTenant] = useState<any | null>(null);
   const [tenantLoading, setTenantLoading] = useState(false);
+  const [linkedBooking, setLinkedBooking] = useState<any | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   const parentUnit = units.find(u => u.id === room.unit_id);
   const photoUrls = Array.isArray(room.photos) ? (room.photos as string[]).map(p => `${supabaseUrl}/storage/v1/object/public/room-photos/${p}`) : [];
@@ -544,6 +546,25 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
     })();
     return () => { cancelled = true; };
   }, [room.id, room.status]);
+
+  // Fetch linked booking for this room
+  useEffect(() => {
+    let cancelled = false;
+    setBookingLoading(true);
+    (async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("room_id", room.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled) {
+        setLinkedBooking(data && data.length > 0 ? data[0] : null);
+        setBookingLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [room.id]);
 
   const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => {
     if (!value || value === "—" || value === "") return null;
@@ -605,6 +626,7 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
   sectionKeys.push("details");
   if (!isCarpark && otherRooms.length > 0) sectionKeys.push("summary");
   if (showTenantSection) sectionKeys.push("tenant");
+  sectionKeys.push("booking");
 
   return (
     <div className="space-y-4">
@@ -775,6 +797,66 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
             </AccordionContent>
           </AccordionItem>
         )}
+
+        {/* 5. Booking Details */}
+        <AccordionItem value="booking" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Booking Details</AccordionTrigger>
+          <AccordionContent>
+            {bookingLoading ? (
+              <p className="text-sm text-muted-foreground">Loading booking info…</p>
+            ) : linkedBooking ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <DetailRow label="Order Status" value={linkedBooking.order_status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                <DetailRow label="Booking Type" value={linkedBooking.booking_type?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                <DetailRow label="Tenant Name" value={linkedBooking.tenant_name} />
+                <DetailRow label="Phone" value={linkedBooking.tenant_phone} />
+                <DetailRow label="Email" value={linkedBooking.tenant_email} />
+                <DetailRow label="IC/Passport" value={linkedBooking.tenant_ic_passport} />
+                <DetailRow label="Gender" value={linkedBooking.tenant_gender} />
+                <DetailRow label="Nationality" value={linkedBooking.tenant_nationality} />
+                <DetailRow label="Race" value={linkedBooking.tenant_race} />
+                <DetailRow label="Move-In Date" value={linkedBooking.move_in_date} />
+                <DetailRow label="Contract" value={linkedBooking.contract_months ? `${linkedBooking.contract_months} months` : ""} />
+                <DetailRow label="Pax Staying" value={linkedBooking.pax_staying?.toString()} />
+                <DetailRow label="Occupation" value={linkedBooking.occupation} />
+                <DetailRow label="Company" value={linkedBooking.company} />
+                <DetailRow label="Position" value={linkedBooking.position} />
+                <DetailRow label="Monthly Salary" value={linkedBooking.monthly_salary ? `RM${linkedBooking.monthly_salary}` : ""} />
+                <DetailRow label="Car Plate" value={linkedBooking.car_plate} />
+                <DetailRow label="Parking" value={linkedBooking.parking} />
+                <DetailRow label="Access Cards" value={linkedBooking.access_card_count?.toString()} />
+                <DetailRow label="Payment Method" value={linkedBooking.payment_method} />
+                <DetailRow label="Agreement Signed" value={linkedBooking.agreement_signed ? "Yes" : "No"} />
+                <DetailRow label="Submitted At" value={linkedBooking.created_at ? new Date(linkedBooking.created_at).toLocaleDateString() : ""} />
+                {linkedBooking.reject_reason && (
+                  <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Reject Reason:</span> <span className="font-medium text-destructive">{linkedBooking.reject_reason}</span></div>
+                )}
+                {linkedBooking.emergency_1_name && (
+                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <DetailRow label="Name" value={linkedBooking.emergency_1_name} />
+                      <DetailRow label="Phone" value={linkedBooking.emergency_1_phone} />
+                      <DetailRow label="Relationship" value={linkedBooking.emergency_1_relationship} />
+                    </div>
+                  </div>
+                )}
+                {linkedBooking.emergency_2_name && (
+                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <DetailRow label="Name" value={linkedBooking.emergency_2_name} />
+                      <DetailRow label="Phone" value={linkedBooking.emergency_2_phone} />
+                      <DetailRow label="Relationship" value={linkedBooking.emergency_2_relationship} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No booking linked to this {isCarpark ? "carpark" : "room"}.</p>
+            )}
+          </AccordionContent>
+        </AccordionItem>
       </Accordion>
 
       {lightboxIndex !== null && <PhotoLightbox photos={photoUrls} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
