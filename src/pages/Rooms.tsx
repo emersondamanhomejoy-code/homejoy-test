@@ -383,3 +383,230 @@ export default function Rooms() {
     </SidebarProvider>
   );
 }
+
+/* ─── Agent Room View Content ─── */
+
+function AgentRoomViewContent({ room, assetTab }: { room: any; assetTab: "rooms" | "carparks" }) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const isCarpark = assetTab === "carparks";
+  const [accordionValues, setAccordionValues] = useState<string[]>(["photos", "details", "tenant", "booking"]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [linkedTenant, setLinkedTenant] = useState<any>(null);
+  const [tenantLoading, setTenantLoading] = useState(false);
+  const [linkedBooking, setLinkedBooking] = useState<any>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  const photoUrls = useMemo(() => {
+    if (!Array.isArray(room.photos) || room.photos.length === 0) return [];
+    return (room.photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+  }, [room.photos, supabaseUrl]);
+
+  const effectiveRemaining = (room.max_pax || 0) - (room.pax_staying || 0);
+
+  useEffect(() => {
+    if (!["Occupied", "Available Soon"].includes(room.status)) {
+      setLinkedTenant(null);
+      setTenantLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setTenantLoading(true);
+    (async () => {
+      const { data: trData } = await supabase
+        .from("tenant_rooms")
+        .select("tenant_id")
+        .eq("room_id", room.id)
+        .eq("status", "active")
+        .limit(1);
+      if (cancelled) return;
+      if (trData && trData.length > 0) {
+        const { data: tenantData } = await supabase.from("tenants").select("*").eq("id", trData[0].tenant_id).single();
+        if (!cancelled) setLinkedTenant(tenantData || null);
+      } else { setLinkedTenant(null); }
+      if (!cancelled) setTenantLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [room.id, room.status]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setBookingLoading(true);
+    (async () => {
+      const { data } = await supabase.from("bookings").select("*").eq("room_id", room.id).order("created_at", { ascending: false }).limit(1);
+      if (!cancelled) { setLinkedBooking(data && data.length > 0 ? data[0] : null); setBookingLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [room.id]);
+
+  const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => {
+    if (!value || value === "—" || value === "") return null;
+    return <div><span className="text-muted-foreground">{label}:</span> <span className="font-medium">{value}</span></div>;
+  };
+
+  const formatUnitType = (v: string) => {
+    if (!v) return "";
+    if (v.toLowerCase().includes("female")) return "Female Unit";
+    if (v.toLowerCase().includes("male")) return "Male Unit";
+    return v.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const feats = Array.isArray(room.optional_features) ? room.optional_features : [];
+  const sectionKeys = [...(photoUrls.length > 0 ? ["photos"] : []), "details", "tenant", "booking"];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold">
+          {isCarpark ? `Carpark ${room.room.replace(/^Carpark\s*/i, "")}` : `Room ${room.room.replace(/^Room\s+/i, "")}`}
+          {room.room_title ? ` — ${room.room_title}` : ""}
+        </h3>
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setAccordionValues(prev => prev.length >= sectionKeys.length ? [] : [...sectionKeys])}>
+          {accordionValues.length >= sectionKeys.length ? "Collapse All" : "Expand All"}
+        </Button>
+      </div>
+      <div className="text-sm text-muted-foreground">{room.building} · {room.unit} · {room.location}</div>
+
+      <Accordion type="multiple" value={accordionValues} onValueChange={setAccordionValues} className="space-y-2">
+        {photoUrls.length > 0 && (
+          <AccordionItem value="photos" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Photos</AccordionTrigger>
+            <AccordionContent>
+              <div className="flex flex-wrap gap-3">
+                {photoUrls.map((url, i) => (
+                  <img key={i} src={`${url}?width=160&height=160`} alt={`Photo ${i + 1}`} loading="lazy" width={80} height={80} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxIndex(i)} />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        <AccordionItem value="details" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Details</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              {!isCarpark && (
+                <>
+                  <DetailRow label="Room" value={room.room_title || room.room} />
+                  <DetailRow label="Room Type" value={room.room_category || room.room_type} />
+                  <DetailRow label="Unit Type" value={formatUnitType(room.unit_type)} />
+                  <DetailRow label="Bed Type" value={room.bed_type} />
+                  <DetailRow label="Wall Type" value={room.wall_type} />
+                  <div><span className="text-muted-foreground">Listed Rent:</span> <span className="font-medium">RM{room.rent}</span></div>
+                  <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={room.status} availableDate={room.available_date} /></div>
+                  <DetailRow label="Available On" value={room.available_date} />
+                  <div><span className="text-muted-foreground">Remaining Pax:</span> <span className="font-medium">{effectiveRemaining}</span></div>
+                </>
+              )}
+              {isCarpark && (
+                <>
+                  <div><span className="text-muted-foreground">Listed Rent:</span> <span className="font-medium">RM{room.rent}</span></div>
+                  <DetailRow label="Parking Lot" value={room.parking_lot} />
+                  <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={room.status} availableDate={room.available_date} /></div>
+                </>
+              )}
+              {feats.length > 0 && (
+                <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Features:</span> <span className="font-medium">{feats.join(", ")}</span></div>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="tenant" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Tenant Details</AccordionTrigger>
+          <AccordionContent>
+            {tenantLoading ? (
+              <p className="text-sm text-muted-foreground">Loading tenant info…</p>
+            ) : linkedTenant ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <DetailRow label="Name" value={linkedTenant.name} />
+                <DetailRow label="IC/Passport" value={linkedTenant.ic_passport} />
+                <DetailRow label="Phone" value={linkedTenant.phone} />
+                <DetailRow label="Email" value={linkedTenant.email} />
+                <DetailRow label="Gender" value={linkedTenant.gender} />
+                <DetailRow label="Nationality" value={linkedTenant.nationality} />
+                <DetailRow label="Race" value={linkedTenant.race} />
+                <DetailRow label="Occupation" value={linkedTenant.occupation} />
+                <DetailRow label="Company" value={linkedTenant.company} />
+                <DetailRow label="Position" value={linkedTenant.position} />
+                <DetailRow label="Car Plate" value={linkedTenant.car_plate} />
+                {linkedTenant.emergency_1_name && (
+                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <DetailRow label="Name" value={linkedTenant.emergency_1_name} />
+                      <DetailRow label="Phone" value={linkedTenant.emergency_1_phone} />
+                      <DetailRow label="Relationship" value={linkedTenant.emergency_1_relationship} />
+                    </div>
+                  </div>
+                )}
+                {linkedTenant.emergency_2_name && (
+                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <DetailRow label="Name" value={linkedTenant.emergency_2_name} />
+                      <DetailRow label="Phone" value={linkedTenant.emergency_2_phone} />
+                      <DetailRow label="Relationship" value={linkedTenant.emergency_2_relationship} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No tenant linked to this {isCarpark ? "carpark" : "room"}.</p>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="booking" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Booking Details</AccordionTrigger>
+          <AccordionContent>
+            {bookingLoading ? (
+              <p className="text-sm text-muted-foreground">Loading booking info…</p>
+            ) : linkedBooking ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <DetailRow label="Order Status" value={linkedBooking.order_status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                <DetailRow label="Submitted At" value={linkedBooking.created_at ? new Date(linkedBooking.created_at).toLocaleDateString() : ""} />
+                <DetailRow label="Contract" value={linkedBooking.contract_months ? `${linkedBooking.contract_months} months` : ""} />
+                <DetailRow label="Move-In Date" value={linkedBooking.move_in_date} />
+                <DetailRow label="Pax Staying" value={linkedBooking.pax_staying?.toString()} />
+                <DetailRow label="Car Plate" value={linkedBooking.car_plate} />
+                <DetailRow label="Payment Method" value={linkedBooking.payment_method} />
+                <DetailRow label="Agreement Signed" value={linkedBooking.agreement_signed ? "Yes" : "No"} />
+                <DetailRow label="Access Card Count" value={linkedBooking.access_card_count?.toString()} />
+                <DetailRow label="Parking" value={linkedBooking.parking} />
+                {(() => {
+                  const cost = linkedBooking.move_in_cost as Record<string, unknown> | null;
+                  const accessAmt = cost?.access_card_deposit || cost?.accessCardDeposit;
+                  const parkingAmt = cost?.parking_deposit || cost?.parkingDeposit || cost?.parking_card_deposit;
+                  return (
+                    <>
+                      {accessAmt ? <DetailRow label="Access Card Amount" value={`RM${accessAmt}`} /> : null}
+                      {parkingAmt ? <DetailRow label="Parking Amount" value={`RM${parkingAmt}`} /> : null}
+                    </>
+                  );
+                })()}
+                {(() => {
+                  const slips = linkedBooking.doc_transfer_slip as string[] | null;
+                  if (!slips || !Array.isArray(slips) || slips.length === 0) return null;
+                  return (
+                    <div className="col-span-2 md:col-span-3">
+                      <span className="text-muted-foreground text-xs">Transfer Slip</span>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {slips.map((url: string, i: number) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">Slip {i + 1}</a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No booking linked to this {isCarpark ? "carpark" : "room"}.</p>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      {lightboxIndex !== null && <PhotoLightbox photos={photoUrls} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
+    </div>
+  );
+}
