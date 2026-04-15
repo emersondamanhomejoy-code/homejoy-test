@@ -504,6 +504,8 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [linkedTenant, setLinkedTenant] = useState<any | null>(null);
   const [tenantLoading, setTenantLoading] = useState(false);
+  const [linkedBooking, setLinkedBooking] = useState<any | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   const parentUnit = units.find(u => u.id === room.unit_id);
   const photoUrls = Array.isArray(room.photos) ? (room.photos as string[]).map(p => `${supabaseUrl}/storage/v1/object/public/room-photos/${p}`) : [];
