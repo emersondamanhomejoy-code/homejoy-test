@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { formatUnitType } from "@/lib/ui-constants";
 import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
@@ -12,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus, Copy, ChevronDown, ArrowLeft, Eye, Image } from "lucide-react";
+import { Plus, Copy, ChevronDown, ArrowLeft, Eye, Image, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
