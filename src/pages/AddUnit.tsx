@@ -577,7 +577,7 @@ function CarparkInlineForm({ carpark, onChange, onSave, onCancel }: {
   return (
     <div className="rounded-lg border bg-accent/30 border-primary/30 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-sm">🅿️ {carpark.room}</span>
+        <span className="font-semibold text-sm">{carpark.room}</span>
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" onClick={onCancel}><X className="h-4 w-4 mr-1" /> Cancel</Button>
           <Button size="sm" onClick={onSave}><Check className="h-4 w-4 mr-1" /> Save</Button>
@@ -644,7 +644,7 @@ function CarparkSummaryRow({ carpark, onEdit, onDelete }: { carpark: LocalCarpar
   return (
     <div className="rounded-lg border bg-accent/30 px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors">
       <div className="flex items-center gap-3 text-sm">
-        <span className="font-medium">🅿️ {carpark.room}</span>
+        <span className="font-medium">{carpark.room}</span>
         {carpark.parking_lot && <span className="text-muted-foreground">{carpark.parking_lot}</span>}
         <span className="font-medium">RM{carpark.rent}</span>
         <StatusBadge status={carpark.status} />
