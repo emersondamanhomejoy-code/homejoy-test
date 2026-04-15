@@ -436,6 +436,29 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     return () => { cancelled = true; };
   }, [viewingRoom?.id, viewingRoom?.status]);
 
+  // Fetch linked booking when viewing a room
+  useEffect(() => {
+    if (!viewingRoom) {
+      setLinkedBooking(null);
+      return;
+    }
+    let cancelled = false;
+    setBookingLoading(true);
+    (async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("room_id", viewingRoom.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled) {
+        setLinkedBooking(data && data.length > 0 ? data[0] : null);
+        setBookingLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [viewingRoom?.id]);
+
   // Listen for back-to-unit event from parent footer button
   useEffect(() => {
     const handler = () => setViewingRoom(null);
