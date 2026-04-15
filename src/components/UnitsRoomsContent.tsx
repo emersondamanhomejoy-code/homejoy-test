@@ -389,8 +389,10 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit-photos", "unit-details", "rooms", "carparks"]);
-  const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary"]);
+  const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary", "tenant"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [linkedTenant, setLinkedTenant] = useState<any | null>(null);
+  const [tenantLoading, setTenantLoading] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
