@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 
 interface RoomData {
   id: string;
@@ -26,7 +27,8 @@ export default function RoomPhotos() {
   const [commonPhotos, setCommonPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -82,18 +84,18 @@ export default function RoomPhotos() {
   const roomPhotos = (room.photos || []) as string[];
   const allEmpty = roomPhotos.length === 0 && commonPhotos.length === 0;
 
+  const openLightbox = (photos: string[], index: number) => {
+    setLightboxPhotos(photos.map(p => `${STORAGE_URL}/${p}`));
+    setLightboxIndex(index);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Lightbox */}
-      {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
-          <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} className="absolute top-4 right-4 z-10 text-white text-2xl font-bold hover:opacity-70">✕</button>
-        </div>
+      {lightboxIndex !== null && (
+        <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="text-sm font-bold text-muted-foreground tracking-widest uppercase">Homejoy</div>
           <h1 className="text-3xl font-extrabold tracking-tight">{room.building}</h1>
@@ -111,7 +113,6 @@ export default function RoomPhotos() {
           </div>
         ) : (
           <>
-            {/* Room Photos */}
             {roomPhotos.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-bold">🛏️ Room Photos</h2>
@@ -122,14 +123,13 @@ export default function RoomPhotos() {
                       src={`${STORAGE_URL}/${path}`}
                       alt={`Room photo ${i + 1}`}
                       className="w-full h-48 md:h-56 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
-                      onClick={() => setLightbox(`${STORAGE_URL}/${path}`)}
+                      onClick={() => openLightbox(roomPhotos, i)}
                     />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Common Area Photos */}
             {commonPhotos.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-bold">🏠 Common Area</h2>
@@ -140,7 +140,7 @@ export default function RoomPhotos() {
                       src={`${STORAGE_URL}/${path}`}
                       alt={`Common area ${i + 1}`}
                       className="w-full h-48 md:h-56 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
-                      onClick={() => setLightbox(`${STORAGE_URL}/${path}`)}
+                      onClick={() => openLightbox(commonPhotos, i)}
                     />
                   ))}
                 </div>

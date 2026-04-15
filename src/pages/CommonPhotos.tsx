@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 
 interface UnitData {
   id: string;
@@ -40,29 +40,7 @@ export default function CommonPhotos() {
   }, [unitId]);
 
   const photos = (unit?.common_photos || []) as string[];
-
-  const goNext = useCallback(() => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex + 1) % photos.length);
-  }, [lightboxIndex, photos.length]);
-
-  const goPrev = useCallback(() => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex - 1 + photos.length) % photos.length);
-  }, [lightboxIndex, photos.length]);
-
-  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
-
-  useEffect(() => {
-    if (lightboxIndex === null) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-      else if (e.key === "ArrowRight") goNext();
-      else if (e.key === "ArrowLeft") goPrev();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [lightboxIndex, closeLightbox, goNext, goPrev]);
+  const photoUrls = photos.map(p => `${STORAGE_URL}/${p}`);
 
   if (loading) {
     return (
@@ -86,47 +64,8 @@ export default function CommonPhotos() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Lightbox */}
       {lightboxIndex !== null && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={closeLightbox}>
-          {/* Close */}
-          <button onClick={(e) => { e.stopPropagation(); closeLightbox(); }} className="absolute top-4 right-4 text-white/80 hover:text-white z-10">
-            <X className="h-7 w-7" />
-          </button>
-
-          {/* Counter */}
-          <div className="absolute top-4 left-4 text-white/70 text-sm">
-            {lightboxIndex + 1} / {photos.length}
-          </div>
-
-          {/* Prev */}
-          {photos.length > 1 && (
-            <button
-              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white/80 hover:text-white hover:bg-black/60 z-10"
-              onClick={(e) => { e.stopPropagation(); goPrev(); }}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-
-          {/* Image */}
-          <img
-            src={`${STORAGE_URL}/${photos[lightboxIndex]}`}
-            alt={`Photo ${lightboxIndex + 1}`}
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* Next */}
-          {photos.length > 1 && (
-            <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white/80 hover:text-white hover:bg-black/60 z-10"
-              onClick={(e) => { e.stopPropagation(); goNext(); }}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
-        </div>
+        <PhotoLightbox photos={photoUrls} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">

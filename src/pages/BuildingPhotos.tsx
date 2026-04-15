@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 
 interface CondoData {
   id: string;
@@ -60,21 +61,12 @@ export default function BuildingPhotos() {
   }
 
   const photos = condo.photos;
+  const photoUrls = photos.map(p => `${STORAGE_URL}/${p}`);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {lightboxIndex !== null && photos.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxIndex(null)}>
-          <img src={`${STORAGE_URL}/${photos[lightboxIndex]}`} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
-          <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }} className="absolute top-4 right-4 z-10 text-white text-2xl font-bold hover:opacity-70">✕</button>
-          <div className="absolute bottom-4 text-white text-sm">{lightboxIndex + 1} / {photos.length}</div>
-          {lightboxIndex > 0 && (
-            <button onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }} className="absolute left-4 top-1/2 z-10 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">‹</button>
-          )}
-          {lightboxIndex < photos.length - 1 && (
-            <button onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">›</button>
-          )}
-        </div>
+        <PhotoLightbox photos={photoUrls} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
