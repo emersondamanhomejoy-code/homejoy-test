@@ -797,6 +797,66 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
             </AccordionContent>
           </AccordionItem>
         )}
+
+        {/* 5. Booking Details */}
+        <AccordionItem value="booking" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Booking Details</AccordionTrigger>
+          <AccordionContent>
+            {bookingLoading ? (
+              <p className="text-sm text-muted-foreground">Loading booking info…</p>
+            ) : linkedBooking ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <DetailRow label="Order Status" value={linkedBooking.order_status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                <DetailRow label="Booking Type" value={linkedBooking.booking_type?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                <DetailRow label="Tenant Name" value={linkedBooking.tenant_name} />
+                <DetailRow label="Phone" value={linkedBooking.tenant_phone} />
+                <DetailRow label="Email" value={linkedBooking.tenant_email} />
+                <DetailRow label="IC/Passport" value={linkedBooking.tenant_ic_passport} />
+                <DetailRow label="Gender" value={linkedBooking.tenant_gender} />
+                <DetailRow label="Nationality" value={linkedBooking.tenant_nationality} />
+                <DetailRow label="Race" value={linkedBooking.tenant_race} />
+                <DetailRow label="Move-In Date" value={linkedBooking.move_in_date} />
+                <DetailRow label="Contract" value={linkedBooking.contract_months ? `${linkedBooking.contract_months} months` : ""} />
+                <DetailRow label="Pax Staying" value={linkedBooking.pax_staying?.toString()} />
+                <DetailRow label="Occupation" value={linkedBooking.occupation} />
+                <DetailRow label="Company" value={linkedBooking.company} />
+                <DetailRow label="Position" value={linkedBooking.position} />
+                <DetailRow label="Monthly Salary" value={linkedBooking.monthly_salary ? `RM${linkedBooking.monthly_salary}` : ""} />
+                <DetailRow label="Car Plate" value={linkedBooking.car_plate} />
+                <DetailRow label="Parking" value={linkedBooking.parking} />
+                <DetailRow label="Access Cards" value={linkedBooking.access_card_count?.toString()} />
+                <DetailRow label="Payment Method" value={linkedBooking.payment_method} />
+                <DetailRow label="Agreement Signed" value={linkedBooking.agreement_signed ? "Yes" : "No"} />
+                <DetailRow label="Submitted At" value={linkedBooking.created_at ? new Date(linkedBooking.created_at).toLocaleDateString() : ""} />
+                {linkedBooking.reject_reason && (
+                  <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Reject Reason:</span> <span className="font-medium text-destructive">{linkedBooking.reject_reason}</span></div>
+                )}
+                {linkedBooking.emergency_1_name && (
+                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <DetailRow label="Name" value={linkedBooking.emergency_1_name} />
+                      <DetailRow label="Phone" value={linkedBooking.emergency_1_phone} />
+                      <DetailRow label="Relationship" value={linkedBooking.emergency_1_relationship} />
+                    </div>
+                  </div>
+                )}
+                {linkedBooking.emergency_2_name && (
+                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <DetailRow label="Name" value={linkedBooking.emergency_2_name} />
+                      <DetailRow label="Phone" value={linkedBooking.emergency_2_phone} />
+                      <DetailRow label="Relationship" value={linkedBooking.emergency_2_relationship} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No booking linked to this {isCarpark ? "carpark" : "room"}.</p>
+            )}
+          </AccordionContent>
+        </AccordionItem>
       </Accordion>
 
       {lightboxIndex !== null && <PhotoLightbox photos={photoUrls} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
