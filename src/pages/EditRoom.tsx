@@ -234,7 +234,7 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Status</label>
-                {rc.status === "Pending" || rc.status === "Available Soon" ? (
+                {rc.status === "Pending" || rc.status === "Occupied" ? (
                   <>
                     <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -245,14 +245,20 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
                   <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => {
                     upRoom("status", e.target.value);
                     if (e.target.value === "Available Soon" && !rc.available_date) upRoom("available_date", "");
+                    if (e.target.value !== "Archived") upRoom("archived_reason", "");
                   }}>
-                    {rc.status === "Available" && <><option value="Available">Available</option><option value="Archived">Archived</option></>}
-                    {rc.status === "Occupied" && <><option value="Occupied">Occupied</option><option value="Available Soon">Available Soon</option></>}
+                    {rc.status === "Available" && <><option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Archived">Archived</option></>}
+                    {rc.status === "Available Soon" && <><option value="Available Soon">Available Soon</option><option value="Available">Available</option></>}
                     {rc.status === "Archived" && <><option value="Archived">Archived</option><option value="Available">Available</option></>}
                   </select>
                 )}
-                {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Only "Available Soon" transition allowed. Full release via Move Out.</p>}
               </div>
+              {rc.status === "Archived" && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Archived Reason *</label>
+                  <input className={`${inputClass} w-full`} placeholder="Why is this room archived?" value={(rc as any).archived_reason || ""} onChange={e => upRoom("archived_reason", e.target.value)} />
+                </div>
+              )}
               {showAvailDate && (
                 <div>
                   <label className="text-xs text-muted-foreground">Available Date</label>
