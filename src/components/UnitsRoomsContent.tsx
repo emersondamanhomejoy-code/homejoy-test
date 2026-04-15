@@ -493,17 +493,19 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   };
 
   const copyRoomSummary = () => {
-    const occupiedRooms = unitRooms.filter(r => (r.status === "Occupied" || r.status === "Available Soon") && (r.pax_staying || 0) > 0);
-    if (occupiedRooms.length === 0) { toast.info("No occupied rooms to copy"); return; }
-    const rows = occupiedRooms.map(r => {
+    const rows = unitRooms.map(r => {
+      const isOccupied = (r.status === "Occupied" || r.status === "Available Soon") && (r.pax_staying || 0) > 0;
+      const roomLabel = r.room.replace(/^Room\s+/i, "");
+      if (!isOccupied) {
+        return `Room ${roomLabel} - Vacant`;
+      }
       const housemates = Array.isArray(r.housemates) ? r.housemates : [];
       const names = housemates.map((h: any) => typeof h === "object" ? h?.name || "" : typeof h === "string" ? h : "").filter(Boolean);
       const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "—";
       const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
-      const roomLabel = r.room.replace(/^Room\s+/i, "");
       return `Room ${roomLabel}: ${r.pax_staying || 0} pax · ${genders} · ${nats}${names.length > 0 ? ` (${names.join(", ")})` : ""}`;
     });
-    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Housemate details");
+    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Room details");
   };
 
   const copyCostBreakdown = () => {
