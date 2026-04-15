@@ -16,9 +16,12 @@ type: design
 - **Approve**: bg-accent hover:bg-accent/90 text-accent-foreground (green via accent token)
 - **Save Draft / secondary non-dangerous**: variant="ghost" with same green hover as cancel
 
-## Expand/Collapse All Buttons
+## Expand/Collapse All Button
+- Single toggle button (not two separate buttons)
+- Label toggles: "Expand All" when any section collapsed, "Collapse All" when all expanded
 - variant="outline" size="sm" className="text-xs bg-card"
 - bg-card gives white background for contrast against modal grey
+- Placed top-right above accordion, wrapped in `<div className="flex justify-end mb-2">`
 
 ## Never use hardcoded colors
 Use design tokens (bg-accent, bg-destructive, bg-primary) not bg-green-600, bg-red-500 etc.

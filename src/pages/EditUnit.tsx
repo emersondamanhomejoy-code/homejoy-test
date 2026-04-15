@@ -210,10 +210,9 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
       >
         <FormErrorBanner errors={errors} />
         <div className="flex justify-end mb-2">
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setAccordionValue(["unit-info", "rooms", "carparks"])}>Expand All</Button>
-            <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setAccordionValue([])}>Collapse All</Button>
-          </div>
+          <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setAccordionValue(prev => prev.length === 3 ? [] : ["unit-info", "rooms", "carparks"])}>
+            {accordionValue.length === 3 ? "Collapse All" : "Expand All"}
+          </Button>
         </div>
         <Accordion type="multiple" value={accordionValue} onValueChange={setAccordionValue} className="space-y-2">
           {/* ── Unit Information ── */}
