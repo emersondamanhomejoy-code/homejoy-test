@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { formatUnitType } from "@/lib/ui-constants";
 import EditRoom from "@/pages/EditRoom";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Trash2, SlidersHorizontal, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Trash2, SlidersHorizontal, X, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
@@ -23,6 +23,9 @@ import { StandardModal } from "@/components/ui/standard-modal";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inputClass } from "@/lib/ui-constants";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { PhotoLightbox } from "@/components/ui/photo-lightbox";
+import { supabase } from "@/integrations/supabase/client";
 
 // Status tabs
 const STATUS_TABS = ["All", "Available", "Available Soon", "Pending", "Occupied", "Archived"] as const;
