@@ -190,10 +190,10 @@ export function MyDealsContent() {
                   <TableRow key={d.id}>
                     <TableCell className="font-mono text-xs">{d.id.slice(0, 8)}</TableCell>
                     <TableCell className="font-medium">{d.tenant_name}</TableCell>
-                    <TableCell>{d.room?.building || "—"}</TableCell>
-                    <TableCell>{d.room?.unit || "—"}</TableCell>
-                    <TableCell>{d.room?.room || "—"}</TableCell>
-                    <TableCell className="text-right">RM{d.monthly_salary?.toLocaleString() || "—"}</TableCell>
+                    <TableCell>{d.room?.building || "N/A"}</TableCell>
+                    <TableCell>{d.room?.unit || "N/A"}</TableCell>
+                    <TableCell>{d.room?.room || "N/A"}</TableCell>
+                    <TableCell className="text-right">RM{d.monthly_salary?.toLocaleString() || "N/A"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(approvedAt), "dd MMM yyyy")}
                     </TableCell>

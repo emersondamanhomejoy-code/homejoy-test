@@ -177,12 +177,12 @@ export function ActivityLogPage() {
                   <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Event Info</div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Timestamp</span><span className="font-medium">{format(new Date(viewLog.created_at), "dd MMM yyyy, HH:mm:ss")}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Actor</span><span className="font-medium">{viewLog.actor_email}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Role</span><span className="font-medium capitalize">{viewLog.details?.actor_role || "—"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Role</span><span className="font-medium capitalize">{viewLog.details?.actor_role || "N/A"}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Module</span><span className="font-medium capitalize">{viewLog.entity_type.replace(/_/g, " ")}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Action</span><span className="font-medium">{getActionBadge(viewLog.action)}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Record Type</span><span className="font-medium capitalize">{viewLog.entity_type.replace(/_/g, " ")}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Record Reference</span><span className="font-mono text-xs">{viewLog.entity_id || "—"}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Summary</span><span className="font-medium">{detailSummary(viewLog) || "—"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Record Reference</span><span className="font-mono text-xs">{viewLog.entity_id || "N/A"}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Summary</span><span className="font-medium">{detailSummary(viewLog) || "N/A"}</span></div>
                   {viewLog.ip_address && (
                     <div className="flex justify-between text-sm"><span className="text-muted-foreground">IP Address</span><span className="font-mono text-xs">{viewLog.ip_address}</span></div>
                   )}
@@ -270,12 +270,12 @@ export function ActivityLogPage() {
                 <TableRow key={l.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setViewLog(l)}>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{format(new Date(l.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
                   <TableCell className="text-sm">{l.actor_email}</TableCell>
-                  <TableCell className="text-sm capitalize">{l.details?.actor_role || "—"}</TableCell>
+                  <TableCell className="text-sm capitalize">{l.details?.actor_role || "N/A"}</TableCell>
                   <TableCell className="text-sm capitalize">{l.entity_type.replace("_", " ")}</TableCell>
                   <TableCell>{getActionBadge(l.action)}</TableCell>
                   <TableCell className="font-mono text-xs">{l.entity_id ? l.entity_id.slice(0, 8) : "—"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{detailSummary(l)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">{detailReason(l) || "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">{detailReason(l) || "N/A"}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setViewLog(l); }}><Eye className="h-4 w-4" /></Button>
                   </TableCell>

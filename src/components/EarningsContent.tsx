@@ -187,7 +187,7 @@ export function EarningsContent() {
                   <TableCell className="text-sm">{COMMISSION_TYPE_LABELS[e.commission_type] || e.commission_type}</TableCell>
                   <TableCell className="font-semibold text-emerald-600">RM {e.commission_amount.toLocaleString()}</TableCell>
                   <TableCell><StatusBadge status={e.status} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{e.pay_cycle || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{e.pay_cycle || "N/A"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

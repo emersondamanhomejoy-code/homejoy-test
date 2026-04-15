@@ -475,7 +475,7 @@ export function ClaimsPage() {
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between py-1.5 text-sm gap-4">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value || "—"}</span>
+      <span className="text-right font-medium">{value || "N/A"}</span>
     </div>
   );
 
@@ -558,9 +558,9 @@ export function ClaimsPage() {
         {sectionCard("💰", "Bank Details", (
           <div>
             {infoRow("Description", claim.description)}
-            {infoRow("Bank", claim.bank_name || "—")}
-            {infoRow("Account", claim.bank_account || "—")}
-            {infoRow("Holder", claim.account_holder || "—")}
+            {infoRow("Bank", claim.bank_name || "N/A")}
+            {infoRow("Account", claim.bank_account || "N/A")}
+            {infoRow("Holder", claim.account_holder || "N/A")}
           </div>
         ))}
 

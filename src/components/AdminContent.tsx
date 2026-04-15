@@ -110,9 +110,9 @@ export function AdminContent({ tab }: AdminContentProps) {
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenant Info</div>
                     <div className="text-sm space-y-1">
                       <div>📞 {b.tenant_phone}</div>
-                      <div>✉️ {b.tenant_email || "—"}</div>
-                      <div>🪪 {b.tenant_ic_passport || "—"}</div>
-                      <div>👤 {b.tenant_gender || "—"} · {b.tenant_race || "—"} · {b.tenant_nationality || "—"}</div>
+                      <div>✉️ {b.tenant_email || "N/A"}</div>
+                      <div>🪪 {b.tenant_ic_passport || "N/A"}</div>
+                      <div>👤 {b.tenant_gender || "N/A"} · {b.tenant_race || "N/A"} · {b.tenant_nationality || "N/A"}</div>
                       <div>📅 Move-in: {b.move_in_date}</div>
                       <div>📝 Contract: {b.contract_months} months</div>
                     </div>
@@ -120,23 +120,23 @@ export function AdminContent({ tab }: AdminContentProps) {
                   <div className="space-y-3">
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work & Details</div>
                     <div className="text-sm space-y-1">
-                      <div>💼 {b.occupation || b.company || "—"}</div>
-                      <div>💰 RM{b.monthly_salary || "—"}/month</div>
-                      <div>👥 Pax: {b.pax_staying || "—"}</div>
+                      <div>💼 {b.occupation || b.company || "N/A"}</div>
+                      <div>💰 RM{b.monthly_salary || "N/A"}/month</div>
+                      <div>👥 Pax: {b.pax_staying || "N/A"}</div>
                       <div>🪪 Access Cards: {b.access_card_count || 0}</div>
                       <div>🅿️ Parking: {b.parking || "0"} {b.car_plate ? `(${b.car_plate})` : ""}</div>
                     </div>
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 1</div>
                     <div className="text-sm space-y-1">
-                      <div>👤 {b.emergency_1_name || b.emergency_name || "—"}</div>
-                      <div>📞 {b.emergency_1_phone || b.emergency_phone || "—"}</div>
-                      <div>🔗 {b.emergency_1_relationship || b.emergency_relationship || "—"}</div>
+                      <div>👤 {b.emergency_1_name || b.emergency_name || "N/A"}</div>
+                      <div>📞 {b.emergency_1_phone || b.emergency_phone || "N/A"}</div>
+                      <div>🔗 {b.emergency_1_relationship || b.emergency_relationship || "N/A"}</div>
                     </div>
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 2</div>
                     <div className="text-sm space-y-1">
-                      <div>👤 {b.emergency_2_name || "—"}</div>
-                      <div>📞 {b.emergency_2_phone || "—"}</div>
-                      <div>🔗 {b.emergency_2_relationship || "—"}</div>
+                      <div>👤 {b.emergency_2_name || "N/A"}</div>
+                      <div>📞 {b.emergency_2_phone || "N/A"}</div>
+                      <div>🔗 {b.emergency_2_relationship || "N/A"}</div>
                     </div>
                   </div>
                 </div>

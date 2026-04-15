@@ -551,7 +551,7 @@ export default function Index() {
                       const unitRooms = roomsData.filter(r => r.unit_id === selectedRoom.unit_id && r.id !== selectedRoom.id && r.status !== "Available");
                       if (unitRooms.length === 0) return <div>No housemates yet</div>;
                       return unitRooms.map(r => (
-                        <div key={r.id}>{r.room}: {[r.tenant_gender, r.tenant_race].filter(Boolean).join(", ") || "—"} ({r.pax_staying || 0} pax)</div>
+                        <div key={r.id}>{r.room}: {[r.tenant_gender, r.tenant_race].filter(Boolean).join(", ") || "N/A"} ({r.pax_staying || 0} pax)</div>
                       ));
                     })()}
                   </div>
@@ -760,7 +760,7 @@ export default function Index() {
                     <div className="text-sm font-semibold">📸 ANPR — Upload car photos (front & back)</div>
                     {Array.from({ length: Number(f.parkingCount) }, (_, i) => (
                       <div key={i} className="space-y-2">
-                        {Number(f.parkingCount) > 1 && <div className="text-sm font-medium">Car {i + 1}: {f.carPlates[i] || "—"}</div>}
+                        {Number(f.parkingCount) > 1 && <div className="text-sm font-medium">Car {i + 1}: {f.carPlates[i] || "N/A"}</div>}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <label className={lbl}>Front photo *</label>

@@ -188,9 +188,9 @@ export function AgentMoveInsContent() {
                 <TableRow key={b.id}>
                   <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}</TableCell>
                   <TableCell className="font-medium">{b.tenant_name}</TableCell>
-                  <TableCell>{b.room?.building || "—"}</TableCell>
+                  <TableCell>{b.room?.building || "N/A"}</TableCell>
                   <TableCell>{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
-                  <TableCell>{b.payment_method || "—"}</TableCell>
+                  <TableCell>{b.payment_method || "N/A"}</TableCell>
                   <TableCell><StatusBadge status={b.order_status} /></TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {format(new Date(b.created_at), "dd MMM yyyy")}
@@ -241,10 +241,10 @@ export function AgentMoveInsContent() {
           {viewItem && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Tenant</span><span className="font-medium">{viewItem.tenant_name}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span>{viewItem.room?.building || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span>{viewItem.room?.building || "N/A"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Unit / Room</span><span>{viewItem.room ? `${viewItem.room.unit} · ${viewItem.room.room}` : "—"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Agreement</span><span>{viewItem.agreement_signed ? "✅ Signed" : "❌ Not signed"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span>{viewItem.payment_method || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span>{viewItem.payment_method || "N/A"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Status</span><StatusBadge status={viewItem.order_status} /></div>
               {viewItem.move_in_reject_reason && (
                 <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">

@@ -100,9 +100,9 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
               <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenant Info</div>
               <div className="text-sm space-y-1">
                 <div>📞 {b.tenant_phone}</div>
-                <div>✉️ {b.tenant_email || "—"}</div>
-                <div>🪪 {b.tenant_ic_passport || "—"}</div>
-                <div>👤 {b.tenant_gender || "—"} · {b.tenant_race || "—"} · {b.tenant_nationality || "—"}</div>
+                <div>✉️ {b.tenant_email || "N/A"}</div>
+                <div>🪪 {b.tenant_ic_passport || "N/A"}</div>
+                <div>👤 {b.tenant_gender || "N/A"} · {b.tenant_race || "N/A"} · {b.tenant_nationality || "N/A"}</div>
                 <div>📅 Move-in: {b.move_in_date}</div>
                 <div>📝 Contract: {b.contract_months} months</div>
               </div>
@@ -110,9 +110,9 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
             <div className="space-y-3">
               <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work & Details</div>
               <div className="text-sm space-y-1">
-                <div>💼 {b.occupation || b.company || "—"}</div>
-                <div>💰 RM{b.monthly_salary || "—"}/month</div>
-                <div>👥 Pax: {b.pax_staying || "—"}</div>
+                <div>💼 {b.occupation || b.company || "N/A"}</div>
+                <div>💰 RM{b.monthly_salary || "N/A"}/month</div>
+                <div>👥 Pax: {b.pax_staying || "N/A"}</div>
                 <div>🪪 Access Cards: {b.access_card_count || 0}</div>
                 <div>🅿️ Parking: {b.parking || "0"} {b.car_plate ? `(${b.car_plate})` : ""}</div>
               </div>
@@ -237,7 +237,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                 paged.map(b => (
                   <TableRow key={b.id}>
                     <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}</TableCell>
-                    <TableCell>{b.room?.building || "—"}</TableCell>
+                    <TableCell>{b.room?.building || "N/A"}</TableCell>
                     <TableCell>{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
                     <TableCell className="font-medium">{b.tenant_name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
