@@ -11,16 +11,23 @@ Available, Available Soon, Pending, Occupied, Archived
 
 | From | To | Where |
 |------|-----|-------|
-| Available | Archived | Edit Unit & Room (requires Archived Reason) |
 | Available | Pending | Auto when booking submitted |
 | Available | Available Soon | Edit Unit & Room |
-| Available Soon | Pending | Auto when booking submitted |
-| Pending | Available | Admin Booking page (reject) |
-| Pending | Occupied | Admin Booking page (approve) |
-| Occupied | Available | Move-out page |
+| Available | Archived | Edit Unit & Room (requires Archived Reason) |
+| Pending | Available | Auto when booking rejected or cancelled |
+| Pending | Occupied | Auto when booking approved |
+| Occupied | Available | Move-out page OR booking cancelled |
 | Occupied | Available Soon | Move-out page |
 | Occupied | Archived | Move-out page |
 | Archived | Available | Edit Unit & Room |
+
+## Key Flow
+1. Booking Submitted → room Available → Pending
+2. Booking Approved → room Pending → Occupied (directly, no intermediate state)
+3. Booking Rejected → room Pending → Available
+4. Booking Cancelled → room Pending/Occupied → Available
+5. Move-in stages do NOT change room status (already Occupied from approval)
+6. Move-out → Occupied → Available / Available Soon / Archived
 
 ## Edit Page Status Dropdown
 
