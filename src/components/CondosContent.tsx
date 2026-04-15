@@ -326,8 +326,8 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
           };
           return (
           <div className="space-y-5">
-              <div className="flex justify-end">
-                <Button variant="outline" size="sm" onClick={toggleAllView} className="text-xs bg-card">
+               <div className="fixed top-4 right-4 z-50">
+                <Button variant="outline" size="sm" onClick={toggleAllView} className="text-xs bg-card shadow-md">
                   {allViewExpanded ? "Collapse All" : "Expand All"}
                 </Button>
               </div>

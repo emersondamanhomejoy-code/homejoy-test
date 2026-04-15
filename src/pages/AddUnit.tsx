@@ -228,8 +228,8 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
         }
       >
         <FormErrorBanner errors={errors} />
-        <div className="flex justify-end mb-2">
-          <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setAccordionValue(prev => prev.length === 3 ? [] : ["unit-info", "rooms", "carparks"])}>
+        <div className="fixed top-4 right-4 z-50">
+          <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setAccordionValue(prev => prev.length === 3 ? [] : ["unit-info", "rooms", "carparks"])}>
             {accordionValue.length === 3 ? "Collapse All" : "Expand All"}
           </Button>
         </div>
