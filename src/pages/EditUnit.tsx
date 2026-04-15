@@ -144,6 +144,9 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
     if (rc.status === "Available Soon" && !rc.available_date?.trim()) {
       toast.error("Available Date is required when setting status to Available Soon."); return;
     }
+    if (rc.status === "Archived" && !(rc as any).archived_reason?.trim()) {
+      toast.error("Archived Reason is required when setting status to Archived."); return;
+    }
     setEditingRoomId(null);
   };
 
@@ -637,28 +640,30 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           </div>
                           <div>
                             <label className="text-xs text-muted-foreground">Status</label>
-                            {rc.status === "Pending" || rc.status === "Available Soon" ? (
+                            {rc.status === "Pending" || rc.status === "Occupied" ? (
                               <>
                                 <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {rc.status === "Pending" ? "This status is controlled by Booking workflow." : "This status is controlled by Move Out workflow."}
+                                  {rc.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
                                 </p>
                               </>
                             ) : (
                               <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => {
                                 upCP("status", e.target.value);
                                 if (e.target.value === "Available Soon" && !rc.available_date) upCP("available_date", "");
+                                if (e.target.value !== "Archived") upCP("archived_reason", "");
                               }}>
                                 {rc.status === "Available" && (
                                   <>
                                     <option value="Available">Available</option>
+                                    <option value="Available Soon">Available Soon</option>
                                     <option value="Archived">Archived</option>
                                   </>
                                 )}
-                                {rc.status === "Occupied" && (
+                                {rc.status === "Available Soon" && (
                                   <>
-                                    <option value="Occupied">Occupied</option>
                                     <option value="Available Soon">Available Soon</option>
+                                    <option value="Available">Available</option>
                                   </>
                                 )}
                                 {rc.status === "Archived" && (
@@ -669,8 +674,13 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                                 )}
                               </select>
                             )}
-                            {rc.status === "Occupied" && <p className="text-xs text-muted-foreground mt-1">Only &quot;Available Soon&quot; transition allowed here. Full release via Move Out workflow.</p>}
                           </div>
+                          {rc.status === "Archived" && (
+                            <div>
+                              <label className="text-xs text-muted-foreground">Archived Reason *</label>
+                              <input className={`${inputClass} w-full`} placeholder="Why is this carpark archived?" value={(rc as any).archived_reason || ""} onChange={e => upCP("archived_reason", e.target.value)} />
+                            </div>
+                          )}
                           {rc.status === "Available Soon" && (
                             <div>
                               <label className="text-xs text-muted-foreground">Available Date *</label>
