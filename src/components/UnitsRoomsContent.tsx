@@ -742,6 +742,9 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                 {(viewingRoom as any).optional_features && Array.isArray((viewingRoom as any).optional_features) && (viewingRoom as any).optional_features.length > 0 && (
                   <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Features:</span> <span className="font-medium">{(viewingRoom as any).optional_features.join(", ")}</span></div>
                 )}
+                {viewingRoom.status === "Archived" && (viewingRoom as any).archived_reason && (
+                  <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Archived Reason:</span> <span className="font-medium text-destructive">{(viewingRoom as any).archived_reason}</span></div>
+                )}
                 {viewingRoom.internal_only && (
                   <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">Yes</span></div>
                 )}
