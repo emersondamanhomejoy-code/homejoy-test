@@ -698,10 +698,9 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       </div>
 
       <div className="flex justify-end mb-2">
-        <div className="flex gap-1">
-          <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setViewAccordion(["rooms", "carparks", "unit", "building"])}>Expand All</Button>
-          <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setViewAccordion([])}>Collapse All</Button>
-        </div>
+        <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setViewAccordion(prev => prev.length === 4 ? [] : ["rooms", "carparks", "unit", "building"])}>
+          {viewAccordion.length === 4 ? "Collapse All" : "Expand All"}
+        </Button>
       </div>
       <Accordion type="multiple" value={viewAccordion} onValueChange={setViewAccordion} className="space-y-2">
         {/* Room Summary — FIRST */}
