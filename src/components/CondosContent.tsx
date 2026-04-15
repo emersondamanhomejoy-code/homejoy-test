@@ -68,14 +68,14 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
       const allRooms = condoUnits.flatMap(u => u.rooms || []);
       const rooms = allRooms.filter(r => r.room_type !== "Car Park");
       const carparks = allRooms.filter(r => r.room_type === "Car Park");
-      const availableUnits = condoUnits.filter(u => (u.rooms || []).some(r => r.room_type !== "Car Park" && r.status === "Available")).length;
+      const availableUnits = condoUnits.filter(u => (u.rooms || []).some(r => r.room_type !== "Car Park" && (r.status === "Available" || r.status === "Available Soon"))).length;
       map[c.id] = {
         totalUnits: condoUnits.length,
         totalRooms: rooms.length,
         totalCarparks: carparks.length,
         availableUnits,
-        availableRooms: rooms.filter(r => r.status === "Available").length,
-        availableCarparks: carparks.filter(r => r.status === "Available").length,
+        availableRooms: rooms.filter(r => r.status === "Available" || r.status === "Available Soon").length,
+        availableCarparks: carparks.filter(r => r.status === "Available" || r.status === "Available Soon").length,
       };
     }
     return map;

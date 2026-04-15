@@ -779,7 +779,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   }
 
 
-  const availableRooms = unitRooms.filter(r => r.status === "Available").length;
+  const availableRooms = unitRooms.filter(r => r.status === "Available" || r.status === "Available Soon").length;
 
   return (
     <div className="space-y-4">

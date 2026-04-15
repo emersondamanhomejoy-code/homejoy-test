@@ -44,7 +44,7 @@ export default function AgentDashboard() {
 
   // Available rooms
   const availableRooms = useMemo(() => {
-    return units.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park" && r.status === "Available"));
+    return units.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park" && (r.status === "Available" || r.status === "Available Soon")));
   }, [units]);
 
   // My bookings
