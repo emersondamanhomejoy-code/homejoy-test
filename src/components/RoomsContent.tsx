@@ -391,7 +391,7 @@ export function RoomsContent() {
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingRoom(r)}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => { setEditUnitId(r.unit_id); setEditFocusRoomId(r.id); }}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditRoomId(r.id)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
@@ -544,13 +544,12 @@ export function RoomsContent() {
         })()}
       </StandardModal>
 
-      {/* Edit Unit Modal */}
-      {editUnitId && (
-        <EditUnit
+      {/* Edit Room Modal */}
+      {editRoomId && (
+        <EditRoom
           open={true}
-          onOpenChange={(o) => { if (!o) { setEditUnitId(null); setEditFocusRoomId(undefined); } }}
-          unitId={editUnitId}
-          focusRoomId={editFocusRoomId}
+          onOpenChange={(o) => { if (!o) setEditRoomId(null); }}
+          roomId={editRoomId}
         />
       )}
     </StandardPageLayout>
