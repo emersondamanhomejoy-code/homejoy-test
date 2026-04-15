@@ -167,7 +167,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                     if (!user) return;
                     await updateBookingStatus.mutateAsync({
                       id: b.id,
-                      status: "cancelled" as any,
+                      order_status: "booking_cancelled",
                       reviewed_by: user.id,
                       reject_reason: cancelReason,
                     });
