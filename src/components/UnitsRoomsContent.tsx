@@ -669,7 +669,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
           {photoUrls.length > 0 && (
             <AccordionItem value="photos" className="border rounded-lg px-4">
               <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Photos</AccordionTrigger>
-              <AccordionContent forceMount className="data-[state=closed]:hidden">
+              <AccordionContent>
                 <div className="flex flex-wrap gap-3">
                   {photoUrls.map((url: string, i: number) => (
                     <img key={i} src={url} alt={`Photo ${i + 1}`} loading="lazy" className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
