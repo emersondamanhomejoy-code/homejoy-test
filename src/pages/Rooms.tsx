@@ -447,8 +447,7 @@ function AgentRoomViewContent({ room, assetTab }: { room: any; assetTab: "rooms"
     })();
     return () => { cancelled = true; };
   }, [otherRooms]);
-
-
+  const effectiveRemaining = (room.max_pax || 0) - (room.pax_staying || 0);
 
   const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => {
     if (!value || value === "—" || value === "") return null;
