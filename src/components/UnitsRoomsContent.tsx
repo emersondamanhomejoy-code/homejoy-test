@@ -39,6 +39,7 @@ export function UnitsRoomsContent() {
   const [currentPage, setCurrentPage] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
+  const [isViewingRoom, setIsViewingRoom] = useState(false);
   const [addUnitOpen, setAddUnitOpen] = useState(false);
   const [editUnitId, setEditUnitId] = useState<string | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
@@ -341,13 +342,17 @@ export function UnitsRoomsContent() {
       {/* View Details Modal */}
       <StandardModal
         open={!!viewingUnit}
-        onOpenChange={open => { if (!open) setViewingUnit(null); }}
+        onOpenChange={open => { if (!open) { setViewingUnit(null); setIsViewingRoom(false); } }}
         title={`Unit Details — ${viewingUnit?.building} · ${viewingUnit?.unit}`}
         size="lg"
         hideCancel
-        footer={<Button variant="outline" onClick={() => setViewingUnit(null)}>Close</Button>}
+        footer={
+          isViewingRoom
+            ? <Button variant="outline" onClick={() => { const evt = new CustomEvent('back-to-unit'); window.dispatchEvent(evt); }}>Back to Unit Details</Button>
+            : <Button variant="outline" onClick={() => setViewingUnit(null)}>Close</Button>
+        }
       >
-        {viewingUnit && <UnitViewContent unit={viewingUnit} condosData={condosData} isAdmin={isAdmin} />}
+        {viewingUnit && <UnitViewContent unit={viewingUnit} condosData={condosData} isAdmin={isAdmin} onViewingRoomChange={(room) => setIsViewingRoom(!!room)} />}
       </StandardModal>
 
       {/* Add Unit Modal */}
@@ -377,9 +382,10 @@ interface AccessItem {
   instruction: string;
 }
 
-function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData: any[]; isAdmin: boolean }) {
+function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { unit: Unit; condosData: any[]; isAdmin: boolean; onViewingRoomChange?: (room: Room | null) => void }) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
+  const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
+  const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
@@ -387,6 +393,13 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   const remainingPax = unit.unit_max_pax - occupiedPax;
   const occupiedCarparks = unitCarparks.filter(r => r.status === "Occupied").length;
   const remainingCarparks = unitCarparks.length - occupiedCarparks;
+
+  // Listen for back-to-unit event from parent footer button
+  useEffect(() => {
+    const handler = () => setViewingRoom(null);
+    window.addEventListener('back-to-unit', handler);
+    return () => window.removeEventListener('back-to-unit', handler);
+  }, []);
 
   // Match condo by building name
   const condo = condosData.find(c => c.name === unit.building) || null;
@@ -589,10 +602,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     const roomPhotoUrl = `${window.location.origin}/view/${unit.id}?room=${viewingRoom.id}&section=photos`;
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setViewingRoom(null)}>
-            <ArrowLeft className="h-4 w-4" /> Back to Unit
-          </Button>
+        <div className="flex items-center justify-end">
           {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
