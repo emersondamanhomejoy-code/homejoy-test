@@ -389,6 +389,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
+  const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
@@ -604,91 +605,146 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   if (viewingRoom) {
     const isCarpark = viewingRoom.room_type === "Car Park" || (viewingRoom.room || "").toLowerCase().startsWith("carpark");
     const roomPhotoUrl = `${window.location.origin}/view/${unit.id}?room=${viewingRoom.id}&section=photos`;
+    const photoUrls = Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0
+      ? (viewingRoom.photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`)
+      : [];
+    const effectiveRemaining = (viewingRoom.max_pax || 0) - (viewingRoom.pax_staying || 0);
+
+    // Unit room summary (housemates from all rooms in the unit)
+    const allUnitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
+
+
     return (
       <div className="space-y-4">
-        {/* Copy room photos link - upper right */}
-        {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
-          <div className="flex justify-end">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, isCarpark ? "Carpark photos link" : "Room photos link")}>
-                  <Image className="h-3.5 w-3.5" /> Copy {isCarpark ? "Carpark" : "Room"} Photos Link
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy link showing only this {isCarpark ? "carpark's" : "room's"} photos</TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-        {/* Single Room section */}
-        <div className="border rounded-lg p-4 space-y-4">
-          <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
-          {/* Room photos */}
-          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (() => {
-            const photoUrls = (viewingRoom.photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
-            return (
-              <div className="flex flex-wrap gap-3">
-                {photoUrls.map((url: string, i: number) => (
-                  <img key={i} src={url} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
-                ))}
-              </div>
-            );
-          })()}
-          {/* Room details */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            {!isCarpark && (
-              <>
-                <div><span className="text-muted-foreground">Room Title:</span> <span className="font-medium">{(viewingRoom as any).room_title || "—"}</span></div>
-                <div><span className="text-muted-foreground">Room Category:</span> <span className="font-medium">{(viewingRoom as any).room_category || viewingRoom.room_type || "—"}</span></div>
-                <div><span className="text-muted-foreground">Wall Type:</span> <span className="font-medium">{(viewingRoom as any).wall_type || "—"}</span></div>
-                <div><span className="text-muted-foreground">Bed Type:</span> <span className="font-medium">{viewingRoom.bed_type || "—"}</span></div>
-                <div><span className="text-muted-foreground">Max Pax:</span> <span className="font-medium">{viewingRoom.max_pax}</span></div>
-                <div><span className="text-muted-foreground">Pax Staying:</span> <span className="font-medium">{viewingRoom.pax_staying || 0}</span></div>
-              </>
+        {/* Room name header + copy link + expand/collapse all */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold">{isCarpark ? `Carpark ${viewingRoom.room.replace(/^Carpark\s*/i, "")}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
+          <div className="flex items-center gap-2">
+            {photoUrls.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, isCarpark ? "Carpark photos link" : "Room photos link")}>
+                    <Image className="h-3.5 w-3.5" /> Copy Photos Link
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy link showing only this {isCarpark ? "carpark's" : "room's"} photos</TooltipContent>
+              </Tooltip>
             )}
-            <div><span className="text-muted-foreground">Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
-            <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
-            <div><span className="text-muted-foreground">Available Date:</span> <span className="font-medium">{viewingRoom.available_date || "—"}</span></div>
-            {!isCarpark && (
-              <>
-                <div><span className="text-muted-foreground">Gender:</span> <span className="font-medium">{viewingRoom.tenant_gender || "—"}</span></div>
-                <div><span className="text-muted-foreground">Race:</span> <span className="font-medium">{viewingRoom.tenant_race || "—"}</span></div>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRoomAccordion(prev => prev.length >= 4 ? [] : ["photos", "details", "status", "summary"])}>
+              {roomAccordion.length >= 4 ? "Collapse All" : "Expand All"}
+            </Button>
+          </div>
+        </div>
+
+        <Accordion type="multiple" value={roomAccordion} onValueChange={setRoomAccordion} className="space-y-2">
+          {/* 1. Room Photos */}
+          {photoUrls.length > 0 && (
+            <AccordionItem value="photos" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Photos</AccordionTrigger>
+              <AccordionContent>
+                <div className="flex flex-wrap gap-3">
+                  {photoUrls.map((url: string, i: number) => (
+                    <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* 2. Room Details */}
+          <AccordionItem value="details" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Details</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                {!isCarpark && (
+                  <>
+                    <div><span className="text-muted-foreground">Room Title:</span> <span className="font-medium">{(viewingRoom as any).room_title || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Room Type:</span> <span className="font-medium">{(viewingRoom as any).room_category || viewingRoom.room_type || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{formatUnitType(viewingRoom.unit_type) || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Bed Type:</span> <span className="font-medium">{viewingRoom.bed_type || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Wall Type:</span> <span className="font-medium">{(viewingRoom as any).wall_type || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Listed Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
+                    <div><span className="text-muted-foreground">Pax Allowed:</span> <span className="font-medium">{effectiveRemaining} remaining</span> <span className="text-muted-foreground text-xs">({viewingRoom.pax_staying || 0}/{viewingRoom.max_pax})</span></div>
+                  </>
+                )}
+                {isCarpark && (
+                  <>
+                    <div><span className="text-muted-foreground">Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
+                    <div><span className="text-muted-foreground">Parking Lot:</span> <span className="font-medium">{(viewingRoom as any).parking_lot || "—"}</span></div>
+                  </>
+                )}
                 {(viewingRoom as any).optional_features && Array.isArray((viewingRoom as any).optional_features) && (viewingRoom as any).optional_features.length > 0 && (
                   <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Features:</span> <span className="font-medium">{(viewingRoom as any).optional_features.join(", ")}</span></div>
                 )}
-              </>
-            )}
-            {isCarpark && (
-              <div><span className="text-muted-foreground">Parking Lot:</span> <span className="font-medium">{(viewingRoom as any).parking_lot || "—"}</span></div>
-            )}
-            {isAdmin && (
-              <>
-                <div><span className="text-muted-foreground">Assigned To:</span> <span className="font-medium">{(viewingRoom as any).assigned_to || "—"}</span></div>
-                <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Internal Remark:</span> <span className="font-medium">{(viewingRoom as any).internal_remark || "—"}</span></div>
-              </>
-            )}
-            <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
-          </div>
-          {/* Housemates */}
-          {!isCarpark && Array.isArray(viewingRoom.housemates) && viewingRoom.housemates.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold">Housemates</h4>
-              <div className="space-y-1 text-sm">
-                {viewingRoom.housemates.map((h: any, i: number) => (
-                  <div key={i} className="flex gap-4">
-                    {typeof h === "object" ? (
-                      <>
-                        <span className="font-medium">{h.name || "—"}</span>
-                        <span className="text-muted-foreground">{h.gender || ""}</span>
-                        <span className="text-muted-foreground">{h.nationality || ""}</span>
-                      </>
-                    ) : <span>{String(h)}</span>}
-                  </div>
-                ))}
+                <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
               </div>
-            </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 3. Status & Occupancy */}
+          <AccordionItem value="status" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Status & Occupancy</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Room Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
+                <div><span className="text-muted-foreground">Available On:</span> <span className="font-medium">{viewingRoom.available_date || "—"}</span></div>
+                {!isCarpark && (
+                  <>
+                    <div><span className="text-muted-foreground">Tenant Gender:</span> <span className="font-medium">{viewingRoom.tenant_gender || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Tenant Race:</span> <span className="font-medium">{viewingRoom.tenant_race || "—"}</span></div>
+                  </>
+                )}
+                {isAdmin && (
+                  <>
+                    <div><span className="text-muted-foreground">Assigned To:</span> <span className="font-medium">{(viewingRoom as any).assigned_to || "—"}</span></div>
+                    <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Internal Remark:</span> <span className="font-medium">{(viewingRoom as any).internal_remark || "—"}</span></div>
+                  </>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 4. Unit Summary (Roommate Details) */}
+          {!isCarpark && (
+            <AccordionItem value="summary" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Unit Summary</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
+                    <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
+                    <div><span className="text-muted-foreground">Total Staying:</span> <span className="font-medium">{occupiedPax}</span></div>
+                    <div><span className="text-muted-foreground">Remaining Pax:</span> <span className={`font-medium ${remainingPax > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>{remainingPax}</span></div>
+                  </div>
+                  {allUnitRooms.length > 0 && (
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Roommates</h4>
+                      {allUnitRooms.map((r) => {
+                        const isCurrentRoom = r.id === viewingRoom.id;
+                        const housemates = Array.isArray(r.housemates) ? r.housemates : [];
+                        const roomLabel = r.room.replace(/^Room\s+/i, "");
+                        return (
+                          <div key={r.id} className={`pl-2 border-l-2 py-1 ${isCurrentRoom ? "border-primary bg-primary/5 rounded-r" : "border-muted"}`}>
+                            <div className="font-medium text-xs">Room {roomLabel} — <StatusBadge status={r.status} availableDate={r.available_date} /> {r.pax_staying || 0}/{r.max_pax} pax</div>
+                            {housemates.length > 0 ? housemates.map((h: any, i: number) => (
+                              <div key={i} className="text-xs text-muted-foreground pl-2">
+                                {typeof h === "object" ? `${h.name || "—"} · ${h.gender || ""} · ${h.nationality || ""}` : String(h)}
+                              </div>
+                            )) : (
+                              <div className="text-xs text-muted-foreground pl-2 italic">Vacant</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           )}
-        </div>
-      {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
+        </Accordion>
+
+        {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
       </div>
     );
   }
