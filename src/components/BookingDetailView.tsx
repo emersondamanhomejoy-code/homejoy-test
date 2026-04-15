@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { Booking, useUpdateBookingStatus, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
+import { Booking, useUpdateOrderStatus, BOOKING_TYPE_LABELS, BookingType, ORDER_STATUS_LABELS, OrderStatus } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms, useUnits } from "@/hooks/useRooms";
-import { useMoveIns } from "@/hooks/useMoveIns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { StandardModal } from "@/components/ui/standard-modal";
+import { StatusBadge } from "@/components/StatusBadge";
 import { FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,10 +27,9 @@ interface Props {
 export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const updateBookingStatus = useUpdateBookingStatus();
+  const updateOrderStatus = useUpdateOrderStatus();
   const { data: roomsData = [] } = useRooms();
   const { data: unitsData = [] } = useUnits();
-  const { data: moveInsData = [] } = useMoveIns();
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -44,34 +43,6 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const unitCfg = room ? unitsData.find(u => u.id === room.unit_id) : null;
   const moveInCost = b.move_in_cost as any;
 
-  // Find related move-in record
-  const relatedMoveIn = useMemo(() => {
-    return moveInsData.find(m => m.booking_id === b.id);
-  }, [moveInsData, b.id]);
-
-  // Derive move-in status display
-  const moveInStatusDisplay = useMemo(() => {
-    if (b.status === "rejected") return "Not Proceeded";
-    if (b.status === "cancelled") {
-      // If move-in is closed or doesn't exist, show "Not Proceeded"
-      if (!relatedMoveIn || relatedMoveIn.status === "closed" || relatedMoveIn.status === "rejected") return "Not Proceeded";
-    }
-    if ((b.status === "approved" || b.status === "cancelled") && relatedMoveIn) {
-      const s = relatedMoveIn.status;
-      const map: Record<string, string> = {
-        ready_for_move_in: "Ready for Move-in",
-        submitted: "Submitted",
-        approved: "Approved",
-        rejected: "Not Proceeded",
-        reversed: "Reversed",
-        closed: "Not Proceeded",
-      };
-      return map[s] || s;
-    }
-    if (b.status === "approved") return "Ready for Move-in";
-    return "Pending Booking Review";
-  }, [b.status, relatedMoveIn]);
-
   const carParkSelections: { roomId: string; carPlate: string }[] = useMemo(() => {
     const docs = b.documents as any;
     return docs?.carParkSelections || [];
@@ -84,30 +55,12 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     });
   }, [carParkSelections, roomsData]);
 
-  const statusBadge = (status: string, variant?: "booking" | "movein") => {
-    let cls = "";
-    if (variant === "movein") {
-      cls = status === "Not Proceeded" ? "bg-gray-500/20 text-gray-500"
-        : status === "Ready for Move-in" ? "bg-blue-500/20 text-blue-600"
-        : status === "Approved" ? "bg-green-500/20 text-green-600"
-        : status === "Submitted" ? "bg-yellow-500/20 text-yellow-600"
-        : status === "Pending Booking Review" ? "bg-muted text-muted-foreground"
-        : "bg-orange-500/20 text-orange-600";
-    } else {
-      cls = status === "submitted" ? "bg-yellow-500/20 text-yellow-600"
-        : status === "approved" ? "bg-green-500/20 text-green-600"
-        : status === "cancelled" ? "bg-gray-500/20 text-gray-500"
-        : "bg-red-500/20 text-red-600";
-    }
-    return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${cls}`}>{variant === "movein" ? status : status.toUpperCase()}</span>;
-  };
-
   const handleApprove = async () => {
     if (!user) return;
     const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
-    const history = [...(b.history || []), { action: "approved", by: user.email, at: new Date().toISOString() }];
-    await updateBookingStatus.mutateAsync({
-      id: b.id, status: "approved", reviewed_by: user.id,
+    const history = [...(b.history || []), { action: "booking_approved", by: user.email, at: new Date().toISOString() }];
+    await updateOrderStatus.mutateAsync({
+      id: b.id, order_status: "booking_approved", reviewed_by: user.id,
       room_id: b.room_id, tenant_name: b.tenant_name,
       tenant_gender: b.tenant_gender, tenant_race: b.tenant_race,
       tenant_nationality: b.tenant_nationality,
@@ -120,7 +73,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       action: "approve_booking", entity_type: "booking", entity_id: b.id,
       details: { tenant_name: b.tenant_name, room: info ? `${info.building} ${info.unit} ${info.room}` : "" },
     });
-    toast.success("Booking approved — Move-in record created");
+    toast.success("Booking approved");
     setShowApproveDialog(false);
     onOpenChange(false);
   };
@@ -128,9 +81,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const handleReject = async () => {
     if (!user || !rejectReason.trim()) { toast.error("Please enter a reject reason"); return; }
     const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
-    const history = [...(b.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
-    await updateBookingStatus.mutateAsync({
-      id: b.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason,
+    const history = [...(b.history || []), { action: "booking_rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
+    await updateOrderStatus.mutateAsync({
+      id: b.id, order_status: "booking_rejected", reviewed_by: user.id, reject_reason: rejectReason,
       room_id: b.room_id, carParkIds, history,
     });
     queryClient.invalidateQueries({ queryKey: ["rooms"] });
@@ -148,9 +101,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     if (!user || !cancelReason.trim()) { toast.error("Cancel reason is required"); return; }
     if (!cancelResolutionType) { toast.error("Please select a resolution type"); return; }
     const carParkIds = carParkSelections.map(s => s.roomId).filter(Boolean);
-    const history = [...(b.history || []), { action: "cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason, resolution_type: cancelResolutionType }];
-    await updateBookingStatus.mutateAsync({
-      id: b.id, status: "cancelled" as any, reviewed_by: user.id, reject_reason: cancelReason,
+    const history = [...(b.history || []), { action: "booking_cancelled", by: user.email, at: new Date().toISOString(), reason: cancelReason, resolution_type: cancelResolutionType }];
+    await updateOrderStatus.mutateAsync({
+      id: b.id, order_status: "booking_cancelled", reviewed_by: user.id, reject_reason: cancelReason,
       room_id: b.room_id, carParkIds, history,
       resolution_type: cancelResolutionType,
     });
@@ -171,15 +124,20 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     const history = [...(b.history || []), { action: "resubmitted", by: user.email, at: new Date().toISOString() }];
     const { error } = await supabase
       .from("bookings")
-      .update({ status: "submitted", reject_reason: "", reviewed_by: null, reviewed_at: null, history, updated_at: new Date().toISOString() })
+      .update({ order_status: "booking_submitted", status: "submitted", reject_reason: "", reviewed_by: null, reviewed_at: null, history, updated_at: new Date().toISOString() })
       .eq("id", b.id);
     if (error) { toast.error("Failed to resubmit"); return; }
+    // Re-set room to Pending on resubmit
+    if (b.room_id) {
+      await supabase.from("rooms").update({ status: "Pending" }).eq("id", b.room_id);
+    }
     await supabase.from("activity_logs").insert({
       actor_id: user.id, actor_email: user.email || "",
       action: "resubmit_booking", entity_type: "booking", entity_id: b.id,
       details: { tenant_name: b.tenant_name },
     });
     queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    queryClient.invalidateQueries({ queryKey: ["rooms"] });
     toast.success("Booking resubmitted");
     onOpenChange(false);
   };
@@ -220,9 +178,9 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const carparkFees: { label: string; unitPrice: number; qty: number; total: number }[] = moveInCost?.carparkFees || [];
   const carparkRental = moveInCost?.carparkRental || 0;
 
-  // Footer actions based on status
+  // Footer actions based on order_status
   const footerActions = () => {
-    if (b.status === "submitted") {
+    if (b.order_status === "booking_submitted") {
       return (
         <>
           <Button variant="ghost" className="hover:bg-accent/20 hover:text-accent" onClick={() => setShowCancelDialog(true)}>Cancel</Button>
@@ -231,7 +189,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         </>
       );
     }
-    if (b.status === "rejected") {
+    if (b.order_status === "booking_rejected") {
       return (
         <>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
@@ -239,15 +197,17 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         </>
       );
     }
-    if (b.status === "approved") {
-      // Only show terminate if move-in is NOT yet approved
-      const moveInAlreadyApproved = relatedMoveIn?.status === "approved";
-      if (moveInAlreadyApproved) return null;
+    if (b.order_status === "booking_approved") {
       return (
         <Button variant="destructive" onClick={() => setShowCancelDialog(true)}>Terminate Booking</Button>
       );
     }
-    return null; // cancelled — close only
+    if (b.order_status === "move_in_submitted" || b.order_status === "move_in_rejected") {
+      return (
+        <Button variant="destructive" onClick={() => setShowCancelDialog(true)}>Terminate Booking</Button>
+      );
+    }
+    return null; // move_in_approved or cancelled — close only
   };
 
   return (
@@ -261,28 +221,41 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       >
         <div className="space-y-4">
 
-          {/* SECTION A – Booking Status Summary */}
-          {sectionCard("Booking Status Summary", (
+          {/* SECTION A – Order Status Summary */}
+          {sectionCard("Order Status Summary", (
             <div>
               {infoRow("Booking ID", <span className="font-mono text-xs">{b.id.slice(0, 8)}…</span>)}
               {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
-              {infoRow("Booking Status", statusBadge(b.status))}
-              {infoRow("Move-in Status", statusBadge(moveInStatusDisplay, "movein"))}
+              {infoRow("Order Status", <StatusBadge status={b.order_status} />)}
               {b.resolution_type && infoRow("Resolution Type", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
               {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
               {infoRow("Agent", getAgentName(b.submitted_by))}
               {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
               {b.reviewed_by && infoRow("Reviewed By", getAgentName(b.reviewed_by))}
 
-              {/* Reason callout */}
-              {b.status === "rejected" && b.reject_reason && (
+              {/* Move-in details if applicable */}
+              {(b.order_status === "move_in_submitted" || b.order_status === "move_in_approved" || b.order_status === "move_in_rejected") && (
+                <>
+                  {infoRow("Agreement Signed", b.agreement_signed ? "Yes ✅" : "No ❌")}
+                  {infoRow("Payment Method", b.payment_method || "—")}
+                  {b.move_in_reviewed_at && infoRow("Move-in Reviewed At", format(new Date(b.move_in_reviewed_at), "dd MMM yyyy, HH:mm"))}
+                  {b.move_in_reviewed_by && infoRow("Move-in Reviewed By", getAgentName(b.move_in_reviewed_by))}
+                </>
+              )}
+
+              {b.order_status === "booking_rejected" && b.reject_reason && (
                 <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm mt-2">
                   <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
                 </div>
               )}
-              {b.status === "cancelled" && b.reject_reason && (
+              {b.order_status === "booking_cancelled" && b.reject_reason && (
                 <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm mt-2">
                   <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
+                </div>
+              )}
+              {b.order_status === "move_in_rejected" && b.move_in_reject_reason && (
+                <div className="bg-orange-500/10 text-orange-700 rounded-lg p-3 text-sm mt-2">
+                  <span className="font-semibold">Move-in Reject Reason:</span> {b.move_in_reject_reason}
                 </div>
               )}
             </div>
@@ -469,7 +442,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             <AlertDialogTitle>Approve Booking?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to approve this booking for <strong>{b.tenant_name}</strong>?
-              Room/carpark will be marked as <strong>Pending</strong>, a Move-in record will be auto-created, and a tenant record will be created.
+              Room/carpark will be marked as <strong>Pending</strong> and a tenant record will be created.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -488,11 +461,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             <DialogTitle>Reject Booking</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">
-              {b.status === "approved" 
-                ? "This will cancel the booking, close the related move-in record, and release all pending room/carpark holds."
-                : "Please provide a resolution type and reason for cancelling this booking."}
-            </p>
+            <p className="text-sm text-muted-foreground">Please provide a reason for rejecting this booking.</p>
             <Textarea placeholder="Enter reject reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3} />
           </div>
           <DialogFooter>
@@ -506,7 +475,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
       <Dialog open={showCancelDialog} onOpenChange={(open) => { if (!open) { setShowCancelDialog(false); setCancelReason(""); setCancelResolutionType(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{b.status === "approved" ? "Terminate Approved Booking" : "Cancel Booking"}</DialogTitle>
+            <DialogTitle>{b.order_status === "booking_submitted" ? "Cancel Booking" : "Terminate Booking"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
@@ -529,7 +498,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCancelDialog(false); setCancelReason(""); setCancelResolutionType(""); }}>Go Back</Button>
             <Button variant="destructive" onClick={handleCancel} disabled={!cancelReason.trim() || !cancelResolutionType}>
-              {b.status === "approved" ? "Terminate Booking" : "Cancel Booking"}
+              {b.order_status === "booking_submitted" ? "Cancel Booking" : "Terminate Booking"}
             </Button>
           </DialogFooter>
         </DialogContent>

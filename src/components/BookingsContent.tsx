@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { useBookings, Booking, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
+import { useState, useMemo } from "react";
+import { useBookings, Booking, ORDER_STATUS_LABELS, OrderStatus } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,8 +19,19 @@ import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { labelClass } from "@/lib/ui-constants";
+import { BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
+import { useEffect, useState as useState2 } from "react";
 
-const STATUS_TABS = ["all", "submitted", "approved", "rejected", "cancelled"] as const;
+const STATUS_TABS: { value: string; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "booking_submitted", label: "Booking Submitted" },
+  { value: "booking_approved", label: "Booking Approved" },
+  { value: "booking_rejected", label: "Booking Rejected" },
+  { value: "booking_cancelled", label: "Booking Cancelled" },
+  { value: "move_in_submitted", label: "Move-in Submitted" },
+  { value: "move_in_approved", label: "Move-in Approved" },
+  { value: "move_in_rejected", label: "Move-in Rejected" },
+];
 
 interface UserInfo {
   id: string;
@@ -38,7 +49,7 @@ export function BookingsContent() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [statusTab, setStatusTab] = useState<string>("submitted");
+  const [statusTab, setStatusTab] = useState<string>("booking_submitted");
   const [bookingTypeFilter, setBookingTypeFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
@@ -49,8 +60,6 @@ export function BookingsContent() {
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-
-  // Cancel/delete removed from table — handled inside detail modal
 
   // Fetch users/agents
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -94,13 +103,13 @@ export function BookingsContent() {
   // Status counts for tabs
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: allBookings.length };
-    for (const b of allBookings) counts[b.status] = (counts[b.status] || 0) + 1;
+    for (const b of allBookings) counts[b.order_status] = (counts[b.order_status] || 0) + 1;
     return counts;
   }, [allBookings]);
 
   const filtered = useMemo(() => {
     let list = allBookings;
-    if (statusTab !== "all") list = list.filter(b => b.status === statusTab);
+    if (statusTab !== "all") list = list.filter(b => b.order_status === statusTab);
     if (bookingTypeFilter !== "all") list = list.filter(b => (b.booking_type || "room_only") === bookingTypeFilter);
     if (search.trim()) {
       const s = search.toLowerCase();
@@ -113,7 +122,7 @@ export function BookingsContent() {
     if (dateTo) list = list.filter(b => b.created_at <= dateTo + "T23:59:59");
     return sortData(list, (b: Booking, key: string) => {
       const info = getRoomInfo(b);
-      const map: Record<string, any> = { building: info?.building || "", unit: info?.unit || "", room: info?.room || "", booking_type: b.booking_type || "room_only", tenant_name: b.tenant_name, monthly_salary: b.monthly_salary, agent: getAgentName(b.submitted_by), created_at: b.created_at, updated_at: b.updated_at, status: b.status };
+      const map: Record<string, any> = { building: info?.building || "", unit: info?.unit || "", room: info?.room || "", booking_type: b.booking_type || "room_only", tenant_name: b.tenant_name, monthly_salary: b.monthly_salary, agent: getAgentName(b.submitted_by), created_at: b.created_at, updated_at: b.updated_at, order_status: b.order_status };
       return map[key];
     });
   }, [allBookings, statusTab, bookingTypeFilter, search, sort, locationFilter, buildingFilter, agentFilter, dateFrom, dateTo, roomsData, agents, users]);
@@ -129,14 +138,10 @@ export function BookingsContent() {
     return <Badge variant="secondary" className={`font-medium border-0 text-xs ${cls}`}>{label}</Badge>;
   };
 
-  // Cancel/delete handled inside BookingDetailView modal
-
   return (
     <StandardPageLayout title="Bookings" actionLabel="Create Booking" actionIcon={<Plus className="h-4 w-4" />} onAction={() => setShowCreateDialog(true)}>
-      {/* Create Booking Dialog */}
       <CreateBookingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
 
-      {/* View Booking Dialog */}
       {viewBooking && (
         <BookingDetailView
           booking={allBookings.find(bk => bk.id === viewBooking.id) || viewBooking}
@@ -146,24 +151,20 @@ export function BookingsContent() {
         />
       )}
 
-      {/* Edit booking removed — all actions inside detail modal */}
-
-      {/* Cancel/Delete dialogs removed — handled inside BookingDetailView */}
-
       {/* Status tabs */}
-      <div className="flex items-center gap-1 mb-3">
+      <div className="flex items-center gap-1 mb-3 flex-wrap">
         {STATUS_TABS.map(s => (
           <button
-            key={s}
-            onClick={() => { setStatusTab(s); setPage(0); }}
+            key={s.value}
+            onClick={() => { setStatusTab(s.value); setPage(0); }}
             className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-              statusTab === s
+              statusTab === s.value
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-accent"
             }`}
           >
-            {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-            <span className="ml-1 opacity-70">({statusCounts[s] || 0})</span>
+            {s.label}
+            <span className="ml-1 opacity-70">({statusCounts[s.value] || 0})</span>
           </button>
         ))}
       </div>
@@ -211,7 +212,7 @@ export function BookingsContent() {
             <SortableTableHead sortKey="booking_type" currentSort={sort} onSort={handleSort}>Booking Type</SortableTableHead>
             <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant Name</SortableTableHead>
             <SortableTableHead sortKey="monthly_salary" currentSort={sort} onSort={handleSort}>Exact Rental</SortableTableHead>
-            <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+            <SortableTableHead sortKey="order_status" currentSort={sort} onSort={handleSort}>Order Status</SortableTableHead>
             <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
             <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted At</SortableTableHead>
             <SortableTableHead sortKey="updated_at" currentSort={sort} onSort={handleSort}>Last Updated</SortableTableHead>
@@ -240,7 +241,7 @@ export function BookingsContent() {
               <TableCell className="text-center">{bookingTypeBadge(bType)}</TableCell>
               <TableCell className="font-medium text-center">{b.tenant_name}</TableCell>
               <TableCell className="text-center">RM{(b.move_in_cost as any)?.advance || b.monthly_salary || 0}</TableCell>
-              <TableCell className="text-center"><StatusBadge status={b.status.charAt(0).toUpperCase() + b.status.slice(1)} /></TableCell>
+              <TableCell className="text-center"><StatusBadge status={b.order_status} /></TableCell>
               <TableCell className="text-sm text-center">{getAgentName(b.submitted_by)}</TableCell>
               <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</TableCell>
               <TableCell className="text-sm text-muted-foreground text-center">{format(new Date(b.updated_at), "dd MMM yyyy, HH:mm")}</TableCell>
@@ -252,7 +253,7 @@ export function BookingsContent() {
                     className="text-xs"
                     onClick={() => setViewBooking(b)}
                   >
-                    {b.status === "submitted" ? "Review" : "View"}
+                    {b.order_status === "booking_submitted" ? "Review" : "View"}
                   </Button>
                 </div>
               </TableCell>
