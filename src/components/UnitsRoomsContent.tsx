@@ -395,7 +395,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const remainingCarparks = unitCarparks.length - occupiedCarparks;
 
   // Listen for back-to-unit event from parent footer button
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = () => setViewingRoom(null);
     window.addEventListener('back-to-unit', handler);
     return () => window.removeEventListener('back-to-unit', handler);
