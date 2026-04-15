@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
+import { formatUnitType } from "@/lib/ui-constants";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { AgentBookingsContent } from "@/components/AgentBookingsContent";
 import { MyDealsContent } from "@/components/MyDealsContent";
@@ -497,7 +498,7 @@ export default function Index() {
                 <div className="text-muted-foreground mt-1">{selectedRoom.unit} • {selectedRoom.room} • RM{selectedRoom.rent}</div>
                 <div className="flex gap-2 flex-wrap mt-3">
                   <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.room_type}</span>
-                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.unit_type}</span>
+                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{formatUnitType(selectedRoom.unit_type)}</span>
                   <span className={`px-3 py-1 rounded-md text-sm font-medium ${selectedRoom.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"}`}>{selectedRoom.status === "Available Soon" ? `🕐 Available ${selectedRoom.available_date}` : selectedRoom.available_date}</span>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -1085,7 +1086,7 @@ export default function Index() {
                       <div className="text-muted-foreground mt-0.5">{room.room} — <span className="font-bold text-primary text-lg">RM{room.rent}</span><span className="text-xs text-muted-foreground">/mo</span></div>
                       <div className="flex gap-1.5 flex-wrap mt-2.5">
                         <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
-                        <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
+                        <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{formatUnitType(room.unit_type)}</span>
                         <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${room.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent/20 text-accent-foreground"}`}>{room.status === "Available Soon" ? `🕐 Available ${room.available_date}` : room.available_date}</span>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground flex gap-3">
