@@ -25,7 +25,7 @@ const adminMenuItems = [
   { title: "Locations", icon: MapPin, tab: "locations" },
   { title: "Buildings", icon: Building, tab: "condos" },
   { title: "Units", icon: Building2, tab: "units" },
-  { title: "Rooms", icon: BedDouble, tab: "rooms" },
+  { title: "Rooms & Car Parks", icon: BedDouble, tab: "rooms" },
   { title: "Tenants", icon: UserCheck, tab: "tenants" },
   { title: "Bookings", icon: ClipboardList, tab: "bookings" },
   { title: "Move In", icon: LogIn, tab: "movein" },

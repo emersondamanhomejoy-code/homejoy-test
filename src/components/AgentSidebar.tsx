@@ -26,7 +26,7 @@ interface AgentMenuItem {
 
 const menuItems: AgentMenuItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
-  { title: "Available Rooms", icon: Home, url: "/rooms" },
+  { title: "Rooms & Car Parks", icon: Home, url: "/rooms" },
   { title: "My Bookings", icon: ClipboardList, tab: "myBookings" },
   { title: "Move In", icon: LogIn, tab: "myMoveIns" },
   { title: "My Deals", icon: Trophy, tab: "myDeals" },
