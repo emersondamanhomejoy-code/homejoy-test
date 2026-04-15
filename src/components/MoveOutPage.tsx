@@ -570,7 +570,7 @@ export function MoveOutPage() {
         {paged.map(m => (
           <TableRow key={m.id} className="hover:bg-muted/30">
             <TableCell className="font-medium">{m.effective_date}</TableCell>
-            <TableCell>{m.tenant_name || "—"}</TableCell>
+            <TableCell>{m.tenant_name || "N/A"}</TableCell>
             <TableCell>{m.building}</TableCell>
             <TableCell>{m.unit}</TableCell>
             <TableCell>{m.room}</TableCell>

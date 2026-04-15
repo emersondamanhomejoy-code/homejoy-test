@@ -356,7 +356,7 @@ export function UsersPage() {
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between text-sm py-1.5">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right">{value || "—"}</span>
+      <span className="font-medium text-right">{value || "N/A"}</span>
     </div>
   );
 
@@ -496,10 +496,10 @@ export function UsersPage() {
         {paged.map(u => (
           <TableRow key={u.id}>
             <TableCell className="text-center">{avatarDisplay(u)}</TableCell>
-            <TableCell className="font-medium">{u.display_name || u.name || "—"}</TableCell>
-            <TableCell className="text-sm">{u.name || "—"}</TableCell>
+            <TableCell className="font-medium">{u.display_name || u.name || "N/A"}</TableCell>
+            <TableCell className="text-sm">{u.name || "N/A"}</TableCell>
             <TableCell className="text-sm">{u.email}</TableCell>
-            <TableCell className="text-sm">{u.phone || "—"}</TableCell>
+            <TableCell className="text-sm">{u.phone || "N/A"}</TableCell>
             <TableCell>
               <div className="flex gap-1 flex-wrap">
                 {u.roles.map(r => (
@@ -597,7 +597,7 @@ export function UsersPage() {
                 <div className="flex items-center gap-4 mb-4">
                   {avatarDisplay(viewUser, "w-20 h-20", "text-2xl")}
                   <div>
-                    <div className="font-bold text-lg">{viewUser.name || "—"}</div>
+                    <div className="font-bold text-lg">{viewUser.name || "N/A"}</div>
                     {viewUser.display_name && <div className="text-sm text-muted-foreground">Display: {viewUser.display_name}</div>}
                   </div>
                 </div>

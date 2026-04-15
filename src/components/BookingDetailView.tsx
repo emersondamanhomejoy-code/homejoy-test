@@ -170,7 +170,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between text-sm py-1.5">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right">{value || "—"}</span>
+      <span className="font-medium text-right">{value || "N/A"}</span>
     </div>
   );
 
@@ -237,7 +237,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
               {(b.order_status === "move_in_submitted" || b.order_status === "move_in_approved" || b.order_status === "move_in_rejected") && (
                 <>
                   {infoRow("Agreement Signed", b.agreement_signed ? "Yes ✅" : "No ❌")}
-                  {infoRow("Payment Method", b.payment_method || "—")}
+                  {infoRow("Payment Method", b.payment_method || "N/A")}
                   {b.move_in_reviewed_at && infoRow("Move-in Reviewed At", format(new Date(b.move_in_reviewed_at), "dd MMM yyyy, HH:mm"))}
                   {b.move_in_reviewed_by && infoRow("Move-in Reviewed By", getAgentName(b.move_in_reviewed_by))}
                 </>
@@ -280,10 +280,10 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
                   {carParkRooms.map((cp, i) => (
                     <div key={i} className="bg-background rounded-lg border p-3 text-sm">
                       <div className="flex justify-between">
-                        <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "—"}</span>
+                        <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "N/A"}</span>
                         <span>RM {cp.room?.rent || 0}/mo</span>
                       </div>
-                      <div className="text-muted-foreground">Car Plate: {cp.carPlate || "—"}</div>
+                      <div className="text-muted-foreground">Car Plate: {cp.carPlate || "N/A"}</div>
                     </div>
                   ))}
                 </div>

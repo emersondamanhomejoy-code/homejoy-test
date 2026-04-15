@@ -306,7 +306,7 @@ export default function PublicUnitView() {
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="text-muted-foreground">Rental:</span> <span className="font-medium">RM{room.rent}/month</span></div>
-                <div><span className="text-muted-foreground">Bed:</span> <span className="font-medium">{room.bed_type || "—"}</span></div>
+                <div><span className="text-muted-foreground">Bed:</span> <span className="font-medium">{room.bed_type || "N/A"}</span></div>
                 <div><span className="text-muted-foreground">Max Pax:</span> <span className="font-medium">{room.max_pax}</span></div>
                 {room.wall_type && <div><span className="text-muted-foreground">Wall:</span> <span className="font-medium">{room.wall_type}</span></div>}
                 {Array.isArray(room.optional_features) && room.optional_features.length > 0 && (

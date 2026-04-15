@@ -283,7 +283,7 @@ export function UnitsRoomsContent() {
           const s = getUnitStats(unit);
           return (
             <TableRow key={unit.id} className="hover:bg-muted/30">
-              <TableCell className="font-medium text-foreground">{unit.building || "—"}</TableCell>
+              <TableCell className="font-medium text-foreground">{unit.building || "N/A"}</TableCell>
               <TableCell>{unit.unit}</TableCell>
               <TableCell>
                 <Badge
@@ -497,7 +497,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
 
   const copyHeader = (includeRoom?: { room: string; room_title?: string }) => {
     const lines = [`Building: ${val(unit.building)}`, `Unit: ${val(unit.unit)}`];
-    if (includeRoom) lines.push(`Room: ${includeRoom.room} — ${includeRoom.room_title || ""}`);
+    if (includeRoom) lines.push(`Room: ${includeRoom.room} — ${includeRoom.room_title || "N/A"}`);
     lines.push(`─────────`);
     return lines;
   };
@@ -526,8 +526,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
       }
       const housemates = Array.isArray(r.housemates) ? r.housemates : [];
       const names = housemates.map((h: any) => typeof h === "object" ? h?.name || "" : typeof h === "string" ? h : "").filter(Boolean);
-      const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "—";
-      const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
+      const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "N/A";
+      const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "N/A";
       return `Room ${roomLabel}: ${r.pax_staying || 0} pax · ${genders} · ${nats}${names.length > 0 ? ` (${names.join(", ")})` : ""}`;
     });
     const header = copyHeader();
@@ -662,7 +662,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
         const hmRace = r.tenant_race || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).race : "");
         const hmOccupation = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).occupation : "";
         const roomLabel = r.room.replace(/^Room\s+/i, "");
-        return `Room ${roomLabel}: ${r.status} · ${hmTenant || "Vacant"} · ${hmGender || "—"} · ${hmRace || "—"} · ${hmOccupation || "—"}`;
+        return `Room ${roomLabel}: ${r.status} · ${hmTenant || "Vacant"} · ${hmGender || "N/A"} · ${hmRace || "N/A"} · ${hmOccupation || "N/A"}`;
       });
       const header = copyHeader();
       copyToClipboard([...header, `Housemates:`, ...rows].join("\n"), "Housemate details");
@@ -800,10 +800,10 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                           <TableRow key={r.id}>
                             <TableCell className="text-left">{r.room.replace(/^Room\s+/i, "")}</TableCell>
                             <TableCell className="text-left"><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
-                            <TableCell className="text-left">{hmTenant || ""}</TableCell>
-                            <TableCell className="text-left">{hmGender || ""}</TableCell>
-                            <TableCell className="text-left">{hmRace || ""}</TableCell>
-                            <TableCell className="text-left">{hmOccupation || ""}</TableCell>
+                            <TableCell className="text-left">{hmTenant || "N/A"}</TableCell>
+                            <TableCell className="text-left">{hmGender || "N/A"}</TableCell>
+                            <TableCell className="text-left">{hmRace || "N/A"}</TableCell>
+                            <TableCell className="text-left">{hmOccupation || "N/A"}</TableCell>
                           </TableRow>
                         );
                       })}
@@ -899,9 +899,9 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
               <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
               <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
               <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(unit as any).meter_type} · RM{(unit as any).meter_rate}/kWh</span></div>
-              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "—"}</span></div>
-              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "—"}</span></div>
-              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "—"}</span></div>
+              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "N/A"}</span></div>
+              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "N/A"}</span></div>
+              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "N/A"}</span></div>
               <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(unit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
             </div>
           </AccordionContent>
@@ -938,9 +938,9 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                   <TableBody>
                     {unitRooms.map(room => {
                       const housemates = Array.isArray(room.housemates) ? room.housemates : [];
-                      const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || room.tenant_gender || "—";
-                      const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
-                      const tenantNames = housemates.map((h: any) => typeof h === "object" ? h?.name || "" : typeof h === "string" ? h : "").filter(Boolean).join(", ") || "—";
+                      const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || room.tenant_gender || "N/A";
+                      const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "N/A";
+                      const tenantNames = housemates.map((h: any) => typeof h === "object" ? h?.name || "" : typeof h === "string" ? h : "").filter(Boolean).join(", ") || "N/A";
                       return (
                         <TableRow key={room.id}>
                           <TableCell className="font-medium">{room.room.replace(/^Room\s+/i, "")}</TableCell>
@@ -992,10 +992,10 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                     {unitCarparks.map(cp => (
                       <TableRow key={cp.id}>
                         <TableCell className="font-medium">🅿️ {cp.room}</TableCell>
-                        <TableCell>{(cp as any).parking_lot || "—"}</TableCell>
+                        <TableCell>{(cp as any).parking_lot || "N/A"}</TableCell>
                         <TableCell className="text-right">RM{cp.rent}</TableCell>
                         <TableCell><StatusBadge status={cp.status} /></TableCell>
-                        {isAdmin && <TableCell className="text-xs">{(cp as any).assigned_to || "—"}</TableCell>}
+                        {isAdmin && <TableCell className="text-xs">{(cp as any).assigned_to || "N/A"}</TableCell>}
                         <TableCell className="text-center">
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setViewingRoom(cp)}>
                             <Eye className="h-4 w-4" />

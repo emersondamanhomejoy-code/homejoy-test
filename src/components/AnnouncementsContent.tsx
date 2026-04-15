@@ -342,7 +342,7 @@ export function AnnouncementsContent({ isAgent = false }: { isAgent?: boolean })
               ) : paged.map(a => (
                 <TableRow key={a.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setViewItem(a)}>
                   <TableCell className="font-medium">{a.title}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{a.description || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{a.description || "N/A"}</TableCell>
                   <TableCell>
                     {a.active ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Yes</span> : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">No</span>}
                   </TableCell>

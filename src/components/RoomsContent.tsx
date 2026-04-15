@@ -492,10 +492,10 @@ export function RoomsContent() {
               <div>
                 <h4 className="text-sm font-semibold mb-2">Room Details</h4>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  <div><span className="text-muted-foreground">Room Type:</span> {viewingRoom.room_type || "—"}</div>
-                  <div><span className="text-muted-foreground">Unit Type:</span> {formatUnitType(viewingRoom.unit_type_val) || "—"}</div>
-                  <div><span className="text-muted-foreground">Bed Type:</span> {viewingRoom.bed_type || "—"}</div>
-                  <div><span className="text-muted-foreground">Wall Type:</span> {(viewingRoom as any).wall_type || "—"}</div>
+                  <div><span className="text-muted-foreground">Room Type:</span> {viewingRoom.room_type || "N/A"}</div>
+                  <div><span className="text-muted-foreground">Unit Type:</span> {formatUnitType(viewingRoom.unit_type_val) || "N/A"}</div>
+                  <div><span className="text-muted-foreground">Bed Type:</span> {viewingRoom.bed_type || "N/A"}</div>
+                  <div><span className="text-muted-foreground">Wall Type:</span> {(viewingRoom as any).wall_type || "N/A"}</div>
                   <div><span className="text-muted-foreground">Listed Rental:</span> RM{viewingRoom.rent}</div>
                   <div><span className="text-muted-foreground">Max Pax:</span> {viewingRoom.max_pax}</div>
                 </div>
@@ -517,7 +517,7 @@ export function RoomsContent() {
                 <h4 className="text-sm font-semibold mb-2">Status & Capacity</h4>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
-                  <div><span className="text-muted-foreground">Available On:</span> {viewingRoom.available_date || "—"}</div>
+                  <div><span className="text-muted-foreground">Available On:</span> {viewingRoom.available_date || "N/A"}</div>
                   <div><span className="text-muted-foreground">Room Max Pax:</span> {viewingRoom.max_pax}</div>
                   <div><span className="text-muted-foreground">Pax Staying:</span> {viewingRoom.pax_staying || 0}</div>
                   <div><span className="text-muted-foreground">Unit Remaining:</span> {Math.max(0, viewingRoom.unitMaxPax - viewingRoom.unitOccupiedPax)}</div>
@@ -530,8 +530,8 @@ export function RoomsContent() {
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Occupant Info</h4>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                    <div><span className="text-muted-foreground">Gender:</span> {viewingRoom.tenant_gender || "—"}</div>
-                    <div><span className="text-muted-foreground">Race:</span> {viewingRoom.tenant_race || "—"}</div>
+                    <div><span className="text-muted-foreground">Gender:</span> {viewingRoom.tenant_gender || "N/A"}</div>
+                    <div><span className="text-muted-foreground">Race:</span> {viewingRoom.tenant_race || "N/A"}</div>
                     {(viewingRoom as any).tenancy_start_date && (
                       <div><span className="text-muted-foreground">Tenancy Start:</span> {(viewingRoom as any).tenancy_start_date}</div>
                     )}
@@ -565,8 +565,8 @@ export function RoomsContent() {
                       <TableBody>
                         {siblingRooms.map(sr => {
                           const housemates = Array.isArray(sr.housemates) ? sr.housemates : [];
-                          const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || sr.tenant_gender || "—";
-                          const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
+                          const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || sr.tenant_gender || "N/A";
+                          const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "N/A";
                           const isCurrentRoom = sr.id === viewingRoom.id;
                           return (
                             <TableRow key={sr.id} className={isCurrentRoom ? "bg-primary/5 font-medium" : ""}>

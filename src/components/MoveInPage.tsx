@@ -279,7 +279,7 @@ export function MoveInPage() {
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between py-1.5 text-sm gap-4">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value || "—"}</span>
+      <span className="text-right font-medium">{value || "N/A"}</span>
     </div>
   );
 
@@ -307,7 +307,7 @@ export function MoveInPage() {
                       {infoRow("Agent", getAgentName(viewItem.submitted_by))}
                       {infoRow("Booking Type", BOOKING_TYPE_LABELS[(viewItem.booking_type || "room_only") as BookingType])}
                       {infoRow("Agreement Signed", viewItem.agreement_signed ? "Yes ✅" : "No ❌")}
-                      {infoRow("Payment Method", viewItem.payment_method || "—")}
+                      {infoRow("Payment Method", viewItem.payment_method || "N/A")}
                       {infoRow("Created At", format(new Date(viewItem.created_at), "dd MMM yyyy, HH:mm"))}
                       {viewItem.move_in_reviewed_at && infoRow("Reviewed At", format(new Date(viewItem.move_in_reviewed_at), "dd MMM yyyy, HH:mm"))}
                       {viewItem.move_in_reviewed_by && infoRow("Reviewed By", getAgentName(viewItem.move_in_reviewed_by))}
@@ -548,10 +548,10 @@ export function MoveInPage() {
                 const blocked = isMoveInBlocked(item);
                 return (
                   <TableRow key={item.id} className={blocked ? "opacity-50" : ""}>
-                    <TableCell>{item.room?.building || "—"}</TableCell>
-                    <TableCell>{item.room?.unit || "—"}</TableCell>
-                    <TableCell>{item.room?.room || "—"}</TableCell>
-                    <TableCell className="text-sm">{room?.room_title || "—"}</TableCell>
+                    <TableCell>{item.room?.building || "N/A"}</TableCell>
+                    <TableCell>{item.room?.unit || "N/A"}</TableCell>
+                    <TableCell>{item.room?.room || "N/A"}</TableCell>
+                    <TableCell className="text-sm">{room?.room_title || "N/A"}</TableCell>
                     <TableCell className="text-sm">{BOOKING_TYPE_LABELS[(item.booking_type || "room_only") as BookingType]}</TableCell>
                     <TableCell className="font-medium">{item.tenant_name}</TableCell>
                     <TableCell><StatusBadge status={item.order_status} /></TableCell>

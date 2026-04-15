@@ -157,7 +157,7 @@ function ViewField({ label, value }: { label: string; value?: string | number })
   return (
     <div className="space-y-0.5">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium">{value || "—"}</div>
+      <div className="text-sm font-medium">{value || "N/A"}</div>
     </div>
   );
 }
@@ -462,10 +462,10 @@ export function TenantsContent() {
       >
         {paged.map(t => (
           <TableRow key={t.id}>
-            <TableCell className="font-medium">{t.name || "—"}</TableCell>
-            <TableCell>{t.phone || "—"}</TableCell>
-            <TableCell>{t.email || "—"}</TableCell>
-            <TableCell>{t.nationality || "—"}</TableCell>
+            <TableCell className="font-medium">{t.name || "N/A"}</TableCell>
+            <TableCell>{t.phone || "N/A"}</TableCell>
+            <TableCell>{t.email || "N/A"}</TableCell>
+            <TableCell>{t.nationality || "N/A"}</TableCell>
             <TableCell className="text-center">
               <span className={t._activeRooms! > 0 ? "text-emerald-600 font-semibold" : "text-muted-foreground"}>{t._activeRooms}</span>
             </TableCell>
@@ -752,11 +752,11 @@ function TenantDetailView({ tenant, isAdmin }: { tenant: Tenant; isAdmin: boolea
                       <TableBody>
                         {rooms.map(tr => (
                           <TableRow key={tr.id}>
-                            <TableCell className="font-medium">{tr.room?.building || "—"}</TableCell>
-                            <TableCell>{tr.room?.unit || "—"}</TableCell>
-                            <TableCell>{tr.room?.room?.replace(/^Room\s+/i, "") || "—"}</TableCell>
+                            <TableCell className="font-medium">{tr.room?.building || "N/A"}</TableCell>
+                            <TableCell>{tr.room?.unit || "N/A"}</TableCell>
+                            <TableCell>{tr.room?.room?.replace(/^Room\s+/i, "") || "N/A"}</TableCell>
                             <TableCell className="text-right">RM{tr.room?.rent || 0}</TableCell>
-                            <TableCell>{tr.move_in_date || "—"}</TableCell>
+                            <TableCell>{tr.move_in_date || "N/A"}</TableCell>
                             <TableCell>
                               <Badge variant={tr.status === "active" ? "default" : "secondary"}
                                 className={tr.status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-xs" : "text-xs"}>
@@ -791,9 +791,9 @@ function TenantDetailView({ tenant, isAdmin }: { tenant: Tenant; isAdmin: boolea
                       <TableBody>
                         {carparks.map(tr => (
                           <TableRow key={tr.id}>
-                            <TableCell className="font-medium">{tr.room?.building || "—"}</TableCell>
-                            <TableCell>{tr.room?.unit || "—"}</TableCell>
-                            <TableCell>🅿️ {tr.room?.room || "—"}</TableCell>
+                            <TableCell className="font-medium">{tr.room?.building || "N/A"}</TableCell>
+                            <TableCell>{tr.room?.unit || "N/A"}</TableCell>
+                            <TableCell>🅿️ {tr.room?.room || "N/A"}</TableCell>
                             <TableCell className="text-right">RM{tr.room?.rent || 0}</TableCell>
                             <TableCell>
                               <Badge variant={tr.status === "active" ? "default" : "secondary"}
@@ -856,7 +856,7 @@ function TenantDetailView({ tenant, isAdmin }: { tenant: Tenant; isAdmin: boolea
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">RM{room?.rent || 0}</TableCell>
-                          <TableCell>{b.move_in_date || "—"}</TableCell>
+                          <TableCell>{b.move_in_date || "N/A"}</TableCell>
                           <TableCell className="text-center">{b.contract_months || 12} months</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</TableCell>
                         </TableRow>

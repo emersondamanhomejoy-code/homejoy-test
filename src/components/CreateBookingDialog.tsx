@@ -150,7 +150,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
 
   const tenantOptions = useMemo(() => existingTenants.map(t => ({
     value: t.id,
-    label: t.name || "—",
+    label: t.name || "N/A",
     sublabel: `${t.phone || ""} · ${t.email || t.ic_passport || ""}`,
   })), [existingTenants]);
 

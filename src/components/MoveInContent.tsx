@@ -97,7 +97,7 @@ export function MoveInContent() {
         {paged.map(b => (
           <TableRow key={b.id} className={isUpcoming(b.move_in_date) ? "" : "opacity-60"}>
             <TableCell className="text-sm font-medium">{b.tenant_name}</TableCell>
-            <TableCell className="text-sm">{b.room?.building || "—"}</TableCell>
+            <TableCell className="text-sm">{b.room?.building || "N/A"}</TableCell>
             <TableCell className="text-sm">{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
             <TableCell className="text-sm font-medium">
               {b.move_in_date}

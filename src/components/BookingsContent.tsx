@@ -235,9 +235,9 @@ export function BookingsContent() {
           const bType = (b.booking_type || "room_only") as BookingType;
           return (
             <TableRow key={b.id}>
-              <TableCell className="text-center">{info?.building || "—"}</TableCell>
-              <TableCell className="text-center">{info?.unit || "—"}</TableCell>
-              <TableCell className="text-center">{info?.room || "—"}</TableCell>
+              <TableCell className="text-center">{info?.building || "N/A"}</TableCell>
+              <TableCell className="text-center">{info?.unit || "N/A"}</TableCell>
+              <TableCell className="text-center">{info?.room || "N/A"}</TableCell>
               <TableCell className="text-center">{bookingTypeBadge(bType)}</TableCell>
               <TableCell className="font-medium text-center">{b.tenant_name}</TableCell>
               <TableCell className="text-center">RM{(b.move_in_cost as any)?.advance || b.monthly_salary || 0}</TableCell>
