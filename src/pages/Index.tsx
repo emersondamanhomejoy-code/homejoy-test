@@ -1026,7 +1026,7 @@ export default function Index() {
     );
   }
 
-  const availableCarParksCount = roomsData.filter(r => r.room_type === "Car Park" && r.status === "Available").length;
+  const availableCarParksCount = roomsData.filter(r => r.room_type === "Car Park" && (r.status === "Available" || r.status === "Available Soon")).length;
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthlyDeals = agentBookings.filter(b => b.submitted_by === user?.id && new Date(b.created_at) >= monthStart).length;

@@ -57,10 +57,10 @@ export function AdminContent({ tab }: AdminContentProps) {
         const approvedBookings = allBookings.filter(b => b.order_status === "booking_approved" || b.order_status === "move_in_submitted" || b.order_status === "move_in_approved");
         const rejectedBookings = allBookings.filter(b => b.order_status === "booking_rejected");
         const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park").length ?? 0), 0);
-        const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park" && r.status === "Available").length ?? 0), 0);
+        const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park" && (r.status === "Available" || r.status === "Available Soon")).length ?? 0), 0);
         const occupiedRooms = totalRooms - availableRooms;
         const totalCarParks = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type === "Car Park").length ?? 0), 0);
-        const availableCarParks = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type === "Car Park" && r.status === "Available").length ?? 0), 0);
+        const availableCarParks = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type === "Car Park" && (r.status === "Available" || r.status === "Available Soon")).length ?? 0), 0);
 
         const handleApprove = async (booking: Booking) => {
           if (!user) return;
