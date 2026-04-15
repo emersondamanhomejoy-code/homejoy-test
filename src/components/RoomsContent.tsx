@@ -385,11 +385,10 @@ export function RoomsContent() {
                     <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
                     <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
-                    <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>
-                    <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Listed Rental</SortableTableHead>
+                    {assetTab === "rooms" && <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>}
+                    <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">{assetTab === "rooms" ? "Listed Rental" : "Rental"}</SortableTableHead>
                     <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                    
-                    <SortableTableHead sortKey="effectiveRemaining" currentSort={sort} onSort={handleSort} className="text-center">Capacity</SortableTableHead>
+                    {assetTab === "rooms" && <SortableTableHead sortKey="effectiveRemaining" currentSort={sort} onSort={handleSort} className="text-center">Capacity</SortableTableHead>}
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -397,17 +396,19 @@ export function RoomsContent() {
                   {paged.map(r => {
                     return (
                       <TableRow key={r.id}>
-                        <TableCell className="font-medium">{r.building}</TableCell>
-                        <TableCell>{r.unit}</TableCell>
+                        <TableCell className="font-medium">{r.building || "N/A"}</TableCell>
+                        <TableCell>{r.unit || "N/A"}</TableCell>
                         <TableCell><Badge variant="outline" className="font-mono">{r.room.replace(/^Room\s+/i, "")}</Badge></TableCell>
-                        <TableCell className="font-medium">{(r as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
+                        {assetTab === "rooms" && <TableCell className="font-medium">{(r as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>}
                         <TableCell className="text-right font-medium">RM{r.rent}</TableCell>
                         <TableCell><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
-                        <TableCell className="text-center">
-                          <span className={r.effectiveRemaining === 0 ? "text-destructive font-medium" : "font-medium"}>
-                            {r.effectiveRemaining}
-                          </span>
-                        </TableCell>
+                        {assetTab === "rooms" && (
+                          <TableCell className="text-center">
+                            <span className={r.effectiveRemaining === 0 ? "text-destructive font-medium" : "font-medium"}>
+                              {r.effectiveRemaining}
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">
                           <div className="flex gap-1 justify-center">
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingRoom(r)}>
@@ -416,7 +417,7 @@ export function RoomsContent() {
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditRoomId(r.id)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirm(r.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
