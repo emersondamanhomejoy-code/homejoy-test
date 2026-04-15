@@ -87,8 +87,8 @@ export default function RoomPhotos() {
       {/* Lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
-          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70">✕</button>
+          <img src={lightbox} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+          <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} className="absolute top-4 right-4 z-10 text-white text-2xl font-bold hover:opacity-70">✕</button>
         </div>
       )}
 

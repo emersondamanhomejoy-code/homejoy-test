@@ -90,7 +90,7 @@ export default function CommonPhotos() {
       {lightboxIndex !== null && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={closeLightbox}>
           {/* Close */}
-          <button onClick={closeLightbox} className="absolute top-4 right-4 text-white/80 hover:text-white z-10">
+          <button onClick={(e) => { e.stopPropagation(); closeLightbox(); }} className="absolute top-4 right-4 text-white/80 hover:text-white z-10">
             <X className="h-7 w-7" />
           </button>
 
