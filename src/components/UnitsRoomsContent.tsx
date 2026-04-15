@@ -613,7 +613,6 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     // Unit room summary (housemates from all rooms in the unit)
     const allUnitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
 
-    const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary"]);
 
     return (
       <div className="space-y-4">
