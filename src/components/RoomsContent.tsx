@@ -231,13 +231,28 @@ export function RoomsContent() {
 
   return (
     <StandardPageLayout
-      title="Rooms"
+      title={assetTab === "rooms" ? "Rooms" : "Car Parks"}
       secondaryActions={
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="h-4 w-4 mr-1" /> Export CSV
         </Button>
       }
     >
+      {/* Asset type toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => { setAssetTab("rooms"); clearFilters(); }}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "rooms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+        >
+          Rooms
+        </button>
+        <button
+          onClick={() => { setAssetTab("carparks"); clearFilters(); }}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "carparks" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+        >
+          Car Parks
+        </button>
+      </div>
       {/* Compact filter bar */}
       <div className="bg-card rounded-xl shadow-sm border border-border p-4 space-y-3">
         {/* Row 1: Search + Status pills + Location + Building + Advanced toggle */}
