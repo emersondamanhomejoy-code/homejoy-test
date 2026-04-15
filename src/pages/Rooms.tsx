@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CreateBookingDialog } from "@/components/CreateBookingDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { StandardModal } from "@/components/ui/standard-modal";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 
 export default function Rooms() {
   const { user, role, loading } = useAuth();
