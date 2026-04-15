@@ -25,7 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, X, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
