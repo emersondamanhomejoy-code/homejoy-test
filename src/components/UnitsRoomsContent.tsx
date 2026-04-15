@@ -602,7 +602,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     const roomPhotoUrl = `${window.location.origin}/view/${unit.id}?room=${viewingRoom.id}&section=photos`;
     return (
       <div className="space-y-4">
-        {/* Copy room photos link */}
+        {/* Copy room photos link - upper right */}
         {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
           <div className="flex justify-end">
             <Tooltip>
@@ -615,78 +615,72 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
             </Tooltip>
           </div>
         )}
-        {/* Room photos */}
-        {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
-          <div className="flex flex-wrap gap-3">
-            {(viewingRoom.photos as string[]).map((path: string, i: number) => (
-              <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-            ))}
-          </div>
-        )}
-        {/* Room Details heading */}
-        <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm border rounded-lg p-4">
-          {!isCarpark && (
-            <>
-              <div><span className="text-muted-foreground">Room Title:</span> <span className="font-medium">{(viewingRoom as any).room_title || "—"}</span></div>
-              <div><span className="text-muted-foreground">Room Category:</span> <span className="font-medium">{(viewingRoom as any).room_category || viewingRoom.room_type || "—"}</span></div>
-              <div><span className="text-muted-foreground">Wall Type:</span> <span className="font-medium">{(viewingRoom as any).wall_type || "—"}</span></div>
-              <div><span className="text-muted-foreground">Bed Type:</span> <span className="font-medium">{viewingRoom.bed_type || "—"}</span></div>
-              <div><span className="text-muted-foreground">Max Pax:</span> <span className="font-medium">{viewingRoom.max_pax}</span></div>
-              <div><span className="text-muted-foreground">Pax Staying:</span> <span className="font-medium">{viewingRoom.pax_staying || 0}</span></div>
-            </>
-          )}
-          <div><span className="text-muted-foreground">Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
-          <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
-          <div><span className="text-muted-foreground">Available Date:</span> <span className="font-medium">{viewingRoom.available_date || "—"}</span></div>
-          {!isCarpark && (
-            <>
-              <div><span className="text-muted-foreground">Gender:</span> <span className="font-medium">{viewingRoom.tenant_gender || "—"}</span></div>
-              <div><span className="text-muted-foreground">Race:</span> <span className="font-medium">{viewingRoom.tenant_race || "—"}</span></div>
-              {(viewingRoom as any).optional_features && Array.isArray((viewingRoom as any).optional_features) && (viewingRoom as any).optional_features.length > 0 && (
-                <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Features:</span> <span className="font-medium">{(viewingRoom as any).optional_features.join(", ")}</span></div>
-              )}
-            </>
-          )}
-          {isCarpark && (
-            <div><span className="text-muted-foreground">Parking Lot:</span> <span className="font-medium">{(viewingRoom as any).parking_lot || "—"}</span></div>
-          )}
-          {isAdmin && (
-            <>
-              <div><span className="text-muted-foreground">Assigned To:</span> <span className="font-medium">{(viewingRoom as any).assigned_to || "—"}</span></div>
-              <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Internal Remark:</span> <span className="font-medium">{(viewingRoom as any).internal_remark || "—"}</span></div>
-            </>
-          )}
-          <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
-        </div>
-        {!isCarpark && Array.isArray(viewingRoom.housemates) && viewingRoom.housemates.length > 0 && (
-          <div className="border rounded-lg p-4 space-y-2">
-            <h4 className="text-sm font-semibold">Housemates</h4>
-            <div className="space-y-1 text-sm">
-              {viewingRoom.housemates.map((h: any, i: number) => (
-                <div key={i} className="flex gap-4">
-                  {typeof h === "object" ? (
-                    <>
-                      <span className="font-medium">{h.name || "—"}</span>
-                      <span className="text-muted-foreground">{h.gender || ""}</span>
-                      <span className="text-muted-foreground">{h.nationality || ""}</span>
-                    </>
-                  ) : <span>{String(h)}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Photos</h4>
+        {/* Single Room section */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
+          {/* Room photos */}
+          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
             <div className="flex flex-wrap gap-3">
               {(viewingRoom.photos as string[]).map((path: string, i: number) => (
-                <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Room ${i + 1}`} className="h-24 w-24 object-cover rounded-lg border" />
+                <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
               ))}
             </div>
+          )}
+          {/* Room details */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            {!isCarpark && (
+              <>
+                <div><span className="text-muted-foreground">Room Title:</span> <span className="font-medium">{(viewingRoom as any).room_title || "—"}</span></div>
+                <div><span className="text-muted-foreground">Room Category:</span> <span className="font-medium">{(viewingRoom as any).room_category || viewingRoom.room_type || "—"}</span></div>
+                <div><span className="text-muted-foreground">Wall Type:</span> <span className="font-medium">{(viewingRoom as any).wall_type || "—"}</span></div>
+                <div><span className="text-muted-foreground">Bed Type:</span> <span className="font-medium">{viewingRoom.bed_type || "—"}</span></div>
+                <div><span className="text-muted-foreground">Max Pax:</span> <span className="font-medium">{viewingRoom.max_pax}</span></div>
+                <div><span className="text-muted-foreground">Pax Staying:</span> <span className="font-medium">{viewingRoom.pax_staying || 0}</span></div>
+              </>
+            )}
+            <div><span className="text-muted-foreground">Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
+            <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
+            <div><span className="text-muted-foreground">Available Date:</span> <span className="font-medium">{viewingRoom.available_date || "—"}</span></div>
+            {!isCarpark && (
+              <>
+                <div><span className="text-muted-foreground">Gender:</span> <span className="font-medium">{viewingRoom.tenant_gender || "—"}</span></div>
+                <div><span className="text-muted-foreground">Race:</span> <span className="font-medium">{viewingRoom.tenant_race || "—"}</span></div>
+                {(viewingRoom as any).optional_features && Array.isArray((viewingRoom as any).optional_features) && (viewingRoom as any).optional_features.length > 0 && (
+                  <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Features:</span> <span className="font-medium">{(viewingRoom as any).optional_features.join(", ")}</span></div>
+                )}
+              </>
+            )}
+            {isCarpark && (
+              <div><span className="text-muted-foreground">Parking Lot:</span> <span className="font-medium">{(viewingRoom as any).parking_lot || "—"}</span></div>
+            )}
+            {isAdmin && (
+              <>
+                <div><span className="text-muted-foreground">Assigned To:</span> <span className="font-medium">{(viewingRoom as any).assigned_to || "—"}</span></div>
+                <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Internal Remark:</span> <span className="font-medium">{(viewingRoom as any).internal_remark || "—"}</span></div>
+              </>
+            )}
+            <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
           </div>
-        )}
+          {/* Housemates */}
+          {!isCarpark && Array.isArray(viewingRoom.housemates) && viewingRoom.housemates.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Housemates</h4>
+              <div className="space-y-1 text-sm">
+                {viewingRoom.housemates.map((h: any, i: number) => (
+                  <div key={i} className="flex gap-4">
+                    {typeof h === "object" ? (
+                      <>
+                        <span className="font-medium">{h.name || "—"}</span>
+                        <span className="text-muted-foreground">{h.gender || ""}</span>
+                        <span className="text-muted-foreground">{h.nationality || ""}</span>
+                      </>
+                    ) : <span>{String(h)}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
