@@ -199,20 +199,23 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
     <div className="space-y-4">
       <h2 className="text-2xl font-extrabold">My Bookings</h2>
 
-      {/* Filters */}
+      {/* Quick filter chips */}
       <div className="flex flex-wrap gap-3 items-center">
-        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          {statusOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { setStatusFilter(opt.value); setPage(0); }}
+              className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+                statusFilter === opt.value
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:bg-muted"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
         <Input placeholder="Search name, ID, condo..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
       </div>
 
