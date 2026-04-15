@@ -640,11 +640,11 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           </div>
                           <div>
                             <label className="text-xs text-muted-foreground">Status</label>
-                            {room.status === "Pending" || room.status === "Occupied" ? (
+                            {cp.status === "Pending" || cp.status === "Occupied" ? (
                               <>
                                 <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {room.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
+                                  {cp.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
                                 </p>
                               </>
                             ) : (
@@ -653,20 +653,20 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                                 if (e.target.value === "Available Soon" && !rc.available_date) upCP("available_date", "");
                                 if (e.target.value !== "Archived") upCP("archived_reason", "");
                               }}>
-                                {room.status === "Available" && (
+                                {cp.status === "Available" && (
                                   <>
                                     <option value="Available">Available</option>
                                     <option value="Available Soon">Available Soon</option>
                                     <option value="Archived">Archived</option>
                                   </>
                                 )}
-                                {room.status === "Available Soon" && (
+                                {cp.status === "Available Soon" && (
                                   <>
                                     <option value="Available Soon">Available Soon</option>
                                     <option value="Available">Available</option>
                                   </>
                                 )}
-                                {room.status === "Archived" && (
+                                {cp.status === "Archived" && (
                                   <>
                                     <option value="Archived">Archived</option>
                                     <option value="Available">Available</option>
