@@ -985,6 +985,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
           </Table>
         </div>
       </section>
+      {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
     </div>
   );
 }
