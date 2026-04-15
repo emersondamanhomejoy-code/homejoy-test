@@ -626,6 +626,7 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
   sectionKeys.push("details");
   if (!isCarpark && otherRooms.length > 0) sectionKeys.push("summary");
   if (showTenantSection) sectionKeys.push("tenant");
+  sectionKeys.push("booking");
 
   return (
     <div className="space-y-4">
