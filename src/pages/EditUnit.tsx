@@ -474,11 +474,11 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           </div>
                           <div>
                             <label className="text-xs text-muted-foreground">Status</label>
-                            {rc.status === "Pending" || rc.status === "Occupied" ? (
+                            {room.status === "Pending" || room.status === "Occupied" ? (
                               <>
                                 <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {rc.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
+                                  {room.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
                                 </p>
                               </>
                             ) : (
@@ -487,20 +487,20 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                                 if (e.target.value === "Available Soon" && !rc.available_date) upRoom("available_date", "");
                                 if (e.target.value !== "Archived") upRoom("archived_reason", "");
                               }}>
-                                {rc.status === "Available" && (
+                                {room.status === "Available" && (
                                   <>
                                     <option value="Available">Available</option>
                                     <option value="Available Soon">Available Soon</option>
                                     <option value="Archived">Archived</option>
                                   </>
                                 )}
-                                {rc.status === "Available Soon" && (
+                                {room.status === "Available Soon" && (
                                   <>
                                     <option value="Available Soon">Available Soon</option>
                                     <option value="Available">Available</option>
                                   </>
                                 )}
-                                {rc.status === "Archived" && (
+                                {room.status === "Archived" && (
                                   <>
                                     <option value="Archived">Archived</option>
                                     <option value="Available">Available</option>
@@ -640,11 +640,11 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                           </div>
                           <div>
                             <label className="text-xs text-muted-foreground">Status</label>
-                            {rc.status === "Pending" || rc.status === "Occupied" ? (
+                            {room.status === "Pending" || room.status === "Occupied" ? (
                               <>
                                 <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {rc.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
+                                  {room.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
                                 </p>
                               </>
                             ) : (
@@ -653,20 +653,20 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                                 if (e.target.value === "Available Soon" && !rc.available_date) upCP("available_date", "");
                                 if (e.target.value !== "Archived") upCP("archived_reason", "");
                               }}>
-                                {rc.status === "Available" && (
+                                {room.status === "Available" && (
                                   <>
                                     <option value="Available">Available</option>
                                     <option value="Available Soon">Available Soon</option>
                                     <option value="Archived">Archived</option>
                                   </>
                                 )}
-                                {rc.status === "Available Soon" && (
+                                {room.status === "Available Soon" && (
                                   <>
                                     <option value="Available Soon">Available Soon</option>
                                     <option value="Available">Available</option>
                                   </>
                                 )}
-                                {rc.status === "Archived" && (
+                                {room.status === "Archived" && (
                                   <>
                                     <option value="Archived">Archived</option>
                                     <option value="Available">Available</option>
