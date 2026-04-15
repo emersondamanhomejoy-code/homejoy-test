@@ -807,50 +807,42 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
             ) : linkedBooking ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                 <DetailRow label="Order Status" value={linkedBooking.order_status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
-                <DetailRow label="Booking Type" value={linkedBooking.booking_type?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
-                <DetailRow label="Tenant Name" value={linkedBooking.tenant_name} />
-                <DetailRow label="Phone" value={linkedBooking.tenant_phone} />
-                <DetailRow label="Email" value={linkedBooking.tenant_email} />
-                <DetailRow label="IC/Passport" value={linkedBooking.tenant_ic_passport} />
-                <DetailRow label="Gender" value={linkedBooking.tenant_gender} />
-                <DetailRow label="Nationality" value={linkedBooking.tenant_nationality} />
-                <DetailRow label="Race" value={linkedBooking.tenant_race} />
-                <DetailRow label="Move-In Date" value={linkedBooking.move_in_date} />
+                <DetailRow label="Submitted At" value={linkedBooking.created_at ? new Date(linkedBooking.created_at).toLocaleDateString() : ""} />
                 <DetailRow label="Contract" value={linkedBooking.contract_months ? `${linkedBooking.contract_months} months` : ""} />
+                <DetailRow label="Move-In Date" value={linkedBooking.move_in_date} />
                 <DetailRow label="Pax Staying" value={linkedBooking.pax_staying?.toString()} />
-                <DetailRow label="Occupation" value={linkedBooking.occupation} />
-                <DetailRow label="Company" value={linkedBooking.company} />
-                <DetailRow label="Position" value={linkedBooking.position} />
-                <DetailRow label="Monthly Salary" value={linkedBooking.monthly_salary ? `RM${linkedBooking.monthly_salary}` : ""} />
                 <DetailRow label="Car Plate" value={linkedBooking.car_plate} />
-                <DetailRow label="Parking" value={linkedBooking.parking} />
-                <DetailRow label="Access Cards" value={linkedBooking.access_card_count?.toString()} />
                 <DetailRow label="Payment Method" value={linkedBooking.payment_method} />
                 <DetailRow label="Agreement Signed" value={linkedBooking.agreement_signed ? "Yes" : "No"} />
-                <DetailRow label="Submitted At" value={linkedBooking.created_at ? new Date(linkedBooking.created_at).toLocaleDateString() : ""} />
-                {linkedBooking.reject_reason && (
-                  <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Reject Reason:</span> <span className="font-medium text-destructive">{linkedBooking.reject_reason}</span></div>
-                )}
-                {linkedBooking.emergency_1_name && (
-                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
-                    <div className="grid grid-cols-3 gap-3">
-                      <DetailRow label="Name" value={linkedBooking.emergency_1_name} />
-                      <DetailRow label="Phone" value={linkedBooking.emergency_1_phone} />
-                      <DetailRow label="Relationship" value={linkedBooking.emergency_1_relationship} />
+                <DetailRow label="Access Card Count" value={linkedBooking.access_card_count?.toString()} />
+                <DetailRow label="Parking" value={linkedBooking.parking} />
+                {(() => {
+                  const cost = linkedBooking.move_in_cost as Record<string, unknown> | null;
+                  const accessAmt = cost?.access_card_deposit || cost?.accessCardDeposit;
+                  const parkingAmt = cost?.parking_deposit || cost?.parkingDeposit || cost?.parking_card_deposit;
+                  return (
+                    <>
+                      {accessAmt ? <DetailRow label="Access Card Amount" value={`RM${accessAmt}`} /> : null}
+                      {parkingAmt ? <DetailRow label="Parking Amount" value={`RM${parkingAmt}`} /> : null}
+                    </>
+                  );
+                })()}
+                {(() => {
+                  const slips = linkedBooking.doc_transfer_slip as string[] | null;
+                  if (!slips || !Array.isArray(slips) || slips.length === 0) return null;
+                  return (
+                    <div className="col-span-2 md:col-span-3">
+                      <span className="text-muted-foreground text-xs">Transfer Slip</span>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {slips.map((url: string, i: number) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">
+                            Slip {i + 1}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {linkedBooking.emergency_2_name && (
-                  <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
-                    <div className="grid grid-cols-3 gap-3">
-                      <DetailRow label="Name" value={linkedBooking.emergency_2_name} />
-                      <DetailRow label="Phone" value={linkedBooking.emergency_2_phone} />
-                      <DetailRow label="Relationship" value={linkedBooking.emergency_2_relationship} />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No booking linked to this {isCarpark ? "carpark" : "room"}.</p>
