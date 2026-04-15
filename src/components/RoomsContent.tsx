@@ -547,6 +547,25 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
     return () => { cancelled = true; };
   }, [room.id, room.status]);
 
+  // Fetch linked booking for this room
+  useEffect(() => {
+    let cancelled = false;
+    setBookingLoading(true);
+    (async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("room_id", room.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled) {
+        setLinkedBooking(data && data.length > 0 ? data[0] : null);
+        setBookingLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [room.id]);
+
   const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => {
     if (!value || value === "—" || value === "") return null;
     return <div><span className="text-muted-foreground">{label}:</span> <span className="font-medium">{value}</span></div>;
