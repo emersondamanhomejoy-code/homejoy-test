@@ -39,6 +39,7 @@ export function UnitsRoomsContent() {
   const [currentPage, setCurrentPage] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
+  const [isViewingRoom, setIsViewingRoom] = useState(false);
   const [addUnitOpen, setAddUnitOpen] = useState(false);
   const [editUnitId, setEditUnitId] = useState<string | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
