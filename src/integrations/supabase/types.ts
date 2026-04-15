@@ -145,6 +145,7 @@ export type Database = {
       bookings: {
         Row: {
           access_card_count: number
+          agreement_signed: boolean
           booking_type: string
           car_plate: string
           company: string
@@ -167,12 +168,20 @@ export type Database = {
           history: Json
           id: string
           monthly_salary: number
+          move_in_agent_id: string | null
+          move_in_cancel_reason: string
           move_in_cost: Json
           move_in_date: string
+          move_in_reject_reason: string
+          move_in_reviewed_at: string | null
+          move_in_reviewed_by: string | null
           occupation: string
+          order_status: string
           parking: string
           pax_staying: number
+          payment_method: string
           position: string
+          receipt_path: string
           reject_reason: string
           resolution_type: string
           reviewed_at: string | null
@@ -193,6 +202,7 @@ export type Database = {
         }
         Insert: {
           access_card_count?: number
+          agreement_signed?: boolean
           booking_type?: string
           car_plate?: string
           company?: string
@@ -215,12 +225,20 @@ export type Database = {
           history?: Json
           id?: string
           monthly_salary?: number
+          move_in_agent_id?: string | null
+          move_in_cancel_reason?: string
           move_in_cost?: Json
           move_in_date: string
+          move_in_reject_reason?: string
+          move_in_reviewed_at?: string | null
+          move_in_reviewed_by?: string | null
           occupation?: string
+          order_status?: string
           parking?: string
           pax_staying?: number
+          payment_method?: string
           position?: string
+          receipt_path?: string
           reject_reason?: string
           resolution_type?: string
           reviewed_at?: string | null
@@ -241,6 +259,7 @@ export type Database = {
         }
         Update: {
           access_card_count?: number
+          agreement_signed?: boolean
           booking_type?: string
           car_plate?: string
           company?: string
@@ -263,12 +282,20 @@ export type Database = {
           history?: Json
           id?: string
           monthly_salary?: number
+          move_in_agent_id?: string | null
+          move_in_cancel_reason?: string
           move_in_cost?: Json
           move_in_date?: string
+          move_in_reject_reason?: string
+          move_in_reviewed_at?: string | null
+          move_in_reviewed_by?: string | null
           occupation?: string
+          order_status?: string
           parking?: string
           pax_staying?: number
+          payment_method?: string
           position?: string
+          receipt_path?: string
           reject_reason?: string
           resolution_type?: string
           reviewed_at?: string | null
@@ -853,6 +880,7 @@ export type Database = {
       rooms: {
         Row: {
           access_info: Json
+          archived_reason: string
           assigned_to: string
           available_date: string
           bed_type: string
@@ -890,6 +918,7 @@ export type Database = {
         }
         Insert: {
           access_info?: Json
+          archived_reason?: string
           assigned_to?: string
           available_date?: string
           bed_type?: string
@@ -927,6 +956,7 @@ export type Database = {
         }
         Update: {
           access_info?: Json
+          archived_reason?: string
           assigned_to?: string
           available_date?: string
           bed_type?: string
