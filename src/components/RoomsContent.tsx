@@ -624,8 +624,7 @@ function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Uni
   const sectionKeys: string[] = [];
   if (photoUrls.length > 0) sectionKeys.push("photos");
   sectionKeys.push("details");
-  if (!isCarpark && otherRooms.length > 0) sectionKeys.push("summary");
-  if (showTenantSection) sectionKeys.push("tenant");
+  sectionKeys.push("tenant");
   sectionKeys.push("booking");
 
   return (
