@@ -51,7 +51,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const createUnit = useCreateUnit();
 
   const [form, setForm] = useState({
-    building: "", location: "", unit: "", unit_type: "Mix Unit",
+    building: "", location: "", unit: "", unit_type: "Mixed Gender",
     unit_max_pax: 6, deposit_multiplier: 1.5, admin_fee: 330,
     meter_type: "Postpaid", meter_rate: 0.65, passcode: "",
     wifi_name: "", wifi_password: "", internal_only: false,
@@ -71,7 +71,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   useEffect(() => {
     if (open) {
       setForm({
-        building: "", location: "", unit: "", unit_type: "Mix Unit",
+        building: "", location: "", unit: "", unit_type: "Mixed Gender",
         unit_max_pax: 6, deposit_multiplier: 1.5, admin_fee: 330,
         meter_type: "Postpaid", meter_rate: 0.65, passcode: "",
         wifi_name: "", wifi_password: "", internal_only: false,
