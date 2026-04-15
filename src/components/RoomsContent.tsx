@@ -500,7 +500,7 @@ export function RoomsContent() {
 function RoomViewContent({ room, units, assetTab }: { room: FlatRoom; units: Unit[]; assetTab: AssetTab }) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const isCarpark = assetTab === "carparks";
-  const [accordionValues, setAccordionValues] = useState<string[]>(["photos", "details", "status", "summary", "tenant"]);
+  const [accordionValues, setAccordionValues] = useState<string[]>(["photos", "details", "status", "summary", "tenant", "booking"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [linkedTenant, setLinkedTenant] = useState<any | null>(null);
   const [tenantLoading, setTenantLoading] = useState(false);
