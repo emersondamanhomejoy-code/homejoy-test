@@ -602,8 +602,9 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     const roomPhotoUrl = `${window.location.origin}/view/${unit.id}?room=${viewingRoom.id}&section=photos`;
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
+        {/* Copy room photos link */}
+        {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
+          <div className="flex justify-end">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, isCarpark ? "Carpark photos link" : "Room photos link")}>
@@ -612,8 +613,17 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
               </TooltipTrigger>
               <TooltipContent>Copy link showing only this {isCarpark ? "carpark's" : "room's"} photos</TooltipContent>
             </Tooltip>
-          )}
-        </div>
+          </div>
+        )}
+        {/* Room photos */}
+        {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {(viewingRoom.photos as string[]).map((path: string, i: number) => (
+              <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+            ))}
+          </div>
+        )}
+        {/* Room Details heading */}
         <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm border rounded-lg p-4">
           {!isCarpark && (
