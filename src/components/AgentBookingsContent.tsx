@@ -22,6 +22,13 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   const { data: allBookings = [], isLoading } = useBookings();
   const updateBookingStatus = useUpdateOrderStatus();
 
+  const statusOptions = [
+    { value: "all", label: "All" },
+    { value: "submitted", label: "Submitted" },
+    { value: "approved", label: "Approved" },
+    { value: "rejected", label: "Rejected" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [search, setSearch] = useState("");
