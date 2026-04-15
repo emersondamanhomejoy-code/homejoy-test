@@ -895,6 +895,7 @@ export type Database = {
           move_in_cost: Json
           occupied_pax: number
           optional_features: Json
+          parking_lot: string
           pax_staying: number
           photos: Json
           rent: number
@@ -933,6 +934,7 @@ export type Database = {
           move_in_cost?: Json
           occupied_pax?: number
           optional_features?: Json
+          parking_lot?: string
           pax_staying?: number
           photos?: Json
           rent?: number
@@ -971,6 +973,7 @@ export type Database = {
           move_in_cost?: Json
           occupied_pax?: number
           optional_features?: Json
+          parking_lot?: string
           pax_staying?: number
           photos?: Json
           rent?: number
