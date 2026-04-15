@@ -83,9 +83,10 @@ function formatShortDate(dateStr: string): string {
 
 export function StatusBadge({ status, availableDate, className }: { status: string; availableDate?: string; className?: string }) {
   // Convert snake_case order statuses to display labels
+  const isAvailableSoonWithDate = status === "Available Soon" && availableDate && availableDate !== "Available Now";
   const displayLabel = ORDER_STATUS_DISPLAY[status]
-    || (status === "Available Soon" && availableDate && availableDate !== "Available Now"
-      ? `Available on ${formatShortDate(availableDate)}`
+    || (isAvailableSoonWithDate
+      ? null
       : status === "ready_for_move_in" ? "Ready for Move-in"
       : status === "closed" ? "Closed"
       : status === "reversed" ? "Reversed"
@@ -94,8 +95,13 @@ export function StatusBadge({ status, availableDate, className }: { status: stri
   const style = normalizedStyles[status] || normalizedStyles[status.toLowerCase()] || fallback;
 
   return (
-    <Badge variant="secondary" className={cn("font-medium border-0 whitespace-nowrap", style, className)}>
-      {displayLabel}
+    <Badge variant="secondary" className={cn("font-medium border-0", isAvailableSoonWithDate ? "whitespace-normal text-center leading-tight" : "whitespace-nowrap", style, className)}>
+      {isAvailableSoonWithDate ? (
+        <span className="flex flex-col items-center">
+          <span>Available on</span>
+          <span>{formatShortDate(availableDate!)}</span>
+        </span>
+      ) : (displayLabel || status)}
     </Badge>
   );
 }
