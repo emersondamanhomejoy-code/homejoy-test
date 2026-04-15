@@ -64,6 +64,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const [carparkRecords, setCarparkRecords] = useState<LocalCarpark[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "room" | "carpark"; key: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string[]>(["unit-info", "rooms", "carparks"]);
   const { errors, validate, clearError, clearAllErrors } = useFormValidation();
 
   // Reset all state when modal opens
@@ -80,6 +81,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
       setCarparkRecords([]);
       setDeleteConfirm(null);
       setSaving(false);
+      setAccordionValue(["unit-info", "rooms", "carparks"]);
     }
   }, [open]);
 
@@ -226,7 +228,13 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
         }
       >
         <FormErrorBanner errors={errors} />
-        <Accordion type="multiple" defaultValue={["unit-info", "rooms", "carparks"]} className="space-y-2">
+        <div className="flex justify-end mb-2">
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setAccordionValue(["unit-info", "rooms", "carparks"])}>Expand All</Button>
+            <Button variant="outline" size="sm" className="text-xs bg-card" onClick={() => setAccordionValue([])}>Collapse All</Button>
+          </div>
+        </div>
+        <Accordion type="multiple" value={accordionValue} onValueChange={setAccordionValue} className="space-y-2">
           {/* ── Unit Information ── */}
           <AccordionItem value="unit-info" className="border rounded-lg px-4">
             <AccordionTrigger className="py-3 hover:no-underline">
