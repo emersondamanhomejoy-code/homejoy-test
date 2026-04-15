@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus, Copy, ChevronDown, Link2, ArrowLeft, Eye, Image } from "lucide-react";
+import { Plus, Copy, ChevronDown, ArrowLeft, Eye, Image } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
@@ -533,7 +533,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   );
 
 
-  const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
+  
 
   // Parse all access categories from condo (must be before early return)
   const allAccess = useMemo(() => {
@@ -666,19 +666,11 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       <div className="flex items-center justify-end gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(commonPhotosUrl, "Common area photos link")}>
-              <Image className="h-3.5 w-3.5" /> Copy Common Photos Link
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")}>
+              <Image className="h-3.5 w-3.5" /> Copy Unit Photos Link
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Copy link showing only common area photos</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(baseShareUrl, "Share link")}>
-              <Link2 className="h-3.5 w-3.5" /> Copy Share Link
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Copy public link for customers</TooltipContent>
+          <TooltipContent>Copy link showing unit photos</TooltipContent>
         </Tooltip>
       </div>
 
