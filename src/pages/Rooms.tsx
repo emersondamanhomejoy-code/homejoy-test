@@ -279,8 +279,8 @@ export default function Rooms() {
                             <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
                             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                             <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
-                            <TableHead>Room Title</TableHead>
+                             <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
+                            {assetTab === "rooms" && <TableHead>Room Title</TableHead>}
                             <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Rent (RM)</SortableTableHead>
                             <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                             <TableHead className="text-center">Action</TableHead>
@@ -291,11 +291,11 @@ export default function Rooms() {
                             <TableRow key={room.id} className="hover:bg-muted/30 cursor-pointer">
                               <TableCell className="capitalize text-muted-foreground">{room.location || "N/A"}</TableCell>
                               <TableCell className="font-medium text-foreground">{room.building || "N/A"}</TableCell>
-                              <TableCell>{room.unit}</TableCell>
+                              <TableCell>{room.unit || "N/A"}</TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="font-mono">{room.room}</Badge>
                               </TableCell>
-                              <TableCell className="font-medium">{(room as any).room_title || "N/A"}</TableCell>
+                              {assetTab === "rooms" && <TableCell className="font-medium">{(room as any).room_title || "N/A"}</TableCell>}
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
