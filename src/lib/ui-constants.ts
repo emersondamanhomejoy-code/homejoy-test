@@ -6,3 +6,15 @@ export const labelClass =
   "text-xs font-semibold text-muted-foreground uppercase tracking-wider";
 
 export const cardClass = "bg-card rounded-xl shadow-sm border border-border";
+
+// Maps old/new unit_type DB values to display labels
+const unitTypeMap: Record<string, string> = {
+  "Mix Unit": "Mixed Gender",
+  "Female Unit": "Female Only",
+  "Male Unit": "Male Only",
+  "Mixed Gender": "Mixed Gender",
+  "Female Only": "Female Only",
+  "Male Only": "Male Only",
+};
+
+export const formatUnitType = (val: string): string => unitTypeMap[val] || val;
