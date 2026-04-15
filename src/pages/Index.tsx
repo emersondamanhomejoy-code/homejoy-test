@@ -1064,7 +1064,7 @@ export default function Index() {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Gender</label>
                 <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
-                  <option>All</option><option>Female Unit</option><option>Mix Unit</option>
+                  <option>All</option><option>Female Only</option><option>Mixed Gender</option><option>Male Only</option>
                 </select>
               </div>
             </div>

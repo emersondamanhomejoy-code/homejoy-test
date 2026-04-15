@@ -184,9 +184,9 @@ export function UnitsRoomsContent() {
           <label className={labelClass}>Unit Type</label>
           <select className={inputClass} value={selectedUnitType} onChange={e => setSelectedUnitType(e.target.value)}>
             <option value="all">All Types</option>
-            <option value="mix">Mix Unit</option>
-            <option value="female">Female Unit</option>
-            <option value="male">Male Unit</option>
+            <option value="mix">Mixed Gender</option>
+            <option value="female">Female Only</option>
+            <option value="male">Male Only</option>
           </select>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm self-end">
