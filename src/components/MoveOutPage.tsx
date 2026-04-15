@@ -692,98 +692,108 @@ export function MoveOutPage() {
           </>
         }
       >
-        <div className="space-y-6">
+        <div className="space-y-2">
           <FormErrorBanner errors={moveOutValidation.errors} />
-          {/* Section A: Move Out Target */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Move Out Target</h3>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className={lbl}>Tenant *</label>
-                <Select value={form.tenant_id || "none"} onValueChange={v => v !== "none" && handleTenantChange(v)}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Select tenant" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" disabled>Select tenant</SelectItem>
-                    {tenantOptions.map(([id, name]) => (
-                      <SelectItem key={id} value={id}>{name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {tenantOptions.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No tenants with active occupancy found.</p>
-                )}
-              </div>
-
-              {form.tenant_id && (
-                <div className="space-y-1">
-                  <label className={lbl}>Room / Carpark to move out *</label>
-                  {tenantAssets.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No active occupancy found for this tenant.</p>
-                  ) : (
-                    <Select value={form.room_id || "none"} onValueChange={v => v !== "none" && handleAssetSelect(v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Select room or carpark" /></SelectTrigger>
+          <Accordion type="multiple" defaultValue={["move-out-target", "move-out-details"]} className="space-y-2">
+            {/* Section A: Move Out Target */}
+            <AccordionItem value="move-out-target" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <span className="text-sm font-semibold">🏠 Move Out Target</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3 pb-2">
+                  <div className="space-y-1">
+                    <label className={lbl}>Tenant *</label>
+                    <Select value={form.tenant_id || "none"} onValueChange={v => v !== "none" && handleTenantChange(v)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Select tenant" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" disabled>Select room or carpark</SelectItem>
-                        {tenantAssets.map(r => (
-                          <SelectItem key={r.room_id} value={r.room_id}>
-                            {r.building} · {r.unit} · {r.room} ({r.room_type})
-                          </SelectItem>
+                        <SelectItem value="none" disabled>Select tenant</SelectItem>
+                        {tenantOptions.map(([id, name]) => (
+                          <SelectItem key={id} value={id}>{name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {tenantOptions.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No tenants with active occupancy found.</p>
+                    )}
+                  </div>
+
+                  {form.tenant_id && (
+                    <div className="space-y-1">
+                      <label className={lbl}>Room / Carpark to move out *</label>
+                      {tenantAssets.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No active occupancy found for this tenant.</p>
+                      ) : (
+                        <Select value={form.room_id || "none"} onValueChange={v => v !== "none" && handleAssetSelect(v)}>
+                          <SelectTrigger className="w-full"><SelectValue placeholder="Select room or carpark" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none" disabled>Select room or carpark</SelectItem>
+                            {tenantAssets.map(r => (
+                              <SelectItem key={r.room_id} value={r.room_id}>
+                                {r.building} · {r.unit} · {r.room} ({r.room_type})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  )}
+
+                  {form.room_id && (
+                    <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span className="font-medium">{form.building}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Unit</span><span className="font-medium">{form.unit}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Room / Carpark</span><span className="font-medium">{form.room}</span></div>
+                    </div>
                   )}
                 </div>
-              )}
+              </AccordionContent>
+            </AccordionItem>
 
-              {form.room_id && (
-                <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span className="font-medium">{form.building}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Unit</span><span className="font-medium">{form.unit}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Room / Carpark</span><span className="font-medium">{form.room}</span></div>
+            {/* Section B: Move Out Details */}
+            <AccordionItem value="move-out-details" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <span className="text-sm font-semibold">📝 Move Out Details</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3 pb-2">
+                  <div className="space-y-1" data-field="effective_date">
+                    <label className={lbl}>Effective Date *</label>
+                    <Input type="date" className={fieldClass("", !!moveOutValidation.errors.effective_date)} value={form.effective_date} onChange={e => { updateForm({ effective_date: e.target.value }); moveOutValidation.clearError("effective_date"); }} />
+                    <FieldError error={moveOutValidation.errors.effective_date} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Move Out Type *</label>
+                    <Select value={form.move_out_type || "none"} onValueChange={v => v !== "none" && updateForm({ move_out_type: v })}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" disabled>Select type</SelectItem>
+                        {MOVE_OUT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Reason / Notes</label>
+                    <Textarea
+                      placeholder="Enter reason or notes..."
+                      value={form.reason}
+                      onChange={e => updateForm({ reason: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={lbl}>Next Status *</label>
+                    <Select value={form.next_status} onValueChange={v => updateForm({ next_status: v })}>
+                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {NEXT_STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Section B: Move Out Details */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Move Out Details</h3>
-            <div className="space-y-3">
-              <div className="space-y-1" data-field="effective_date">
-                <label className={lbl}>Effective Date *</label>
-                <Input type="date" className={fieldClass("", !!moveOutValidation.errors.effective_date)} value={form.effective_date} onChange={e => { updateForm({ effective_date: e.target.value }); moveOutValidation.clearError("effective_date"); }} />
-                <FieldError error={moveOutValidation.errors.effective_date} />
-              </div>
-              <div className="space-y-1">
-                <label className={lbl}>Move Out Type *</label>
-                <Select value={form.move_out_type || "none"} onValueChange={v => v !== "none" && updateForm({ move_out_type: v })}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Select type" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" disabled>Select type</SelectItem>
-                    {MOVE_OUT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className={lbl}>Reason / Notes</label>
-                <Textarea
-                  placeholder="Enter reason or notes..."
-                  value={form.reason}
-                  onChange={e => updateForm({ reason: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className={lbl}>Next Status *</label>
-                <Select value={form.next_status} onValueChange={v => updateForm({ next_status: v })}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {NEXT_STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </StandardModal>
 
