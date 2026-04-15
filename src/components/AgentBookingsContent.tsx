@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
-import { useBookings, useUpdateOrderStatus, Booking, ORDER_STATUS_LABELS } from "@/hooks/useBookings";
+import { useBookings, useUpdateOrderStatus, Booking, ORDER_STATUS_LABELS, OrderStatus } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
+import { StatusBadge } from "@/components/StatusBadge";
 import { format } from "date-fns";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -17,18 +18,22 @@ interface AgentBookingsContentProps {
   onEditBooking?: (booking: Booking) => void;
 }
 
+const AGENT_BOOKING_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "booking_submitted", label: "Booking Submitted" },
+  { value: "booking_approved", label: "Booking Approved" },
+  { value: "booking_rejected", label: "Booking Rejected" },
+  { value: "booking_cancelled", label: "Booking Cancelled" },
+  { value: "move_in_submitted", label: "Move-in Submitted" },
+  { value: "move_in_approved", label: "Move-in Approved" },
+  { value: "move_in_rejected", label: "Move-in Rejected" },
+];
+
 export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProps) {
   const { user } = useAuth();
   const { data: allBookings = [], isLoading } = useBookings();
   const updateBookingStatus = useUpdateOrderStatus();
 
-  const statusOptions = [
-    { value: "all", label: "All" },
-    { value: "submitted", label: "Submitted" },
-    { value: "approved", label: "Approved" },
-    { value: "rejected", label: "Rejected" },
-    { value: "cancelled", label: "Cancelled" },
-  ];
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [search, setSearch] = useState("");
@@ -46,7 +51,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   const filtered = useMemo(() => {
     let list = myBookings;
     if (statusFilter && statusFilter !== "all") {
-      list = list.filter(b => b.status === statusFilter);
+      list = list.filter(b => b.order_status === statusFilter);
     }
     if (search.trim()) {
       const s = search.toLowerCase();
@@ -63,7 +68,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
         room: b.room ? `${b.room.unit} · ${b.room.room}` : "",
         tenant_name: b.tenant_name,
         created_at: b.created_at,
-        status: b.status,
+        order_status: b.order_status,
       };
       return map[key];
     });
@@ -72,22 +77,11 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  const statusBadge = (status: string) => {
-    const cls = status === "submitted"
-      ? "bg-yellow-500/20 text-yellow-600"
-      : status === "approved"
-        ? "bg-green-500/20 text-green-600"
-        : status === "cancelled"
-          ? "bg-gray-500/20 text-gray-500"
-          : "bg-red-500/20 text-red-600";
-    return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${cls}`}>{status.toUpperCase()}</span>;
-  };
-
   // Detail view
   if (selectedBooking) {
     const b = selectedBooking;
-    const canCancel = b.status === "submitted" || b.status === "rejected";
-    const canReEdit = b.status === "rejected";
+    const canCancel = b.order_status === "booking_submitted" || b.order_status === "booking_rejected";
+    const canReEdit = b.order_status === "booking_rejected";
 
     return (
       <div className="space-y-4">
@@ -97,7 +91,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
         <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
           <div className="flex items-center justify-between">
             <div className="text-xl font-bold">{b.tenant_name}</div>
-            {statusBadge(b.status)}
+            <StatusBadge status={b.order_status} />
           </div>
           {b.room && <div className="text-sm text-muted-foreground">{b.room.building} · {b.room.unit} · {b.room.room}</div>}
           <div className="text-xs text-muted-foreground">Booking ID: {b.id.slice(0, 8)}... · Submitted: {format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}</div>
@@ -127,20 +121,27 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
           </div>
 
           {/* Reject reason display */}
-          {b.status === "rejected" && b.reject_reason && (
+          {b.order_status === "booking_rejected" && b.reject_reason && (
             <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
               <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
             </div>
           )}
 
-          {/* Cancel reason display */}
-          {b.status === "cancelled" && b.reject_reason && (
-            <div className="bg-gray-500/10 text-gray-600 rounded-lg p-3 text-sm">
-              <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
+          {/* Move-in reject reason */}
+          {b.order_status === "move_in_rejected" && b.move_in_reject_reason && (
+            <div className="bg-orange-500/10 text-orange-700 rounded-lg p-3 text-sm">
+              <span className="font-semibold">Move-in Reject Reason:</span> {b.move_in_reject_reason}
             </div>
           )}
 
-          {/* Actions for pending / rejected */}
+          {/* Cancel reason display */}
+          {b.order_status === "booking_cancelled" && (b.reject_reason || b.move_in_cancel_reason) && (
+            <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm">
+              <span className="font-semibold">Cancel Reason:</span> {b.reject_reason || b.move_in_cancel_reason}
+            </div>
+          )}
+
+          {/* Actions for submitted / rejected */}
           {canCancel && (
             <div className="flex flex-col gap-3 pt-4 border-t border-border">
               {/* Re-edit for rejected bookings */}
@@ -202,7 +203,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
       {/* Quick filter chips */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="flex flex-wrap gap-2">
-          {statusOptions.map((opt) => (
+          {AGENT_BOOKING_FILTERS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => { setStatusFilter(opt.value); setPage(0); }}
@@ -232,7 +233,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                 <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Room</SortableTableHead>
                 <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant</SortableTableHead>
                 <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted</SortableTableHead>
-                <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+                <SortableTableHead sortKey="order_status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -253,13 +254,13 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(b.created_at), "dd MMM yyyy, HH:mm")}
                     </TableCell>
-                    <TableCell>{statusBadge(b.status)}</TableCell>
+                    <TableCell><StatusBadge status={b.order_status} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
                         <Button variant="ghost" size="icon" onClick={() => setSelectedBooking(b)} title="View">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {b.status === "rejected" && onEditBooking && (
+                        {b.order_status === "booking_rejected" && onEditBooking && (
                           <Button variant="ghost" size="icon" onClick={() => onEditBooking(b)} title="Edit & Resubmit">
                             <Pencil className="h-4 w-4" />
                           </Button>
