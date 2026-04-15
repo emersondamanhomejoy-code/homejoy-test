@@ -20,7 +20,7 @@ interface AgentBookingsContentProps {
 export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProps) {
   const { user } = useAuth();
   const { data: allBookings = [], isLoading } = useBookings();
-  const updateBookingStatus = useUpdateBookingStatus();
+  const updateBookingStatus = useUpdateOrderStatus();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
@@ -167,7 +167,7 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                     if (!user) return;
                     await updateBookingStatus.mutateAsync({
                       id: b.id,
-                      status: "cancelled" as any,
+                      order_status: "booking_cancelled",
                       reviewed_by: user.id,
                       reject_reason: cancelReason,
                     });
