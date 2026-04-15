@@ -14,6 +14,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
