@@ -694,7 +694,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                     <div><span className="text-muted-foreground">Listed Rent:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
                     <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
                     <DetailRow label="Available On" value={viewingRoom.available_date} />
-                    <div><span className="text-muted-foreground">Remaining Pax:</span> <span className="font-medium">{effectiveRemaining}</span> <span className="text-muted-foreground text-xs">({viewingRoom.pax_staying || 0}/{viewingRoom.max_pax})</span></div>
+                    <div><span className="text-muted-foreground">Remaining Pax:</span> <span className="font-medium">{effectiveRemaining}</span></div>
                   </>
                 )}
                 {isCarpark && (
