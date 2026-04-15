@@ -401,6 +401,38 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const occupiedCarparks = unitCarparks.filter(r => r.status === "Occupied").length;
   const remainingCarparks = unitCarparks.length - occupiedCarparks;
 
+  // Fetch linked tenant when viewing a room with Occupied/Available Soon status
+  useEffect(() => {
+    if (!viewingRoom || !["Occupied", "Available Soon"].includes(viewingRoom.status)) {
+      setLinkedTenant(null);
+      return;
+    }
+    let cancelled = false;
+    setTenantLoading(true);
+    (async () => {
+      // Find active tenant_room link
+      const { data: trData } = await supabase
+        .from("tenant_rooms")
+        .select("tenant_id")
+        .eq("room_id", viewingRoom.id)
+        .eq("status", "active")
+        .limit(1);
+      if (cancelled) return;
+      if (trData && trData.length > 0) {
+        const { data: tenantData } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("id", trData[0].tenant_id)
+          .single();
+        if (!cancelled) setLinkedTenant(tenantData || null);
+      } else {
+        setLinkedTenant(null);
+      }
+      setTenantLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [viewingRoom?.id, viewingRoom?.status]);
+
   // Listen for back-to-unit event from parent footer button
   useEffect(() => {
     const handler = () => setViewingRoom(null);
