@@ -533,7 +533,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   );
 
 
-  const baseShareUrl = `${window.location.origin}/view/${unit.id}`;
+  
 
   // Parse all access categories from condo (must be before early return)
   const allAccess = useMemo(() => {
