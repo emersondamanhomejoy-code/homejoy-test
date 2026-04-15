@@ -66,13 +66,13 @@ export default function BuildingPhotos() {
       {lightboxIndex !== null && photos.length > 0 && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxIndex(null)}>
           <img src={`${STORAGE_URL}/${photos[lightboxIndex]}`} alt="Full size" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
-          <button onClick={() => setLightboxIndex(null)} className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70">✕</button>
+          <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }} className="absolute top-4 right-4 z-10 text-white text-2xl font-bold hover:opacity-70">✕</button>
           <div className="absolute bottom-4 text-white text-sm">{lightboxIndex + 1} / {photos.length}</div>
           {lightboxIndex > 0 && (
-            <button onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">‹</button>
+            <button onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }} className="absolute left-4 top-1/2 z-10 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">‹</button>
           )}
           {lightboxIndex < photos.length - 1 && (
-            <button onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">›</button>
+            <button onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">›</button>
           )}
         </div>
       )}
