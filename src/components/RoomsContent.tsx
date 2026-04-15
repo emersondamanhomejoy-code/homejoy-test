@@ -26,6 +26,7 @@ import { inputClass } from "@/lib/ui-constants";
 
 // Status tabs
 const STATUS_TABS = ["All", "Available", "Available Soon", "Pending", "Occupied", "Archived"] as const;
+type AssetTab = "rooms" | "carparks";
 
 interface FlatRoom extends Room {
   unitName: string;
