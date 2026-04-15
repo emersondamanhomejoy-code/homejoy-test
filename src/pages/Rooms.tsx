@@ -263,13 +263,13 @@ export default function Rooms() {
               <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
                 <div className="px-6 py-4 border-b border-border flex justify-between items-center">
                 <h3 className="font-semibold text-foreground">
-                  {selectedStatus === "all" ? "All Rooms" : `${selectedStatus} Rooms`}
+                  {selectedStatus === "all" ? (assetTab === "rooms" ? "All Rooms" : "All Car Parks") : `${selectedStatus} ${assetTab === "rooms" ? "Rooms" : "Car Parks"}`}
                 </h3>
                 </div>
                 {isLoading ? (
-                  <div className="p-12 text-center text-muted-foreground">Loading rooms…</div>
+                  <div className="p-12 text-center text-muted-foreground">Loading…</div>
                 ) : filtered.length === 0 ? (
-                  <div className="p-12 text-center text-muted-foreground">No available rooms match your filters.</div>
+                  <div className="p-12 text-center text-muted-foreground">No {assetTab === "rooms" ? "rooms" : "car parks"} match your filters.</div>
                 ) : (
                   <>
                     <div className="overflow-x-auto">
