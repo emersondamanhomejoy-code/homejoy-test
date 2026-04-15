@@ -472,7 +472,7 @@ export function RoomsContent() {
       <StandardModal
         open={!!viewingRoom}
         onOpenChange={(o) => { if (!o) setViewingRoom(null); }}
-        title="Room Details"
+        title={assetTab === "rooms" ? "Room Details" : "Car Park Details"}
         size="md"
         hideCancel
         footer={<Button variant="outline" onClick={() => setViewingRoom(null)}>Close</Button>}
