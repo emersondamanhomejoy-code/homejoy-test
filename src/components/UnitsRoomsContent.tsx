@@ -812,118 +812,103 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
             </AccordionContent>
           </AccordionItem>
 
-          {/* 3. Current Occupancy — only shown when relevant */}
-          {!isCarpark && hasOccupancy && (
-            <AccordionItem value="occupancy" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Current Occupancy</AccordionTrigger>
-              <AccordionContent>
+          {/* 3. Tenant Details */}
+          <AccordionItem value="tenant" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Tenant Details</AccordionTrigger>
+            <AccordionContent>
+              {tenantLoading ? (
+                <p className="text-sm text-muted-foreground">Loading tenant info…</p>
+              ) : linkedTenant ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <DetailRow label="Tenant" value={tenantName} />
-                  <DetailRow label="Gender" value={tenantGender} />
-                  <DetailRow label="Race" value={tenantRace} />
-                  <DetailRow label="Occupation" value={tenantOccupation} />
-                  <DetailRow label="Person in Charge" value={personInCharge} />
+                  <DetailRow label="Name" value={linkedTenant.name} />
+                  <DetailRow label="IC/Passport" value={linkedTenant.ic_passport} />
+                  <DetailRow label="Phone" value={linkedTenant.phone} />
+                  <DetailRow label="Email" value={linkedTenant.email} />
+                  <DetailRow label="Gender" value={linkedTenant.gender} />
+                  <DetailRow label="Nationality" value={linkedTenant.nationality} />
+                  <DetailRow label="Race" value={linkedTenant.race} />
+                  <DetailRow label="Occupation" value={linkedTenant.occupation} />
+                  <DetailRow label="Company" value={linkedTenant.company} />
+                  <DetailRow label="Position" value={linkedTenant.position} />
+                  <DetailRow label="Car Plate" value={linkedTenant.car_plate} />
+                  {linkedTenant.emergency_1_name && (
+                    <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <DetailRow label="Name" value={linkedTenant.emergency_1_name} />
+                        <DetailRow label="Phone" value={linkedTenant.emergency_1_phone} />
+                        <DetailRow label="Relationship" value={linkedTenant.emergency_1_relationship} />
+                      </div>
+                    </div>
+                  )}
+                  {linkedTenant.emergency_2_name && (
+                    <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <DetailRow label="Name" value={linkedTenant.emergency_2_name} />
+                        <DetailRow label="Phone" value={linkedTenant.emergency_2_phone} />
+                        <DetailRow label="Relationship" value={linkedTenant.emergency_2_relationship} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
+              ) : (
+                <p className="text-sm text-muted-foreground">No tenant linked to this {isCarpark ? "carpark" : "room"}.</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
-          {/* 4. Other Rooms in Unit — table format */}
-          {!isCarpark && otherRooms.length > 0 && (
-            <AccordionItem value="summary" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                <div className="flex items-center gap-2 flex-1">
-                  <span>Other Rooms in Unit</span>
-                </div>
-                <div className="flex items-center gap-1 mr-2">
-                  <TextCopyBtn onClick={copyHousemateDetails} label="Copy Housemate Details" />
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="overflow-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-left">Room</TableHead>
-                        <TableHead className="text-left">Status</TableHead>
-                        <TableHead className="text-left">Tenant</TableHead>
-                        <TableHead className="text-left">Gender</TableHead>
-                        <TableHead className="text-left">Race</TableHead>
-                        <TableHead className="text-left">Occupation</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {otherRooms.map((r) => {
-                        const housemates = Array.isArray(r.housemates) ? r.housemates : [];
-                        const hmTenant = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).name : (r as any).assigned_to;
-                        const hmGender = r.tenant_gender || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).gender : "");
-                        const hmRace = r.tenant_race || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).race : "");
-                        const hmOccupation = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).occupation : "";
-                        return (
-                          <TableRow key={r.id}>
-                            <TableCell className="text-left">{r.room.replace(/^Room\s+/i, "")}</TableCell>
-                            <TableCell className="text-left"><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
-                            <TableCell className="text-left">{hmTenant || "N/A"}</TableCell>
-                            <TableCell className="text-left">{hmGender || "N/A"}</TableCell>
-                            <TableCell className="text-left">{hmRace || "N/A"}</TableCell>
-                            <TableCell className="text-left">{hmOccupation || "N/A"}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {/* 5. Tenant Details — shown when room/carpark is Occupied or Available Soon */}
-          {showTenantSection && (
-            <AccordionItem value="tenant" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Tenant Details</AccordionTrigger>
-              <AccordionContent>
-                {tenantLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading tenant info…</p>
-                ) : linkedTenant ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                    <DetailRow label="Name" value={linkedTenant.name} />
-                    <DetailRow label="IC/Passport" value={linkedTenant.ic_passport} />
-                    <DetailRow label="Phone" value={linkedTenant.phone} />
-                    <DetailRow label="Email" value={linkedTenant.email} />
-                    <DetailRow label="Gender" value={linkedTenant.gender} />
-                    <DetailRow label="Nationality" value={linkedTenant.nationality} />
-                    <DetailRow label="Race" value={linkedTenant.race} />
-                    <DetailRow label="Occupation" value={linkedTenant.occupation} />
-                    <DetailRow label="Company" value={linkedTenant.company} />
-                    <DetailRow label="Position" value={linkedTenant.position} />
-                    <DetailRow label="Car Plate" value={linkedTenant.car_plate} />
-                    {linkedTenant.emergency_1_name && (
-                      <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
-                        <div className="grid grid-cols-3 gap-3">
-                          <DetailRow label="Name" value={linkedTenant.emergency_1_name} />
-                          <DetailRow label="Phone" value={linkedTenant.emergency_1_phone} />
-                          <DetailRow label="Relationship" value={linkedTenant.emergency_1_relationship} />
+          {/* 4. Booking Details */}
+          <AccordionItem value="booking" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Booking Details</AccordionTrigger>
+            <AccordionContent>
+              {bookingLoading ? (
+                <p className="text-sm text-muted-foreground">Loading booking info…</p>
+              ) : linkedBooking ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  <DetailRow label="Order Status" value={linkedBooking.order_status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                  <DetailRow label="Submitted At" value={linkedBooking.created_at ? new Date(linkedBooking.created_at).toLocaleDateString() : ""} />
+                  <DetailRow label="Contract" value={linkedBooking.contract_months ? `${linkedBooking.contract_months} months` : ""} />
+                  <DetailRow label="Move-In Date" value={linkedBooking.move_in_date} />
+                  <DetailRow label="Pax Staying" value={linkedBooking.pax_staying?.toString()} />
+                  <DetailRow label="Car Plate" value={linkedBooking.car_plate} />
+                  <DetailRow label="Payment Method" value={linkedBooking.payment_method} />
+                  <DetailRow label="Agreement Signed" value={linkedBooking.agreement_signed ? "Yes" : "No"} />
+                  <DetailRow label="Access Card Count" value={linkedBooking.access_card_count?.toString()} />
+                  <DetailRow label="Parking" value={linkedBooking.parking} />
+                  {(() => {
+                    const cost = linkedBooking.move_in_cost as Record<string, unknown> | null;
+                    const accessAmt = cost?.access_card_deposit || cost?.accessCardDeposit;
+                    const parkingAmt = cost?.parking_deposit || cost?.parkingDeposit || cost?.parking_card_deposit;
+                    return (
+                      <>
+                        {accessAmt ? <DetailRow label="Access Card Amount" value={`RM${accessAmt}`} /> : null}
+                        {parkingAmt ? <DetailRow label="Parking Amount" value={`RM${parkingAmt}`} /> : null}
+                      </>
+                    );
+                  })()}
+                  {(() => {
+                    const slips = linkedBooking.doc_transfer_slip as string[] | null;
+                    if (!slips || !Array.isArray(slips) || slips.length === 0) return null;
+                    return (
+                      <div className="col-span-2 md:col-span-3">
+                        <span className="text-muted-foreground text-xs">Transfer Slip</span>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          {slips.map((url: string, i: number) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">
+                              Slip {i + 1}
+                            </a>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    {linkedTenant.emergency_2_name && (
-                      <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
-                        <div className="grid grid-cols-3 gap-3">
-                          <DetailRow label="Name" value={linkedTenant.emergency_2_name} />
-                          <DetailRow label="Phone" value={linkedTenant.emergency_2_phone} />
-                          <DetailRow label="Relationship" value={linkedTenant.emergency_2_relationship} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No tenant linked to this {isCarpark ? "carpark" : "room"}.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          )}
+                    );
+                  })()}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No booking linked to this {isCarpark ? "carpark" : "room"}.</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
 
         {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
