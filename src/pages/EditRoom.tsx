@@ -143,11 +143,11 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Status</label>
-              {rc.status === "Pending" || rc.status === "Occupied" ? (
+              {room.status === "Pending" || room.status === "Occupied" ? (
                 <>
                   <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {rc.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
+                    {room.status === "Pending" ? "Controlled by Booking workflow." : "Controlled by Move Out workflow."}
                   </p>
                 </>
               ) : (
@@ -156,9 +156,9 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
                   if (e.target.value === "Available Soon" && !rc.available_date) upRoom("available_date", "");
                   if (e.target.value !== "Archived") upRoom("archived_reason", "");
                 }}>
-                  {rc.status === "Available" && <><option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Archived">Archived</option></>}
-                  {rc.status === "Available Soon" && <><option value="Available Soon">Available Soon</option><option value="Available">Available</option></>}
-                  {rc.status === "Archived" && <><option value="Archived">Archived</option><option value="Available">Available</option></>}
+                  {room.status === "Available" && <><option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Archived">Archived</option></>}
+                  {room.status === "Available Soon" && <><option value="Available Soon">Available Soon</option><option value="Available">Available</option></>}
+                  {room.status === "Archived" && <><option value="Archived">Archived</option><option value="Available">Available</option></>}
                 </select>
               )}
             </div>
