@@ -368,6 +368,18 @@ export default function Rooms() {
         </div>
       </div>
       <CreateBookingDialog open={showBooking} onOpenChange={o => { setShowBooking(o); if (!o) setBookingRoomId(""); }} preSelectedRoomId={bookingRoomId} />
+
+      {/* View Room Modal */}
+      <StandardModal
+        open={!!viewingRoom}
+        onOpenChange={(o) => { if (!o) setViewingRoom(null); }}
+        title={viewingRoom && (viewingRoom.room_type === "Car Park" || (viewingRoom.room || "").toLowerCase().startsWith("carpark")) ? "Car Park Details" : "Room Details"}
+        size="lg"
+        hideCancel
+        footer={<Button variant="outline" onClick={() => setViewingRoom(null)}>Close</Button>}
+      >
+        {viewingRoom && <AgentRoomViewContent room={viewingRoom} assetTab={assetTab} />}
+      </StandardModal>
     </SidebarProvider>
   );
 }
