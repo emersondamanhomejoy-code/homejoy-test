@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { useMoveIns, useUpdateMoveIn, MoveIn } from "@/hooks/useMoveIns";
+import { useBookings, Booking, useUpdateOrderStatus, BOOKING_TYPE_LABELS, BookingType, ORDER_STATUS_LABELS, OrderStatus } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
-import { useBookings, Booking, BOOKING_TYPE_LABELS, BookingType } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
@@ -24,14 +23,20 @@ import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/ho
 
 interface UserInfo { id: string; email: string; name: string; }
 
+// Move-in relevant order statuses
+const MOVE_IN_STATUSES: OrderStatus[] = [
+  "booking_approved",
+  "move_in_submitted",
+  "move_in_rejected",
+  "move_in_approved",
+];
+
 const STATUS_TABS = [
   { value: "all", label: "All" },
-  { value: "ready_for_move_in", label: "Ready for Move-in" },
-  { value: "submitted", label: "Submitted" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "closed", label: "Closed" },
-  { value: "reversed", label: "Reversed" },
+  { value: "booking_approved", label: "Ready for Move-in" },
+  { value: "move_in_submitted", label: "Submitted" },
+  { value: "move_in_approved", label: "Approved" },
+  { value: "move_in_rejected", label: "Rejected" },
 ];
 
 export function MoveInPage() {
@@ -39,13 +44,12 @@ export function MoveInPage() {
   const isAdmin = role === "admin" || role === "super_admin";
   const isAgent = role === "agent";
   const queryClient = useQueryClient();
-  const { data: moveIns = [], isLoading } = useMoveIns();
-  const updateMoveIn = useUpdateMoveIn();
+  const { data: allBookings = [], isLoading } = useBookings();
+  const updateOrderStatus = useUpdateOrderStatus();
   const { data: roomsData = [] } = useRooms();
-  const { data: allBookings = [] } = useBookings();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("submitted");
+  const [statusFilter, setStatusFilter] = useState("move_in_submitted");
   const [agentFilter, setAgentFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
@@ -57,18 +61,15 @@ export function MoveInPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  const [viewItem, setViewItem] = useState<MoveIn | null>(null);
-  const [editItem, setEditItem] = useState<MoveIn | null>(null);
+  const [viewItem, setViewItem] = useState<Booking | null>(null);
+  const [editItem, setEditItem] = useState<Booking | null>(null);
   const [editForm, setEditForm] = useState({ agreement_signed: false, payment_method: "", remarks: "" });
-  const [showApproveDialog, setShowApproveDialog] = useState<MoveIn | null>(null);
-  const [showRejectDialog, setShowRejectDialog] = useState<MoveIn | null>(null);
+  const [showApproveDialog, setShowApproveDialog] = useState<Booking | null>(null);
+  const [showRejectDialog, setShowRejectDialog] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [showReverseDialog, setShowReverseDialog] = useState<MoveIn | null>(null);
-  const [reverseReason, setReverseReason] = useState("");
   const [saving, setSaving] = useState(false);
   const submitValidation = useFormValidation();
   const rejectValidation = useFormValidation();
-  const reverseValidation = useFormValidation();
 
   const [users, setUsers] = useState<UserInfo[]>([]);
   useEffect(() => {
@@ -77,16 +78,19 @@ export function MoveInPage() {
     });
   }, []);
 
-  const getAgentName = (id: string) => {
+  const getAgentName = (id: string | null) => {
+    if (!id) return "—";
     const matched = users.find((u) => u.id === id);
     return matched?.name || matched?.email || id.slice(0, 8);
   };
 
-  // Get booking for a move-in
-  const getBooking = (bookingId: string | null) => allBookings.find(b => b.id === bookingId);
-
-  // Get room details
   const getRoom = (roomId: string | null) => roomsData.find(r => r.id === roomId);
+
+  // Filter bookings to move-in relevant statuses
+  const moveInBookings = useMemo(() =>
+    allBookings.filter(b => MOVE_IN_STATUSES.includes(b.order_status)),
+    [allBookings]
+  );
 
   const locationOptions = useMemo(() => [...new Set(roomsData.map(r => r.location).filter(Boolean))].sort(), [roomsData]);
   const buildingOptions = useMemo(() => [...new Set(roomsData.map(r => r.building).filter(Boolean))].sort(), [roomsData]);
@@ -95,85 +99,79 @@ export function MoveInPage() {
 
   // Status counts
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: moveIns.length };
-    moveIns.forEach(m => { counts[m.status] = (counts[m.status] || 0) + 1; });
+    const counts: Record<string, number> = { all: moveInBookings.length };
+    moveInBookings.forEach(b => { counts[b.order_status] = (counts[b.order_status] || 0) + 1; });
     return counts;
-  }, [moveIns]);
+  }, [moveInBookings]);
 
   const filtered = useMemo(() => {
-    let list = moveIns;
-    if (statusFilter !== "all") list = list.filter(m => m.status === statusFilter);
+    let list = moveInBookings;
+    if (statusFilter !== "all") list = list.filter(b => b.order_status === statusFilter);
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(m => {
-        const room = getRoom(m.room_id);
-        return m.tenant_name.toLowerCase().includes(s) ||
-          (m.room?.building || "").toLowerCase().includes(s) ||
-          (m.room?.unit || "").toLowerCase().includes(s) ||
-          (m.room?.room || "").toLowerCase().includes(s) ||
+      list = list.filter(b => {
+        const room = getRoom(b.room_id);
+        return b.tenant_name.toLowerCase().includes(s) ||
+          (b.room?.building || "").toLowerCase().includes(s) ||
+          (b.room?.unit || "").toLowerCase().includes(s) ||
+          (b.room?.room || "").toLowerCase().includes(s) ||
           (room?.room_title || "").toLowerCase().includes(s);
       });
     }
-    if (agentFilter.length) list = list.filter(m => agentFilter.includes(getAgentName(m.agent_id)));
-    if (buildingFilter.length) list = list.filter(m => m.room && buildingFilter.includes(m.room.building));
-    if (locationFilter.length) list = list.filter(m => {
-      const room = getRoom(m.room_id);
+    if (agentFilter.length) list = list.filter(b => agentFilter.includes(getAgentName(b.submitted_by)));
+    if (buildingFilter.length) list = list.filter(b => b.room && buildingFilter.includes(b.room.building));
+    if (locationFilter.length) list = list.filter(b => {
+      const room = getRoom(b.room_id);
       return room && locationFilter.includes(room.location);
     });
-    if (bookingTypeFilter.length) list = list.filter(m => {
-      const booking = getBooking(m.booking_id);
-      return booking && bookingTypeFilter.includes(booking.booking_type);
-    });
-    if (paymentFilter.length) list = list.filter(m => paymentFilter.includes(m.payment_method));
-    if (dateFrom) list = list.filter(m => m.created_at >= dateFrom);
-    if (dateTo) list = list.filter(m => m.created_at <= `${dateTo}T23:59:59`);
+    if (bookingTypeFilter.length) list = list.filter(b => bookingTypeFilter.includes(b.booking_type));
+    if (paymentFilter.length) list = list.filter(b => paymentFilter.includes(b.payment_method));
+    if (dateFrom) list = list.filter(b => b.created_at >= dateFrom);
+    if (dateTo) list = list.filter(b => b.created_at <= `${dateTo}T23:59:59`);
 
-    return sortData(list, (item: MoveIn, key: string) => {
+    return sortData(list, (item: Booking, key: string) => {
       const room = getRoom(item.room_id);
-      const booking = getBooking(item.booking_id);
       const sortable: Record<string, string> = {
         tenant_name: item.tenant_name,
-        agent: getAgentName(item.agent_id),
+        agent: getAgentName(item.submitted_by),
         building: item.room?.building || "",
         unit: item.room?.unit || "",
         room: item.room?.room || "",
         room_title: room?.room_title || "",
-        booking_type: booking?.booking_type || "",
-        status: item.status,
+        booking_type: item.booking_type || "",
+        order_status: item.order_status,
         payment_method: item.payment_method,
         created_at: item.created_at,
         updated_at: item.updated_at,
       };
       return sortable[key] || "";
     });
-  }, [moveIns, statusFilter, search, agentFilter, buildingFilter, locationFilter, bookingTypeFilter, paymentFilter, dateFrom, dateTo, roomsData, allBookings, sort, users]);
+  }, [moveInBookings, statusFilter, search, agentFilter, buildingFilter, locationFilter, bookingTypeFilter, paymentFilter, dateFrom, dateTo, roomsData, sort, users]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  // ─── AGENT SUBMIT ───
-  const handleAgentSubmit = async (item: MoveIn) => {
+  // ─── AGENT SUBMIT MOVE-IN ───
+  const handleAgentSubmit = async (item: Booking) => {
     if (!user) return;
-    // Check if related booking was terminated
-    const booking = getBooking(item.booking_id);
-    if (booking && booking.status === "cancelled") {
-      toast.error("This booking has been terminated. You cannot submit this move-in.");
+    if (item.order_status === "booking_cancelled") {
+      toast.error("This booking has been cancelled. You cannot submit this move-in.");
       return;
     }
-    const submitRules = { payment_method: (v: any) => !editForm.payment_method ? "Payment method is required" : null };
+    const submitRules = { payment_method: () => !editForm.payment_method ? "Payment method is required" : null };
     if (!submitValidation.validate({ payment_method: editForm.payment_method }, submitRules)) return;
     setSaving(true);
     try {
-      const history = [...(item.history || []), { action: "submitted", by: user.email, at: new Date().toISOString() }];
-      await updateMoveIn.mutateAsync({
+      const history = [...(item.history || []), { action: "move_in_submitted", by: user.email, at: new Date().toISOString() }];
+      await updateOrderStatus.mutateAsync({
         id: item.id,
-        status: "submitted",
+        order_status: "move_in_submitted",
+        reviewed_by: user.id,
         agreement_signed: editForm.agreement_signed,
         payment_method: editForm.payment_method,
         history,
-        updated_at: new Date().toISOString(),
       });
-      await logActivity("submit_move_in", "move_in", item.id, { tenant_name: item.tenant_name });
+      await logActivity("submit_move_in", "booking", item.id, { tenant_name: item.tenant_name });
       toast.success("Move-in submitted");
       setEditItem(null);
     } catch (e: any) {
@@ -183,91 +181,30 @@ export function MoveInPage() {
     }
   };
 
-  // ─── ADMIN APPROVE ───
+  // ─── ADMIN APPROVE MOVE-IN ───
   const handleApprove = async () => {
     if (!user || !showApproveDialog) return;
     const item = showApproveDialog;
     setSaving(true);
     try {
-      const history = [...(item.history || []), { action: "approved", by: user.email, at: new Date().toISOString() }];
-      await updateMoveIn.mutateAsync({
+      const history = [...(item.history || []), { action: "move_in_approved", by: user.email, at: new Date().toISOString() }];
+
+      // Get carpark IDs from booking documents
+      const docs = item.documents as any;
+      const carParkSelections: { roomId: string }[] = docs?.carParkSelections || [];
+      const carParkIds = carParkSelections.map(cp => cp.roomId).filter(Boolean);
+
+      await updateOrderStatus.mutateAsync({
         id: item.id,
-        status: "approved",
+        order_status: "move_in_approved",
         reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
+        room_id: item.room_id,
+        bookingData: item,
+        carParkIds,
         history,
       });
 
-      // Set room to Occupied
-      if (item.room_id) {
-        await supabase.from("rooms").update({ status: "Occupied" }).eq("id", item.room_id);
-      }
-
-      // Set carpark rooms to Occupied if any
-      const booking = getBooking(item.booking_id);
-      if (booking) {
-        const docs = booking.documents as any;
-        const carParkSelections: { roomId: string }[] = docs?.carParkSelections || [];
-        for (const cp of carParkSelections) {
-          if (cp.roomId) {
-            await supabase.from("rooms").update({ status: "Occupied" }).eq("id", cp.roomId);
-          }
-        }
-      }
-
-      // Auto-create earnings record
-      if (booking) {
-        // Fetch agent's commission config
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("commission_type, commission_config")
-          .eq("user_id", item.agent_id)
-          .eq("role", "agent")
-          .single();
-
-        const commType = roleData?.commission_type || "internal_basic";
-        const commConfig = roleData?.commission_config as any;
-        const rent = booking.monthly_salary || 0;
-        const duration = booking.contract_months || 12;
-        const durationMultiplier = duration / 12;
-
-        let commissionAmount = 0;
-        if (commType === "external") {
-          commissionAmount = Math.round(rent * (commConfig?.percentage ?? 100) / 100 * durationMultiplier);
-        } else if (commType === "internal_full") {
-          const tiers = commConfig?.tiers || [{ min: 1, max: 300, percentage: 70 }];
-          const tier = tiers.find((t: any) => true); // use first match
-          commissionAmount = Math.round(rent * (tier?.percentage ?? 70) / 100 * durationMultiplier);
-        } else {
-          const tiers = commConfig?.tiers || [{ min: 1, max: 5, amount: 200 }];
-          const tier = tiers.find((t: any) => true);
-          commissionAmount = Math.round((tier?.amount ?? 200) * durationMultiplier);
-        }
-
-        const room = getRoom(item.room_id);
-        const now = new Date();
-        const payCycle = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-        await supabase.from("earnings").insert({
-          agent_id: item.agent_id,
-          booking_id: item.booking_id,
-          move_in_id: item.id,
-          room_id: item.room_id,
-          tenant_name: item.tenant_name,
-          building: room?.building || item.room?.building || "",
-          unit: room?.unit || item.room?.unit || "",
-          room: room?.room || item.room?.room || "",
-          exact_rental: rent,
-          commission_type: commType,
-          commission_amount: commissionAmount,
-          status: "pending",
-          pay_cycle: payCycle,
-        });
-      }
-
-      await logActivity("approve_move_in", "move_in", item.id, { tenant_name: item.tenant_name });
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["earnings"] });
+      await logActivity("approve_move_in", "booking", item.id, { tenant_name: item.tenant_name });
       toast.success("Move-in approved — room set to Occupied, earnings created");
       setShowApproveDialog(null);
     } catch (e: any) {
@@ -277,90 +214,27 @@ export function MoveInPage() {
     }
   };
 
-  // ─── ADMIN REJECT ───
+  // ─── ADMIN REJECT MOVE-IN ───
   const handleReject = async () => {
     if (!user || !showRejectDialog) return;
     const rejectRules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
     if (!rejectValidation.validate({ rejectReason }, rejectRules)) return;
     const item = showRejectDialog;
-    const history = [...(item.history || []), { action: "rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
-    await updateMoveIn.mutateAsync({
+    const history = [...(item.history || []), { action: "move_in_rejected", by: user.email, at: new Date().toISOString(), reason: rejectReason }];
+    await updateOrderStatus.mutateAsync({
       id: item.id,
-      status: "rejected",
+      order_status: "move_in_rejected",
       reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-      reject_reason: rejectReason,
+      move_in_reject_reason: rejectReason,
       history,
     });
-    await logActivity("reject_move_in", "move_in", item.id, { tenant_name: item.tenant_name, reason: rejectReason });
+    await logActivity("reject_move_in", "booking", item.id, { tenant_name: item.tenant_name, reason: rejectReason });
     toast.success("Move-in rejected");
     setShowRejectDialog(null);
     setRejectReason("");
   };
 
-  // ─── ADMIN REVERSE ───
-  const handleReverse = async () => {
-    if (!user || !showReverseDialog) return;
-    const reverseRules = { reverseReason: () => !reverseReason.trim() ? "Reverse reason is required" : null };
-    if (!reverseValidation.validate({ reverseReason }, reverseRules)) return;
-    const item = showReverseDialog;
-    setSaving(true);
-    try {
-      const history = [...(item.history || []), { action: "reversed", by: user.email, at: new Date().toISOString(), reason: reverseReason }];
-      await updateMoveIn.mutateAsync({
-        id: item.id,
-        status: "reversed",
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-        reject_reason: reverseReason,
-        history,
-      });
-
-      // Release room back to Pending (was Occupied from approval)
-      if (item.room_id) {
-        await supabase.from("rooms").update({ status: "Pending" }).eq("id", item.room_id);
-      }
-
-      // Release carparks
-      const booking = getBooking(item.booking_id);
-      if (booking) {
-        const docs = booking.documents as any;
-        const carParkSelections: { roomId: string }[] = docs?.carParkSelections || [];
-        for (const cp of carParkSelections) {
-          if (cp.roomId) {
-            await supabase.from("rooms").update({ status: "Pending" }).eq("id", cp.roomId);
-          }
-        }
-      }
-
-      // Remove tenant_rooms binding created by approval
-      if (item.booking_id) {
-        const { data: tenantRooms } = await supabase
-          .from("tenant_rooms")
-          .select("id")
-          .eq("room_id", item.room_id || "")
-          .eq("status", "active");
-        if (tenantRooms && tenantRooms.length > 0) {
-          for (const tr of tenantRooms) {
-            await supabase.from("tenant_rooms").update({ status: "reversed" }).eq("id", tr.id);
-          }
-        }
-      }
-
-      await logActivity("reverse_move_in", "move_in", item.id, { tenant_name: item.tenant_name, reason: reverseReason });
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["tenant_rooms"] });
-      toast.success("Move-in reversed — occupancy removed");
-      setShowReverseDialog(null);
-      setReverseReason("");
-    } catch (e: any) {
-      toast.error(e.message || "Failed");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const openEdit = (item: MoveIn) => {
+  const openEdit = (item: Booking) => {
     setEditItem(item);
     setEditForm({
       agreement_signed: item.agreement_signed,
@@ -374,14 +248,15 @@ export function MoveInPage() {
     setSaving(true);
     try {
       const history = [...(editItem.history || []), { action: "edited", by: user.email, at: new Date().toISOString() }];
-      await updateMoveIn.mutateAsync({
-        id: editItem.id,
+      const { error } = await supabase.from("bookings").update({
         agreement_signed: editForm.agreement_signed,
         payment_method: editForm.payment_method,
         history,
         updated_at: new Date().toISOString(),
-      });
-      await logActivity("edit_move_in", "move_in", editItem.id, { tenant_name: editItem.tenant_name });
+      }).eq("id", editItem.id);
+      if (error) throw error;
+      await logActivity("edit_move_in", "booking", editItem.id, { tenant_name: editItem.tenant_name });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       toast.success("Move-in updated");
       setEditItem(null);
     } catch (e: any) {
@@ -408,22 +283,16 @@ export function MoveInPage() {
     </div>
   );
 
+  const isMoveInBlocked = (item: Booking) => item.order_status === "booking_cancelled";
+
   const fieldClassName = "w-full rounded-lg border bg-secondary px-4 py-3 text-sm text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
   const labelClassName = "text-xs font-semibold uppercase tracking-wider text-muted-foreground";
-
-  // Check if move-in is blocked (booking terminated)
-  const isMoveInBlocked = (item: MoveIn) => {
-    if (item.status === "closed") return true;
-    const booking = getBooking(item.booking_id);
-    return booking?.status === "cancelled";
-  };
 
   return (
     <div className="space-y-4">
       {/* View Dialog */}
       {viewItem && (() => {
         const room = getRoom(viewItem.room_id);
-        const booking = getBooking(viewItem.booking_id);
         return (
           <Dialog open={Boolean(viewItem)} onOpenChange={(open) => !open && setViewItem(null)}>
             <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
@@ -432,16 +301,16 @@ export function MoveInPage() {
                 <div className="space-y-4 py-4">
                   {sectionCard("Move-In Summary", (
                     <div>
-                      {infoRow("Move-In ID", <span className="font-mono text-xs">{viewItem.id.slice(0, 8)}…</span>)}
-                      {infoRow("Status", <StatusBadge status={viewItem.status} />)}
+                      {infoRow("Booking ID", <span className="font-mono text-xs">{viewItem.id.slice(0, 8)}…</span>)}
+                      {infoRow("Order Status", <StatusBadge status={viewItem.order_status} />)}
                       {infoRow("Tenant", viewItem.tenant_name)}
-                      {infoRow("Agent", getAgentName(viewItem.agent_id))}
-                      {booking && infoRow("Booking Type", BOOKING_TYPE_LABELS[(booking.booking_type || "room_only") as BookingType])}
+                      {infoRow("Agent", getAgentName(viewItem.submitted_by))}
+                      {infoRow("Booking Type", BOOKING_TYPE_LABELS[(viewItem.booking_type || "room_only") as BookingType])}
                       {infoRow("Agreement Signed", viewItem.agreement_signed ? "Yes ✅" : "No ❌")}
                       {infoRow("Payment Method", viewItem.payment_method || "—")}
                       {infoRow("Created At", format(new Date(viewItem.created_at), "dd MMM yyyy, HH:mm"))}
-                      {viewItem.reviewed_at && infoRow("Reviewed At", format(new Date(viewItem.reviewed_at), "dd MMM yyyy, HH:mm"))}
-                      {viewItem.reviewed_by && infoRow("Reviewed By", getAgentName(viewItem.reviewed_by))}
+                      {viewItem.move_in_reviewed_at && infoRow("Reviewed At", format(new Date(viewItem.move_in_reviewed_at), "dd MMM yyyy, HH:mm"))}
+                      {viewItem.move_in_reviewed_by && infoRow("Reviewed By", getAgentName(viewItem.move_in_reviewed_by))}
                     </div>
                   ))}
 
@@ -452,19 +321,19 @@ export function MoveInPage() {
                       {infoRow("Room", viewItem.room?.room)}
                       {infoRow("Room Title", room?.room_title)}
                       {infoRow("Room Status", room?.status)}
-                      {booking && infoRow("Move-in Date", booking.move_in_date)}
-                      {booking && infoRow("Contract", `${booking.contract_months} months`)}
+                      {infoRow("Move-in Date", viewItem.move_in_date)}
+                      {infoRow("Contract", `${viewItem.contract_months} months`)}
                     </div>
                   ))}
 
-                  {viewItem.reject_reason && (
+                  {viewItem.move_in_reject_reason && (
                     <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
-                      <span className="font-semibold">Reject Reason:</span> {viewItem.reject_reason}
+                      <span className="font-semibold">Reject Reason:</span> {viewItem.move_in_reject_reason}
                     </div>
                   )}
-                  {viewItem.cancel_reason && (
+                  {viewItem.move_in_cancel_reason && (
                     <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-                      <span className="font-semibold">Close / Cancel Reason:</span> {viewItem.cancel_reason}
+                      <span className="font-semibold">Cancel Reason:</span> {viewItem.move_in_cancel_reason}
                     </div>
                   )}
 
@@ -482,17 +351,11 @@ export function MoveInPage() {
               </ScrollArea>
               <DialogFooter className="px-6 pb-6">
                 <Button variant="outline" onClick={() => setViewItem(null)}>Close</Button>
-                {/* Admin actions in view */}
-                {isAdmin && viewItem.status === "submitted" && (
+                {isAdmin && viewItem.order_status === "move_in_submitted" && (
                   <>
                     <Button variant="destructive" onClick={() => { setViewItem(null); setShowRejectDialog(viewItem); }}>Reject</Button>
                     <Button onClick={() => { setViewItem(null); setShowApproveDialog(viewItem); }} className="bg-accent hover:bg-accent/90 text-accent-foreground">Approve</Button>
                   </>
-                )}
-                {isAdmin && viewItem.status === "approved" && (
-                  <Button variant="destructive" onClick={() => { setViewItem(null); setShowReverseDialog(viewItem); }}>
-                    <RotateCcw className="h-4 w-4 mr-1" /> Reverse Record
-                  </Button>
                 )}
               </DialogFooter>
             </DialogContent>
@@ -505,14 +368,18 @@ export function MoveInPage() {
         <Dialog open={Boolean(editItem)} onOpenChange={(open) => !open && !saving && setEditItem(null)}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] p-0" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-0">
-              <DialogTitle>{editItem.status === "ready_for_move_in" || editItem.status === "rejected" ? "Submit Move-In" : "Edit Move-In"} — {editItem.tenant_name}</DialogTitle>
+              <DialogTitle>
+                {editItem.order_status === "booking_approved" || editItem.order_status === "move_in_rejected"
+                  ? "Submit Move-In"
+                  : "Edit Move-In"} — {editItem.tenant_name}
+              </DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-80px)] px-6 pb-6">
-               <div className="space-y-5 py-4">
+              <div className="space-y-5 py-4">
                 <FormErrorBanner errors={submitValidation.errors} />
                 {isMoveInBlocked(editItem) && (
                   <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive font-medium">
-                    ⚠️ This booking has been terminated. No further submissions are allowed.
+                    ⚠️ This booking has been cancelled. No further submissions are allowed.
                   </div>
                 )}
 
@@ -558,7 +425,7 @@ export function MoveInPage() {
 
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditItem(null)} disabled={saving}>Cancel</Button>
-                  {(editItem.status === "ready_for_move_in" || editItem.status === "rejected") && !isMoveInBlocked(editItem) ? (
+                  {(editItem.order_status === "booking_approved" || editItem.order_status === "move_in_rejected") && !isMoveInBlocked(editItem) ? (
                     <Button onClick={() => handleAgentSubmit(editItem)} disabled={saving || !editForm.payment_method}>
                       {saving ? "Submitting..." : "Submit Move-In"}
                     </Button>
@@ -608,32 +475,6 @@ export function MoveInPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Reverse Dialog */}
-      <Dialog open={Boolean(showReverseDialog)} onOpenChange={(open) => { if (!open) { setShowReverseDialog(null); setReverseReason(""); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reverse Move-In</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">
-              This will reverse the approved move-in for <strong>{showReverseDialog?.tenant_name}</strong>.
-              Occupancy will be removed and room set back to Pending.
-            </p>
-            <div className="space-y-1" data-field="reverseReason">
-              <label className="text-sm font-medium">Reason *</label>
-              <Textarea className={fieldClass("", !!reverseValidation.errors.reverseReason)} placeholder="Why is this move-in being reversed?" value={reverseReason} onChange={(e) => { setReverseReason(e.target.value); reverseValidation.clearError("reverseReason"); }} rows={3} />
-              <FieldError error={reverseValidation.errors.reverseReason} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowReverseDialog(null); setReverseReason(""); }}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReverse} disabled={!reverseReason.trim() || saving}>
-              {saving ? "Reversing..." : "Reverse Move-In"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
@@ -692,7 +533,7 @@ export function MoveInPage() {
                 <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>
                 <SortableTableHead sortKey="booking_type" currentSort={sort} onSort={handleSort}>Booking Type</SortableTableHead>
                 <SortableTableHead sortKey="tenant_name" currentSort={sort} onSort={handleSort}>Tenant</SortableTableHead>
-                <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+                <SortableTableHead sortKey="order_status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                 <SortableTableHead sortKey="agent" currentSort={sort} onSort={handleSort}>Agent</SortableTableHead>
                 <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Created</SortableTableHead>
                 <SortableTableHead sortKey="updated_at" currentSort={sort} onSort={handleSort}>Updated</SortableTableHead>
@@ -704,7 +545,6 @@ export function MoveInPage() {
                 <TableRow><TableCell colSpan={11} className="py-8 text-center text-muted-foreground">No move-ins found</TableCell></TableRow>
               ) : paged.map((item) => {
                 const room = getRoom(item.room_id);
-                const booking = getBooking(item.booking_id);
                 const blocked = isMoveInBlocked(item);
                 return (
                   <TableRow key={item.id} className={blocked ? "opacity-50" : ""}>
@@ -712,28 +552,25 @@ export function MoveInPage() {
                     <TableCell>{item.room?.unit || "—"}</TableCell>
                     <TableCell>{item.room?.room || "—"}</TableCell>
                     <TableCell className="text-sm">{room?.room_title || "—"}</TableCell>
-                    <TableCell className="text-sm">{booking ? BOOKING_TYPE_LABELS[(booking.booking_type || "room_only") as BookingType] : "—"}</TableCell>
+                    <TableCell className="text-sm">{BOOKING_TYPE_LABELS[(item.booking_type || "room_only") as BookingType]}</TableCell>
                     <TableCell className="font-medium">{item.tenant_name}</TableCell>
-                    <TableCell><StatusBadge status={item.status} /></TableCell>
-                    <TableCell className="text-sm">{getAgentName(item.agent_id)}</TableCell>
+                    <TableCell><StatusBadge status={item.order_status} /></TableCell>
+                    <TableCell className="text-sm">{getAgentName(item.submitted_by)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(item.created_at), "dd MMM yyyy")}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(item.updated_at), "dd MMM yyyy")}</TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-1">
                         <Button variant="ghost" size="icon" onClick={() => setViewItem(item)} title="View"><Eye className="h-4 w-4" /></Button>
-                        {/* Agent can edit/submit if ready_for_move_in or rejected, and not blocked */}
-                        {(item.status === "ready_for_move_in" || item.status === "rejected" || item.status === "submitted") && !blocked && (
+                        {/* Agent can edit/submit if booking_approved or move_in_rejected */}
+                        {(item.order_status === "booking_approved" || item.order_status === "move_in_rejected" || item.order_status === "move_in_submitted") && !blocked && (
                           <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Edit/Submit"><Pencil className="h-4 w-4" /></Button>
                         )}
                         {/* Admin actions */}
-                        {isAdmin && item.status === "submitted" && (
+                        {isAdmin && item.order_status === "move_in_submitted" && (
                           <>
                             <Button variant="ghost" size="icon" onClick={() => setShowApproveDialog(item)} title="Approve"><Check className="h-4 w-4 text-primary" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => setShowRejectDialog(item)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                           </>
-                        )}
-                        {isAdmin && item.status === "approved" && (
-                          <Button variant="ghost" size="icon" onClick={() => setShowReverseDialog(item)} title="Reverse"><RotateCcw className="h-4 w-4 text-orange-500" /></Button>
                         )}
                       </div>
                     </TableCell>
