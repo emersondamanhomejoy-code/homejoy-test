@@ -614,6 +614,34 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     const allUnitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
 
 
+    // Helper to render a detail row only if value is truthy
+    const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => {
+      if (!value || value === "—" || value === "") return null;
+      return <div><span className="text-muted-foreground">{label}:</span> <span className="font-medium">{value}</span></div>;
+    };
+
+    // Current occupancy fields
+    const tenantName = (viewingRoom as any).assigned_to || "";
+    const tenantGender = viewingRoom.tenant_gender || "";
+    const tenantRace = viewingRoom.tenant_race || "";
+    const tenantOccupation = ""; // not stored on room directly
+    const personInCharge = (viewingRoom as any).internal_remark || "";
+    const hasOccupancy = tenantName || tenantGender || tenantRace;
+
+    // Other rooms in unit (exclude current room and carparks)
+    const otherRooms = (unit.rooms || []).filter(r =>
+      r.id !== viewingRoom.id &&
+      r.room_type !== "Car Park" &&
+      !(r.room || "").toLowerCase().startsWith("carpark")
+    );
+
+    // Determine section count for expand/collapse
+    const sectionKeys: string[] = [];
+    if (photoUrls.length > 0) sectionKeys.push("photos");
+    sectionKeys.push("details");
+    if (!isCarpark && hasOccupancy) sectionKeys.push("occupancy");
+    if (!isCarpark && otherRooms.length > 0) sectionKeys.push("summary");
+
     return (
       <div className="space-y-4">
         {/* Room name header + copy link + expand/collapse all */}
@@ -630,8 +658,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                 <TooltipContent>Copy link showing only this {isCarpark ? "carpark's" : "room's"} photos</TooltipContent>
               </Tooltip>
             )}
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRoomAccordion(prev => prev.length >= 4 ? [] : ["photos", "details", "status", "summary"])}>
-              {roomAccordion.length >= 4 ? "Collapse All" : "Expand All"}
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRoomAccordion(prev => prev.length >= sectionKeys.length ? [] : [...sectionKeys])}>
+              {roomAccordion.length >= sectionKeys.length ? "Collapse All" : "Expand All"}
             </Button>
           </div>
         </div>
@@ -658,86 +686,87 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                 {!isCarpark && (
                   <>
-                    <div><span className="text-muted-foreground">Room Title:</span> <span className="font-medium">{(viewingRoom as any).room_title || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Room Type:</span> <span className="font-medium">{(viewingRoom as any).room_category || viewingRoom.room_type || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{formatUnitType(viewingRoom.unit_type) || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Bed Type:</span> <span className="font-medium">{viewingRoom.bed_type || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Wall Type:</span> <span className="font-medium">{(viewingRoom as any).wall_type || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Listed Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
-                    <div><span className="text-muted-foreground">Pax Allowed:</span> <span className="font-medium">{effectiveRemaining} remaining</span> <span className="text-muted-foreground text-xs">({viewingRoom.pax_staying || 0}/{viewingRoom.max_pax})</span></div>
+                    <DetailRow label="Room" value={(viewingRoom as any).room_title || viewingRoom.room} />
+                    <DetailRow label="Room Type" value={(viewingRoom as any).room_category || viewingRoom.room_type} />
+                    <DetailRow label="Unit Type" value={formatUnitType(viewingRoom.unit_type)} />
+                    <DetailRow label="Bed Type" value={viewingRoom.bed_type} />
+                    <DetailRow label="Wall Type" value={(viewingRoom as any).wall_type} />
+                    <div><span className="text-muted-foreground">Listed Rent:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
+                    <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
+                    <DetailRow label="Available On" value={viewingRoom.available_date} />
+                    <div><span className="text-muted-foreground">Remaining Pax:</span> <span className="font-medium">{effectiveRemaining}</span> <span className="text-muted-foreground text-xs">({viewingRoom.pax_staying || 0}/{viewingRoom.max_pax})</span></div>
                   </>
                 )}
                 {isCarpark && (
                   <>
-                    <div><span className="text-muted-foreground">Rental:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
-                    <div><span className="text-muted-foreground">Parking Lot:</span> <span className="font-medium">{(viewingRoom as any).parking_lot || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Listed Rent:</span> <span className="font-medium">RM{viewingRoom.rent}</span></div>
+                    <DetailRow label="Parking Lot" value={(viewingRoom as any).parking_lot} />
+                    <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
                   </>
                 )}
                 {(viewingRoom as any).optional_features && Array.isArray((viewingRoom as any).optional_features) && (viewingRoom as any).optional_features.length > 0 && (
                   <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Features:</span> <span className="font-medium">{(viewingRoom as any).optional_features.join(", ")}</span></div>
                 )}
-                <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{viewingRoom.internal_only ? "🔒 Yes" : "No"}</span></div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 3. Status & Occupancy */}
-          <AccordionItem value="status" className="border rounded-lg px-4">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Status & Occupancy</AccordionTrigger>
-            <AccordionContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Room Status:</span> <StatusBadge status={viewingRoom.status} availableDate={viewingRoom.available_date} /></div>
-                <div><span className="text-muted-foreground">Available On:</span> <span className="font-medium">{viewingRoom.available_date || "—"}</span></div>
-                {!isCarpark && (
-                  <>
-                    <div><span className="text-muted-foreground">Tenant Gender:</span> <span className="font-medium">{viewingRoom.tenant_gender || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Tenant Race:</span> <span className="font-medium">{viewingRoom.tenant_race || "—"}</span></div>
-                  </>
-                )}
-                {isAdmin && (
-                  <>
-                    <div><span className="text-muted-foreground">Assigned To:</span> <span className="font-medium">{(viewingRoom as any).assigned_to || "—"}</span></div>
-                    <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Internal Remark:</span> <span className="font-medium">{(viewingRoom as any).internal_remark || "—"}</span></div>
-                  </>
+                {viewingRoom.internal_only && (
+                  <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">Yes</span></div>
                 )}
               </div>
             </AccordionContent>
           </AccordionItem>
 
-          {/* 4. Unit Summary (Roommate Details) */}
-          {!isCarpark && (
-            <AccordionItem value="summary" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Unit Summary</AccordionTrigger>
+          {/* 3. Current Occupancy — only shown when relevant */}
+          {!isCarpark && hasOccupancy && (
+            <AccordionItem value="occupancy" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Current Occupancy</AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-2 text-sm">
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div><span className="text-muted-foreground">Unit Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
-                    <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
-                    <div><span className="text-muted-foreground">Total Staying:</span> <span className="font-medium">{occupiedPax}</span></div>
-                    <div><span className="text-muted-foreground">Remaining Pax:</span> <span className={`font-medium ${remainingPax > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>{remainingPax}</span></div>
-                  </div>
-                  {allUnitRooms.length > 0 && (
-                    <div className="space-y-1.5">
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Roommates</h4>
-                      {allUnitRooms.map((r) => {
-                        const isCurrentRoom = r.id === viewingRoom.id;
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  <DetailRow label="Tenant" value={tenantName} />
+                  <DetailRow label="Gender" value={tenantGender} />
+                  <DetailRow label="Race" value={tenantRace} />
+                  <DetailRow label="Occupation" value={tenantOccupation} />
+                  <DetailRow label="Person in Charge" value={personInCharge} />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* 4. Other Rooms in Unit — table format */}
+          {!isCarpark && otherRooms.length > 0 && (
+            <AccordionItem value="summary" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Other Rooms in Unit</AccordionTrigger>
+              <AccordionContent>
+                <div className="overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-left">Room</TableHead>
+                        <TableHead className="text-left">Status</TableHead>
+                        <TableHead className="text-left">Tenant</TableHead>
+                        <TableHead className="text-left">Gender</TableHead>
+                        <TableHead className="text-left">Race</TableHead>
+                        <TableHead className="text-left">Occupation</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {otherRooms.map((r) => {
                         const housemates = Array.isArray(r.housemates) ? r.housemates : [];
-                        const roomLabel = r.room.replace(/^Room\s+/i, "");
+                        const hmTenant = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).name : (r as any).assigned_to;
+                        const hmGender = r.tenant_gender || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).gender : "");
+                        const hmRace = r.tenant_race || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).race : "");
+                        const hmOccupation = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).occupation : "";
                         return (
-                          <div key={r.id} className={`pl-2 border-l-2 py-1 ${isCurrentRoom ? "border-primary bg-primary/5 rounded-r" : "border-muted"}`}>
-                            <div className="font-medium text-xs">Room {roomLabel} — <StatusBadge status={r.status} availableDate={r.available_date} /> {r.pax_staying || 0}/{r.max_pax} pax</div>
-                            {housemates.length > 0 ? housemates.map((h: any, i: number) => (
-                              <div key={i} className="text-xs text-muted-foreground pl-2">
-                                {typeof h === "object" ? `${h.name || "—"} · ${h.gender || ""} · ${h.nationality || ""}` : String(h)}
-                              </div>
-                            )) : (
-                              <div className="text-xs text-muted-foreground pl-2 italic">Vacant</div>
-                            )}
-                          </div>
+                          <TableRow key={r.id}>
+                            <TableCell className="text-left">{r.room.replace(/^Room\s+/i, "")}</TableCell>
+                            <TableCell className="text-left"><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
+                            <TableCell className="text-left">{hmTenant || ""}</TableCell>
+                            <TableCell className="text-left">{hmGender || ""}</TableCell>
+                            <TableCell className="text-left">{hmRace || ""}</TableCell>
+                            <TableCell className="text-left">{hmOccupation || ""}</TableCell>
+                          </TableRow>
                         );
                       })}
-                    </div>
-                  )}
+                    </TableBody>
+                  </Table>
                 </div>
               </AccordionContent>
             </AccordionItem>
