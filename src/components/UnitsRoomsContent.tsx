@@ -517,9 +517,11 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   };
 
   const copyCostBreakdown = () => {
-    if (!calcRoom) return;
+    const headerLines = calcRoom
+      ? copyHeader({ room: calcRoom.room, room_title: (calcRoom as any).room_title })
+      : copyHeader();
     const lines = [
-      ...copyHeader({ room: calcRoom.room, room_title: (calcRoom as any).room_title }),
+      ...headerLines,
       `Rental: RM${rental}`,
       `Deposit (${depMul}×): RM${deposit}`,
       `Admin Fee: RM${adminFee}`,
@@ -709,7 +711,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           <AccordionTrigger className="py-3 hover:no-underline">
             <div className="flex items-center gap-2 flex-1">
               <span className="text-sm font-semibold">Unit</span>
-              <span className="text-xs text-muted-foreground"></span>
+              
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
@@ -849,7 +851,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       <section className="border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Move-In Cost Calculator</h3>
-          {calcRoom && <TextCopyBtn onClick={copyCostBreakdown} label="Copy Cost Breakdown" />}
+          <TextCopyBtn onClick={copyCostBreakdown} label="Copy Cost Breakdown" />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
