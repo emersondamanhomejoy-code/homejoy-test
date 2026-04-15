@@ -19,9 +19,9 @@ type: design
 ## Expand/Collapse All Button
 - Single toggle button (not two separate buttons)
 - Label toggles: "Expand All" when any section collapsed, "Collapse All" when all expanded
-- variant="outline" size="sm" className="text-xs bg-card"
-- bg-card gives white background for contrast against modal grey
-- Placed top-right above accordion, wrapped in `<div className="flex justify-end mb-2">`
+- variant="outline" size="sm" className="text-xs bg-card shadow-md"
+- **Position: fixed top-4 right-4 z-50** — stays visible when scrolling
+- Placed above all content including stat cards
 
 ## Never use hardcoded colors
 Use design tokens (bg-accent, bg-destructive, bg-primary) not bg-green-600, bg-red-500 etc.
