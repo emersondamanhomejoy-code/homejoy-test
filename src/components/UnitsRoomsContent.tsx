@@ -77,8 +77,8 @@ export function UnitsRoomsContent() {
     return {
       rooms,
       carparks,
-      availableRooms: rooms.filter(r => r.status === "Available").length,
-      availableCarparks: carparks.filter(r => r.status === "Available").length,
+      availableRooms: rooms.filter(r => r.status === "Available" || r.status === "Available Soon").length,
+      availableCarparks: carparks.filter(r => r.status === "Available" || r.status === "Available Soon").length,
       occupiedPax,
       remainingPax: u.unit_max_pax - occupiedPax,
     };
