@@ -477,10 +477,16 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     copyToClipboard(lines.join("\n"), "Building details");
   };
 
+  const copyHeader = (includeRoom?: { room: string; room_title?: string }) => {
+    const lines = [`Building: ${val(unit.building)}`, `Unit: ${val(unit.unit)}`];
+    if (includeRoom) lines.push(`Room: ${includeRoom.room} — ${includeRoom.room_title || ""}`);
+    lines.push(`─────────`);
+    return lines;
+  };
+
   const copyUnitDetails = () => {
     const lines = [
-      `Building: ${val(unit.building)}`,
-      `Unit: ${val(unit.unit)}`,
+      ...copyHeader(),
       `Type: ${val(formatUnitType(unit.unit_type))}`,
       `Max Occupants: ${unit.unit_max_pax}`,
       `Deposit: ${depMul} months`,
@@ -506,16 +512,14 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
       return `Room ${roomLabel}: ${r.pax_staying || 0} pax · ${genders} · ${nats}${names.length > 0 ? ` (${names.join(", ")})` : ""}`;
     });
-    copyToClipboard(`Building: ${val(unit.building)}\nUnit: ${val(unit.unit)}\n\nHousemates:\n${rows.join("\n")}`, "Room details");
+    const header = copyHeader();
+    copyToClipboard([...header, `Housemates:`, ...rows].join("\n"), "Room details");
   };
 
   const copyCostBreakdown = () => {
     if (!calcRoom) return;
     const lines = [
-      `Building: ${val(unit.building)}`,
-      `Unit: ${val(unit.unit)}`,
-      `Room: ${calcRoom.room} — ${(calcRoom as any).room_title || ""}`,
-      `─────────`,
+      ...copyHeader({ room: calcRoom.room, room_title: (calcRoom as any).room_title }),
       `Rental: RM${rental}`,
       `Deposit (${depMul}×): RM${deposit}`,
       `Admin Fee: RM${adminFee}`,
@@ -868,48 +872,46 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           </div>
         </div>
 
-        {calcRoom && (
-          <div className="rounded-lg border overflow-hidden">
-            <Table>
-              <TableBody>
+        <div className="rounded-lg border overflow-hidden">
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="text-muted-foreground">1 Month Advance Rental</TableCell>
+                <TableCell className="text-right font-medium">RM{rental}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">Deposit ({depMul}× rental)</TableCell>
+                <TableCell className="text-right font-medium">RM{deposit}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-muted-foreground">Admin Fee</TableCell>
+                <TableCell className="text-right font-medium">RM{adminFee}</TableCell>
+              </TableRow>
+              {accessFees.map((f, i) => (
+                <TableRow key={`af-${i}`}>
+                  <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
+                  <TableCell className="text-right font-medium">RM{f.total}</TableCell>
+                </TableRow>
+              ))}
+              {numCarparks > 0 && carparkFees.map((f, i) => (
+                <TableRow key={`cf-${i}`}>
+                  <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
+                  <TableCell className="text-right font-medium">RM{f.total}</TableCell>
+                </TableRow>
+              ))}
+              {numCarparks > 0 && (
                 <TableRow>
-                  <TableCell className="text-muted-foreground">1 Month Advance Rental</TableCell>
-                  <TableCell className="text-right font-medium">RM{rental}</TableCell>
+                  <TableCell className="text-muted-foreground">Carpark Rental ({numCarparks}× RM{avgCarparkRent})</TableCell>
+                  <TableCell className="text-right font-medium">RM{carparkRentalTotal}</TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell className="text-muted-foreground">Deposit ({depMul}× rental)</TableCell>
-                  <TableCell className="text-right font-medium">RM{deposit}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-muted-foreground">Admin Fee</TableCell>
-                  <TableCell className="text-right font-medium">RM{adminFee}</TableCell>
-                </TableRow>
-                {accessFees.map((f, i) => (
-                  <TableRow key={`af-${i}`}>
-                    <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
-                    <TableCell className="text-right font-medium">RM{f.total}</TableCell>
-                  </TableRow>
-                ))}
-                {numCarparks > 0 && carparkFees.map((f, i) => (
-                  <TableRow key={`cf-${i}`}>
-                    <TableCell className="text-muted-foreground">{f.label} (×{f.qty})</TableCell>
-                    <TableCell className="text-right font-medium">RM{f.total}</TableCell>
-                  </TableRow>
-                ))}
-                {numCarparks > 0 && (
-                  <TableRow>
-                    <TableCell className="text-muted-foreground">Carpark Rental ({numCarparks}× RM{avgCarparkRent})</TableCell>
-                    <TableCell className="text-right font-medium">RM{carparkRentalTotal}</TableCell>
-                  </TableRow>
-                )}
-                <TableRow className="bg-muted/30">
-                  <TableCell className="font-semibold">Total Move-In Cost</TableCell>
-                  <TableCell className="text-right font-bold text-lg">RM{grandTotal}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        )}
+              )}
+              <TableRow className="bg-muted/30">
+                <TableCell className="font-semibold">Total Move-In Cost</TableCell>
+                <TableCell className="text-right font-bold text-lg">RM{grandTotal}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
       </section>
     </div>
   );
