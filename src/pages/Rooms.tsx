@@ -36,6 +36,9 @@ export default function Rooms() {
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<string>("mix");
   const [selectedStatus, setSelectedStatus] = useState<string>("Available");
+  const [assetTab, setAssetTab] = useState<"rooms" | "carparks">("rooms");
+  const [selectedGender, setSelectedGender] = useState<string>("mix");
+  const [selectedStatus, setSelectedStatus] = useState<string>("Available");
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { sort, handleSort, sortData } = useTableSort("building");
