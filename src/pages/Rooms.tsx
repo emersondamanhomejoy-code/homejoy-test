@@ -566,34 +566,39 @@ function AgentRoomViewContent({ room, assetTab }: { room: any; assetTab: "rooms"
 
         <AccordionItem value="otherRooms" className="border rounded-lg px-4">
           <div className="flex items-center justify-between">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline flex-1">Other Rooms in Unit</AccordionTrigger>
-            <CopyBtn text={buildOtherRoomsText()} label="Copy Other Rooms" />
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline flex-1">Housemates</AccordionTrigger>
+            <CopyBtn text={buildHousematesText()} label="Copy Housemate" />
           </div>
           <AccordionContent>
             {otherRooms.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No other rooms in this unit.</p>
+              <p className="text-sm text-muted-foreground">No housemates.</p>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
-                      <TableHead className="text-xs">Code</TableHead>
+                      <TableHead className="text-xs">Room Code</TableHead>
                       <TableHead className="text-xs">Status</TableHead>
                       <TableHead className="text-xs">Pax</TableHead>
                       <TableHead className="text-xs">Gender</TableHead>
-                      <TableHead className="text-xs">Race</TableHead>
+                      <TableHead className="text-xs">Nationality</TableHead>
+                      <TableHead className="text-xs">Occupation</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {otherRooms.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-mono text-xs">{r.room}</TableCell>
-                        <TableCell><StatusBadge status={r.status} /></TableCell>
-                        <TableCell className="text-xs">{r.pax_staying || 0}/{r.max_pax || 0}</TableCell>
-                        <TableCell className="text-xs">{r.tenant_gender || "—"}</TableCell>
-                        <TableCell className="text-xs">{r.tenant_race || "—"}</TableCell>
-                      </TableRow>
-                    ))}
+                    {otherRooms.map((r) => {
+                      const t = otherTenants[r.id];
+                      return (
+                        <TableRow key={r.id}>
+                          <TableCell className="font-mono text-xs">{r.room}</TableCell>
+                          <TableCell><StatusBadge status={r.status} /></TableCell>
+                          <TableCell className="text-xs">{r.pax_staying || 0}</TableCell>
+                          <TableCell className="text-xs">{r.tenant_gender || "—"}</TableCell>
+                          <TableCell className="text-xs">{t?.nationality || "—"}</TableCell>
+                          <TableCell className="text-xs">{t?.occupation || "—"}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
