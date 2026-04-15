@@ -14,6 +14,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -160,12 +161,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     );
   };
 
-  const sectionCard = (title: string, children: React.ReactNode) => (
-    <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-      <div className="text-sm font-bold flex items-center gap-2 border-b border-border pb-2 uppercase tracking-wide text-muted-foreground">{title}</div>
-      {children}
-    </div>
-  );
+  
 
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between text-sm py-1.5">
@@ -219,220 +215,253 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
         size="lg"
         footer={footerActions()}
       >
-        <div className="space-y-4">
-
+        <Accordion type="multiple" defaultValue={["order-status", "room-parking", "tenant-profile", "emergency", "receipt", "cost-breakdown", "history"]} className="space-y-2">
           {/* SECTION A – Order Status Summary */}
-          {sectionCard("Order Status Summary", (
-            <div>
-              {infoRow("Booking ID", <span className="font-mono text-xs">{b.id.slice(0, 8)}…</span>)}
-              {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
-              {infoRow("Order Status", <StatusBadge status={b.order_status} />)}
-              {b.resolution_type && infoRow("Resolution Type", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
-              {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
-              {infoRow("Agent", getAgentName(b.submitted_by))}
-              {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
-              {b.reviewed_by && infoRow("Reviewed By", getAgentName(b.reviewed_by))}
-
-              {/* Move-in details if applicable */}
-              {(b.order_status === "move_in_submitted" || b.order_status === "move_in_approved" || b.order_status === "move_in_rejected") && (
-                <>
-                  {infoRow("Agreement Signed", b.agreement_signed ? "Yes ✅" : "No ❌")}
-                  {infoRow("Payment Method", b.payment_method || "N/A")}
-                  {b.move_in_reviewed_at && infoRow("Move-in Reviewed At", format(new Date(b.move_in_reviewed_at), "dd MMM yyyy, HH:mm"))}
-                  {b.move_in_reviewed_by && infoRow("Move-in Reviewed By", getAgentName(b.move_in_reviewed_by))}
-                </>
-              )}
-
-              {b.order_status === "booking_rejected" && b.reject_reason && (
-                <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm mt-2">
-                  <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
-                </div>
-              )}
-              {b.order_status === "booking_cancelled" && b.reject_reason && (
-                <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm mt-2">
-                  <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
-                </div>
-              )}
-              {b.order_status === "move_in_rejected" && b.move_in_reject_reason && (
-                <div className="bg-orange-500/10 text-orange-700 rounded-lg p-3 text-sm mt-2">
-                  <span className="font-semibold">Move-in Reject Reason:</span> {b.move_in_reject_reason}
-                </div>
-              )}
-            </div>
-          ))}
+          <AccordionItem value="order-status" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <span className="text-sm font-semibold">📋 Order Status Summary</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pb-2">
+                {infoRow("Booking ID", <span className="font-mono text-xs">{b.id.slice(0, 8)}…</span>)}
+                {infoRow("Booking Type", BOOKING_TYPE_LABELS[(b.booking_type || "room_only") as BookingType])}
+                {infoRow("Order Status", <StatusBadge status={b.order_status} />)}
+                {b.resolution_type && infoRow("Resolution Type", <span className="font-semibold capitalize">{b.resolution_type}</span>)}
+                {infoRow("Submitted At", format(new Date(b.created_at), "dd MMM yyyy, HH:mm"))}
+                {infoRow("Agent", getAgentName(b.submitted_by))}
+                {b.reviewed_at && infoRow("Reviewed At", format(new Date(b.reviewed_at), "dd MMM yyyy, HH:mm"))}
+                {b.reviewed_by && infoRow("Reviewed By", getAgentName(b.reviewed_by))}
+                {(b.order_status === "move_in_submitted" || b.order_status === "move_in_approved" || b.order_status === "move_in_rejected") && (
+                  <>
+                    {infoRow("Agreement Signed", b.agreement_signed ? "Yes ✅" : "No ❌")}
+                    {infoRow("Payment Method", b.payment_method || "N/A")}
+                    {b.move_in_reviewed_at && infoRow("Move-in Reviewed At", format(new Date(b.move_in_reviewed_at), "dd MMM yyyy, HH:mm"))}
+                    {b.move_in_reviewed_by && infoRow("Move-in Reviewed By", getAgentName(b.move_in_reviewed_by))}
+                  </>
+                )}
+                {b.order_status === "booking_rejected" && b.reject_reason && (
+                  <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm mt-2">
+                    <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
+                  </div>
+                )}
+                {b.order_status === "booking_cancelled" && b.reject_reason && (
+                  <div className="bg-muted text-muted-foreground rounded-lg p-3 text-sm mt-2">
+                    <span className="font-semibold">Cancel Reason:</span> {b.reject_reason}
+                  </div>
+                )}
+                {b.order_status === "move_in_rejected" && b.move_in_reject_reason && (
+                  <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm mt-2">
+                    <span className="font-semibold">Move-in Reject Reason:</span> {b.move_in_reject_reason}
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
           {/* SECTION B – Room & Parking Summary */}
-          {sectionCard("Room & Parking Summary", (
-            <div>
-              {infoRow("Building", info?.building)}
-              {infoRow("Unit", info?.unit)}
-              {infoRow("Room", info?.room)}
-              {infoRow("Room Title", room?.room_title)}
-              {infoRow("Room Status", room?.status)}
-              {infoRow("Exact Rental", `RM ${moveInCost?.advance || room?.rent || 0}`)}
-              {infoRow("Pax Staying", b.pax_staying)}
-              {infoRow("Tenancy Duration", `${b.contract_months} months`)}
-              {infoRow("Move-in Date", b.move_in_date)}
-
-              {carParkRooms.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase">Parking</div>
-                  {carParkRooms.map((cp, i) => (
-                    <div key={i} className="bg-background rounded-lg border p-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "N/A"}</span>
-                        <span>RM {cp.room?.rent || 0}/mo</span>
+          <AccordionItem value="room-parking" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <span className="text-sm font-semibold">🏠 Room & Parking Summary</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pb-2">
+                {infoRow("Building", info?.building)}
+                {infoRow("Unit", info?.unit)}
+                {infoRow("Room", info?.room)}
+                {infoRow("Room Title", room?.room_title)}
+                {infoRow("Room Status", room?.status)}
+                {infoRow("Exact Rental", `RM ${moveInCost?.advance || room?.rent || 0}`)}
+                {infoRow("Pax Staying", b.pax_staying)}
+                {infoRow("Tenancy Duration", `${b.contract_months} months`)}
+                {infoRow("Move-in Date", b.move_in_date)}
+                {carParkRooms.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase">Parking</div>
+                    {carParkRooms.map((cp, i) => (
+                      <div key={i} className="bg-background rounded-lg border p-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-semibold">Parking {i + 1}: {cp.room?.room || "N/A"}</span>
+                          <span>RM {cp.room?.rent || 0}/mo</span>
+                        </div>
+                        <div className="text-muted-foreground">Car Plate: {cp.carPlate || "N/A"}</div>
                       </div>
-                      <div className="text-muted-foreground">Car Plate: {cp.carPlate || "N/A"}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                    ))}
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
           {/* SECTION C – Tenant Profile */}
-          {sectionCard("Tenant Profile", (
-            <div className="grid md:grid-cols-2 gap-x-8">
-              <div>
-                {infoRow("Full Name", b.tenant_name)}
-                {infoRow("NRIC/Passport", b.tenant_ic_passport)}
-                {infoRow("Email", b.tenant_email)}
-                {infoRow("Contact No", b.tenant_phone)}
+          <AccordionItem value="tenant-profile" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <span className="text-sm font-semibold">👤 Tenant Profile</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid md:grid-cols-2 gap-x-8 pb-2">
+                <div>
+                  {infoRow("Full Name", b.tenant_name)}
+                  {infoRow("NRIC/Passport", b.tenant_ic_passport)}
+                  {infoRow("Email", b.tenant_email)}
+                  {infoRow("Contact No", b.tenant_phone)}
+                </div>
+                <div>
+                  {infoRow("Gender", b.tenant_gender)}
+                  {infoRow("Nationality", b.tenant_nationality)}
+                  {infoRow("Occupation", b.occupation)}
+                </div>
               </div>
-              <div>
-                {infoRow("Gender", b.tenant_gender)}
-                {infoRow("Nationality", b.tenant_nationality)}
-                {infoRow("Occupation", b.occupation)}
-              </div>
-            </div>
-          ))}
+            </AccordionContent>
+          </AccordionItem>
 
           {/* Second tenant if exists */}
           {(() => {
             const docs = b.documents as any;
             const t2 = docs?.tenant2;
             if (!t2?.name) return null;
-            return sectionCard("Second Tenant", (
-              <div className="grid md:grid-cols-2 gap-x-8">
-                <div>
-                  {infoRow("Full Name", t2.name)}
-                  {infoRow("NRIC/Passport", t2.icPassport)}
-                  {infoRow("Email", t2.email)}
-                </div>
-                <div>
-                  {infoRow("Contact No", t2.phone)}
-                  {infoRow("Nationality", t2.nationality)}
-                  {infoRow("Occupation", t2.occupation)}
-                </div>
-              </div>
-            ));
+            return (
+              <AccordionItem value="second-tenant" className="border rounded-lg px-4">
+                <AccordionTrigger className="py-3 hover:no-underline">
+                  <span className="text-sm font-semibold">👥 Second Tenant</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid md:grid-cols-2 gap-x-8 pb-2">
+                    <div>
+                      {infoRow("Full Name", t2.name)}
+                      {infoRow("NRIC/Passport", t2.icPassport)}
+                      {infoRow("Email", t2.email)}
+                    </div>
+                    <div>
+                      {infoRow("Contact No", t2.phone)}
+                      {infoRow("Nationality", t2.nationality)}
+                      {infoRow("Occupation", t2.occupation)}
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
           })()}
 
           {/* SECTION D – Emergency Contacts */}
-          {sectionCard("Emergency Contacts", (
-            <div className="grid md:grid-cols-2 gap-x-8">
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-1">Contact 1</div>
-                {infoRow("Name", b.emergency_1_name || b.emergency_name)}
-                {infoRow("Phone", b.emergency_1_phone || b.emergency_phone)}
-                {infoRow("Relationship", b.emergency_1_relationship || b.emergency_relationship)}
+          <AccordionItem value="emergency" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <span className="text-sm font-semibold">🚨 Emergency Contacts</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid md:grid-cols-2 gap-x-8 pb-2">
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">Contact 1</div>
+                  {infoRow("Name", b.emergency_1_name || b.emergency_name)}
+                  {infoRow("Phone", b.emergency_1_phone || b.emergency_phone)}
+                  {infoRow("Relationship", b.emergency_1_relationship || b.emergency_relationship)}
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">Contact 2</div>
+                  {infoRow("Name", b.emergency_2_name)}
+                  {infoRow("Phone", b.emergency_2_phone)}
+                  {infoRow("Relationship", b.emergency_2_relationship)}
+                </div>
               </div>
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-1">Contact 2</div>
-                {infoRow("Name", b.emergency_2_name)}
-                {infoRow("Phone", b.emergency_2_phone)}
-                {infoRow("Relationship", b.emergency_2_relationship)}
-              </div>
-            </div>
-          ))}
+            </AccordionContent>
+          </AccordionItem>
 
           {/* SECTION E – Booking Fee Receipt */}
-          {sectionCard("Booking Fee Receipt", (
-            <div className="space-y-3">
-              {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
-              {!b.doc_transfer_slip?.length && (
-                <div className="text-sm text-muted-foreground">No receipt uploaded</div>
-              )}
-            </div>
-          ))}
+          <AccordionItem value="receipt" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <span className="text-sm font-semibold">🧾 Booking Fee Receipt</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pb-2">
+                {docSection("Booking Fee Receipt", b.doc_transfer_slip)}
+                {!b.doc_transfer_slip?.length && (
+                  <div className="text-sm text-muted-foreground">No receipt uploaded</div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
           {/* SECTION F – Move-in Cost Breakdown */}
-          {moveInCost && sectionCard("Move-in Cost Breakdown", (
-            <div className="bg-background rounded-lg border divide-y divide-border">
-              <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
-                <span>Description</span>
-                <span className="text-right">Amount (RM)</span>
-              </div>
-
-              {moveInCost.advance != null && (
-                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>1 Month Advance Rental</span>
-                  <span className="text-right font-medium">{Number(moveInCost.advance).toLocaleString()}</span>
+          {moveInCost && (
+            <AccordionItem value="cost-breakdown" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <span className="text-sm font-semibold">💰 Move-in Cost Breakdown</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="bg-background rounded-lg border divide-y divide-border mb-2">
+                  <div className="grid grid-cols-[1fr_auto] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+                    <span>Description</span>
+                    <span className="text-right">Amount (RM)</span>
+                  </div>
+                  {moveInCost.advance != null && (
+                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>1 Month Advance Rental</span>
+                      <span className="text-right font-medium">{Number(moveInCost.advance).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {moveInCost.deposit != null && (
+                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>Rental Deposit {unitCfg ? `(×${unitCfg.deposit_multiplier})` : ""}</span>
+                      <span className="text-right font-medium">{Number(moveInCost.deposit).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {moveInCost.adminFee != null && (
+                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>Admin Fee</span>
+                      <span className="text-right font-medium">{Number(moveInCost.adminFee).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {accessFees.map((f, i) => (
+                    <div key={`access-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+                      <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+                    </div>
+                  ))}
+                  {carparkFees.filter(f => f.qty > 0 && f.total > 0).map((f, i) => (
+                    <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
+                      <span className="text-right font-medium">{f.total.toLocaleString()}</span>
+                    </div>
+                  ))}
+                  {carparkRental > 0 && (
+                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>1 Month Advance Car Park Rental</span>
+                      <span className="text-right font-medium">{carparkRental.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {moveInCost.accessCardDeposit > 0 && !accessFees.length && (
+                    <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
+                      <span>Access Card Deposit</span>
+                      <span className="text-right font-medium">{Number(moveInCost.accessCardDeposit).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
+                    <span className="font-bold">Total Move-in Cost</span>
+                    <span className="text-right font-bold text-lg">RM {Number(moveInCost.total || 0).toLocaleString()}</span>
+                  </div>
                 </div>
-              )}
-
-              {moveInCost.deposit != null && (
-                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>Rental Deposit {unitCfg ? `(×${unitCfg.deposit_multiplier})` : ""}</span>
-                  <span className="text-right font-medium">{Number(moveInCost.deposit).toLocaleString()}</span>
-                </div>
-              )}
-
-              {moveInCost.adminFee != null && (
-                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>Admin Fee</span>
-                  <span className="text-right font-medium">{Number(moveInCost.adminFee).toLocaleString()}</span>
-                </div>
-              )}
-
-              {accessFees.map((f, i) => (
-                <div key={`access-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
-                  <span className="text-right font-medium">{f.total.toLocaleString()}</span>
-                </div>
-              ))}
-
-              {carparkFees.filter(f => f.qty > 0 && f.total > 0).map((f, i) => (
-                <div key={`cp-${i}`} className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>{f.label} <span className="text-muted-foreground">({f.qty} × RM{f.unitPrice})</span></span>
-                  <span className="text-right font-medium">{f.total.toLocaleString()}</span>
-                </div>
-              ))}
-
-              {carparkRental > 0 && (
-                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>1 Month Advance Car Park Rental</span>
-                  <span className="text-right font-medium">{carparkRental.toLocaleString()}</span>
-                </div>
-              )}
-
-              {moveInCost.accessCardDeposit > 0 && !accessFees.length && (
-                <div className="grid grid-cols-[1fr_auto] px-4 py-2.5 text-sm">
-                  <span>Access Card Deposit</span>
-                  <span className="text-right font-medium">{Number(moveInCost.accessCardDeposit).toLocaleString()}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-[1fr_auto] px-4 py-3 bg-primary/5">
-                <span className="font-bold">Total Move-in Cost</span>
-                <span className="text-right font-bold text-lg">RM {Number(moveInCost.total || 0).toLocaleString()}</span>
-              </div>
-            </div>
-          ))}
+              </AccordionContent>
+            </AccordionItem>
+          )}
 
           {/* SECTION G – History */}
-          {(b.history || []).length > 0 && sectionCard("History", (
-            <div className="space-y-2">
-              {(b.history || []).map((h: any, i: number) => (
-                <div key={i} className="rounded-lg border bg-background p-3 text-xs">
-                  <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
-                  {h.reason && <div className="mt-1 text-muted-foreground">Reason: {h.reason}</div>}
+          {(b.history || []).length > 0 && (
+            <AccordionItem value="history" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <span className="text-sm font-semibold">📜 History</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2 pb-2">
+                  {(b.history || []).map((h: any, i: number) => (
+                    <div key={i} className="rounded-lg border bg-background p-3 text-xs">
+                      <span className="font-semibold capitalize">{h.action}</span> by {h.by} — {h.at ? format(new Date(h.at), "dd MMM yyyy, HH:mm") : ""}
+                      {h.reason && <div className="mt-1 text-muted-foreground">Reason: {h.reason}</div>}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
       </StandardModal>
 
       {/* Approve Confirm Dialog */}

@@ -597,53 +597,63 @@ function TenantForm({ form, setField, uploadedFiles, setUploadedFiles, existingD
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {errors && <FormErrorBanner errors={errors} />}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">👤 Personal Info</div>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="space-y-1" data-field="name"><label className={labelClass}>Full Name *</label><Input className={fieldClass("", !!errors?.name)} value={form.name || ""} onChange={e => { setField("name", e.target.value); clearError?.("name"); }} /><FieldError error={errors?.name} /></div>
-          <div className="space-y-1"><label className={labelClass}>NRIC / Passport No</label><Input value={form.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
-          <div className="space-y-1"><label className={labelClass}>Email</label><Input value={form.email || ""} onChange={e => setField("email", e.target.value)} /></div>
-          <div className="space-y-1" data-field="phone"><label className={labelClass}>Contact No *</label><Input className={fieldClass("", !!errors?.phone)} value={form.phone || ""} onChange={e => { setField("phone", e.target.value); clearError?.("phone"); }} /><FieldError error={errors?.phone} /></div>
-          <div className="space-y-1">
-            <label className={labelClass}>Gender</label>
-            <Select value={form.gender || ""} onValueChange={v => setField("gender", v)}>
-              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Male">Male</SelectItem>
-                <SelectItem value="Female">Female</SelectItem>
-                <SelectItem value="Couple">Couple</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1"><label className={labelClass}>Nationality</label><Input value={form.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
-          <div className="space-y-1"><label className={labelClass}>Occupation</label><Input value={form.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
-        </div>
-        {/* Document uploads at end of Personal Info */}
-        <div className="grid md:grid-cols-2 gap-3 pt-2">
-          {renderFileField("passport", "Passport / IC")}
-          {renderFileField("offerLetter", "Offer Letter")}
-        </div>
-      </div>
+      <Accordion type="multiple" defaultValue={["personal", "emergency"]} className="space-y-2">
+        <AccordionItem value="personal" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <span className="text-sm font-semibold">👤 Personal Info</span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid md:grid-cols-2 gap-3 pb-2">
+              <div className="space-y-1" data-field="name"><label className={labelClass}>Full Name *</label><Input className={fieldClass("", !!errors?.name)} value={form.name || ""} onChange={e => { setField("name", e.target.value); clearError?.("name"); }} /><FieldError error={errors?.name} /></div>
+              <div className="space-y-1"><label className={labelClass}>NRIC / Passport No</label><Input value={form.ic_passport || ""} onChange={e => setField("ic_passport", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Email</label><Input value={form.email || ""} onChange={e => setField("email", e.target.value)} /></div>
+              <div className="space-y-1" data-field="phone"><label className={labelClass}>Contact No *</label><Input className={fieldClass("", !!errors?.phone)} value={form.phone || ""} onChange={e => { setField("phone", e.target.value); clearError?.("phone"); }} /><FieldError error={errors?.phone} /></div>
+              <div className="space-y-1">
+                <label className={labelClass}>Gender</label>
+                <Select value={form.gender || ""} onValueChange={v => setField("gender", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Couple">Couple</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><label className={labelClass}>Nationality</label><Input value={form.nationality || ""} onChange={e => setField("nationality", e.target.value)} /></div>
+              <div className="space-y-1"><label className={labelClass}>Occupation</label><Input value={form.occupation || ""} onChange={e => setField("occupation", e.target.value)} /></div>
+            </div>
+            {/* Document uploads */}
+            <div className="grid md:grid-cols-2 gap-3 pt-2 pb-2">
+              {renderFileField("passport", "Passport / IC")}
+              {renderFileField("offerLetter", "Offer Letter")}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        <div className="text-base font-bold flex items-center gap-2 border-b border-border pb-2">🚨 Emergency Contacts</div>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Contact 1</div>
-            <div className="space-y-1"><label className={labelClass}>Name</label><Input value={form.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} /></div>
-            <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={form.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={form.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} /></div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Contact 2</div>
-            <div className="space-y-1"><label className={labelClass}>Name</label><Input value={form.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} /></div>
-            <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={form.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} /></div>
-            <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={form.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} /></div>
-          </div>
-        </div>
-      </div>
+        <AccordionItem value="emergency" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <span className="text-sm font-semibold">🚨 Emergency Contacts</span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid md:grid-cols-2 gap-4 pb-2">
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 1</div>
+                <div className="space-y-1"><label className={labelClass}>Name</label><Input value={form.emergency_1_name || ""} onChange={e => setField("emergency_1_name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={form.emergency_1_phone || ""} onChange={e => setField("emergency_1_phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={form.emergency_1_relationship || ""} onChange={e => setField("emergency_1_relationship", e.target.value)} /></div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Contact 2</div>
+                <div className="space-y-1"><label className={labelClass}>Name</label><Input value={form.emergency_2_name || ""} onChange={e => setField("emergency_2_name", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Phone</label><Input value={form.emergency_2_phone || ""} onChange={e => setField("emergency_2_phone", e.target.value)} /></div>
+                <div className="space-y-1"><label className={labelClass}>Relationship</label><Input value={form.emergency_2_relationship || ""} onChange={e => setField("emergency_2_relationship", e.target.value)} /></div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
