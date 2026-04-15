@@ -394,6 +394,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [linkedTenant, setLinkedTenant] = useState<any | null>(null);
   const [tenantLoading, setTenantLoading] = useState(false);
+  const [linkedBooking, setLinkedBooking] = useState<any>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
