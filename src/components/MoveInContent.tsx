@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useBookings, Booking } from "@/hooks/useBookings";
+import { useBookings, Booking, ORDER_STATUS_LABELS, OrderStatus } from "@/hooks/useBookings";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -8,24 +8,30 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
 import { StandardTable } from "@/components/ui/standard-table";
+
+const MOVE_IN_STATUSES: OrderStatus[] = [
+  "booking_approved",
+  "move_in_submitted",
+  "move_in_rejected",
+  "move_in_approved",
+];
 
 export function MoveInContent() {
   const { data: bookings = [], isLoading } = useBookings();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("approved");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  // Show approved bookings with upcoming move-in dates
+  // Show bookings at move-in relevant stages
   const moveIns = useMemo(() => {
-    let list = bookings;
+    let list = bookings.filter(b => MOVE_IN_STATUSES.includes(b.order_status));
     if (statusFilter !== "all") {
-      list = list.filter(b => b.status === statusFilter);
+      list = list.filter(b => b.order_status === statusFilter);
     }
     // Sort by move-in date ascending
     list = [...list].sort((a, b) => new Date(a.move_in_date).getTime() - new Date(b.move_in_date).getTime());
@@ -55,29 +61,30 @@ export function MoveInContent() {
     <StandardPageLayout title="Move-ins" count={moveIns.length}>
       <StandardFilterBar search={search} onSearchChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search tenant or property...">
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-48">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
+            <SelectItem value="booking_approved">Booking Approved</SelectItem>
+            <SelectItem value="move_in_submitted">Move-in Submitted</SelectItem>
+            <SelectItem value="move_in_rejected">Move-in Rejected</SelectItem>
+            <SelectItem value="move_in_approved">Move-in Approved</SelectItem>
           </SelectContent>
         </Select>
       </StandardFilterBar>
 
-      {/* Table */}
       <StandardTable
         columns={
           <TableRow>
-              <TableHead>Tenant</TableHead>
-              <TableHead>Property</TableHead>
-              <TableHead>Room</TableHead>
-              <TableHead>Move-in Date</TableHead>
-              <TableHead>Contract</TableHead>
-              <TableHead>Pax</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
+            <TableHead>Tenant</TableHead>
+            <TableHead>Property</TableHead>
+            <TableHead>Room</TableHead>
+            <TableHead>Move-in Date</TableHead>
+            <TableHead>Contract</TableHead>
+            <TableHead>Pax</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
         }
         isEmpty={paged.length === 0}
         emptyMessage="No move-ins found"
@@ -88,21 +95,21 @@ export function MoveInContent() {
         onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
       >
         {paged.map(b => (
-                <TableRow key={b.id} className={isUpcoming(b.move_in_date) ? "" : "opacity-60"}>
-                  <TableCell className="text-sm font-medium">{b.tenant_name}</TableCell>
-                  <TableCell className="text-sm">{b.room?.building || "—"}</TableCell>
-                  <TableCell className="text-sm">{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
-                  <TableCell className="text-sm font-medium">
-                    {b.move_in_date}
-                    {isUpcoming(b.move_in_date) && (
-                      <span className="ml-2 text-xs text-primary font-normal">Upcoming</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">{b.contract_months}m</TableCell>
-                  <TableCell className="text-sm">{b.pax_staying}</TableCell>
-                  <TableCell><StatusBadge status={b.status} /></TableCell>
-                </TableRow>
-              ))}
+          <TableRow key={b.id} className={isUpcoming(b.move_in_date) ? "" : "opacity-60"}>
+            <TableCell className="text-sm font-medium">{b.tenant_name}</TableCell>
+            <TableCell className="text-sm">{b.room?.building || "—"}</TableCell>
+            <TableCell className="text-sm">{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
+            <TableCell className="text-sm font-medium">
+              {b.move_in_date}
+              {isUpcoming(b.move_in_date) && (
+                <span className="ml-2 text-xs text-primary font-normal">Upcoming</span>
+              )}
+            </TableCell>
+            <TableCell className="text-sm">{b.contract_months}m</TableCell>
+            <TableCell className="text-sm">{b.pax_staying}</TableCell>
+            <TableCell><StatusBadge status={b.order_status} /></TableCell>
+          </TableRow>
+        ))}
       </StandardTable>
     </StandardPageLayout>
   );
