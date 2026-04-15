@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatUnitType } from "@/lib/ui-constants";
 import EditRoom from "@/pages/EditRoom";
 import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteRoom, Room, Unit } from "@/hooks/useRooms";
