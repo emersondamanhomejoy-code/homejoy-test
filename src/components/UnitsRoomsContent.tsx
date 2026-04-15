@@ -666,19 +666,11 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       <div className="flex items-center justify-end gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(commonPhotosUrl, "Common area photos link")}>
-              <Image className="h-3.5 w-3.5" /> Copy Common Photos Link
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")}>
+              <Image className="h-3.5 w-3.5" /> Copy Unit Photos Link
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Copy link showing only common area photos</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(baseShareUrl, "Share link")}>
-              <Link2 className="h-3.5 w-3.5" /> Copy Share Link
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Copy public link for customers</TooltipContent>
+          <TooltipContent>Copy link showing unit photos</TooltipContent>
         </Tooltip>
       </div>
 
