@@ -434,6 +434,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
   const occupiedPax = unitRooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
@@ -666,13 +668,16 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
         <div className="border rounded-lg p-4 space-y-4">
           <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
           {/* Room photos */}
-          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
-            <div className="flex flex-wrap gap-3">
-              {(viewingRoom.photos as string[]).map((path: string, i: number) => (
-                <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-              ))}
-            </div>
-          )}
+          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (() => {
+            const photoUrls = (viewingRoom.photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+            return (
+              <div className="flex flex-wrap gap-3">
+                {photoUrls.map((url: string, i: number) => (
+                  <img key={i} src={url} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
+                ))}
+              </div>
+            );
+          })()}
           {/* Room details */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             {!isCarpark && (
@@ -730,6 +735,13 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
         </div>
       </div>
     );
+  }
+
+  // Lightbox rendering helper for unit view
+  const renderLightbox = () => {
+    if (lightboxIndex === null) return null;
+    return <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />;
+  };
   }
 
 
