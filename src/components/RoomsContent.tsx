@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import EditUnit from "@/pages/EditUnit";
+import EditRoom from "@/pages/EditRoom";
 import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteRoom, Room, Unit } from "@/hooks/useRooms";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
