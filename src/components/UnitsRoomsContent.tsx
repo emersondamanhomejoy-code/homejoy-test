@@ -44,7 +44,7 @@ function PhotoLightbox({ photos, index, onClose, onIndexChange }: {
   }, [index, photos.length, onClose, onIndexChange]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center pointer-events-auto" onClick={onClose}>
       <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10" onClick={(e) => { e.stopPropagation(); onClose(); }}>
         <X className="h-6 w-6" />
       </button>
