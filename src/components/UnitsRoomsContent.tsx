@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 import { formatUnitType } from "@/lib/ui-constants";
 import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
+import { supabase } from "@/integrations/supabase/client";
 import { useCondos } from "@/hooks/useCondos";
 import { useAuth } from "@/hooks/useAuth";
 import AddUnit from "@/pages/AddUnit";
@@ -389,8 +390,10 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit-photos", "unit-details", "rooms", "carparks"]);
-  const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary"]);
+  const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary", "tenant"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [linkedTenant, setLinkedTenant] = useState<any | null>(null);
+  const [tenantLoading, setTenantLoading] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
@@ -398,6 +401,38 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const remainingPax = unit.unit_max_pax - occupiedPax;
   const occupiedCarparks = unitCarparks.filter(r => r.status === "Occupied").length;
   const remainingCarparks = unitCarparks.length - occupiedCarparks;
+
+  // Fetch linked tenant when viewing a room with Occupied/Available Soon status
+  useEffect(() => {
+    if (!viewingRoom || !["Occupied", "Available Soon"].includes(viewingRoom.status)) {
+      setLinkedTenant(null);
+      return;
+    }
+    let cancelled = false;
+    setTenantLoading(true);
+    (async () => {
+      // Find active tenant_room link
+      const { data: trData } = await supabase
+        .from("tenant_rooms")
+        .select("tenant_id")
+        .eq("room_id", viewingRoom.id)
+        .eq("status", "active")
+        .limit(1);
+      if (cancelled) return;
+      if (trData && trData.length > 0) {
+        const { data: tenantData } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("id", trData[0].tenant_id)
+          .single();
+        if (!cancelled) setLinkedTenant(tenantData || null);
+      } else {
+        setLinkedTenant(null);
+      }
+      setTenantLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [viewingRoom?.id, viewingRoom?.status]);
 
   // Listen for back-to-unit event from parent footer button
   useEffect(() => {
@@ -674,6 +709,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     sectionKeys.push("details");
     if (!isCarpark && hasOccupancy) sectionKeys.push("occupancy");
     if (!isCarpark && otherRooms.length > 0) sectionKeys.push("summary");
+    const showTenantSection = ["Occupied", "Available Soon"].includes(viewingRoom.status);
+    if (showTenantSection) sectionKeys.push("tenant");
 
     return (
       <div className="space-y-4">
@@ -813,6 +850,54 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                     </TableBody>
                   </Table>
                 </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* 5. Tenant Details — shown when room/carpark is Occupied or Available Soon */}
+          {showTenantSection && (
+            <AccordionItem value="tenant" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Tenant Details</AccordionTrigger>
+              <AccordionContent>
+                {tenantLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading tenant info…</p>
+                ) : linkedTenant ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <DetailRow label="Name" value={linkedTenant.name} />
+                    <DetailRow label="IC/Passport" value={linkedTenant.ic_passport} />
+                    <DetailRow label="Phone" value={linkedTenant.phone} />
+                    <DetailRow label="Email" value={linkedTenant.email} />
+                    <DetailRow label="Gender" value={linkedTenant.gender} />
+                    <DetailRow label="Nationality" value={linkedTenant.nationality} />
+                    <DetailRow label="Race" value={linkedTenant.race} />
+                    <DetailRow label="Occupation" value={linkedTenant.occupation} />
+                    <DetailRow label="Company" value={linkedTenant.company} />
+                    <DetailRow label="Position" value={linkedTenant.position} />
+                    <DetailRow label="Car Plate" value={linkedTenant.car_plate} />
+                    {linkedTenant.emergency_1_name && (
+                      <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 1</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <DetailRow label="Name" value={linkedTenant.emergency_1_name} />
+                          <DetailRow label="Phone" value={linkedTenant.emergency_1_phone} />
+                          <DetailRow label="Relationship" value={linkedTenant.emergency_1_relationship} />
+                        </div>
+                      </div>
+                    )}
+                    {linkedTenant.emergency_2_name && (
+                      <div className="col-span-2 md:col-span-3 border-t pt-2 mt-1">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Emergency Contact 2</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <DetailRow label="Name" value={linkedTenant.emergency_2_name} />
+                          <DetailRow label="Phone" value={linkedTenant.emergency_2_phone} />
+                          <DetailRow label="Relationship" value={linkedTenant.emergency_2_relationship} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No tenant linked to this {isCarpark ? "carpark" : "room"}.</p>
+                )}
               </AccordionContent>
             </AccordionItem>
           )}
