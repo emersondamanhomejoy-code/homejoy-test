@@ -698,9 +698,9 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3" style={{ contentVisibility: "auto" }}>
                   {photoUrls.map((url: string, i: number) => (
-                    <img key={i} src={url} alt={`Photo ${i + 1}`} loading="lazy" className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
+                    <img key={i} src={`${url}?width=160&height=160`} alt={`Photo ${i + 1}`} loading="lazy" width={80} height={80} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
                   ))}
                 </div>
               </AccordionContent>
