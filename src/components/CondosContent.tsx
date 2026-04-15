@@ -337,7 +337,6 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
                 const photoUrls = photos.map((p: string) => `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/room-photos/${p}`);
                 return <PhotoLightbox photos={photoUrls} index={photoLightboxIndex} onClose={() => setPhotoLightboxIndex(null)} onIndexChange={setPhotoLightboxIndex} />;
               })()}
-              })()}
 
               {/* 1. Stat Cards */}
               {viewStats && (
