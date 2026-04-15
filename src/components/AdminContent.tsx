@@ -7,13 +7,14 @@ import { ActivityLogPage } from "@/components/ActivityLogPage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnits, Unit } from "@/hooks/useRooms";
-import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
+import { useBookings, useUpdateOrderStatus, Booking, ORDER_STATUS_LABELS } from "@/hooks/useBookings";
 import { logActivity } from "@/hooks/useActivityLog";
 import { UnitsRoomsContent } from "@/components/UnitsRoomsContent";
 import { BookingsContent } from "@/components/BookingsContent";
 import { inputClass } from "@/lib/ui-constants";
 import { StatCard } from "@/components/ui/stat-card";
 import { useFormValidation, fieldClass, FieldError, FormErrorBanner } from "@/hooks/useFormValidation";
+import { StatusBadge } from "@/components/StatusBadge";
 
 function DocFileLink({ path, isImage, label }: { path: string; isImage: boolean; label: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -42,12 +43,9 @@ export function AdminContent({ tab }: AdminContentProps) {
   const { user, role } = useAuth();
   const canViewActivityLog = role === "super_admin";
 
-  // Units for dashboard stats
   const { data: units = [] } = useUnits();
-
-  // Bookings state
   const { data: allBookings = [] } = useBookings();
-  const updateBookingStatus = useUpdateBookingStatus();
+  const updateOrderStatus = useUpdateOrderStatus();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const adminRejectValidation = useFormValidation();
@@ -55,9 +53,9 @@ export function AdminContent({ tab }: AdminContentProps) {
   return (
     <div className="space-y-6">
       {tab === "dashboard" && (() => {
-        const pendingBookings = allBookings.filter(b => b.status === "submitted");
-        const approvedBookings = allBookings.filter(b => b.status === "approved");
-        const rejectedBookings = allBookings.filter(b => b.status === "rejected");
+        const pendingBookings = allBookings.filter(b => b.order_status === "booking_submitted");
+        const approvedBookings = allBookings.filter(b => b.order_status === "booking_approved" || b.order_status === "move_in_submitted" || b.order_status === "move_in_approved");
+        const rejectedBookings = allBookings.filter(b => b.order_status === "booking_rejected");
         const totalRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park").length ?? 0), 0);
         const availableRooms = units.reduce((sum, u) => sum + (u.rooms?.filter(r => r.room_type !== "Car Park" && r.status === "Available").length ?? 0), 0);
         const occupiedRooms = totalRooms - availableRooms;
@@ -67,16 +65,17 @@ export function AdminContent({ tab }: AdminContentProps) {
         const handleApprove = async (booking: Booking) => {
           if (!user) return;
           try {
-            await updateBookingStatus.mutateAsync({
+            await updateOrderStatus.mutateAsync({
               id: booking.id,
-              status: "approved",
+              order_status: "booking_approved",
               reviewed_by: user.id,
               room_id: booking.room_id,
               tenant_name: booking.tenant_name,
               tenant_gender: booking.tenant_gender,
               tenant_race: booking.tenant_race,
-              pax_staying: (booking as any).pax_staying || 1,
-              carParkIds: ((booking as any).documents as any)?.carParkIds || [],
+              pax_staying: booking.pax_staying || 1,
+              carParkIds: (booking.documents as any)?.carParkIds || [],
+              bookingData: booking,
             });
             logActivity("approve_booking", "booking", booking.id, { tenant: booking.tenant_name });
             setSelectedBooking(null);
@@ -87,7 +86,7 @@ export function AdminContent({ tab }: AdminContentProps) {
           const rejectRules = { rejectReason: () => !rejectReason.trim() ? "Reject reason is required" : null };
           if (!user || !adminRejectValidation.validate({ rejectReason }, rejectRules)) return;
           try {
-            await updateBookingStatus.mutateAsync({ id: booking.id, status: "rejected", reviewed_by: user.id, reject_reason: rejectReason, carParkIds: ((booking as any).documents as any)?.carParkIds || [] });
+            await updateOrderStatus.mutateAsync({ id: booking.id, order_status: "booking_rejected", reviewed_by: user.id, reject_reason: rejectReason, room_id: booking.room_id, carParkIds: (booking.documents as any)?.carParkIds || [] });
             logActivity("reject_booking", "booking", booking.id, { tenant: booking.tenant_name, reason: rejectReason });
             setSelectedBooking(null);
             setRejectReason("");
@@ -102,7 +101,7 @@ export function AdminContent({ tab }: AdminContentProps) {
               <div className="bg-card rounded-lg shadow-sm p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <div className="text-xl font-bold">{b.tenant_name}</div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${b.status === "submitted" ? "bg-yellow-500/20 text-yellow-600" : b.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{b.status.toUpperCase()}</span>
+                  <StatusBadge status={ORDER_STATUS_LABELS[b.order_status] || b.order_status} />
                 </div>
                 {b.room && <div className="text-sm text-muted-foreground">{b.room.building} · {b.room.unit} · {b.room.room}</div>}
 
@@ -121,23 +120,23 @@ export function AdminContent({ tab }: AdminContentProps) {
                   <div className="space-y-3">
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Work & Details</div>
                     <div className="text-sm space-y-1">
-                      <div>💼 {(b as any).occupation || b.company || "—"}</div>
+                      <div>💼 {b.occupation || b.company || "—"}</div>
                       <div>💰 RM{b.monthly_salary || "—"}/month</div>
-                      <div>👥 Pax: {(b as any).pax_staying || "—"}</div>
-                      <div>🪪 Access Cards: {(b as any).access_card_count || 0}</div>
-                      <div>🅿️ Parking: {(b as any).parking || "0"} {(b as any).car_plate ? `(${(b as any).car_plate})` : ""}</div>
+                      <div>👥 Pax: {b.pax_staying || "—"}</div>
+                      <div>🪪 Access Cards: {b.access_card_count || 0}</div>
+                      <div>🅿️ Parking: {b.parking || "0"} {b.car_plate ? `(${b.car_plate})` : ""}</div>
                     </div>
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 1</div>
                     <div className="text-sm space-y-1">
-                      <div>👤 {(b as any).emergency_1_name || b.emergency_name || "—"}</div>
-                      <div>📞 {(b as any).emergency_1_phone || b.emergency_phone || "—"}</div>
-                      <div>🔗 {(b as any).emergency_1_relationship || b.emergency_relationship || "—"}</div>
+                      <div>👤 {b.emergency_1_name || b.emergency_name || "—"}</div>
+                      <div>📞 {b.emergency_1_phone || b.emergency_phone || "—"}</div>
+                      <div>🔗 {b.emergency_1_relationship || b.emergency_relationship || "—"}</div>
                     </div>
                     <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Emergency Contact 2</div>
                     <div className="text-sm space-y-1">
-                      <div>👤 {(b as any).emergency_2_name || "—"}</div>
-                      <div>📞 {(b as any).emergency_2_phone || "—"}</div>
-                      <div>🔗 {(b as any).emergency_2_relationship || "—"}</div>
+                      <div>👤 {b.emergency_2_name || "—"}</div>
+                      <div>📞 {b.emergency_2_phone || "—"}</div>
+                      <div>🔗 {b.emergency_2_relationship || "—"}</div>
                     </div>
                   </div>
                 </div>
@@ -146,9 +145,9 @@ export function AdminContent({ tab }: AdminContentProps) {
                 <div className="space-y-3 pt-2">
                   <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Documents</div>
                   {[
-                    { label: "🪪 Passport / IC", files: (b as any).doc_passport as string[] | undefined },
-                    { label: "📄 Offer Letter", files: (b as any).doc_offer_letter as string[] | undefined },
-                    { label: "🧾 Transfer Slip", files: (b as any).doc_transfer_slip as string[] | undefined },
+                    { label: "🪪 Passport / IC", files: b.doc_passport as string[] | undefined },
+                    { label: "📄 Offer Letter", files: b.doc_offer_letter as string[] | undefined },
+                    { label: "🧾 Transfer Slip", files: b.doc_transfer_slip as string[] | undefined },
                   ].map(({ label, files }) => (
                     <div key={label}>
                       <div className="text-sm font-medium mb-1">{label}</div>
@@ -166,20 +165,20 @@ export function AdminContent({ tab }: AdminContentProps) {
                   ))}
                 </div>
 
-                {b.status === "submitted" && (
+                {b.order_status === "booking_submitted" && (
                   <div className="flex flex-col gap-3 pt-4 border-t border-border">
                     <div className="flex gap-2">
-                      <button onClick={() => handleApprove(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50">✅ Approve</button>
+                      <button onClick={() => handleApprove(b)} disabled={updateOrderStatus.isPending} className="px-5 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50">✅ Approve</button>
                     </div>
                     <div className="flex gap-2" data-field="rejectReason">
                       <input className={fieldClass(inputClass + " flex-1", !!adminRejectValidation.errors.rejectReason)} placeholder="Reject reason..." value={rejectReason} onChange={e => { setRejectReason(e.target.value); adminRejectValidation.clearError("rejectReason"); }} />
-                      <button onClick={() => handleReject(b)} disabled={updateBookingStatus.isPending} className="px-5 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-50">❌ Reject</button>
+                      <button onClick={() => handleReject(b)} disabled={updateOrderStatus.isPending} className="px-5 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-50">❌ Reject</button>
                     </div>
                     <FieldError error={adminRejectValidation.errors.rejectReason} />
                   </div>
                 )}
 
-                {b.status === "rejected" && b.reject_reason && (
+                {b.order_status === "booking_rejected" && b.reject_reason && (
                   <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
                     <span className="font-semibold">Reject Reason:</span> {b.reject_reason}
                   </div>
@@ -191,7 +190,6 @@ export function AdminContent({ tab }: AdminContentProps) {
 
         return (
           <div className="space-y-6">
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <StatCard label="Total Rooms" value={totalRooms} />
               <StatCard label="Available Rooms" value={availableRooms} valueColor="text-emerald-600" />
@@ -200,7 +198,6 @@ export function AdminContent({ tab }: AdminContentProps) {
               <StatCard label="Pending Bookings" value={pendingBookings.length} valueColor="text-yellow-500" />
             </div>
 
-            {/* Pending Bookings */}
             <div>
               <div className="text-lg font-bold mb-3">🔔 Pending Bookings</div>
               {pendingBookings.length === 0 ? (
@@ -213,14 +210,13 @@ export function AdminContent({ tab }: AdminContentProps) {
                         <div className="font-semibold">{b.tenant_name}</div>
                         <div className="text-xs text-muted-foreground">{b.room?.building} · {b.room?.unit} · {b.room?.room} · Move-in: {b.move_in_date}</div>
                       </div>
-                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-600">PENDING</span>
+                      <StatusBadge status="Booking Submitted" />
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Recent Approved / Rejected */}
             {(approvedBookings.length > 0 || rejectedBookings.length > 0) && (
               <div>
                 <div className="text-lg font-bold mb-3">📋 Recent Bookings</div>
@@ -231,7 +227,7 @@ export function AdminContent({ tab }: AdminContentProps) {
                         <div className="font-semibold">{b.tenant_name}</div>
                         <div className="text-xs text-muted-foreground">{b.room?.building} · {b.room?.unit} · {b.room?.room}</div>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${b.status === "approved" ? "bg-green-500/20 text-green-600" : "bg-red-500/20 text-red-600"}`}>{b.status.toUpperCase()}</span>
+                      <StatusBadge status={ORDER_STATUS_LABELS[b.order_status] || b.order_status} />
                     </button>
                   ))}
                 </div>
@@ -242,15 +238,10 @@ export function AdminContent({ tab }: AdminContentProps) {
       })()}
 
       {tab === "units" && <UnitsRoomsContent />}
-
       {tab === "bookings" && <BookingsContent />}
-
       {tab === "movein" && <MoveInPage />}
-
       {tab === "moveout" && <MoveOutPage />}
-
       {tab === "users" && <UsersPage />}
-
       {tab === "activity" && canViewActivityLog && <ActivityLogPage />}
     </div>
   );
