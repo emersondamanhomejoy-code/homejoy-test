@@ -85,7 +85,9 @@ export function RoomsContent() {
     const flat: FlatRoom[] = [];
     for (const unit of units) {
       for (const room of unit.rooms || []) {
-        if ((room as any).room_type === "Car Park" || (room.room || "").toLowerCase().startsWith("carpark")) continue;
+        const isCarPark = (room as any).room_type === "Car Park" || (room.room || "").toLowerCase().startsWith("carpark");
+        if (assetTab === "rooms" && isCarPark) continue;
+        if (assetTab === "carparks" && !isCarPark) continue;
         const unitOccupied = (unit.rooms || [])
           .filter(r => (r as any).room_type !== "Car Park")
           .reduce((sum, r) => sum + (r.pax_staying || 0), 0);
@@ -100,7 +102,7 @@ export function RoomsContent() {
       }
     }
     return flat;
-  }, [units]);
+  }, [units, assetTab]);
 
   // Derive filter options
   const locations = useMemo(() => Array.from(new Set(allRooms.map(r => r.location).filter(Boolean))).sort(), [allRooms]);
