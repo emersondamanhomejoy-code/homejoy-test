@@ -380,7 +380,7 @@ interface AccessItem {
 function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData: any[]; isAdmin: boolean }) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
-  const [viewAccordion, setViewAccordion] = useState<string[]>(["rooms", "carparks", "unit", "building"]);
+  const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
   const occupiedPax = unitRooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
@@ -493,17 +493,19 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   };
 
   const copyRoomSummary = () => {
-    const occupiedRooms = unitRooms.filter(r => (r.status === "Occupied" || r.status === "Available Soon") && (r.pax_staying || 0) > 0);
-    if (occupiedRooms.length === 0) { toast.info("No occupied rooms to copy"); return; }
-    const rows = occupiedRooms.map(r => {
+    const rows = unitRooms.map(r => {
+      const isOccupied = (r.status === "Occupied" || r.status === "Available Soon") && (r.pax_staying || 0) > 0;
+      const roomLabel = r.room.replace(/^Room\s+/i, "");
+      if (!isOccupied) {
+        return `Room ${roomLabel} - Vacant`;
+      }
       const housemates = Array.isArray(r.housemates) ? r.housemates : [];
       const names = housemates.map((h: any) => typeof h === "object" ? h?.name || "" : typeof h === "string" ? h : "").filter(Boolean);
       const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || r.tenant_gender || "—";
       const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
-      const roomLabel = r.room.replace(/^Room\s+/i, "");
       return `Room ${roomLabel}: ${r.pax_staying || 0} pax · ${genders} · ${nats}${names.length > 0 ? ` (${names.join(", ")})` : ""}`;
     });
-    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Housemate details");
+    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Room details");
   };
 
   const copyCostBreakdown = () => {
@@ -660,26 +662,23 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   }
 
 
+  const availableRooms = unitRooms.filter(r => r.status === "Available").length;
+
   return (
     <div className="space-y-4">
-      {/* Top share links */}
-      <div className="flex items-center justify-end gap-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")}>
-              <Image className="h-3.5 w-3.5" /> Copy Unit Photos Link
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Copy link showing unit photos</TooltipContent>
-        </Tooltip>
+      {/* Expand/Collapse All — upper right */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setViewAccordion(prev => prev.length === 3 ? [] : ["unit", "rooms", "carparks"])}>
+          {viewAccordion.length === 3 ? "Collapse All" : "Expand All"}
+        </Button>
       </div>
 
-      {/* Statistic Cards */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Stat Cards — non-collapsible */}
+      <div className="grid grid-cols-3 gap-3">
         <StatCard
-          label="Remaining Pax"
-          value={<>{remainingPax}/{unit.unit_max_pax}</>}
-          valueColor={remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}
+          label="Remaining Room"
+          value={<>{availableRooms}/{unitRooms.length}</>}
+          valueColor={availableRooms > 0 ? "text-emerald-600" : "text-muted-foreground"}
           className="text-center"
         />
         <StatCard
@@ -688,24 +687,62 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           valueColor={remainingCarparks > 0 ? "text-emerald-600" : "text-muted-foreground"}
           className="text-center"
         />
+        <StatCard
+          label="Remaining Pax"
+          value={<>{remainingPax}/{unit.unit_max_pax}</>}
+          valueColor={remainingPax > 0 ? "text-emerald-600" : remainingPax === 0 ? "text-muted-foreground" : "text-destructive"}
+          className="text-center"
+        />
       </div>
 
-      <div className="fixed top-4 right-4 z-50">
-        <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setViewAccordion(prev => prev.length === 4 ? [] : ["rooms", "carparks", "unit", "building"])}>
-          {viewAccordion.length === 4 ? "Collapse All" : "Expand All"}
-        </Button>
-      </div>
       <Accordion type="multiple" value={viewAccordion} onValueChange={setViewAccordion} className="space-y-2">
-        {/* Room Summary — FIRST */}
+        {/* Unit — FIRST (photos + details) */}
+        <AccordionItem value="unit" className="border rounded-lg px-4">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-semibold">Unit</span>
+              <span className="text-xs text-muted-foreground">— {unit.unit} · {formatUnitType(unit.unit_type)} · {unit.unit_max_pax} pax</span>
+            </div>
+            <div className="flex items-center gap-1 mr-2">
+              <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
+              <TextCopyBtn onClick={copyUnitDetails} label="Copy Unit Details" />
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            {/* Unit photos first */}
+            {((unit as any).common_photos || []).length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-4">
+                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
+                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+                ))}
+              </div>
+            )}
+            {/* Unit details */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
+              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
+              <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
+              <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
+              <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
+              <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(unit as any).meter_type} · RM{(unit as any).meter_rate}/kWh</span></div>
+              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "—"}</span></div>
+              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "—"}</span></div>
+              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "—"}</span></div>
+              <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(unit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Room — SECOND */}
         {unitRooms.length > 0 && (
           <AccordionItem value="rooms" className="border rounded-lg px-4">
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm font-semibold">Room Summary</span>
+                <span className="text-sm font-semibold">Room</span>
                 <span className="text-xs text-muted-foreground">— {unitRooms.length} rooms</span>
               </div>
               <div className="flex items-center gap-1 mr-2">
-                <TextCopyBtn onClick={copyRoomSummary} label="Copy Housemates" />
+                <TextCopyBtn onClick={copyRoomSummary} label="Copy Room Details" />
               </div>
             </AccordionTrigger>
             <AccordionContent>
@@ -755,12 +792,12 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           </AccordionItem>
         )}
 
-        {/* Carpark Summary — SECOND */}
+        {/* Carpark — THIRD */}
         {unitCarparks.length > 0 && (
           <AccordionItem value="carparks" className="border rounded-lg px-4">
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm font-semibold">Carpark Summary</span>
+                <span className="text-sm font-semibold">Carpark</span>
                 <span className="text-xs text-muted-foreground">— {unitCarparks.length} carparks</span>
               </div>
             </AccordionTrigger>
@@ -798,108 +835,13 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             </AccordionContent>
           </AccordionItem>
         )}
-
-        {/* Unit Details — THIRD */}
-        <AccordionItem value="unit" className="border rounded-lg px-4">
-          <AccordionTrigger className="py-3 hover:no-underline">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-semibold">Unit Details</span>
-              <span className="text-xs text-muted-foreground">— {unit.unit} · {formatUnitType(unit.unit_type)} · {unit.unit_max_pax} pax</span>
-            </div>
-            <div className="flex items-center gap-1 mr-2">
-              <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
-              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
-              <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
-              <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
-              <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
-              <div><span className="text-muted-foreground">Meter:</span> <span className="font-medium">{(unit as any).meter_type} · RM{(unit as any).meter_rate}/kWh</span></div>
-              <div><span className="text-muted-foreground">Passcode:</span> <span className="font-medium">{unit.passcode || "—"}</span></div>
-              <div><span className="text-muted-foreground">WiFi:</span> <span className="font-medium">{(unit as any).wifi_name || "—"}</span></div>
-              <div><span className="text-muted-foreground">WiFi PW:</span> <span className="font-medium">{(unit as any).wifi_password || "—"}</span></div>
-              <div><span className="text-muted-foreground">Internal Only:</span> <span className="font-medium">{(unit as any).internal_only ? "🔒 Yes" : "No"}</span></div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Building Details — FOURTH */}
-        <AccordionItem value="building" className="border rounded-lg px-4">
-          <AccordionTrigger className="py-3 hover:no-underline">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-semibold">Building Details</span>
-              <span className="text-xs text-muted-foreground">— {unit.building} · {unit.location}</span>
-            </div>
-            <div className="flex items-center gap-1 mr-2">
-              <TextCopyBtn onClick={copyBuildingDetails} label="Copy Text" />
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            {/* Building photos at top */}
-            {condo && Array.isArray(condo.photos) && condo.photos.length > 0 && (
-              <div className="flex flex-wrap gap-3 mb-4">
-                {(condo.photos as string[]).map((path: string, i: number) => (
-                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Building ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                ))}
-              </div>
-            )}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Building:</span> <span className="font-medium">{unit.building}</span></div>
-              <div><span className="text-muted-foreground">Location:</span> <span className="font-medium">{unit.location}</span></div>
-              {condo && (
-                <>
-                  {condo.address && <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{condo.address}</span></div>}
-                  {condo.gps_link && <div className="col-span-2"><span className="text-muted-foreground">GPS:</span> <a href={condo.gps_link} target="_blank" rel="noreferrer" className="font-medium text-primary underline">{condo.gps_link}</a></div>}
-                  {condo.amenities && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Amenities:</span> <span className="font-medium">{condo.amenities}</span></div>}
-                  {condo.parking_info && <div className="col-span-2"><span className="text-muted-foreground">Parking:</span> <span className="font-medium">{condo.parking_info}</span></div>}
-                  {condo.arrival_instruction && <div className="col-span-2 md:col-span-3"><span className="text-muted-foreground">Arrival:</span> <span className="font-medium">{condo.arrival_instruction}</span></div>}
-                </>
-              )}
-            </div>
-
-            {/* Access Information */}
-            {(allAccess.pedestrian.length > 0 || allAccess.carpark.length > 0 || allAccess.motorcycle.length > 0) && (
-              <div className="mt-4 space-y-3">
-                <h4 className="text-sm font-semibold">Access Information</h4>
-                {renderAccessCategory("Pedestrian Access", allAccess.pedestrian)}
-                {renderAccessCategory("Car Park Access", allAccess.carpark)}
-                {renderAccessCategory("Motorcycle Access", allAccess.motorcycle)}
-              </div>
-            )}
-
-            {/* Visitor Parking */}
-            {condo && (condo.visitor_car_parking || condo.visitor_motorcycle_parking) && (
-              <div className="mt-4 space-y-1">
-                <h4 className="text-sm font-semibold">Visitor Parking</h4>
-                {condo.visitor_car_parking && (
-                  <div className="text-sm"><span className="text-muted-foreground">Visitor Car Parking:</span> <span className="font-medium">{condo.visitor_car_parking}</span></div>
-                )}
-                {condo.visitor_motorcycle_parking && (
-                  <div className="text-sm"><span className="text-muted-foreground">Visitor Motorcycle Parking:</span> <span className="font-medium">{condo.visitor_motorcycle_parking}</span></div>
-                )}
-              </div>
-            )}
-
-            {/* Common photos */}
-            {((unit as any).common_photos || []).length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-3">
-                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
-                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Common ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                ))}
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
       </Accordion>
 
       {/* Cost Breakdown Calculator */}
       <section className="border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Move-In Cost Calculator</h3>
-          {calcRoom && <TextCopyBtn onClick={copyCostBreakdown} label="Copy Cost" />}
+          {calcRoom && <TextCopyBtn onClick={copyCostBreakdown} label="Copy Cost Breakdown" />}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
