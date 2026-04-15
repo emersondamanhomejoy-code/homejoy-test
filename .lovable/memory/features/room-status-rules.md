@@ -18,12 +18,13 @@ Available, Available Soon, Pending, Occupied, Archived
 | Available | Available, Archived | Cannot go to Available Soon (room is empty) |
 | Occupied | Occupied, Available Soon | Available Soon requires Available Date |
 | Available Soon | READ-ONLY | Release via Move Out workflow only |
-| Pending | READ-ONLY | Controlled by Booking workflow |
+| Pending | READ-ONLY | Controlled by Order Status workflow |
 | Archived | Archived, Available | Restore to inventory |
 
-## Workflow-Controlled Transitions
-- Booking Approved → room becomes Pending
-- Move In Approved → room becomes Occupied
+## Workflow-Controlled Transitions (via Order Status)
+- order_status = booking_approved → room becomes Pending
+- order_status = move_in_approved → room becomes Occupied
+- order_status = booking_rejected/cancelled → room returns to Available (if was Pending)
 - Occupied → Available Soon: manual in Edit Room, requires Available Date
 - Move Out completed → room becomes Available
 
@@ -32,3 +33,4 @@ Available, Available Soon, Pending, Occupied, Archived
 - Pending and Available Soon are never manually editable
 - Occupied cannot be freely switched to Available — must go through Move Out
 - Same rules apply to Carparks
+- Archived requires archived_reason field

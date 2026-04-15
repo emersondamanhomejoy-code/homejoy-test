@@ -5,6 +5,7 @@ HOMEJOY Agent Portal — room rental management system.
 Google OAuth only, no email/password auth.
 Each unit has 5 rooms (A-E), rooms independently available/unavailable.
 Lovable Cloud backend. Roles: admin, agent.
+Unified Order Status on bookings table; separate Room Status on rooms table. Old move_ins table deprecated.
 
 ## Memories
 - [Room structure](mem://features/rooms) — Unit→5 rooms model, availability tracking
@@ -16,14 +17,14 @@ Lovable Cloud backend. Roles: admin, agent.
 - [UI/UX requirements](mem://design/ui-ux-requirements) — General UI standards
 - [Product goal](mem://features/product-goal) — Agent portal for room rental management
 - [Roles](mem://features/roles) — Admin and agent role definitions
-- [Bookings](mem://features/bookings) — Booking submission and approval flow
+- [Bookings](mem://features/bookings) — Unified order_status workflow, move-in merged into bookings
 - [Tenants](mem://features/tenants) — Tenant data model
 - [Locations](mem://features/locations) — Location management
 - [Dashboard](mem://features/dashboard) — Dashboard layout and cards
-- [Status system](mem://features/status-system) — Room/booking status definitions
-- [Room status rules](mem://features/room-status-rules) — Status transition rules
+- [Status system](mem://features/status-system) — Unified Order Status (7 states) + Room Status (5 states)
+- [Room status rules](mem://features/room-status-rules) — Status transition rules, workflow-controlled vs manual
 - [Building access](mem://features/building-access) — Access card/item management
-- [Business flow](mem://features/business-flow) — End-to-end booking to move-in flow
+- [Business flow](mem://features/business-flow) — End-to-end booking to move-in flow with unified order_status
 - [Tenant selection](mem://features/tenant-selection) — Tenant picker patterns
 - [Commission tiers](mem://features/commission-tiers) — Per-agent commission config
 - [Area filter](mem://features/area-filter) — Valid area names for locations
