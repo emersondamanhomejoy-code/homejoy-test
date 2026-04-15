@@ -45,16 +45,16 @@ function PhotoLightbox({ photos, index, onClose, onIndexChange }: {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={onClose}>
-      <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2" onClick={onClose}>
+      <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10" onClick={(e) => { e.stopPropagation(); onClose(); }}>
         <X className="h-6 w-6" />
       </button>
       {index > 0 && (
-        <button className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2" onClick={e => { e.stopPropagation(); onIndexChange(index - 1); }}>
+        <button className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 z-10" onClick={e => { e.stopPropagation(); onIndexChange(index - 1); }}>
           <ChevronLeft className="h-8 w-8" />
         </button>
       )}
       {index < photos.length - 1 && (
-        <button className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2" onClick={e => { e.stopPropagation(); onIndexChange(index + 1); }}>
+        <button className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 z-10" onClick={e => { e.stopPropagation(); onIndexChange(index + 1); }}>
           <ChevronRight className="h-8 w-8" />
         </button>
       )}
