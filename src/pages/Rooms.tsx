@@ -159,10 +159,26 @@ export default function Rooms() {
           <main className="flex-1 p-8 overflow-auto">
             <div className="flex flex-col gap-6">
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Available Rooms</h2>
+                <h2 className="text-2xl font-bold text-foreground">Rooms & Car Parks</h2>
                 <p className="text-muted-foreground text-sm mt-1">
-                  Browse and filter available rooms across all locations.
+                  Browse and filter available rooms and car parks across all locations.
                 </p>
+              </div>
+
+              {/* Asset type toggle */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setAssetTab("rooms"); clearFilters(); }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "rooms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Rooms
+                </button>
+                <button
+                  onClick={() => { setAssetTab("carparks"); clearFilters(); }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "carparks" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Car Parks
+                </button>
               </div>
 
               {/* Filters */}
