@@ -461,8 +461,8 @@ export function RoomsContent() {
       <ConfirmDialog
         open={!!deleteConfirm}
         onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
-        title="Archive / Remove this room?"
-        description="This action cannot be undone. The room will be permanently deleted."
+        title={assetTab === "rooms" ? "Remove this room?" : "Remove this car park?"}
+        description={assetTab === "rooms" ? "This action cannot be undone. The room will be permanently deleted." : "This action cannot be undone. The car park will be permanently deleted."}
         confirmLabel="Remove"
         variant="destructive"
         onConfirm={handleDelete}
