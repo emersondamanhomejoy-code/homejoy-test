@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 import { formatUnitType } from "@/lib/ui-constants";
 import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
+import { supabase } from "@/integrations/supabase/client";
 import { useCondos } from "@/hooks/useCondos";
 import { useAuth } from "@/hooks/useAuth";
 import AddUnit from "@/pages/AddUnit";
