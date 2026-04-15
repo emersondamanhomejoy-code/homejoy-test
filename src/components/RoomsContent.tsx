@@ -26,6 +26,7 @@ import { inputClass } from "@/lib/ui-constants";
 
 // Status tabs
 const STATUS_TABS = ["All", "Available", "Available Soon", "Pending", "Occupied", "Archived"] as const;
+type AssetTab = "rooms" | "carparks";
 
 interface FlatRoom extends Room {
   unitName: string;
@@ -48,6 +49,9 @@ export function RoomsContent() {
   const navigate = useNavigate();
   const { data: units = [], isLoading } = useUnits();
   const deleteRoom = useDeleteRoom();
+
+  // Asset type toggle
+  const [assetTab, setAssetTab] = useState<AssetTab>("rooms");
 
   // Default visible filters
   const [search, setSearch] = useState("");
@@ -81,7 +85,9 @@ export function RoomsContent() {
     const flat: FlatRoom[] = [];
     for (const unit of units) {
       for (const room of unit.rooms || []) {
-        if ((room as any).room_type === "Car Park" || (room.room || "").toLowerCase().startsWith("carpark")) continue;
+        const isCarPark = (room as any).room_type === "Car Park" || (room.room || "").toLowerCase().startsWith("carpark");
+        if (assetTab === "rooms" && isCarPark) continue;
+        if (assetTab === "carparks" && !isCarPark) continue;
         const unitOccupied = (unit.rooms || [])
           .filter(r => (r as any).room_type !== "Car Park")
           .reduce((sum, r) => sum + (r.pax_staying || 0), 0);
@@ -96,7 +102,7 @@ export function RoomsContent() {
       }
     }
     return flat;
-  }, [units]);
+  }, [units, assetTab]);
 
   // Derive filter options
   const locations = useMemo(() => Array.from(new Set(allRooms.map(r => r.location).filter(Boolean))).sort(), [allRooms]);
@@ -225,13 +231,28 @@ export function RoomsContent() {
 
   return (
     <StandardPageLayout
-      title="Rooms"
+      title={assetTab === "rooms" ? "Rooms" : "Car Parks"}
       secondaryActions={
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="h-4 w-4 mr-1" /> Export CSV
         </Button>
       }
     >
+      {/* Asset type toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => { setAssetTab("rooms"); clearFilters(); }}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "rooms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+        >
+          Rooms
+        </button>
+        <button
+          onClick={() => { setAssetTab("carparks"); clearFilters(); }}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "carparks" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+        >
+          Car Parks
+        </button>
+      </div>
       {/* Compact filter bar */}
       <div className="bg-card rounded-xl shadow-sm border border-border p-4 space-y-3">
         {/* Row 1: Search + Status pills + Location + Building + Advanced toggle */}
@@ -350,11 +371,11 @@ export function RoomsContent() {
       {/* Table */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <span className="text-sm text-muted-foreground">{filtered.length} room(s) found</span>
+          <span className="text-sm text-muted-foreground">{filtered.length} {assetTab === "rooms" ? "room(s)" : "car park(s)"} found</span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">No rooms match your filters.</div>
+          <div className="p-12 text-center text-muted-foreground">No {assetTab === "rooms" ? "rooms" : "car parks"} match your filters.</div>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -364,11 +385,10 @@ export function RoomsContent() {
                     <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                     <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
                     <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
-                    <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>
-                    <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Listed Rental</SortableTableHead>
+                    {assetTab === "rooms" && <SortableTableHead sortKey="room_title" currentSort={sort} onSort={handleSort}>Room Title</SortableTableHead>}
+                    <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">{assetTab === "rooms" ? "Listed Rental" : "Rental"}</SortableTableHead>
                     <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
-                    
-                    <SortableTableHead sortKey="effectiveRemaining" currentSort={sort} onSort={handleSort} className="text-center">Capacity</SortableTableHead>
+                    {assetTab === "rooms" && <SortableTableHead sortKey="effectiveRemaining" currentSort={sort} onSort={handleSort} className="text-center">Capacity</SortableTableHead>}
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -376,17 +396,19 @@ export function RoomsContent() {
                   {paged.map(r => {
                     return (
                       <TableRow key={r.id}>
-                        <TableCell className="font-medium">{r.building}</TableCell>
-                        <TableCell>{r.unit}</TableCell>
+                        <TableCell className="font-medium">{r.building || "N/A"}</TableCell>
+                        <TableCell>{r.unit || "N/A"}</TableCell>
                         <TableCell><Badge variant="outline" className="font-mono">{r.room.replace(/^Room\s+/i, "")}</Badge></TableCell>
-                        <TableCell className="font-medium">{(r as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
+                        {assetTab === "rooms" && <TableCell className="font-medium">{(r as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>}
                         <TableCell className="text-right font-medium">RM{r.rent}</TableCell>
                         <TableCell><StatusBadge status={r.status} availableDate={r.available_date} /></TableCell>
-                        <TableCell className="text-center">
-                          <span className={r.effectiveRemaining === 0 ? "text-destructive font-medium" : "font-medium"}>
-                            {r.effectiveRemaining}
-                          </span>
-                        </TableCell>
+                        {assetTab === "rooms" && (
+                          <TableCell className="text-center">
+                            <span className={r.effectiveRemaining === 0 ? "text-destructive font-medium" : "font-medium"}>
+                              {r.effectiveRemaining}
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">
                           <div className="flex gap-1 justify-center">
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingRoom(r)}>
@@ -395,7 +417,7 @@ export function RoomsContent() {
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditRoomId(r.id)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteConfirm(r.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
@@ -439,8 +461,8 @@ export function RoomsContent() {
       <ConfirmDialog
         open={!!deleteConfirm}
         onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
-        title="Archive / Remove this room?"
-        description="This action cannot be undone. The room will be permanently deleted."
+        title={assetTab === "rooms" ? "Remove this room?" : "Remove this car park?"}
+        description={assetTab === "rooms" ? "This action cannot be undone. The room will be permanently deleted." : "This action cannot be undone. The car park will be permanently deleted."}
         confirmLabel="Remove"
         variant="destructive"
         onConfirm={handleDelete}
@@ -450,7 +472,7 @@ export function RoomsContent() {
       <StandardModal
         open={!!viewingRoom}
         onOpenChange={(o) => { if (!o) setViewingRoom(null); }}
-        title="Room Details"
+        title={assetTab === "rooms" ? "Room Details" : "Car Park Details"}
         size="md"
         hideCancel
         footer={<Button variant="outline" onClick={() => setViewingRoom(null)}>Close</Button>}
