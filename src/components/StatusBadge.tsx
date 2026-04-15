@@ -95,12 +95,12 @@ export function StatusBadge({ status, availableDate, className }: { status: stri
   const style = normalizedStyles[status] || normalizedStyles[status.toLowerCase()] || fallback;
 
   return (
-    <Badge variant="secondary" className={cn("font-medium border-0", isAvailableSoonWithDate ? "whitespace-normal text-center leading-tight" : "whitespace-nowrap", style, className)}>
+    <Badge variant="secondary" className={cn("font-medium border-0 whitespace-nowrap", style, className)}>
       {isAvailableSoonWithDate ? (
-        <span className="flex flex-col items-center">
-          <span>Available on</span>
-          <span>{formatShortDate(availableDate!)}</span>
-        </span>
+        <>
+          <span className="block leading-tight">Available on</span>
+          <span className="block leading-tight">{formatShortDate(availableDate!)}</span>
+        </>
       ) : (displayLabel || status)}
     </Badge>
   );
