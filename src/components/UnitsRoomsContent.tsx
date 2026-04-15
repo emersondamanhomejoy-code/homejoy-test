@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { formatUnitType } from "@/lib/ui-constants";
 import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
@@ -12,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { Plus, Copy, ChevronDown, ArrowLeft, Eye, Image } from "lucide-react";
+import { Plus, Copy, ChevronDown, ArrowLeft, Eye, Image, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
@@ -24,6 +25,52 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { labelClass, inputClass } from "@/lib/ui-constants";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
+
+// ─── Photo Lightbox Component ───
+function PhotoLightbox({ photos, index, onClose, onIndexChange }: {
+  photos: string[];
+  index: number;
+  onClose: () => void;
+  onIndexChange: (i: number) => void;
+}) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && index > 0) onIndexChange(index - 1);
+      if (e.key === "ArrowRight" && index < photos.length - 1) onIndexChange(index + 1);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [index, photos.length, onClose, onIndexChange]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={onClose}>
+      <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2" onClick={onClose}>
+        <X className="h-6 w-6" />
+      </button>
+      {index > 0 && (
+        <button className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2" onClick={e => { e.stopPropagation(); onIndexChange(index - 1); }}>
+          <ChevronLeft className="h-8 w-8" />
+        </button>
+      )}
+      {index < photos.length - 1 && (
+        <button className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2" onClick={e => { e.stopPropagation(); onIndexChange(index + 1); }}>
+          <ChevronRight className="h-8 w-8" />
+        </button>
+      )}
+      <img
+        src={photos[index]}
+        alt={`Photo ${index + 1}`}
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+        onClick={e => e.stopPropagation()}
+      />
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+        {index + 1} / {photos.length}
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 export function UnitsRoomsContent() {
   const { data: units = [], isLoading } = useUnits();
@@ -387,6 +434,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
   const occupiedPax = unitRooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
@@ -619,13 +668,16 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
         <div className="border rounded-lg p-4 space-y-4">
           <h3 className="text-base font-semibold">{isCarpark ? `🅿️ ${viewingRoom.room}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
           {/* Room photos */}
-          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
-            <div className="flex flex-wrap gap-3">
-              {(viewingRoom.photos as string[]).map((path: string, i: number) => (
-                <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-              ))}
-            </div>
-          )}
+          {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (() => {
+            const photoUrls = (viewingRoom.photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+            return (
+              <div className="flex flex-wrap gap-3">
+                {photoUrls.map((url: string, i: number) => (
+                  <img key={i} src={url} alt={`${isCarpark ? "Carpark" : "Room"} photo ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(photoUrls); setLightboxIndex(i); }} />
+                ))}
+              </div>
+            );
+          })()}
           {/* Room details */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             {!isCarpark && (
@@ -681,6 +733,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
             </div>
           )}
         </div>
+      {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
       </div>
     );
   }
@@ -734,13 +787,16 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
           </AccordionTrigger>
           <AccordionContent>
             {/* Unit photos first */}
-            {((unit as any).common_photos || []).length > 0 && (
-              <div className="flex flex-wrap gap-3 mb-4">
-                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
-                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                ))}
-              </div>
-            )}
+            {((unit as any).common_photos || []).length > 0 && (() => {
+              const unitPhotoUrls = ((unit as any).common_photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+              return (
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {unitPhotoUrls.map((url: string, i: number) => (
+                    <img key={i} src={url} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(unitPhotoUrls); setLightboxIndex(i); }} />
+                  ))}
+                </div>
+              );
+            })()}
             {/* Unit details */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
@@ -929,6 +985,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
           </Table>
         </div>
       </section>
+      {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
     </div>
   );
 }
