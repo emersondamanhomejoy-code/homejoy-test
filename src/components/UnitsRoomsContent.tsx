@@ -377,9 +377,10 @@ interface AccessItem {
   instruction: string;
 }
 
-function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData: any[]; isAdmin: boolean }) {
+function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { unit: Unit; condosData: any[]; isAdmin: boolean; onViewingRoomChange?: (room: Room | null) => void }) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
+  const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
+  const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
   const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
@@ -589,10 +590,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     const roomPhotoUrl = `${window.location.origin}/view/${unit.id}?room=${viewingRoom.id}&section=photos`;
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setViewingRoom(null)}>
-            <ArrowLeft className="h-4 w-4" /> Back to Unit
-          </Button>
+        <div className="flex items-center justify-end">
           {Array.isArray(viewingRoom.photos) && viewingRoom.photos.length > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
