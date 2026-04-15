@@ -50,6 +50,9 @@ export function RoomsContent() {
   const { data: units = [], isLoading } = useUnits();
   const deleteRoom = useDeleteRoom();
 
+  // Asset type toggle
+  const [assetTab, setAssetTab] = useState<AssetTab>("rooms");
+
   // Default visible filters
   const [search, setSearch] = useState("");
   const [statusTab, setStatusTab] = useState<string>("All");
