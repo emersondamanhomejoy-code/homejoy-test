@@ -388,7 +388,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
-  const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
+  const [viewAccordion, setViewAccordion] = useState<string[]>(["unit-photos", "unit-details", "rooms", "carparks"]);
   const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
@@ -635,6 +635,39 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
       !(r.room || "").toLowerCase().startsWith("carpark")
     );
 
+    const copyRoomDetails = () => {
+      const lines = [
+        ...copyHeader({ room: viewingRoom.room, room_title: (viewingRoom as any).room_title }),
+        `Room Type: ${val((viewingRoom as any).room_category || viewingRoom.room_type)}`,
+        `Unit Type: ${val(formatUnitType(viewingRoom.unit_type))}`,
+        `Bed Type: ${val(viewingRoom.bed_type)}`,
+        `Wall Type: ${val((viewingRoom as any).wall_type)}`,
+        `Listed Rent: RM${viewingRoom.rent}`,
+        `Status: ${viewingRoom.status}`,
+        `Available On: ${val(viewingRoom.available_date)}`,
+        `Remaining Pax: ${effectiveRemaining}`,
+      ];
+      if ((viewingRoom as any).optional_features && Array.isArray((viewingRoom as any).optional_features) && (viewingRoom as any).optional_features.length > 0) {
+        lines.push(`Features: ${(viewingRoom as any).optional_features.join(", ")}`);
+      }
+      if (viewingRoom.internal_only) lines.push(`Internal Only: Yes`);
+      copyToClipboard(lines.join("\n"), "Room details");
+    };
+
+    const copyHousemateDetails = () => {
+      const rows = otherRooms.map(r => {
+        const housemates = Array.isArray(r.housemates) ? r.housemates : [];
+        const hmTenant = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).name : (r as any).assigned_to;
+        const hmGender = r.tenant_gender || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).gender : "");
+        const hmRace = r.tenant_race || (housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).race : "");
+        const hmOccupation = housemates.length > 0 && typeof housemates[0] === "object" ? (housemates[0] as any).occupation : "";
+        const roomLabel = r.room.replace(/^Room\s+/i, "");
+        return `Room ${roomLabel}: ${r.status} · ${hmTenant || "Vacant"} · ${hmGender || "—"} · ${hmRace || "—"} · ${hmOccupation || "—"}`;
+      });
+      const header = copyHeader();
+      copyToClipboard([...header, `Housemates:`, ...rows].join("\n"), "Housemate details");
+    };
+
     // Determine section count for expand/collapse
     const sectionKeys: string[] = [];
     if (photoUrls.length > 0) sectionKeys.push("photos");
@@ -644,31 +677,26 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
 
     return (
       <div className="space-y-4">
-        {/* Room name header + copy link + expand/collapse all */}
+        {/* Room name header + expand/collapse all */}
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold">{isCarpark ? `Carpark ${viewingRoom.room.replace(/^Carpark\s*/i, "")}` : `Room ${viewingRoom.room.replace(/^Room\s+/i, "")}`}{(viewingRoom as any).room_title ? ` — ${(viewingRoom as any).room_title}` : ""}</h3>
-          <div className="flex items-center gap-2">
-            {photoUrls.length > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => copyToClipboard(roomPhotoUrl, isCarpark ? "Carpark photos link" : "Room photos link")}>
-                    <Image className="h-3.5 w-3.5" /> Copy Photos Link
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Copy link showing only this {isCarpark ? "carpark's" : "room's"} photos</TooltipContent>
-              </Tooltip>
-            )}
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRoomAccordion(prev => prev.length >= sectionKeys.length ? [] : [...sectionKeys])}>
-              {roomAccordion.length >= sectionKeys.length ? "Collapse All" : "Expand All"}
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRoomAccordion(prev => prev.length >= sectionKeys.length ? [] : [...sectionKeys])}>
+            {roomAccordion.length >= sectionKeys.length ? "Collapse All" : "Expand All"}
+          </Button>
         </div>
 
         <Accordion type="multiple" value={roomAccordion} onValueChange={setRoomAccordion} className="space-y-2">
           {/* 1. Room Photos */}
           {photoUrls.length > 0 && (
             <AccordionItem value="photos" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Photos</AccordionTrigger>
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                <div className="flex items-center gap-2 flex-1">
+                  <span>Room Photos</span>
+                </div>
+                <div className="flex items-center gap-1 mr-2">
+                  <TextCopyBtn onClick={() => copyToClipboard(roomPhotoUrl, isCarpark ? "Carpark photos link" : "Room photos link")} label="Copy Photos Link" />
+                </div>
+              </AccordionTrigger>
               <AccordionContent>
                 <div className="flex flex-wrap gap-3">
                   {photoUrls.map((url: string, i: number) => (
@@ -681,7 +709,14 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
 
           {/* 2. Room Details */}
           <AccordionItem value="details" className="border rounded-lg px-4">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Room Details</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span>Room Details</span>
+              </div>
+              <div className="flex items-center gap-1 mr-2">
+                <TextCopyBtn onClick={copyRoomDetails} label="Copy Room Details" />
+              </div>
+            </AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                 {!isCarpark && (
@@ -733,7 +768,14 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
           {/* 4. Other Rooms in Unit — table format */}
           {!isCarpark && otherRooms.length > 0 && (
             <AccordionItem value="summary" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline">Other Rooms in Unit</AccordionTrigger>
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                <div className="flex items-center gap-2 flex-1">
+                  <span>Other Rooms in Unit</span>
+                </div>
+                <div className="flex items-center gap-1 mr-2">
+                  <TextCopyBtn onClick={copyHousemateDetails} label="Copy Housemate Details" />
+                </div>
+              </AccordionTrigger>
               <AccordionContent>
                 <div className="overflow-auto">
                   <Table>
@@ -785,8 +827,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     <div className="space-y-4">
       {/* Expand/Collapse All — upper right */}
       <div className="fixed top-4 right-4 z-50">
-        <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setViewAccordion(prev => prev.length === 3 ? [] : ["unit", "rooms", "carparks"])}>
-          {viewAccordion.length === 3 ? "Collapse All" : "Expand All"}
+        <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setViewAccordion(prev => prev.length >= 4 ? [] : ["unit-photos", "unit-details", "rooms", "carparks"])}>
+          {viewAccordion.length >= 4 ? "Collapse All" : "Expand All"}
         </Button>
       </div>
 
@@ -813,31 +855,43 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
       </div>
 
       <Accordion type="multiple" value={viewAccordion} onValueChange={setViewAccordion} className="space-y-2">
-        {/* Unit — FIRST (photos + details) */}
-        <AccordionItem value="unit" className="border rounded-lg px-4">
+        {/* Unit Photos */}
+        {((unit as any).common_photos || []).length > 0 && (
+          <AccordionItem value="unit-photos" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Unit Photos</span>
+              </div>
+              <div className="flex items-center gap-1 mr-2">
+                <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              {(() => {
+                const unitPhotoUrls = ((unit as any).common_photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+                return (
+                  <div className="flex flex-wrap gap-3">
+                    {unitPhotoUrls.map((url: string, i: number) => (
+                      <img key={i} src={url} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(unitPhotoUrls); setLightboxIndex(i); }} />
+                    ))}
+                  </div>
+                );
+              })()}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {/* Unit Details */}
+        <AccordionItem value="unit-details" className="border rounded-lg px-4">
           <AccordionTrigger className="py-3 hover:no-underline">
             <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-semibold">Unit</span>
-              
+              <span className="text-sm font-semibold">Unit Details</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
-              <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
               <TextCopyBtn onClick={copyUnitDetails} label="Copy Unit Details" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            {/* Unit photos first */}
-            {((unit as any).common_photos || []).length > 0 && (() => {
-              const unitPhotoUrls = ((unit as any).common_photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
-              return (
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {unitPhotoUrls.map((url: string, i: number) => (
-                    <img key={i} src={url} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(unitPhotoUrls); setLightboxIndex(i); }} />
-                  ))}
-                </div>
-              );
-            })()}
-            {/* Unit details */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
               <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
