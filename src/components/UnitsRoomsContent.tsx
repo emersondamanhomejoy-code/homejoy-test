@@ -479,6 +479,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
 
   const copyUnitDetails = () => {
     const lines = [
+      `Building: ${val(unit.building)}`,
       `Unit: ${val(unit.unit)}`,
       `Type: ${val(formatUnitType(unit.unit_type))}`,
       `Max Occupants: ${unit.unit_max_pax}`,
@@ -505,13 +506,16 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
       const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
       return `Room ${roomLabel}: ${r.pax_staying || 0} pax · ${genders} · ${nats}${names.length > 0 ? ` (${names.join(", ")})` : ""}`;
     });
-    copyToClipboard(`Housemates:\n${rows.join("\n")}`, "Room details");
+    copyToClipboard(`Building: ${val(unit.building)}\nUnit: ${val(unit.unit)}\n\nHousemates:\n${rows.join("\n")}`, "Room details");
   };
 
   const copyCostBreakdown = () => {
     if (!calcRoom) return;
     const lines = [
+      `Building: ${val(unit.building)}`,
+      `Unit: ${val(unit.unit)}`,
       `Room: ${calcRoom.room} — ${(calcRoom as any).room_title || ""}`,
+      `─────────`,
       `Rental: RM${rental}`,
       `Deposit (${depMul}×): RM${deposit}`,
       `Admin Fee: RM${adminFee}`,
