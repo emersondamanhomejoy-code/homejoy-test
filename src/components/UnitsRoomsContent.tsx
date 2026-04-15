@@ -681,6 +681,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
             </div>
           )}
         </div>
+      </div>
     );
   }
 
