@@ -827,8 +827,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     <div className="space-y-4">
       {/* Expand/Collapse All — upper right */}
       <div className="fixed top-4 right-4 z-50">
-        <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setViewAccordion(prev => prev.length === 3 ? [] : ["unit", "rooms", "carparks"])}>
-          {viewAccordion.length === 3 ? "Collapse All" : "Expand All"}
+        <Button variant="outline" size="sm" className="text-xs bg-card shadow-md" onClick={() => setViewAccordion(prev => prev.length >= 4 ? [] : ["unit-photos", "unit-details", "rooms", "carparks"])}>
+          {viewAccordion.length >= 4 ? "Collapse All" : "Expand All"}
         </Button>
       </div>
 
@@ -855,31 +855,43 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
       </div>
 
       <Accordion type="multiple" value={viewAccordion} onValueChange={setViewAccordion} className="space-y-2">
-        {/* Unit — FIRST (photos + details) */}
-        <AccordionItem value="unit" className="border rounded-lg px-4">
+        {/* Unit Photos */}
+        {((unit as any).common_photos || []).length > 0 && (
+          <AccordionItem value="unit-photos" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-semibold">Unit Photos</span>
+              </div>
+              <div className="flex items-center gap-1 mr-2">
+                <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              {(() => {
+                const unitPhotoUrls = ((unit as any).common_photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+                return (
+                  <div className="flex flex-wrap gap-3">
+                    {unitPhotoUrls.map((url: string, i: number) => (
+                      <img key={i} src={url} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(unitPhotoUrls); setLightboxIndex(i); }} />
+                    ))}
+                  </div>
+                );
+              })()}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {/* Unit Details */}
+        <AccordionItem value="unit-details" className="border rounded-lg px-4">
           <AccordionTrigger className="py-3 hover:no-underline">
             <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-semibold">Unit</span>
-              
+              <span className="text-sm font-semibold">Unit Details</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
-              <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
               <TextCopyBtn onClick={copyUnitDetails} label="Copy Unit Details" />
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            {/* Unit photos first */}
-            {((unit as any).common_photos || []).length > 0 && (() => {
-              const unitPhotoUrls = ((unit as any).common_photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
-              return (
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {unitPhotoUrls.map((url: string, i: number) => (
-                    <img key={i} src={url} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(unitPhotoUrls); setLightboxIndex(i); }} />
-                  ))}
-                </div>
-              );
-            })()}
-            {/* Unit details */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
               <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
