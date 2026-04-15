@@ -371,11 +371,11 @@ export function RoomsContent() {
       {/* Table */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <span className="text-sm text-muted-foreground">{filtered.length} room(s) found</span>
+          <span className="text-sm text-muted-foreground">{filtered.length} {assetTab === "rooms" ? "room(s)" : "car park(s)"} found</span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">No rooms match your filters.</div>
+          <div className="p-12 text-center text-muted-foreground">No {assetTab === "rooms" ? "rooms" : "car parks"} match your filters.</div>
         ) : (
           <>
             <div className="overflow-x-auto">
