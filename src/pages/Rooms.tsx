@@ -463,13 +463,15 @@ function AgentRoomViewContent({ room, assetTab }: { room: any; assetTab: "rooms"
     return lines.join("\n");
   };
 
-  const buildOtherRoomsText = () => {
-    if (otherRooms.length === 0) return "No other rooms in this unit.";
+  const buildHousematesText = () => {
+    if (otherRooms.length === 0) return "No housemates.";
     return otherRooms.map((r) => {
-      const parts = [`Code: ${r.room}`, `Status: ${r.status}`, `Pax: ${r.pax_staying || 0}/${r.max_pax || 0}`];
-      if (r.tenant_gender) parts.push(`Gender: ${r.tenant_gender}`);
-      if (r.tenant_race) parts.push(`Race: ${r.tenant_race}`);
-      return parts.join(" | ");
+      const t = otherTenants[r.id];
+      const parts = [r.room, `${r.pax_staying || 0} pax`];
+      if (t?.nationality) parts.push(t.nationality);
+      if (r.tenant_gender) parts.push(r.tenant_gender);
+      if (t?.occupation) parts.push(t.occupation);
+      return parts.join(" ");
     }).join("\n");
   };
 
