@@ -733,15 +733,9 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
             </div>
           )}
         </div>
+      {lightboxIndex !== null && <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />}
       </div>
     );
-  }
-
-  // Lightbox rendering helper for unit view
-  const renderLightbox = () => {
-    if (lightboxIndex === null) return null;
-    return <PhotoLightbox photos={lightboxPhotos} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onIndexChange={setLightboxIndex} />;
-  };
   }
 
 
