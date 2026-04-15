@@ -388,7 +388,7 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const [viewingRoom, setViewingRoomState] = useState<Room | null>(null);
   const setViewingRoom = (room: Room | null) => { setViewingRoomState(room); onViewingRoomChange?.(room); };
-  const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
+  const [viewAccordion, setViewAccordion] = useState<string[]>(["unit-photos", "unit-details", "rooms", "carparks"]);
   const [roomAccordion, setRoomAccordion] = useState<string[]>(["photos", "details", "status", "summary"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
