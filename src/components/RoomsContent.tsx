@@ -474,48 +474,21 @@ export function RoomsContent() {
                 <div className="text-sm text-muted-foreground">{viewingRoom.location}</div>
               </div>
 
-              {/* Room Summary Table (sibling rooms) */}
-              {siblingRooms.length > 1 && (
+              {/* 1. Room Photos */}
+              {photos.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-2">Room Summary — {viewingRoom.building} · {viewingRoom.unit}</h4>
-                  <div className="overflow-x-auto rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Room Title</TableHead>
-                          <TableHead className="text-right">Rental</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-center">Pax</TableHead>
-                          <TableHead>Gender</TableHead>
-                          <TableHead>Nationality</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {siblingRooms.map(sr => {
-                          const housemates = Array.isArray(sr.housemates) ? sr.housemates : [];
-                          const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || sr.tenant_gender || "—";
-                          const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
-                          const isCurrentRoom = sr.id === viewingRoom.id;
-                          return (
-                            <TableRow key={sr.id} className={isCurrentRoom ? "bg-primary/5 font-medium" : ""}>
-                              <TableCell className="font-medium">{sr.room.replace(/^Room\s+/i, "")}{isCurrentRoom && " ←"}</TableCell>
-                              <TableCell>{(sr as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
-                              <TableCell className="text-right">RM{sr.rent}</TableCell>
-                              <TableCell><StatusBadge status={sr.status} availableDate={sr.available_date} /></TableCell>
-                              <TableCell className="text-center">{sr.pax_staying || 0}</TableCell>
-                              <TableCell>{genders}</TableCell>
-                              <TableCell>{nats}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                  <h4 className="text-sm font-semibold mb-2">Room Photos</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {photos.map((p, i) => (
+                      <a key={i} href={`${supabaseUrl}/storage/v1/object/public/room-photos/${p}`} target="_blank" rel="noopener noreferrer">
+                        <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${p}`} alt={`Room photo ${i + 1}`} className="rounded-lg border object-cover h-24 w-full hover:opacity-80 transition-opacity" />
+                      </a>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Room Details */}
+              {/* 2. Room Details */}
               <div>
                 <h4 className="text-sm font-semibold mb-2">Room Details</h4>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -572,16 +545,43 @@ export function RoomsContent() {
                 </div>
               )}
 
-              {/* Room Photos */}
-              {photos.length > 0 && (
+              {/* 3. Unit Room Summary Table (sibling rooms) */}
+              {siblingRooms.length > 1 && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-2">Room Photos</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {photos.map((p, i) => (
-                      <a key={i} href={`${supabaseUrl}/storage/v1/object/public/room-photos/${p}`} target="_blank" rel="noopener noreferrer">
-                        <img src={`${supabaseUrl}/storage/v1/object/public/room-photos/${p}`} alt={`Room photo ${i + 1}`} className="rounded-lg border object-cover h-24 w-full hover:opacity-80 transition-opacity" />
-                      </a>
-                    ))}
+                  <h4 className="text-sm font-semibold mb-2">Unit Room Summary — {viewingRoom.building} · {viewingRoom.unit}</h4>
+                  <div className="overflow-x-auto rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Room Title</TableHead>
+                          <TableHead className="text-right">Rental</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-center">Pax</TableHead>
+                          <TableHead>Gender</TableHead>
+                          <TableHead>Nationality</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {siblingRooms.map(sr => {
+                          const housemates = Array.isArray(sr.housemates) ? sr.housemates : [];
+                          const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || sr.tenant_gender || "—";
+                          const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
+                          const isCurrentRoom = sr.id === viewingRoom.id;
+                          return (
+                            <TableRow key={sr.id} className={isCurrentRoom ? "bg-primary/5 font-medium" : ""}>
+                              <TableCell className="font-medium">{sr.room.replace(/^Room\s+/i, "")}{isCurrentRoom && " ←"}</TableCell>
+                              <TableCell>{(sr as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
+                              <TableCell className="text-right">RM{sr.rent}</TableCell>
+                              <TableCell><StatusBadge status={sr.status} availableDate={sr.available_date} /></TableCell>
+                              <TableCell className="text-center">{sr.pax_staying || 0}</TableCell>
+                              <TableCell>{genders}</TableCell>
+                              <TableCell>{nats}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               )}
