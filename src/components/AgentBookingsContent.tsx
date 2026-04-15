@@ -173,11 +173,16 @@ export function AgentBookingsContent({ onEditBooking }: AgentBookingsContentProp
                     const rules = { cancelReason: () => !cancelReason.trim() ? "Please enter a cancel reason" : null };
                     if (!cancelValidation.validate({ cancelReason }, rules)) return;
                     if (!user) return;
+                    // Gather carpark IDs from booking documents
+                    const docs = b.documents as any;
+                    const carParkIds = (docs?.carParkSelections || []).map((s: any) => s.roomId).filter(Boolean);
                     await updateBookingStatus.mutateAsync({
                       id: b.id,
                       order_status: "booking_cancelled",
                       reviewed_by: user.id,
                       reject_reason: cancelReason,
+                      room_id: b.room_id,
+                      carParkIds,
                     });
                     setSelectedBooking(null);
                     setCancelReason("");
