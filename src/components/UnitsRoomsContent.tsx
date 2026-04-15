@@ -787,13 +787,16 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
           </AccordionTrigger>
           <AccordionContent>
             {/* Unit photos first */}
-            {((unit as any).common_photos || []).length > 0 && (
-              <div className="flex flex-wrap gap-3 mb-4">
-                {((unit as any).common_photos as string[]).map((path: string, i: number) => (
-                  <img key={i} src={`${supabaseUrl}/storage/v1/object/public/room-photos/${path}`} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                ))}
-              </div>
-            )}
+            {((unit as any).common_photos || []).length > 0 && (() => {
+              const unitPhotoUrls = ((unit as any).common_photos as string[]).map((path: string) => `${supabaseUrl}/storage/v1/object/public/room-photos/${path}`);
+              return (
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {unitPhotoUrls.map((url: string, i: number) => (
+                    <img key={i} src={url} alt={`Unit ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setLightboxPhotos(unitPhotoUrls); setLightboxIndex(i); }} />
+                  ))}
+                </div>
+              );
+            })()}
             {/* Unit details */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
