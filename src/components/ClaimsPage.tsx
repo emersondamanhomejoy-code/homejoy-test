@@ -4,7 +4,6 @@ import { useClaims, useUpdateClaimStatus, useUpdateClaim, useCreateClaim, Claim,
 import { useAuth } from "@/hooks/useAuth";
 import { useRooms } from "@/hooks/useRooms";
 import { useBookings, Booking } from "@/hooks/useBookings";
-import { useMoveIns, MoveIn } from "@/hooks/useMoveIns";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
@@ -52,9 +51,8 @@ export function ClaimsPage() {
 
   const { data: allClaims = [], isLoading } = useClaims();
   const { data: roomsData = [] } = useRooms();
-  const { data: approvedBookings = [] } = useBookings("approved");
-  const { data: allMoveIns = [] } = useMoveIns();
-  const approvedMoveIns = useMemo(() => allMoveIns.filter(m => m.status === "approved"), [allMoveIns]);
+  const { data: allBookings = [] } = useBookings();
+  const approvedMoveIns = useMemo(() => allBookings.filter(b => b.order_status === "move_in_approved"), [allBookings]);
   const updateClaimStatus = useUpdateClaimStatus();
   const updateClaim = useUpdateClaim();
   const createClaim = useCreateClaim();
@@ -122,7 +120,7 @@ export function ClaimsPage() {
   };
 
   const agentUsers = useMemo(
-    () => users.filter((u) => approvedMoveIns.some((m) => m.agent_id === u.id)),
+    () => users.filter((u) => approvedMoveIns.some((b) => b.submitted_by === u.id)),
     [users, approvedMoveIns],
   );
   const agentOptions = useMemo(() => [...new Set(users.map((u) => u.name || u.email).filter(Boolean))].sort(), [users]);
@@ -148,34 +146,32 @@ export function ClaimsPage() {
   }, [allClaims]);
 
   const availableCreateMoveIns = useMemo(() => {
-    if (!createForm.agent_id) return [] as MoveIn[];
-    return approvedMoveIns.filter((m) => {
-      if (m.agent_id !== createForm.agent_id) return false;
-      if (m.booking_id && activeClaimBookingIds.has(m.booking_id)) return false;
-      const itemKey = `${m.room_id || ""}:${m.tenant_name}`;
+    if (!createForm.agent_id) return [] as Booking[];
+    return approvedMoveIns.filter((b) => {
+      if (b.submitted_by !== createForm.agent_id) return false;
+      if (activeClaimBookingIds.has(b.id)) return false;
+      const itemKey = `${b.room_id || ""}:${b.tenant_name}`;
       if (activeClaimItemKeys.has(itemKey)) return false;
       return true;
     });
   }, [approvedMoveIns, createForm.agent_id, activeClaimBookingIds, activeClaimItemKeys]);
 
   const selectedCreateMoveIns = useMemo(
-    () => availableCreateMoveIns.filter((m) => createForm.selectedMoveInIds.includes(m.id)),
+    () => availableCreateMoveIns.filter((b) => createForm.selectedMoveInIds.includes(b.id)),
     [availableCreateMoveIns, createForm.selectedMoveInIds],
   );
 
-  const calculateCommission = (moveIn: MoveIn, agentId: string) => {
+  const calculateCommission = (booking: Booking, agentId: string) => {
     const config = agentConfigs[agentId];
     const commissionType = config?.commission_type || "internal_basic";
     const commissionConfig = config?.commission_config || null;
-    // Get rent from the linked booking if available
-    const booking = approvedBookings.find(b => b.id === moveIn.booking_id);
-    const rent = booking?.monthly_salary || 0;
-    const duration = moveIn.booking?.contract_months || booking?.contract_months || 12;
+    const rent = booking.monthly_salary || 0;
+    const duration = booking.contract_months || 12;
     const durationMultiplier = duration / 12;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthlyDeals = approvedMoveIns.filter(
-      (item) => item.agent_id === agentId && new Date(item.created_at) >= monthStart,
+      (item) => item.submitted_by === agentId && new Date(item.created_at) >= monthStart,
     ).length;
 
     let base = 0;
@@ -211,10 +207,10 @@ export function ClaimsPage() {
     return "Internal Basic";
   };
 
-  const buildClaimDescription = (moveIns: MoveIn[]) => {
-    if (moveIns.length === 0) return "";
-    const summary = moveIns
-      .map((m) => `${m.room?.building || ""} ${m.room?.unit || ""} ${m.room?.room || ""} (${m.tenant_name})`)
+  const buildClaimDescription = (bookings: Booking[]) => {
+    if (bookings.length === 0) return "";
+    const summary = bookings
+      .map((b) => `${b.room?.building || ""} ${b.room?.unit || ""} ${b.room?.room || ""} (${b.tenant_name})`)
       .join(", ");
     return `Commission - ${summary}`;
   };
@@ -374,7 +370,7 @@ export function ClaimsPage() {
       const history = [{ action: "created", by: user.email, at: new Date().toISOString(), created_for_agent: getAgentName(createForm.agent_id), item_count: selectedCreateMoveIns.length }];
       const createdClaim = await createClaim.mutateAsync({
         agent_id: createForm.agent_id,
-        booking_id: selectedCreateMoveIns.length === 1 ? (selectedCreateMoveIns[0].booking_id || null) : null,
+        booking_id: selectedCreateMoveIns.length === 1 ? (selectedCreateMoveIns[0].id || null) : null,
         amount: totalCreateAmount,
         description: createForm.description,
         bank_name: createForm.bank_name,
@@ -674,7 +670,7 @@ export function ClaimsPage() {
                                   <div className="text-sm font-medium">{booking.room?.building} {booking.room?.unit} {booking.room?.room}</div>
                                   <div className="text-sm font-semibold">RM{amount.toLocaleString()}</div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">{booking.tenant_name} · Move-in {booking.booking?.move_in_date ? format(new Date(booking.booking.move_in_date), "dd MMM yyyy") : "—"}</div>
+                                <div className="text-xs text-muted-foreground">{booking.tenant_name} · Move-in {booking.move_in_date ? format(new Date(booking.move_in_date), "dd MMM yyyy") : "—"}</div>
                               </div>
                             </label>
                           );

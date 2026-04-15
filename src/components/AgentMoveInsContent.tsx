@@ -1,9 +1,6 @@
 import { useState, useMemo } from "react";
-import { useMoveIns, MoveIn } from "@/hooks/useMoveIns";
-import { useBookings, Booking } from "@/hooks/useBookings";
+import { useBookings, Booking, useUpdateOrderStatus, ORDER_STATUS_LABELS, OrderStatus } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateMoveIn } from "@/hooks/useMoveIns";
-import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/hooks/useActivityLog";
 import { format } from "date-fns";
 import {
@@ -19,18 +16,24 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Eye, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+const MOVE_IN_STATUSES: OrderStatus[] = [
+  "booking_approved",
+  "move_in_submitted",
+  "move_in_rejected",
+  "move_in_approved",
+];
+
 export function AgentMoveInsContent() {
   const { user } = useAuth();
-  const { data: allMoveIns = [] } = useMoveIns();
   const { data: allBookings = [] } = useBookings();
-  const createMoveIn = useCreateMoveIn();
+  const updateOrderStatus = useUpdateOrderStatus();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const { sort, handleSort, sortData } = useTableSort("created_at", "desc");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [viewItem, setViewItem] = useState<MoveIn | null>(null);
+  const [viewItem, setViewItem] = useState<Booking | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -40,44 +43,50 @@ export function AgentMoveInsContent() {
     receipt_path: "",
   });
 
-  // My bookings
-  const myBookings = useMemo(() => allBookings.filter(b => b.submitted_by === user?.id), [allBookings, user?.id]);
-  const myBookingIds = useMemo(() => new Set(myBookings.map(b => b.id)), [myBookings]);
+  // My bookings at move-in stages
+  const myBookings = useMemo(() =>
+    allBookings.filter(b => b.submitted_by === user?.id && MOVE_IN_STATUSES.includes(b.order_status)),
+    [allBookings, user?.id]
+  );
 
-  // My move-ins
-  const myMoveIns = useMemo(() => allMoveIns.filter(m => m.booking_id && myBookingIds.has(m.booking_id)), [allMoveIns, myBookingIds]);
+  // Bookings ready for move-in submission (approved, not yet submitted)
+  const pendingMoveInBookings = useMemo(() =>
+    allBookings.filter(b => b.submitted_by === user?.id && b.order_status === "booking_approved"),
+    [allBookings, user?.id]
+  );
 
-  // Approved bookings that don't have a move-in yet
-  const existingMoveInBookingIds = useMemo(() => new Set(allMoveIns.map(m => m.booking_id).filter(Boolean)), [allMoveIns]);
-  const pendingMoveInBookings = useMemo(() => {
-    return myBookings.filter(b => b.status === "approved" && !existingMoveInBookingIds.has(b.id));
-  }, [myBookings, existingMoveInBookingIds]);
-
-  const selectedBooking = useMemo(() => pendingMoveInBookings.find(b => b.id === createForm.booking_id) || null, [pendingMoveInBookings, createForm.booking_id]);
+  const selectedBooking = useMemo(() =>
+    pendingMoveInBookings.find(b => b.id === createForm.booking_id) || null,
+    [pendingMoveInBookings, createForm.booking_id]
+  );
 
   const filtered = useMemo(() => {
-    let list = myMoveIns;
-    if (statusFilter !== "all") list = list.filter(m => m.status === statusFilter);
+    let list = myBookings;
+    if (statusFilter !== "all") list = list.filter(b => b.order_status === statusFilter);
     if (search.trim()) {
       const s = search.toLowerCase();
-      list = list.filter(m => m.tenant_name.toLowerCase().includes(s) || m.id.toLowerCase().includes(s));
+      list = list.filter(b =>
+        b.tenant_name.toLowerCase().includes(s) ||
+        b.id.toLowerCase().includes(s) ||
+        (b.room?.building || "").toLowerCase().includes(s)
+      );
     }
-    return sortData(list, (m: MoveIn, key: string) => {
+    return sortData(list, (b: Booking, key: string) => {
       const map: Record<string, any> = {
-        id: m.id,
-        tenant_name: m.tenant_name,
-        building: m.room?.building || "",
-        status: m.status,
-        created_at: m.created_at,
+        id: b.id,
+        tenant_name: b.tenant_name,
+        building: b.room?.building || "",
+        order_status: b.order_status,
+        created_at: b.created_at,
       };
       return map[key] || "";
     });
-  }, [myMoveIns, statusFilter, search, sort]);
+  }, [myBookings, statusFilter, search, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  const handleCreate = async () => {
+  const handleSubmitMoveIn = async () => {
     if (!user || !selectedBooking) {
       toast.error("Please select an approved booking");
       return;
@@ -92,19 +101,20 @@ export function AgentMoveInsContent() {
     }
     setSaving(true);
     try {
-      const history = [{ action: "created", by: user.email, at: new Date().toISOString() }];
-      await createMoveIn.mutateAsync({
-        booking_id: selectedBooking.id,
-        room_id: selectedBooking.room_id,
-        agent_id: user.id,
-        tenant_name: selectedBooking.tenant_name,
+      const history = [
+        ...(selectedBooking.history || []),
+        { action: "move_in_submitted", by: user.email, at: new Date().toISOString() },
+      ];
+      await updateOrderStatus.mutateAsync({
+        id: selectedBooking.id,
+        order_status: "move_in_submitted",
+        reviewed_by: user.id,
         agreement_signed: createForm.agreement_signed,
         payment_method: createForm.payment_method,
         receipt_path: createForm.receipt_path,
-        status: "submitted",
         history,
       });
-      await logActivity("create_move_in", "move_in", selectedBooking.id, {
+      await logActivity("submit_move_in", "booking", selectedBooking.id, {
         tenant_name: selectedBooking.tenant_name,
       });
       toast.success("Move-in submitted for review");
@@ -137,14 +147,15 @@ export function AgentMoveInsContent() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="booking_approved">Booking Approved</SelectItem>
+            <SelectItem value="move_in_submitted">Move-in Submitted</SelectItem>
+            <SelectItem value="move_in_rejected">Move-in Rejected</SelectItem>
+            <SelectItem value="move_in_approved">Move-in Approved</SelectItem>
           </SelectContent>
         </Select>
         <Input placeholder="Search..." className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
@@ -160,7 +171,7 @@ export function AgentMoveInsContent() {
               <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
               <TableHead>Room</TableHead>
               <TableHead>Payment</TableHead>
-              <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+              <SortableTableHead sortKey="order_status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
               <SortableTableHead sortKey="created_at" currentSort={sort} onSort={handleSort}>Submitted</SortableTableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -173,19 +184,19 @@ export function AgentMoveInsContent() {
                 </TableCell>
               </TableRow>
             ) : (
-              paged.map(m => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-mono text-xs">{m.id.slice(0, 8)}</TableCell>
-                  <TableCell className="font-medium">{m.tenant_name}</TableCell>
-                  <TableCell>{m.room?.building || "—"}</TableCell>
-                  <TableCell>{m.room ? `${m.room.unit} · ${m.room.room}` : "—"}</TableCell>
-                  <TableCell>{m.payment_method || "—"}</TableCell>
-                  <TableCell><StatusBadge status={m.status} /></TableCell>
+              paged.map(b => (
+                <TableRow key={b.id}>
+                  <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}</TableCell>
+                  <TableCell className="font-medium">{b.tenant_name}</TableCell>
+                  <TableCell>{b.room?.building || "—"}</TableCell>
+                  <TableCell>{b.room ? `${b.room.unit} · ${b.room.room}` : "—"}</TableCell>
+                  <TableCell>{b.payment_method || "—"}</TableCell>
+                  <TableCell><StatusBadge status={b.order_status} /></TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(m.created_at), "dd MMM yyyy")}
+                    {format(new Date(b.created_at), "dd MMM yyyy")}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => setViewItem(m)} title="View">
+                    <Button variant="ghost" size="icon" onClick={() => setViewItem(b)} title="View">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -234,15 +245,15 @@ export function AgentMoveInsContent() {
               <div className="flex justify-between"><span className="text-muted-foreground">Unit / Room</span><span>{viewItem.room ? `${viewItem.room.unit} · ${viewItem.room.room}` : "—"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Agreement</span><span>{viewItem.agreement_signed ? "✅ Signed" : "❌ Not signed"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span>{viewItem.payment_method || "—"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Status</span><StatusBadge status={viewItem.status} /></div>
-              {viewItem.reject_reason && (
+              <div className="flex justify-between"><span className="text-muted-foreground">Status</span><StatusBadge status={viewItem.order_status} /></div>
+              {viewItem.move_in_reject_reason && (
                 <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-                  <strong>Reject Reason:</strong> {viewItem.reject_reason}
+                  <strong>Reject Reason:</strong> {viewItem.move_in_reject_reason}
                 </div>
               )}
-              {viewItem.cancel_reason && (
+              {viewItem.move_in_cancel_reason && (
                 <div className="bg-muted rounded-lg p-3 text-sm">
-                  <strong>Cancel Reason:</strong> {viewItem.cancel_reason}
+                  <strong>Cancel Reason:</strong> {viewItem.move_in_cancel_reason}
                 </div>
               )}
               {/* History */}
@@ -332,7 +343,7 @@ export function AgentMoveInsContent() {
           </ScrollArea>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={saving}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving || !createForm.booking_id}>
+            <Button onClick={handleSubmitMoveIn} disabled={saving || !createForm.booking_id}>
               {saving ? "Submitting..." : "Submit Move-in"}
             </Button>
           </DialogFooter>

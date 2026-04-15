@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useBookings } from "@/hooks/useBookings";
-import { useMoveIns } from "@/hooks/useMoveIns";
 import { useUnits } from "@/hooks/useRooms";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -20,13 +19,12 @@ interface AdminDashboardContentProps {
 
 export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProps) {
   const { data: allBookings = [] } = useBookings();
-  const { data: allMoveIns = [] } = useMoveIns();
   const { data: units = [] } = useUnits();
 
   const allRooms = useMemo(() => units.flatMap(u => u.rooms || []), [units]);
 
-  const submittedBookings = useMemo(() => allBookings.filter(b => b.status === "submitted"), [allBookings]);
-  const submittedMoveIns = useMemo(() => allMoveIns.filter(m => m.status === "submitted"), [allMoveIns]);
+  const submittedBookings = useMemo(() => allBookings.filter(b => b.order_status === "booking_submitted"), [allBookings]);
+  const submittedMoveIns = useMemo(() => allBookings.filter(b => b.order_status === "move_in_submitted"), [allBookings]);
 
   const today = new Date().toISOString().slice(0, 10);
   const roomsAvailableSoonReady = useMemo(
@@ -38,7 +36,6 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
     [allRooms, today]
   );
 
-  // Placeholder payout count — will be real once payouts module is built
   const pendingPayouts = 0;
 
   const summaryCards = [
@@ -64,13 +61,11 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-extrabold">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(), "EEEE, dd MMMM yyyy")}</p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {summaryCards.map(card => (
           <StatCard
@@ -86,7 +81,6 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
         ))}
       </div>
 
-      {/* Quick Actions */}
       <div className="bg-card rounded-lg border p-5">
         <h2 className="font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -169,13 +163,13 @@ export function AdminDashboardContent({ onTabChange }: AdminDashboardContentProp
               </TableRow>
             </TableHeader>
             <TableBody>
-              {submittedMoveIns.slice(0, 5).map(m => (
-                <TableRow key={m.id}>
-                  <TableCell className="text-sm font-medium">{m.tenant_name}</TableCell>
+              {submittedMoveIns.slice(0, 5).map(b => (
+                <TableRow key={b.id}>
+                  <TableCell className="text-sm font-medium">{b.tenant_name}</TableCell>
                   <TableCell className="text-sm">
-                    {m.room ? `${m.room.building} · ${m.room.unit} · ${m.room.room}` : "—"}
+                    {b.room ? `${b.room.building} · ${b.room.unit} · ${b.room.room}` : "—"}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatTime(m.created_at)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{formatTime(b.created_at)}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" onClick={() => onTabChange("movein")}>Review</Button>
                   </TableCell>

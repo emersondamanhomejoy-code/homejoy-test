@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useBookings } from "@/hooks/useBookings";
-import { useMoveIns } from "@/hooks/useMoveIns";
+import { useBookings, Booking } from "@/hooks/useBookings";
 import { useUnits } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -24,7 +23,6 @@ export default function AgentDashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
   const { data: allBookings = [] } = useBookings();
-  const { data: allMoveIns = [] } = useMoveIns();
   const { data: units = [] } = useUnits();
 
   const [commissionType, setCommissionType] = useState("internal_basic");
@@ -49,21 +47,15 @@ export default function AgentDashboard() {
     return units.flatMap(u => (u.rooms || []).filter(r => r.room_type !== "Car Park" && r.status === "Available"));
   }, [units]);
 
-  // My bookings & move-ins
+  // My bookings
   const myBookings = useMemo(() => allBookings.filter(b => b.submitted_by === user?.id), [allBookings, user?.id]);
-  const myBookingIds = useMemo(() => new Set(myBookings.map(b => b.id)), [myBookings]);
-  const myMoveIns = useMemo(() => allMoveIns.filter(m => m.agent_id === user?.id), [allMoveIns, user?.id]);
 
-  const submittedBookings = useMemo(() => myBookings.filter(b => b.status === "submitted"), [myBookings]);
-  
-  const moveInBookingIds = useMemo(() => new Set(myMoveIns.map(m => m.booking_id)), [myMoveIns]);
-  const readyForMoveIn = useMemo(() => myMoveIns.filter(m => m.status === "ready_for_move_in"), [myMoveIns]);
-  const submittedMoveIns = useMemo(() => myMoveIns.filter(m => m.status === "submitted"), [myMoveIns]);
-  const completedDeals = useMemo(() => myMoveIns.filter(m => m.status === "approved"), [myMoveIns]);
+  const submittedBookings = useMemo(() => myBookings.filter(b => b.order_status === "booking_submitted"), [myBookings]);
+  const readyForMoveIn = useMemo(() => myBookings.filter(b => b.order_status === "booking_approved"), [myBookings]);
+  const submittedMoveIns = useMemo(() => myBookings.filter(b => b.order_status === "move_in_submitted"), [myBookings]);
+  const completedDeals = useMemo(() => myBookings.filter(b => b.order_status === "move_in_approved"), [myBookings]);
 
-  const calculateCommission = (moveIn: any): number => {
-    const booking = allBookings.find(b => b.id === moveIn.booking_id);
-    if (!booking) return 0;
+  const calculateCommission = (booking: Booking): number => {
     const rent = booking.monthly_salary || 0;
     const duration = booking.contract_months || 12;
     const durationMultiplier = duration / 12;
@@ -85,7 +77,7 @@ export default function AgentDashboard() {
 
   const totalCommission = useMemo(() => {
     return completedDeals.reduce((sum, d) => sum + calculateCommission(d), 0);
-  }, [completedDeals, commissionType, commissionConfig, allBookings]);
+  }, [completedDeals, commissionType, commissionConfig]);
 
   if (loading || !user) return null;
 
@@ -113,13 +105,11 @@ export default function AgentDashboard() {
         <div className="flex-1 flex flex-col overflow-auto">
           <main className="flex-1 p-8">
             <div className="space-y-8">
-              {/* Header */}
               <div>
                 <h1 className="text-2xl font-extrabold">Agent Dashboard</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(), "EEEE, dd MMMM yyyy")}</p>
               </div>
 
-              {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {summaryCards.map(card => (
                   <StatCard
@@ -134,7 +124,6 @@ export default function AgentDashboard() {
                 ))}
               </div>
 
-              {/* Quick Actions */}
               <div className="bg-card rounded-lg border p-5">
                 <h2 className="font-semibold text-foreground mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -152,7 +141,6 @@ export default function AgentDashboard() {
                 </div>
               </div>
 
-              {/* Pipeline Summary */}
               <div className="bg-card rounded-lg border overflow-hidden">
                 <div className="px-5 py-4 border-b">
                   <h2 className="font-semibold text-foreground">Pipeline Summary</h2>

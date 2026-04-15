@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { useMoveIns, MoveIn } from "@/hooks/useMoveIns";
 import { useBookings, Booking } from "@/hooks/useBookings";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +20,6 @@ interface CommissionConfig {
 
 export function MyDealsContent() {
   const { user } = useAuth();
-  const { data: moveIns = [] } = useMoveIns();
   const { data: allBookings = [] } = useBookings();
 
   const [search, setSearch] = useState("");
@@ -42,26 +40,25 @@ export function MyDealsContent() {
       });
   }, [user]);
 
-  // My completed deals = approved move-ins submitted by my bookings
+  // My completed deals = bookings with order_status "move_in_approved" submitted by me
   const myDeals = useMemo(() => {
     if (!user) return [];
-    const myBookingIds = new Set(allBookings.filter(b => b.submitted_by === user.id).map(b => b.id));
-    return moveIns.filter(m => m.status === "approved" && m.booking_id && myBookingIds.has(m.booking_id));
-  }, [moveIns, allBookings, user]);
+    return allBookings.filter(b =>
+      b.submitted_by === user.id && b.order_status === "move_in_approved"
+    );
+  }, [allBookings, user]);
 
-  const calculateCommission = (moveIn: MoveIn): number => {
-    const booking = allBookings.find(b => b.id === moveIn.booking_id);
-    if (!booking) return 0;
+  const calculateCommission = (booking: Booking): number => {
     const rent = booking.monthly_salary || 0;
     const duration = booking.contract_months || 12;
     const durationMultiplier = duration / 12;
 
     // Count monthly deals for tier calculation
-    const approvedAt = moveIn.reviewed_at ? new Date(moveIn.reviewed_at) : new Date(moveIn.updated_at);
+    const approvedAt = booking.move_in_reviewed_at ? new Date(booking.move_in_reviewed_at) : new Date(booking.updated_at);
     const monthStart = new Date(approvedAt.getFullYear(), approvedAt.getMonth(), 1);
     const monthEnd = new Date(approvedAt.getFullYear(), approvedAt.getMonth() + 1, 0, 23, 59, 59);
     const monthlyDeals = myDeals.filter(d => {
-      const dAt = d.reviewed_at ? new Date(d.reviewed_at) : new Date(d.updated_at);
+      const dAt = d.move_in_reviewed_at ? new Date(d.move_in_reviewed_at) : new Date(d.updated_at);
       return dAt >= monthStart && dAt <= monthEnd;
     }).length;
 
@@ -88,7 +85,7 @@ export function MyDealsContent() {
     if (monthFilter !== "all") {
       const [y, m] = monthFilter.split("-").map(Number);
       list = list.filter(d => {
-        const at = d.reviewed_at ? new Date(d.reviewed_at) : new Date(d.updated_at);
+        const at = d.move_in_reviewed_at ? new Date(d.move_in_reviewed_at) : new Date(d.updated_at);
         return at.getFullYear() === y && at.getMonth() === m;
       });
     }
@@ -100,14 +97,14 @@ export function MyDealsContent() {
         d.id.toLowerCase().includes(s)
       );
     }
-    return sortData(list, (d: MoveIn, key: string) => {
+    return sortData(list, (d: Booking, key: string) => {
       const map: Record<string, any> = {
         id: d.id,
         tenant_name: d.tenant_name,
         building: d.room?.building || "",
         unit: d.room?.unit || "",
         room: d.room?.room || "",
-        approved_at: d.reviewed_at || d.updated_at,
+        approved_at: d.move_in_reviewed_at || d.updated_at,
       };
       return map[key] || "";
     });
@@ -124,7 +121,7 @@ export function MyDealsContent() {
   const monthOptions = useMemo(() => {
     const months = new Set<string>();
     myDeals.forEach(d => {
-      const at = d.reviewed_at ? new Date(d.reviewed_at) : new Date(d.updated_at);
+      const at = d.move_in_reviewed_at ? new Date(d.move_in_reviewed_at) : new Date(d.updated_at);
       months.add(`${at.getFullYear()}-${at.getMonth()}`);
     });
     return Array.from(months).sort().reverse().map(m => {
@@ -187,9 +184,8 @@ export function MyDealsContent() {
               </TableRow>
             ) : (
               paged.map(d => {
-                const booking = allBookings.find(b => b.id === d.booking_id);
                 const commission = calculateCommission(d);
-                const approvedAt = d.reviewed_at || d.updated_at;
+                const approvedAt = d.move_in_reviewed_at || d.updated_at;
                 return (
                   <TableRow key={d.id}>
                     <TableCell className="font-mono text-xs">{d.id.slice(0, 8)}</TableCell>
@@ -197,7 +193,7 @@ export function MyDealsContent() {
                     <TableCell>{d.room?.building || "—"}</TableCell>
                     <TableCell>{d.room?.unit || "—"}</TableCell>
                     <TableCell>{d.room?.room || "—"}</TableCell>
-                    <TableCell className="text-right">RM{booking?.monthly_salary?.toLocaleString() || "—"}</TableCell>
+                    <TableCell className="text-right">RM{d.monthly_salary?.toLocaleString() || "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(approvedAt), "dd MMM yyyy")}
                     </TableCell>
