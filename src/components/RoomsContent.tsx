@@ -71,8 +71,7 @@ export function RoomsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [editUnitId, setEditUnitId] = useState<string | null>(null);
-  const [editFocusRoomId, setEditFocusRoomId] = useState<string | undefined>(undefined);
+  const [editRoomId, setEditRoomId] = useState<string | null>(null);
   const [viewingRoom, setViewingRoom] = useState<FlatRoom | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
 
