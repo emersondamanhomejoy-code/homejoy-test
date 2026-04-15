@@ -569,7 +569,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
     );
   };
 
-  const commonPhotosUrl = `${window.location.origin}/view/${unit.id}?section=photos`;
+  const commonPhotosUrl = `${window.location.origin}/common/${unit.id}`;
 
   // If viewing a specific room/carpark, show detail view
   if (viewingRoom) {
