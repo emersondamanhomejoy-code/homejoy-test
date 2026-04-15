@@ -380,7 +380,7 @@ interface AccessItem {
 function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData: any[]; isAdmin: boolean }) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
-  const [viewAccordion, setViewAccordion] = useState<string[]>(["rooms", "carparks", "unit", "building"]);
+  const [viewAccordion, setViewAccordion] = useState<string[]>(["unit", "rooms", "carparks"]);
   const unitRooms = (unit.rooms || []).filter(r => r.room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
   const unitCarparks = (unit.rooms || []).filter(r => r.room_type === "Car Park" || (r.room || "").toLowerCase().startsWith("carpark"));
   const occupiedPax = unitRooms.reduce((sum, r) => sum + (r.pax_staying || 0), 0);
