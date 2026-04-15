@@ -304,9 +304,14 @@ export default function Rooms() {
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
-                                <Button size="sm" onClick={() => { setBookingRoomId(room.id); setShowBooking(true); }}>
-                                  Book
-                                </Button>
+                                <div className="flex gap-1 justify-center">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingRoom(room)}>
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button size="sm" onClick={() => { setBookingRoomId(room.id); setShowBooking(true); }}>
+                                    Book
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
