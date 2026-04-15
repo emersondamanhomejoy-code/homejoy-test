@@ -732,10 +732,8 @@ function UnitViewContent({ unit, condosData, isAdmin, onViewingRoomChange }: { u
     const sectionKeys: string[] = [];
     if (photoUrls.length > 0) sectionKeys.push("photos");
     sectionKeys.push("details");
-    if (!isCarpark && hasOccupancy) sectionKeys.push("occupancy");
-    if (!isCarpark && otherRooms.length > 0) sectionKeys.push("summary");
-    const showTenantSection = ["Occupied", "Available Soon"].includes(viewingRoom.status);
-    if (showTenantSection) sectionKeys.push("tenant");
+    sectionKeys.push("tenant");
+    sectionKeys.push("booking");
 
     return (
       <div className="space-y-4">
