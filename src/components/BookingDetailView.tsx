@@ -161,7 +161,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     );
   };
 
-  const sectionTitle = (title: string) => title;
+  
 
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between text-sm py-1.5">
