@@ -134,7 +134,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
   const isExternalAgent = selectedAgent?.commissionType === "external";
 
   const availableRooms = useMemo(() => {
-    let rooms = roomsData.filter(r => r.room_type !== "Car Park" && r.status === "Available");
+    let rooms = roomsData.filter(r => r.room_type !== "Car Park" && (r.status === "Available" || r.status === "Available Soon"));
     // External agents cannot see internal-only units
     if (isExternalAgent) {
       const internalUnitIds = new Set(unitsData.filter(u => u.internal_only).map(u => u.id));
@@ -184,7 +184,7 @@ export function CreateBookingDialog({ open, onOpenChange, preSelectedRoomId }: P
 
   const availableCarParks = useMemo(() => {
     if (!selectedRoom) return [];
-    return roomsData.filter(r => r.room_type === "Car Park" && r.building === selectedRoom.building && r.status === "Available");
+    return roomsData.filter(r => r.room_type === "Car Park" && r.building === selectedRoom.building && (r.status === "Available" || r.status === "Available Soon"));
   }, [roomsData, selectedRoom]);
 
   const carParkOptions = useMemo(() => {
