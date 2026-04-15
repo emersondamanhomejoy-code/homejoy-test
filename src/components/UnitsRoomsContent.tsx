@@ -709,7 +709,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           <AccordionTrigger className="py-3 hover:no-underline">
             <div className="flex items-center gap-2 flex-1">
               <span className="text-sm font-semibold">Unit</span>
-              <span className="text-xs text-muted-foreground">— {unit.unit} · {formatUnitType(unit.unit_type)} · {unit.unit_max_pax} pax</span>
+              <span className="text-xs text-muted-foreground"></span>
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={() => copyToClipboard(commonPhotosUrl, "Unit photos link")} label="Copy Unit Photos Link" />
@@ -747,7 +747,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-sm font-semibold">Room</span>
-                <span className="text-xs text-muted-foreground">— {unitRooms.length} rooms</span>
+                
               </div>
               <div className="flex items-center gap-1 mr-2">
                 <TextCopyBtn onClick={copyRoomSummary} label="Copy Room Details" />
@@ -806,7 +806,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-sm font-semibold">Carpark</span>
-                <span className="text-xs text-muted-foreground">— {unitCarparks.length} carparks</span>
+                
               </div>
             </AccordionTrigger>
             <AccordionContent>
