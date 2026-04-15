@@ -425,7 +425,30 @@ function AgentRoomViewContent({ room, assetTab }: { room: any; assetTab: "rooms"
     return allRooms.filter((r) => r.unit_id === room.unit_id && r.id !== room.id && r.room_type !== "Car Park").sort((a, b) => a.room.localeCompare(b.room));
   }, [allRooms, room.unit_id, room.id]);
 
-  const effectiveRemaining = (room.max_pax || 0) - (room.pax_staying || 0);
+  // Fetch tenants for other rooms
+  useEffect(() => {
+    if (otherRooms.length === 0) { setOtherTenants({}); return; }
+    let cancelled = false;
+    (async () => {
+      const roomIds = otherRooms.map((r) => r.id);
+      const { data: trData } = await supabase.from("tenant_rooms").select("room_id, tenant_id").in("room_id", roomIds).eq("status", "active");
+      if (cancelled || !trData || trData.length === 0) return;
+      const tenantIds = [...new Set(trData.map((tr) => tr.tenant_id))];
+      const { data: tenants } = await supabase.from("tenants").select("id, nationality, occupation").in("id", tenantIds);
+      if (cancelled || !tenants) return;
+      const tenantMap: Record<string, { nationality?: string; occupation?: string }> = {};
+      const roomToTenant = new Map(trData.map((tr) => [tr.room_id, tr.tenant_id]));
+      for (const r of otherRooms) {
+        const tid = roomToTenant.get(r.id);
+        const t = tid ? tenants.find((te) => te.id === tid) : null;
+        if (t) tenantMap[r.id] = { nationality: t.nationality, occupation: t.occupation };
+      }
+      if (!cancelled) setOtherTenants(tenantMap);
+    })();
+    return () => { cancelled = true; };
+  }, [otherRooms]);
+
+
 
   const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => {
     if (!value || value === "—" || value === "") return null;
