@@ -412,6 +412,7 @@ function AgentRoomViewContent({ room, assetTab }: { room: any; assetTab: "rooms"
   const { data: allRooms } = useRooms();
   const [accordionValues, setAccordionValues] = useState<string[]>(["photos", "details", "otherRooms"]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [otherTenants, setOtherTenants] = useState<Record<string, { nationality?: string; occupation?: string }>>({});
 
   const photoUrls = useMemo(() => {
     if (!Array.isArray(room.photos) || room.photos.length === 0) return [];
