@@ -26,52 +26,7 @@ import { labelClass, inputClass } from "@/lib/ui-constants";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 
-// ─── Photo Lightbox Component ───
-function PhotoLightbox({ photos, index, onClose, onIndexChange }: {
-  photos: string[];
-  index: number;
-  onClose: () => void;
-  onIndexChange: (i: number) => void;
-}) {
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && index > 0) onIndexChange(index - 1);
-      if (e.key === "ArrowRight" && index < photos.length - 1) onIndexChange(index + 1);
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [index, photos.length, onClose, onIndexChange]);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center pointer-events-auto" onClick={onClose}>
-      <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-        <X className="h-6 w-6" />
-      </button>
-      {index > 0 && (
-        <button className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 z-10" onClick={e => { e.stopPropagation(); onIndexChange(index - 1); }}>
-          <ChevronLeft className="h-8 w-8" />
-        </button>
-      )}
-      {index < photos.length - 1 && (
-        <button className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 z-10" onClick={e => { e.stopPropagation(); onIndexChange(index + 1); }}>
-          <ChevronRight className="h-8 w-8" />
-        </button>
-      )}
-      <img
-        src={photos[index]}
-        alt={`Photo ${index + 1}`}
-        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-        onClick={e => e.stopPropagation()}
-      />
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
-        {index + 1} / {photos.length}
-      </div>
-    </div>,
-    document.body
-  );
-}
-
+// PhotoLightbox is now imported from ui/photo-lightbox
 export function UnitsRoomsContent() {
   const { data: units = [], isLoading } = useUnits();
   const { data: condosData = [] } = useCondos();
