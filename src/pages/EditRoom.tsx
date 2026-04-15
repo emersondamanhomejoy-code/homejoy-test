@@ -66,6 +66,9 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
     if (rc.status === "Available Soon" && !rc.available_date?.trim()) {
       toast.error("Available Date is required when status is Available Soon."); return;
     }
+    if (rc.status === "Archived" && !(rc as any).archived_reason?.trim()) {
+      toast.error("Archived Reason is required when status is Archived."); return;
+    }
     setSaving(true);
     try {
       await updateRoomMut.mutateAsync({ ...room, ...edits } as any);
@@ -140,7 +143,7 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Status</label>
-              {rc.status === "Pending" || rc.status === "Available Soon" ? (
+              {rc.status === "Pending" || rc.status === "Occupied" ? (
                 <>
                   <input className={`${inputClass} w-full bg-muted cursor-not-allowed`} value={rc.status} readOnly disabled />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -151,13 +154,20 @@ export default function EditRoom({ open, onOpenChange, roomId }: EditRoomProps) 
                 <select className={`${inputClass} w-full`} value={rc.status || "Available"} onChange={e => {
                   upRoom("status", e.target.value);
                   if (e.target.value === "Available Soon" && !rc.available_date) upRoom("available_date", "");
+                  if (e.target.value !== "Archived") upRoom("archived_reason", "");
                 }}>
-                  {rc.status === "Available" && <><option value="Available">Available</option><option value="Archived">Archived</option></>}
-                  {rc.status === "Occupied" && <><option value="Occupied">Occupied</option><option value="Available Soon">Available Soon</option></>}
+                  {rc.status === "Available" && <><option value="Available">Available</option><option value="Available Soon">Available Soon</option><option value="Archived">Archived</option></>}
+                  {rc.status === "Available Soon" && <><option value="Available Soon">Available Soon</option><option value="Available">Available</option></>}
                   {rc.status === "Archived" && <><option value="Archived">Archived</option><option value="Available">Available</option></>}
                 </select>
               )}
             </div>
+            {rc.status === "Archived" && (
+              <div>
+                <label className="text-xs text-muted-foreground">Archived Reason *</label>
+                <input className={`${inputClass} w-full`} placeholder="Why is this room/carpark archived?" value={(rc as any).archived_reason || ""} onChange={e => upRoom("archived_reason", e.target.value)} />
+              </div>
+            )}
             {rc.status === "Available Soon" && (
               <div>
                 <label className="text-xs text-muted-foreground">Available Date *</label>
