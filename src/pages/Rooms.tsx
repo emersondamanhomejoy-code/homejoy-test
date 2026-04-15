@@ -192,9 +192,9 @@ export default function Rooms() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mix">Mix Unit</SelectItem>
-                        <SelectItem value="female">Female Unit</SelectItem>
-                        <SelectItem value="male">Male Unit</SelectItem>
+                        <SelectItem value="mix">Mixed Gender</SelectItem>
+                        <SelectItem value="female">Female Only</SelectItem>
+                        <SelectItem value="male">Male Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

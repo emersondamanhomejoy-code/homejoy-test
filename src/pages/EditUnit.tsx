@@ -285,9 +285,9 @@ export default function EditUnit({ open, onOpenChange, unitId, focusRoomId }: Ed
                   <div>
                     <Label className="text-xs text-muted-foreground">Unit Type *</Label>
                     <select className={`${inputClass} w-full`} value={form.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
-                      <option value="Mix Unit">Mixed</option>
-                      <option value="Female Unit">Female</option>
-                      <option value="Male Unit">Male</option>
+                      <option value="Mixed Gender">Mixed Gender</option>
+                      <option value="Female Only">Female Only</option>
+                      <option value="Male Only">Male Only</option>
                     </select>
                   </div>
                   <div>

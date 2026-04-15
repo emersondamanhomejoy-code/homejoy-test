@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRooms, useUnits, Room } from "@/hooks/useRooms";
+import { formatUnitType } from "@/lib/ui-constants";
 import { useBookings, useUpdateBookingStatus, Booking } from "@/hooks/useBookings";
 import { AgentBookingsContent } from "@/components/AgentBookingsContent";
 import { MyDealsContent } from "@/components/MyDealsContent";
@@ -189,7 +190,7 @@ export default function Index() {
       const matchesSearch = keyword === "" || room.building.toLowerCase().includes(keyword) || room.unit.toLowerCase().includes(keyword) || room.room.toLowerCase().includes(keyword) || room.location.toLowerCase().includes(keyword);
       const matchesLocation = filters.location === "All" || room.location === filters.location;
       const matchesBuilding = filters.building === "All" || room.building === filters.building;
-      const matchesUnitType = filters.unitType === "All" || room.unit_type === filters.unitType;
+      const matchesUnitType = filters.unitType === "All" || formatUnitType(room.unit_type) === filters.unitType;
       const matchesPrice = filters.price === "All" || (filters.price === "Below RM700" && room.rent < 700) || (filters.price === "RM700 - RM900" && room.rent >= 700 && room.rent <= 900) || (filters.price === "Above RM900" && room.rent > 900);
       return matchesSearch && matchesLocation && matchesBuilding && matchesUnitType && matchesPrice;
     });
@@ -497,7 +498,7 @@ export default function Index() {
                 <div className="text-muted-foreground mt-1">{selectedRoom.unit} • {selectedRoom.room} • RM{selectedRoom.rent}</div>
                 <div className="flex gap-2 flex-wrap mt-3">
                   <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.room_type}</span>
-                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{selectedRoom.unit_type}</span>
+                  <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">{formatUnitType(selectedRoom.unit_type)}</span>
                   <span className={`px-3 py-1 rounded-md text-sm font-medium ${selectedRoom.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"}`}>{selectedRoom.status === "Available Soon" ? `🕐 Available ${selectedRoom.available_date}` : selectedRoom.available_date}</span>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -1064,7 +1065,7 @@ export default function Index() {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">Gender</label>
                 <select className="px-3 py-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" value={filters.unitType} onChange={(e) => setFilters({ ...filters, unitType: e.target.value })}>
-                  <option>All</option><option>Female Unit</option><option>Mix Unit</option>
+                  <option>All</option><option>Female Only</option><option>Mixed Gender</option><option>Male Only</option>
                 </select>
               </div>
             </div>
@@ -1085,7 +1086,7 @@ export default function Index() {
                       <div className="text-muted-foreground mt-0.5">{room.room} — <span className="font-bold text-primary text-lg">RM{room.rent}</span><span className="text-xs text-muted-foreground">/mo</span></div>
                       <div className="flex gap-1.5 flex-wrap mt-2.5">
                         <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.room_type}</span>
-                        <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{room.unit_type}</span>
+                        <span className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium">{formatUnitType(room.unit_type)}</span>
                         <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${room.status === "Available Soon" ? "bg-primary/15 text-primary" : "bg-accent/20 text-accent-foreground"}`}>{room.status === "Available Soon" ? `🕐 Available ${room.available_date}` : room.available_date}</span>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground flex gap-3">

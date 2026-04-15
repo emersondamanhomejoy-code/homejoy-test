@@ -51,7 +51,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   const createUnit = useCreateUnit();
 
   const [form, setForm] = useState({
-    building: "", location: "", unit: "", unit_type: "Mix Unit",
+    building: "", location: "", unit: "", unit_type: "Mixed Gender",
     unit_max_pax: 6, deposit_multiplier: 1.5, admin_fee: 330,
     meter_type: "Postpaid", meter_rate: 0.65, passcode: "",
     wifi_name: "", wifi_password: "", internal_only: false,
@@ -71,7 +71,7 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
   useEffect(() => {
     if (open) {
       setForm({
-        building: "", location: "", unit: "", unit_type: "Mix Unit",
+        building: "", location: "", unit: "", unit_type: "Mixed Gender",
         unit_max_pax: 6, deposit_multiplier: 1.5, admin_fee: 330,
         meter_type: "Postpaid", meter_rate: 0.65, passcode: "",
         wifi_name: "", wifi_password: "", internal_only: false,
@@ -306,9 +306,9 @@ export default function AddUnit({ open, onOpenChange }: AddUnitProps) {
                   <div>
                     <Label className="text-xs text-muted-foreground">Unit Type *</Label>
                     <select className={`${inputClass} w-full`} value={form.unit_type} onChange={e => updateField("unit_type", e.target.value)}>
-                      <option value="Mix Unit">Mixed</option>
-                      <option value="Female Unit">Female</option>
-                      <option value="Male Unit">Male</option>
+                      <option value="Mixed Gender">Mixed Gender</option>
+                      <option value="Female Only">Female Only</option>
+                      <option value="Male Only">Male Only</option>
                     </select>
                   </div>
                   <div>

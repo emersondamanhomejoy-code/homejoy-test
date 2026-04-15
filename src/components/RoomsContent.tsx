@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatUnitType } from "@/lib/ui-constants";
 import EditRoom from "@/pages/EditRoom";
 import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteRoom, Room, Unit } from "@/hooks/useRooms";
@@ -103,7 +104,7 @@ export function RoomsContent() {
     const source = selectedLocations.length ? allRooms.filter(r => selectedLocations.includes(r.location)) : allRooms;
     return Array.from(new Set(source.map(r => r.building).filter(Boolean))).sort();
   }, [allRooms, selectedLocations]);
-  const unitTypes = useMemo(() => Array.from(new Set(allRooms.map(r => r.unit_type_val).filter(Boolean))).sort(), [allRooms]);
+  const unitTypes = useMemo(() => Array.from(new Set(allRooms.map(r => formatUnitType(r.unit_type_val)).filter(Boolean))).sort(), [allRooms]);
   const bedTypes = useMemo(() => Array.from(new Set(allRooms.map(r => r.bed_type).filter(Boolean))).sort(), [allRooms]);
   const wallTypes = useMemo(() => Array.from(new Set(allRooms.map(r => (r as any).wall_type).filter(Boolean))).sort(), [allRooms]);
   const featureOptions = useMemo(() => {
@@ -131,7 +132,7 @@ export function RoomsContent() {
     if (statusTab !== "All") list = list.filter(r => r.status === statusTab);
     if (selectedLocations.length) list = list.filter(r => selectedLocations.includes(r.location));
     if (selectedBuildings.length) list = list.filter(r => selectedBuildings.includes(r.building));
-    if (selectedUnitTypes.length) list = list.filter(r => selectedUnitTypes.includes(r.unit_type_val));
+    if (selectedUnitTypes.length) list = list.filter(r => selectedUnitTypes.includes(formatUnitType(r.unit_type_val)));
     if (selectedBedTypes.length) list = list.filter(r => selectedBedTypes.includes(r.bed_type));
     if (selectedWallTypes.length) list = list.filter(r => selectedWallTypes.includes((r as any).wall_type));
     if (selectedFeatures.length) list = list.filter(r => {
@@ -165,7 +166,7 @@ export function RoomsContent() {
     return sortData(list, (r: any, key: string) => {
       const map: Record<string, any> = {
         room: r.room, building: r.building, unit: r.unit,
-        unit_type: r.unit_type_val, bed_type: r.bed_type,
+        unit_type: formatUnitType(r.unit_type_val), bed_type: r.bed_type,
         wall_type: r.wall_type || "", rent: r.rent,
         status: r.status, available_date: r.available_date || "",
         effectiveRemaining: r.effectiveRemaining,
@@ -195,7 +196,7 @@ export function RoomsContent() {
       const feats = [...((r as any).optional_features || [])];
       if (((r as any).room_category === "Studio" || r.room_type === "Studio") && !feats.includes("Studio")) feats.unshift("Studio");
       return [
-        r.building, r.unit, r.room, r.unit_type_val,
+        r.building, r.unit, r.room, formatUnitType(r.unit_type_val),
         r.bed_type || "", (r as any).wall_type || "", feats.join(", "),
         r.rent, r.status,
         r.effectiveRemaining,
@@ -519,7 +520,7 @@ export function RoomsContent() {
                 <h4 className="text-sm font-semibold mb-2">Room Details</h4>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div><span className="text-muted-foreground">Room Type:</span> {viewingRoom.room_type || "—"}</div>
-                  <div><span className="text-muted-foreground">Unit Type:</span> {viewingRoom.unit_type_val || "—"}</div>
+                  <div><span className="text-muted-foreground">Unit Type:</span> {formatUnitType(viewingRoom.unit_type_val) || "—"}</div>
                   <div><span className="text-muted-foreground">Bed Type:</span> {viewingRoom.bed_type || "—"}</div>
                   <div><span className="text-muted-foreground">Wall Type:</span> {(viewingRoom as any).wall_type || "—"}</div>
                   <div><span className="text-muted-foreground">Listed Rental:</span> RM{viewingRoom.rent}</div>
