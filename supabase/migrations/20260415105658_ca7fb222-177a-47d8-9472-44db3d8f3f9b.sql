@@ -1,0 +1,1 @@
+ALTER TABLE public.rooms ADD COLUMN IF NOT EXISTS parking_lot text NOT NULL DEFAULT '';
