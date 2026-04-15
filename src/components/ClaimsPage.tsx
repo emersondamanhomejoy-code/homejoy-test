@@ -370,7 +370,7 @@ export function ClaimsPage() {
       const history = [{ action: "created", by: user.email, at: new Date().toISOString(), created_for_agent: getAgentName(createForm.agent_id), item_count: selectedCreateMoveIns.length }];
       const createdClaim = await createClaim.mutateAsync({
         agent_id: createForm.agent_id,
-        booking_id: selectedCreateMoveIns.length === 1 ? (selectedCreateMoveIns[0].booking_id || null) : null,
+        booking_id: selectedCreateMoveIns.length === 1 ? (selectedCreateMoveIns[0].id || null) : null,
         amount: totalCreateAmount,
         description: createForm.description,
         bank_name: createForm.bank_name,
@@ -670,7 +670,7 @@ export function ClaimsPage() {
                                   <div className="text-sm font-medium">{booking.room?.building} {booking.room?.unit} {booking.room?.room}</div>
                                   <div className="text-sm font-semibold">RM{amount.toLocaleString()}</div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">{booking.tenant_name} · Move-in {booking.booking?.move_in_date ? format(new Date(booking.booking.move_in_date), "dd MMM yyyy") : "—"}</div>
+                                <div className="text-xs text-muted-foreground">{booking.tenant_name} · Move-in {booking.move_in_date ? format(new Date(booking.move_in_date), "dd MMM yyyy") : "—"}</div>
                               </div>
                             </label>
                           );
