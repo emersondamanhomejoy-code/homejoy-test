@@ -36,6 +36,7 @@ export default function Rooms() {
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [selectedGender, setSelectedGender] = useState<string>("mix");
   const [selectedStatus, setSelectedStatus] = useState<string>("Available");
+  const [assetTab, setAssetTab] = useState<"rooms" | "carparks">("rooms");
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { sort, handleSort, sortData } = useTableSort("building");
@@ -46,11 +47,14 @@ export default function Rooms() {
     else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
   }, [user, role, loading, navigate]);
 
-  // All non-internal rooms (exclude Car Park), will filter by status
-  const allRooms = useMemo(
-    () => (rooms ?? []).filter((r) => !r.internal_only && r.room_type !== "Car Park"),
-    [rooms]
-  );
+  // Filter by asset tab and internal_only
+  const allRooms = useMemo(() => {
+    return (rooms ?? []).filter((r) => {
+      if (r.internal_only) return false;
+      const isCarPark = r.room_type === "Car Park";
+      return assetTab === "carparks" ? isCarPark : !isCarPark;
+    });
+  }, [rooms, assetTab]);
 
   // Derive filter options
   const locations = useMemo(() => {
@@ -155,10 +159,26 @@ export default function Rooms() {
           <main className="flex-1 p-8 overflow-auto">
             <div className="flex flex-col gap-6">
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Available Rooms</h2>
+                <h2 className="text-2xl font-bold text-foreground">Rooms & Car Parks</h2>
                 <p className="text-muted-foreground text-sm mt-1">
-                  Browse and filter available rooms across all locations.
+                  Browse and filter available rooms and car parks across all locations.
                 </p>
+              </div>
+
+              {/* Asset type toggle */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setAssetTab("rooms"); clearFilters(); }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "rooms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Rooms
+                </button>
+                <button
+                  onClick={() => { setAssetTab("carparks"); clearFilters(); }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${assetTab === "carparks" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Car Parks
+                </button>
               </div>
 
               {/* Filters */}
@@ -243,13 +263,13 @@ export default function Rooms() {
               <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
                 <div className="px-6 py-4 border-b border-border flex justify-between items-center">
                 <h3 className="font-semibold text-foreground">
-                  {selectedStatus === "all" ? "All Rooms" : `${selectedStatus} Rooms`}
+                  {selectedStatus === "all" ? (assetTab === "rooms" ? "All Rooms" : "All Car Parks") : `${selectedStatus} ${assetTab === "rooms" ? "Rooms" : "Car Parks"}`}
                 </h3>
                 </div>
                 {isLoading ? (
-                  <div className="p-12 text-center text-muted-foreground">Loading rooms…</div>
+                  <div className="p-12 text-center text-muted-foreground">Loading…</div>
                 ) : filtered.length === 0 ? (
-                  <div className="p-12 text-center text-muted-foreground">No available rooms match your filters.</div>
+                  <div className="p-12 text-center text-muted-foreground">No {assetTab === "rooms" ? "rooms" : "car parks"} match your filters.</div>
                 ) : (
                   <>
                     <div className="overflow-x-auto">
@@ -259,8 +279,8 @@ export default function Rooms() {
                             <SortableTableHead sortKey="location" currentSort={sort} onSort={handleSort}>Location</SortableTableHead>
                             <SortableTableHead sortKey="building" currentSort={sort} onSort={handleSort}>Building</SortableTableHead>
                             <SortableTableHead sortKey="unit" currentSort={sort} onSort={handleSort}>Unit</SortableTableHead>
-                            <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
-                            <TableHead>Room Title</TableHead>
+                             <SortableTableHead sortKey="room" currentSort={sort} onSort={handleSort}>Code</SortableTableHead>
+                            {assetTab === "rooms" && <TableHead>Room Title</TableHead>}
                             <SortableTableHead sortKey="rent" currentSort={sort} onSort={handleSort} className="text-right">Rent (RM)</SortableTableHead>
                             <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
                             <TableHead className="text-center">Action</TableHead>
@@ -271,11 +291,11 @@ export default function Rooms() {
                             <TableRow key={room.id} className="hover:bg-muted/30 cursor-pointer">
                               <TableCell className="capitalize text-muted-foreground">{room.location || "N/A"}</TableCell>
                               <TableCell className="font-medium text-foreground">{room.building || "N/A"}</TableCell>
-                              <TableCell>{room.unit}</TableCell>
+                              <TableCell>{room.unit || "N/A"}</TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="font-mono">{room.room}</Badge>
                               </TableCell>
-                              <TableCell className="font-medium">{(room as any).room_title || "N/A"}</TableCell>
+                              {assetTab === "rooms" && <TableCell className="font-medium">{(room as any).room_title || "N/A"}</TableCell>}
                               <TableCell className="text-right font-semibold tabular-nums">{room.rent.toLocaleString()}</TableCell>
                               <TableCell><StatusBadge status={room.status} /></TableCell>
                               <TableCell className="text-center">
