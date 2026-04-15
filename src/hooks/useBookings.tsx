@@ -225,15 +225,15 @@ export function useUpdateOrderStatus() {
         .eq("id", id);
       if (error) throw error;
 
-      // ─── BOOKING APPROVED: set room/carpark to Pending, create tenant ───
+      // ─── BOOKING APPROVED: set room/carpark to Occupied, create tenant ───
       if (order_status === "booking_approved") {
         if (room_id) {
-          await supabase.from("rooms").update({ status: "Pending" }).eq("id", room_id);
+          await supabase.from("rooms").update({ status: "Occupied" }).eq("id", room_id);
         }
         if (carParkIds && carParkIds.length > 0) {
           for (const cpId of carParkIds) {
             await supabase.from("rooms").update({
-              status: "Pending",
+              status: "Occupied",
               tenant_gender: `${tenant_name || ""} (${tenant_gender || ""})`,
             }).eq("id", cpId);
           }
@@ -394,18 +394,18 @@ export function useUpdateOrderStatus() {
         }
       }
 
-      // ─── BOOKING CANCELLED: release pending holds ───
+      // ─── BOOKING CANCELLED: release Pending or Occupied holds back to Available ───
       if (order_status === "booking_cancelled") {
         if (room_id) {
           const { data: roomData } = await supabase.from("rooms").select("status").eq("id", room_id).single();
-          if (roomData?.status === "Pending") {
+          if (roomData?.status === "Pending" || roomData?.status === "Occupied") {
             await supabase.from("rooms").update({ status: "Available" }).eq("id", room_id);
           }
         }
         if (carParkIds && carParkIds.length > 0) {
           for (const cpId of carParkIds) {
             const { data: cpData } = await supabase.from("rooms").select("status").eq("id", cpId).single();
-            if (cpData?.status === "Pending") {
+            if (cpData?.status === "Pending" || cpData?.status === "Occupied") {
               await supabase.from("rooms").update({ status: "Available", tenant_gender: "" }).eq("id", cpId);
             }
           }

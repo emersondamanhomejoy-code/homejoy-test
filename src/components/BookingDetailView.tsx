@@ -471,7 +471,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
             <AlertDialogTitle>Approve Booking?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to approve this booking for <strong>{b.tenant_name}</strong>?
-              Room/carpark will be marked as <strong>Pending</strong> and a tenant record will be created.
+              Room/carpark will be marked as <strong>Occupied</strong> and a tenant record will be created.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
