@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { formatUnitType } from "@/lib/ui-constants";
 import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
 import { useAuth } from "@/hooks/useAuth";
@@ -292,7 +293,7 @@ export function UnitsRoomsContent() {
                       : ""
                   }
                 >
-                  {unit.unit_type}
+                  {formatUnitType(unit.unit_type)}
                 </Badge>
               </TableCell>
               <TableCell className="text-center">
@@ -479,7 +480,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
   const copyUnitDetails = () => {
     const lines = [
       `Unit: ${val(unit.unit)}`,
-      `Type: ${val(unit.unit_type)}`,
+      `Type: ${val(formatUnitType(unit.unit_type))}`,
       `Max Occupants: ${unit.unit_max_pax}`,
       `Deposit: ${depMul} months`,
       `Admin Fee: RM${adminFee}`,
@@ -811,7 +812,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           <AccordionTrigger className="py-3 hover:no-underline">
             <div className="flex items-center gap-2 flex-1">
               <span className="text-sm font-semibold">Unit Details</span>
-              <span className="text-xs text-muted-foreground">— {unit.unit} · {unit.unit_type} · {unit.unit_max_pax} pax</span>
+              <span className="text-xs text-muted-foreground">— {unit.unit} · {formatUnitType(unit.unit_type)} · {unit.unit_max_pax} pax</span>
             </div>
             <div className="flex items-center gap-1 mr-2">
               <TextCopyBtn onClick={copyUnitDetails} label="Copy Text" />
@@ -820,7 +821,7 @@ function UnitViewContent({ unit, condosData, isAdmin }: { unit: Unit; condosData
           <AccordionContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
-              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{unit.unit_type}</span></div>
+              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{formatUnitType(unit.unit_type)}</span></div>
               <div><span className="text-muted-foreground">Max Occupants:</span> <span className="font-medium">{unit.unit_max_pax}</span></div>
               <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium">{depMul} months</span></div>
               <div><span className="text-muted-foreground">Admin Fee:</span> <span className="font-medium">RM{adminFee}</span></div>
