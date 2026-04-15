@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { PhotoLightbox } from "@/components/ui/photo-lightbox";
 import { formatUnitType } from "@/lib/ui-constants";
 import { useUnits, useDeleteUnit, Unit, Room } from "@/hooks/useRooms";
 import { useCondos } from "@/hooks/useCondos";
