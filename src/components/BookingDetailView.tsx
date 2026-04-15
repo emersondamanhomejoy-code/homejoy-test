@@ -161,12 +161,7 @@ export function BookingDetailView({ booking: b, open, onOpenChange, getAgentName
     );
   };
 
-  const sectionCard = (title: string, children: React.ReactNode) => (
-    <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-      <div className="text-sm font-bold flex items-center gap-2 border-b border-border pb-2 uppercase tracking-wide text-muted-foreground">{title}</div>
-      {children}
-    </div>
-  );
+  const sectionTitle = (title: string) => title;
 
   const infoRow = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between text-sm py-1.5">
