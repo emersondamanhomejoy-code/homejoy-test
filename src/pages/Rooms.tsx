@@ -47,11 +47,14 @@ export default function Rooms() {
     else if (!loading && user && role && role !== "agent") navigate("/admin", { replace: true });
   }, [user, role, loading, navigate]);
 
-  // All non-internal rooms (exclude Car Park), will filter by status
-  const allRooms = useMemo(
-    () => (rooms ?? []).filter((r) => !r.internal_only && r.room_type !== "Car Park"),
-    [rooms]
-  );
+  // Filter by asset tab and internal_only
+  const allRooms = useMemo(() => {
+    return (rooms ?? []).filter((r) => {
+      if (r.internal_only) return false;
+      const isCarPark = r.room_type === "Car Park";
+      return assetTab === "carparks" ? isCarPark : !isCarPark;
+    });
+  }, [rooms, assetTab]);
 
   // Derive filter options
   const locations = useMemo(() => {
