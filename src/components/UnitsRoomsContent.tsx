@@ -342,13 +342,17 @@ export function UnitsRoomsContent() {
       {/* View Details Modal */}
       <StandardModal
         open={!!viewingUnit}
-        onOpenChange={open => { if (!open) setViewingUnit(null); }}
+        onOpenChange={open => { if (!open) { setViewingUnit(null); setIsViewingRoom(false); } }}
         title={`Unit Details — ${viewingUnit?.building} · ${viewingUnit?.unit}`}
         size="lg"
         hideCancel
-        footer={<Button variant="outline" onClick={() => setViewingUnit(null)}>Close</Button>}
+        footer={
+          isViewingRoom
+            ? <Button variant="outline" onClick={() => { const evt = new CustomEvent('back-to-unit'); window.dispatchEvent(evt); }}>Back to Unit Details</Button>
+            : <Button variant="outline" onClick={() => setViewingUnit(null)}>Close</Button>
+        }
       >
-        {viewingUnit && <UnitViewContent unit={viewingUnit} condosData={condosData} isAdmin={isAdmin} />}
+        {viewingUnit && <UnitViewContent unit={viewingUnit} condosData={condosData} isAdmin={isAdmin} onViewingRoomChange={(room) => setIsViewingRoom(!!room)} />}
       </StandardModal>
 
       {/* Add Unit Modal */}
