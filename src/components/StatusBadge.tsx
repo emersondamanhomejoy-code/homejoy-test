@@ -75,7 +75,7 @@ const fallback = "bg-muted text-muted-foreground";
 
 function formatShortDate(dateStr: string): string {
   try {
-    return format(new Date(dateStr), "d MMM yyyy");
+    return format(new Date(dateStr), "d MMM");
   } catch {
     return dateStr;
   }
@@ -98,7 +98,7 @@ export function StatusBadge({ status, availableDate, className }: { status: stri
     <Badge variant="secondary" className={cn("font-medium border-0", isAvailableSoonWithDate ? "inline-flex flex-col items-center py-1 leading-tight" : "whitespace-nowrap", style, className)}>
       {isAvailableSoonWithDate ? (
         <>
-          <span>Available on</span>
+          <span>Available</span>
           <span>{formatShortDate(availableDate!)}</span>
         </>
       ) : (displayLabel || status)}
