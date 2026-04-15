@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import EditUnit from "@/pages/EditUnit";
+import EditRoom from "@/pages/EditRoom";
 import { useNavigate } from "react-router-dom";
 import { useUnits, useDeleteRoom, Room, Unit } from "@/hooks/useRooms";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
@@ -71,8 +71,7 @@ export function RoomsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [editUnitId, setEditUnitId] = useState<string | null>(null);
-  const [editFocusRoomId, setEditFocusRoomId] = useState<string | undefined>(undefined);
+  const [editRoomId, setEditRoomId] = useState<string | null>(null);
   const [viewingRoom, setViewingRoom] = useState<FlatRoom | null>(null);
   const { sort, handleSort, sortData } = useTableSort("building");
 
@@ -392,7 +391,7 @@ export function RoomsContent() {
                             <Button variant="ghost" size="icon" className="h-7 w-7" title="View" onClick={() => setViewingRoom(r)}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => { setEditUnitId(r.unit_id); setEditFocusRoomId(r.id); }}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => setEditRoomId(r.id)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Archive / Remove" onClick={() => setDeleteConfirm(r.id)}>
@@ -461,6 +460,10 @@ export function RoomsContent() {
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
           const photos = Array.isArray(viewingRoom.photos) ? viewingRoom.photos as string[] : [];
 
+          // Get sibling rooms in the same unit
+          const parentUnit = units.find(u => u.id === viewingRoom.unit_id);
+          const siblingRooms = (parentUnit?.rooms || []).filter(r => (r as any).room_type !== "Car Park" && !(r.room || "").toLowerCase().startsWith("carpark"));
+
           return (
             <div className="space-y-6">
               {/* Header */}
@@ -469,6 +472,47 @@ export function RoomsContent() {
                 {(viewingRoom as any).room_title && <div className="text-base font-medium mt-0.5">{(viewingRoom as any).room_title}</div>}
                 <div className="text-sm text-muted-foreground">{viewingRoom.location}</div>
               </div>
+
+              {/* Room Summary Table (sibling rooms) */}
+              {siblingRooms.length > 1 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Room Summary — {viewingRoom.building} · {viewingRoom.unit}</h4>
+                  <div className="overflow-x-auto rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Room Title</TableHead>
+                          <TableHead className="text-right">Rental</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-center">Pax</TableHead>
+                          <TableHead>Gender</TableHead>
+                          <TableHead>Nationality</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {siblingRooms.map(sr => {
+                          const housemates = Array.isArray(sr.housemates) ? sr.housemates : [];
+                          const genders = housemates.map((h: any) => typeof h === "object" ? h?.gender || "" : "").filter(Boolean).join(", ") || sr.tenant_gender || "—";
+                          const nats = housemates.map((h: any) => typeof h === "object" ? h?.nationality || "" : "").filter(Boolean).join(", ") || "—";
+                          const isCurrentRoom = sr.id === viewingRoom.id;
+                          return (
+                            <TableRow key={sr.id} className={isCurrentRoom ? "bg-primary/5 font-medium" : ""}>
+                              <TableCell className="font-medium">{sr.room.replace(/^Room\s+/i, "")}{isCurrentRoom && " ←"}</TableCell>
+                              <TableCell>{(sr as any).room_title || <span className="text-muted-foreground italic">—</span>}</TableCell>
+                              <TableCell className="text-right">RM{sr.rent}</TableCell>
+                              <TableCell><StatusBadge status={sr.status} availableDate={sr.available_date} /></TableCell>
+                              <TableCell className="text-center">{sr.pax_staying || 0}</TableCell>
+                              <TableCell>{genders}</TableCell>
+                              <TableCell>{nats}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
 
               {/* Room Details */}
               <div>
@@ -507,7 +551,7 @@ export function RoomsContent() {
                 </div>
               </div>
 
-              {/* Occupant context (only if occupied) */}
+              {/* Occupant context */}
               {(viewingRoom.status === "Occupied" || viewingRoom.status === "Available Soon") && (
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Occupant Info</h4>
@@ -545,13 +589,12 @@ export function RoomsContent() {
         })()}
       </StandardModal>
 
-      {/* Edit Unit Modal */}
-      {editUnitId && (
-        <EditUnit
+      {/* Edit Room Modal */}
+      {editRoomId && (
+        <EditRoom
           open={true}
-          onOpenChange={(o) => { if (!o) { setEditUnitId(null); setEditFocusRoomId(undefined); } }}
-          unitId={editUnitId}
-          focusRoomId={editFocusRoomId}
+          onOpenChange={(o) => { if (!o) setEditRoomId(null); }}
+          roomId={editRoomId}
         />
       )}
     </StandardPageLayout>
