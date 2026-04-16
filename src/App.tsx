@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound.tsx";
 import AgentDashboard from "./pages/AgentDashboard.tsx";
 import Login from "./pages/Login.tsx";
 import Rooms from "./pages/Rooms.tsx";
+import AgentBuildings from "./pages/AgentBuildings.tsx";
 
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
           <Route path="/" element={<AgentDashboard />} />
+          <Route path="/buildings" element={<AgentBuildings />} />
           <Route path="/login" element={<Login />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/admin" element={<Index />} />
