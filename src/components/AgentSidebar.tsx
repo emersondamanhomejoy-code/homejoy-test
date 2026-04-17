@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Home, LogOut, PanelLeftClose, PanelLeft,
-  ClipboardList, LogIn, Trophy, User, Wallet, Megaphone, Building2
+  ClipboardList, LogIn, Trophy, User, Wallet, Building2
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -32,7 +32,6 @@ const menuItems: AgentMenuItem[] = [
   { title: "Move In", icon: LogIn, tab: "myMoveIns" },
   { title: "My Deals", icon: Trophy, tab: "myDeals" },
   { title: "Earnings", icon: Wallet, tab: "earnings" },
-  { title: "Announcements", icon: Megaphone, tab: "announcements" },
   { title: "Profile", icon: User, tab: "myAccount" },
 ];
 

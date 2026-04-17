@@ -27,7 +27,7 @@ interface ActivityLog {
 
 const MODULE_OPTIONS = [
   "booking", "move_in", "move_out", "room", "unit", "building", "location",
-  "tenant", "user", "claim", "payout", "earning", "announcement", "system",
+  "tenant", "user", "claim", "payout", "earning", "system",
 ];
 const ACTION_OPTIONS = [
   "create", "edit", "submit", "approve", "reject", "cancel", "reverse",

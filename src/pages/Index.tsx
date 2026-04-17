@@ -22,7 +22,6 @@ import { TenantsContent } from "@/components/TenantsContent";
 import { MoveInPage } from "@/components/MoveInPage";
 import { BookingsContent } from "@/components/BookingsContent";
 import { AdminDashboardContent } from "@/components/AdminDashboardContent";
-import { AnnouncementsContent } from "@/components/AnnouncementsContent";
 import { MoveOutPage } from "@/components/MoveOutPage";
 import { Condo } from "@/hooks/useCondos";
 
@@ -1013,19 +1012,6 @@ export default function Index() {
     );
   }
 
-  // ─── ANNOUNCEMENTS PAGE (AGENT) ───
-  if (page === "announcements") {
-    return (
-      <OldDashboardLayout agentTab={page} onAgentTabChange={(t) => setPage(t)}>
-        <div className="flex-1 p-6 overflow-auto text-foreground">
-          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <AnnouncementsContent isAgent={true} />
-          </div>
-        </div>
-      </OldDashboardLayout>
-    );
-  }
-
   const availableCarParksCount = roomsData.filter(r => r.room_type === "Car Park" && (r.status === "Available" || r.status === "Available Soon")).length;
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1136,7 +1122,6 @@ export default function Index() {
              adminTab === "bookings" ? <BookingsContent /> :
              adminTab === "moveout" ? <MoveOutPage /> :
              adminTab === "payouts" ? <PayoutsContent /> :
-             adminTab === "announcements" ? <AnnouncementsContent /> :
              <AdminContent tab={adminTab as any} />}
           </div>
         )}

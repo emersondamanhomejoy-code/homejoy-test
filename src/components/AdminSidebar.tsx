@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Users, FileText, LogOut,
   PanelLeftClose, PanelLeft, Sparkles,
   MapPin, Building, Building2, BedDouble, UserCheck,
-  ClipboardList, LogIn, LogOut as LogOutIcon, Wallet, Megaphone
+  ClipboardList, LogIn, LogOut as LogOutIcon, Wallet
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -32,7 +32,6 @@ const adminMenuItems = [
   { title: "Move Out", icon: LogOutIcon, tab: "moveout" },
   { title: "Payouts", icon: Wallet, tab: "payouts" },
   { title: "Users", icon: Users, tab: "users" },
-  { title: "Announcements", icon: Megaphone, tab: "announcements" },
   { title: "Activity Log", icon: FileText, tab: "activity", superAdminOnly: true },
 ];
 
