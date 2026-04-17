@@ -119,7 +119,10 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
     JSON.stringify(motorcycleItems) !== JSON.stringify(initialMotorcycle);
 
   const handleSave = async () => {
-    if (!validate(form, { name: (v) => !v?.trim() ? "Building name is required" : null })) return;
+    if (!validate(form, {
+      name: (v) => !v?.trim() ? "Building name is required" : null,
+      location_id: (v) => !v ? "Location is required" : null,
+    })) return;
     try {
       const payload: any = {
         ...form,
@@ -358,7 +361,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
   ) => (
     <div className="bg-card rounded-lg border overflow-hidden">
       <button type="button" onClick={() => toggleSection(sectionKey)} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
-        <h2 className="text-lg font-bold">{title}</h2>
+        <h2 className="text-base font-semibold">{title}</h2>
         <div className="flex items-center gap-2">
           <span onClick={e => { e.stopPropagation(); addItem(setItems, defaultType); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-primary hover:bg-secondary transition-colors cursor-pointer">
             <Plus className="h-3.5 w-3.5" /> Add
@@ -402,7 +405,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
         {/* Section 1: Building Details */}
         <div className="bg-card rounded-lg border overflow-hidden">
           <button type="button" onClick={() => toggleSection("details")} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
-            <h2 className="text-lg font-bold">Building Details</h2>
+            <h2 className="text-base font-semibold">Building Details</h2>
             {sectionsOpen.details ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
           </button>
           {sectionsOpen.details && (
@@ -447,16 +450,17 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div data-field="name">
-                  <label className={labelClass}>Building Name *</label>
+                  <label className={labelClass}>Building Name <span className="text-destructive">*</span></label>
                   <input className={fieldClass(`${inputClass} w-full`, !!errors.name)} placeholder="e.g. The Robertson" value={form.name} onChange={e => { updateField("name", e.target.value); clearError("name"); }} />
                   <FieldError error={errors.name} />
                 </div>
-                <div>
-                  <label className={labelClass}>Location *</label>
-                  <select className={`${inputClass} w-full`} value={form.location_id || ""} onChange={e => updateField("location_id", e.target.value || null)}>
+                <div data-field="location_id">
+                  <label className={labelClass}>Location <span className="text-destructive">*</span></label>
+                  <select className={fieldClass(`${inputClass} w-full`, !!errors.location_id)} value={form.location_id || ""} onChange={e => { updateField("location_id", e.target.value || null); clearError("location_id"); }}>
                     <option value="">— Select Location —</option>
                     {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
+                  <FieldError error={errors.location_id} />
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>Address</label>
@@ -482,7 +486,7 @@ export function BuildingForm({ building, onClose }: BuildingFormProps) {
         {/* Visitor / Parking Info - Collapsible */}
         <div className="bg-card rounded-lg border overflow-hidden">
           <button type="button" onClick={() => toggleSection("visitor")} className="w-full flex items-center justify-between p-6 hover:bg-secondary/30 transition-colors">
-            <h2 className="text-lg font-bold">Visitor / Parking Info</h2>
+            <h2 className="text-base font-semibold">Visitor / Parking Info</h2>
             {sectionsOpen.visitor ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
           </button>
           {sectionsOpen.visitor && (

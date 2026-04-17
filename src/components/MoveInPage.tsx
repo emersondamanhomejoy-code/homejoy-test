@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import { AdvancedFiltersToggle, AdvancedFiltersPanel } from "@/components/AdvancedFiltersToggle";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { Eye, Pencil, Check, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -50,6 +51,7 @@ export function MoveInPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("move_in_submitted");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [agentFilter, setAgentFilter] = useState<string[]>([]);
   const [buildingFilter, setBuildingFilter] = useState<string[]>([]);
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
@@ -497,26 +499,36 @@ export function MoveInPage() {
       </div>
 
       {/* Search + Agent Filter */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-end gap-3">
         <Input placeholder="Search tenant, building, unit, room..." className="max-w-xs" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} />
         <MultiSelectFilter label="Agent" placeholder="All" options={agentOptions} selected={agentFilter} onApply={(v) => { setAgentFilter(v); setPage(0); }} />
+        <AdvancedFiltersToggle
+          open={showAdvanced}
+          onToggle={() => setShowAdvanced(v => !v)}
+          activeCount={
+            (bookingTypeFilter.length > 0 ? 1 : 0) +
+            (buildingFilter.length > 0 ? 1 : 0) +
+            (locationFilter.length > 0 ? 1 : 0) +
+            (paymentFilter.length > 0 ? 1 : 0) +
+            (dateFrom || dateTo ? 1 : 0)
+          }
+          className="self-end"
+        />
         {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground"><X className="mr-1 h-3 w-3" /> Clear</Button>}
-      </div>
-
-      {/* Advanced Filters */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-        <MultiSelectFilter label="Booking Type" placeholder="All" options={["room_only", "room_carpark", "carpark_only"]} selected={bookingTypeFilter} onApply={(v) => { setBookingTypeFilter(v); setPage(0); }} />
-        <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={(v) => { setBuildingFilter(v); setPage(0); }} />
-        <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={(v) => { setLocationFilter(v); setPage(0); }} />
-        <MultiSelectFilter label="Payment" placeholder="All" options={paymentOptions} selected={paymentFilter} onApply={(v) => { setPaymentFilter(v); setPage(0); }} />
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date From</label>
-          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date To</label>
-          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} className="h-10" />
-        </div>
+        <AdvancedFiltersPanel open={showAdvanced}>
+          <MultiSelectFilter label="Booking Type" placeholder="All" options={["room_only", "room_carpark", "carpark_only"]} selected={bookingTypeFilter} onApply={(v) => { setBookingTypeFilter(v); setPage(0); }} />
+          <MultiSelectFilter label="Building" placeholder="All" options={buildingOptions} selected={buildingFilter} onApply={(v) => { setBuildingFilter(v); setPage(0); }} />
+          <MultiSelectFilter label="Location" placeholder="All" options={locationOptions} selected={locationFilter} onApply={(v) => { setLocationFilter(v); setPage(0); }} />
+          <MultiSelectFilter label="Payment" placeholder="All" options={paymentOptions} selected={paymentFilter} onApply={(v) => { setPaymentFilter(v); setPage(0); }} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date From</label>
+            <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }} className="h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date To</label>
+            <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} className="h-10" />
+          </div>
+        </AdvancedFiltersPanel>
       </div>
 
       {/* Table */}

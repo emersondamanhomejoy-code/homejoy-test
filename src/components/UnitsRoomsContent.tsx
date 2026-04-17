@@ -18,12 +18,13 @@ import { Plus, Copy, ChevronDown, ArrowLeft, Eye, Image, X, ChevronLeft, Chevron
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { AdvancedFiltersToggle, AdvancedFiltersPanel } from "@/components/AdvancedFiltersToggle";
 import { StandardTable } from "@/components/ui/standard-table";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { labelClass, inputClass } from "@/lib/ui-constants";
+import { labelClass, inputClass, filterFieldClass } from "@/lib/ui-constants";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 
@@ -53,10 +54,6 @@ export function UnitsRoomsContent() {
   const [internalOnly, setInternalOnly] = useState("");
   const [hasRemainingRooms, setHasRemainingRooms] = useState("");
   const [hasRemainingCarparks, setHasRemainingCarparks] = useState("");
-  const [maxOccupantsMin, setMaxOccupantsMin] = useState("");
-  const [maxOccupantsMax, setMaxOccupantsMax] = useState("");
-  const [remainingPaxMin, setRemainingPaxMin] = useState("");
-  const [remainingPaxMax, setRemainingPaxMax] = useState("");
 
   const locations = useMemo(() => {
     const set = new Set(units.map(u => u.location).filter(Boolean));
@@ -106,10 +103,6 @@ export function UnitsRoomsContent() {
       if (hasRemainingRooms === "no" && s.availableRooms > 0) return false;
       if (hasRemainingCarparks === "yes" && s.availableCarparks === 0) return false;
       if (hasRemainingCarparks === "no" && s.availableCarparks > 0) return false;
-      if (maxOccupantsMin && u.unit_max_pax < Number(maxOccupantsMin)) return false;
-      if (maxOccupantsMax && u.unit_max_pax > Number(maxOccupantsMax)) return false;
-      if (remainingPaxMin && s.remainingPax < Number(remainingPaxMin)) return false;
-      if (remainingPaxMax && s.remainingPax > Number(remainingPaxMax)) return false;
       return true;
     });
 
@@ -126,16 +119,16 @@ export function UnitsRoomsContent() {
       };
       return map[key];
     });
-  }, [units, search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, sort]);
+  }, [units, search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, sort]);
 
-  useEffect(() => { setCurrentPage(0); }, [search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, maxOccupantsMin, maxOccupantsMax, remainingPaxMin, remainingPaxMax, pageSize]);
+  useEffect(() => { setCurrentPage(0); }, [search, selectedBuilding, selectedUnitType, selectedLocation, internalOnly, hasRemainingRooms, hasRemainingCarparks, pageSize]);
 
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
 
-  const hasFilters = selectedBuilding !== "all" || selectedUnitType !== "all" || selectedLocation !== "all" || !!internalOnly || !!hasRemainingRooms || !!hasRemainingCarparks || !!maxOccupantsMin || !!maxOccupantsMax || !!remainingPaxMin || !!remainingPaxMax;
+  const hasFilters = selectedBuilding !== "all" || selectedUnitType !== "all" || selectedLocation !== "all" || !!internalOnly || !!hasRemainingRooms || !!hasRemainingCarparks;
 
   const clearFilters = () => {
     setSelectedBuilding("all");
@@ -144,10 +137,6 @@ export function UnitsRoomsContent() {
     setInternalOnly("");
     setHasRemainingRooms("");
     setHasRemainingCarparks("");
-    setMaxOccupantsMin("");
-    setMaxOccupantsMax("");
-    setRemainingPaxMin("");
-    setRemainingPaxMax("");
   };
 
   const handleDelete = async () => {
@@ -180,78 +169,70 @@ export function UnitsRoomsContent() {
       >
         <div className="space-y-1.5 min-w-[160px]">
           <label className={labelClass}>Building</label>
-          <select className={inputClass} value={selectedBuilding} onChange={e => setSelectedBuilding(e.target.value)}>
-            <option value="all">All Buildings</option>
+          <select className={filterFieldClass(selectedBuilding !== "all")} value={selectedBuilding} onChange={e => setSelectedBuilding(e.target.value)}>
+            <option value="all">All</option>
             {buildings.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
         <div className="space-y-1.5 min-w-[160px]">
           <label className={labelClass}>Unit Type</label>
-          <select className={inputClass} value={selectedUnitType} onChange={e => setSelectedUnitType(e.target.value)}>
-            <option value="all">All Types</option>
+          <select className={filterFieldClass(selectedUnitType !== "all")} value={selectedUnitType} onChange={e => setSelectedUnitType(e.target.value)}>
+            <option value="all">All</option>
             <option value="mix">Mixed Gender</option>
             <option value="female">Female Only</option>
             <option value="male">Male Only</option>
           </select>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm self-end">
-          {showAdvanced ? "Hide" : "Show"} Advanced Filters
-        </Button>
-        {showAdvanced && (
-          <>
+        <AdvancedFiltersToggle
+          open={showAdvanced}
+          onToggle={() => setShowAdvanced(v => !v)}
+          activeCount={
+            (selectedLocation !== "all" ? 1 : 0) +
+            (internalOnly ? 1 : 0) +
+            (hasRemainingRooms ? 1 : 0) +
+            (hasRemainingCarparks ? 1 : 0)
+          }
+          className="self-end"
+        />
+        <AdvancedFiltersPanel open={showAdvanced}>
             <div className="space-y-1.5 min-w-[160px]">
               <label className={labelClass}>Location</label>
-              <select className={inputClass} value={selectedLocation} onChange={e => {
+              <select className={filterFieldClass(selectedLocation !== "all")} value={selectedLocation} onChange={e => {
                 setSelectedLocation(e.target.value);
                 if (e.target.value !== "all" && selectedBuilding !== "all") {
                   const valid = units.filter(u => u.location === e.target.value).map(u => u.building);
                   if (!valid.includes(selectedBuilding)) setSelectedBuilding("all");
                 }
               }}>
-                <option value="all">All Locations</option>
+                <option value="all">All</option>
                 {locations.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div className="space-y-1.5 min-w-[140px]">
               <label className={labelClass}>Internal Only</label>
-              <select className={inputClass} value={internalOnly} onChange={e => setInternalOnly(e.target.value)}>
+              <select className={filterFieldClass(!!internalOnly)} value={internalOnly} onChange={e => setInternalOnly(e.target.value)}>
                 <option value="">All</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
             </div>
             <div className="space-y-1.5 min-w-[140px]">
-              <label className={labelClass}>Has Remaining Rooms</label>
-              <select className={inputClass} value={hasRemainingRooms} onChange={e => setHasRemainingRooms(e.target.value)}>
+              <label className={labelClass}>Has Available Rooms</label>
+              <select className={filterFieldClass(!!hasRemainingRooms)} value={hasRemainingRooms} onChange={e => setHasRemainingRooms(e.target.value)}>
                 <option value="">All</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
             </div>
             <div className="space-y-1.5 min-w-[140px]">
-              <label className={labelClass}>Has Remaining Carparks</label>
-              <select className={inputClass} value={hasRemainingCarparks} onChange={e => setHasRemainingCarparks(e.target.value)}>
+              <label className={labelClass}>Has Available Carparks</label>
+              <select className={filterFieldClass(!!hasRemainingCarparks)} value={hasRemainingCarparks} onChange={e => setHasRemainingCarparks(e.target.value)}>
                 <option value="">All</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
             </div>
-            <div className="space-y-1.5 min-w-[120px]">
-              <label className={labelClass}>Max Occupants</label>
-              <div className="flex gap-1">
-                <input type="number" placeholder="Min" className={`${inputClass} w-16`} value={maxOccupantsMin} onChange={e => setMaxOccupantsMin(e.target.value)} />
-                <input type="number" placeholder="Max" className={`${inputClass} w-16`} value={maxOccupantsMax} onChange={e => setMaxOccupantsMax(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-1.5 min-w-[120px]">
-              <label className={labelClass}>Remaining Pax</label>
-              <div className="flex gap-1">
-                <input type="number" placeholder="Min" className={`${inputClass} w-16`} value={remainingPaxMin} onChange={e => setRemainingPaxMin(e.target.value)} />
-                <input type="number" placeholder="Max" className={`${inputClass} w-16`} value={remainingPaxMax} onChange={e => setRemainingPaxMax(e.target.value)} />
-              </div>
-            </div>
-          </>
-        )}
+        </AdvancedFiltersPanel>
       </StandardFilterBar>
 
       {/* Table — no accordion, flat rows */}
@@ -264,8 +245,8 @@ export function UnitsRoomsContent() {
             <SortableTableHead sortKey="internal_only" currentSort={sort} onSort={handleSort} className="text-center">Internal</SortableTableHead>
             <SortableTableHead sortKey="max_pax" currentSort={sort} onSort={handleSort} className="text-center">Max Occupants</SortableTableHead>
             <SortableTableHead sortKey="remaining_pax" currentSort={sort} onSort={handleSort} className="text-center">Remaining Pax</SortableTableHead>
-            <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Remaining Rooms</SortableTableHead>
-            <SortableTableHead sortKey="remaining_carparks" currentSort={sort} onSort={handleSort} className="text-center">Remaining Carparks</SortableTableHead>
+            <SortableTableHead sortKey="remaining_rooms" currentSort={sort} onSort={handleSort} className="text-center">Available Rooms</SortableTableHead>
+            <SortableTableHead sortKey="remaining_carparks" currentSort={sort} onSort={handleSort} className="text-center">Available Carparks</SortableTableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         }

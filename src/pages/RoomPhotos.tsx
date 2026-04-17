@@ -115,7 +115,7 @@ export default function RoomPhotos() {
           <>
             {roomPhotos.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold">🛏️ Room Photos</h2>
+                <h2 className="text-base font-semibold">🛏️ Room Photos</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {roomPhotos.map((path, i) => (
                     <img
@@ -132,7 +132,7 @@ export default function RoomPhotos() {
 
             {commonPhotos.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold">🏠 Common Area</h2>
+                <h2 className="text-base font-semibold">🏠 Common Area</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {commonPhotos.map((path, i) => (
                     <img

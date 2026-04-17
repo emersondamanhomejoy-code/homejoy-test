@@ -7,6 +7,11 @@ export const labelClass =
 
 export const cardClass = "bg-card rounded-xl shadow-sm border border-border";
 
+export const activeFilterClass = "border-primary ring-1 ring-primary/40";
+
+export const filterFieldClass = (active: boolean) =>
+  `${inputClass} ${active ? activeFilterClass : ""}`.trim();
+
 // Maps old/new unit_type DB values to display labels
 const unitTypeMap: Record<string, string> = {
   "Mix Unit": "Mixed Gender",

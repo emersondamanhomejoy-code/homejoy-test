@@ -12,10 +12,11 @@ import { AccessItem } from "@/components/BuildingForm";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { AdvancedFiltersToggle, AdvancedFiltersPanel } from "@/components/AdvancedFiltersToggle";
 import { StandardTable } from "@/components/ui/standard-table";
 import { ActionButtons } from "@/components/ui/action-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { inputClass } from "@/lib/ui-constants";
+import { inputClass, labelClass, filterFieldClass } from "@/lib/ui-constants";
 import { StatCard } from "@/components/ui/stat-card";
 
 const CHARGEABLE_LABELS: Record<string, string> = {
@@ -38,10 +39,12 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const [viewing, setViewing] = useState<Condo | null>(null);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
   const [hasAvailableUnits, setHasAvailableUnits] = useState("");
   const [hasAvailableRooms, setHasAvailableRooms] = useState("");
   const [hasAvailableCarparks, setHasAvailableCarparks] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [viewSections, setViewSections] = useState<Record<string, boolean>>({ details: true, photos: true, pedestrian: true, carpark: true, motorcycle: true, visitor: true });
   const toggleViewSection = (key: string) => setViewSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [photoLightboxIndex, setPhotoLightboxIndex] = useState<number | null>(null);
@@ -91,10 +94,11 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
 
   const { sort, handleSort, sortData } = useTableSort("name");
 
-  const hasActiveFilters = !!locationFilter || !!hasAvailableUnits || !!hasAvailableRooms || !!hasAvailableCarparks;
+  const hasActiveFilters = !!locationFilter || !!nameFilter || !!hasAvailableUnits || !!hasAvailableRooms || !!hasAvailableCarparks;
 
   const clearFilters = () => {
     setLocationFilter("");
+    setNameFilter("");
     setHasAvailableUnits("");
     setHasAvailableRooms("");
     setHasAvailableCarparks("");
@@ -104,12 +108,13 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.location?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.address || "").toLowerCase().includes(search.toLowerCase());
+    const matchName = !nameFilter || c.name.toLowerCase().includes(nameFilter.toLowerCase());
     const matchLocation = !locationFilter || c.location_id === locationFilter;
     const s = condoStats[c.id];
     const matchAvailUnits = !hasAvailableUnits || (hasAvailableUnits === "yes" ? (s?.availableUnits || 0) > 0 : (s?.availableUnits || 0) === 0);
     const matchAvailRooms = !hasAvailableRooms || (hasAvailableRooms === "yes" ? (s?.availableRooms || 0) > 0 : (s?.availableRooms || 0) === 0);
     const matchAvailCarparks = !hasAvailableCarparks || (hasAvailableCarparks === "yes" ? (s?.availableCarparks || 0) > 0 : (s?.availableCarparks || 0) === 0);
-    return matchSearch && matchLocation && matchAvailUnits && matchAvailRooms && matchAvailCarparks;
+    return matchSearch && matchName && matchLocation && matchAvailUnits && matchAvailRooms && matchAvailCarparks;
   });
 
   const sortedFiltered = sortData(filtered, (c, key: string) => {
@@ -126,6 +131,20 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   });
 
   const viewStats = viewing ? (condoStats[viewing.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 }) : null;
+
+  const summaryTotals = useMemo(() => {
+    return sortedFiltered.reduce((acc, c) => {
+      const s = condoStats[c.id] || { totalUnits: 0, totalRooms: 0, totalCarparks: 0, availableUnits: 0, availableRooms: 0, availableCarparks: 0 };
+      acc.totalBuildings += 1;
+      acc.totalUnits += s.totalUnits;
+      acc.availableUnits += s.availableUnits;
+      acc.totalRooms += s.totalRooms;
+      acc.availableRooms += s.availableRooms;
+      acc.totalCarparks += s.totalCarparks;
+      acc.availableCarparks += s.availableCarparks;
+      return acc;
+    }, { totalBuildings: 0, totalUnits: 0, availableUnits: 0, totalRooms: 0, availableRooms: 0, totalCarparks: 0, availableCarparks: 0 });
+  }, [sortedFiltered, condoStats]);
 
   /* ── Render access items for View dialog ── */
   const renderViewAccessItems = (items: AccessItem[], showLocations: boolean) => {
@@ -173,49 +192,75 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
   const notConfigured = "(not configured yet)";
 
   const formatAccessText = (items: AccessItem[], title: string, showLocations: boolean) => {
-    if (!items || items.length === 0) return `${title}: ${notConfigured}`;
-    const lines = items.map((item, i) => {
+    const header = `*${title}*`;
+    if (!items || items.length === 0) return `${header}\n${notConfigured}`;
+    const blocks = items.map((item, i) => {
       const isNone = item.access_type === "None";
-      let line = `${i + 1}. ${item.access_type}`;
-      if (showLocations && item.locations?.length) line += ` @ ${item.locations.join(", ")}`;
+      const parts: string[] = [];
+      let heading = `${i + 1}. *${item.access_type}*`;
+      if (showLocations && item.locations?.length) heading += ` — ${item.locations.join(", ")}`;
+      parts.push(heading);
       if (!isNone) {
-        line += `\n   Provided by: ${item.provided_by || notConfigured}`;
+        if (item.provided_by) parts.push(`   • Provided by: ${item.provided_by}`);
         const chargeLabel = CHARGEABLE_LABELS[item.chargeable_type] || "Not Chargeable";
-        line += `\n   Chargeable: ${chargeLabel}`;
-        if (item.chargeable_type !== "none" && item.price > 0) line += ` (RM${item.price})`;
-        if (item.instruction) line += `\n   Note: ${item.instruction}`;
+        let charge = `   • Charge: ${chargeLabel}`;
+        if (item.chargeable_type !== "none" && item.price > 0) charge += ` (RM${item.price})`;
+        parts.push(charge);
+        if (item.instruction) parts.push(`   • Note: ${item.instruction}`);
       }
-      return line;
+      return parts.join("\n");
     });
-    return `${title}:\n${lines.join("\n")}`;
+    return `${header}\n${blocks.join("\n\n")}`;
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      toast.success(`${label} copied`);
+    } catch (e) {
+      toast.error(`Failed to copy ${label.toLowerCase()}`);
+    }
   };
 
   const val = (v: string | undefined | null) => v?.trim() || notConfigured;
+  const optional = (v: string | undefined | null) => v?.trim() || "";
 
   const copyBuildingDetails = (condo: Condo) => {
-    const lines = [
-      `Building: ${val(condo.name)}`,
-      `Location: ${val(condo.location?.name)}`,
-      `Address: ${val(condo.address)}`,
-      `GPS: ${val(condo.gps_link)}`,
-      `Description: ${val(condo.description)}`,
-      `Amenities: ${val(condo.amenities)}`,
-    ];
+    const lines: string[] = [`*${val(condo.name)}*`];
+    const loc = optional(condo.location?.name);
+    if (loc) lines.push(`📍 ${loc}`);
+    const addr = optional(condo.address);
+    if (addr) lines.push(`🏠 ${addr}`);
+    const gps = optional(condo.gps_link);
+    if (gps) lines.push(`📌 ${gps}`);
+    const desc = optional(condo.description);
+    if (desc) lines.push(`\n*About*\n${desc}`);
+    const am = optional(condo.amenities);
+    if (am) lines.push(`\n*Amenities*\n${am}`);
     copyToClipboard(lines.join("\n"), "Building details");
   };
 
   const copyVisitorInfo = (condo: Condo) => {
-    const lines = [
-      `Visitor Car Parking: ${val((condo as any).visitor_car_parking)}`,
-      `Visitor Motorcycle Parking: ${val((condo as any).visitor_motorcycle_parking)}`,
-      `Arrival Instruction: ${val((condo as any).arrival_instruction)}`,
-    ];
-    copyToClipboard(lines.join("\n"), "Visitor/Parking info");
+    const lines: string[] = [`*Visitor / Parking Info — ${val(condo.name)}*`];
+    const car = optional((condo as any).visitor_car_parking);
+    if (car) lines.push(`🚗 *Car Parking*\n${car}`);
+    const moto = optional((condo as any).visitor_motorcycle_parking);
+    if (moto) lines.push(`🏍️ *Motorcycle Parking*\n${moto}`);
+    const arr = optional((condo as any).arrival_instruction);
+    if (arr) lines.push(`🧭 *Arrival Instruction*\n${arr}`);
+    if (lines.length === 1) lines.push(notConfigured);
+    copyToClipboard(lines.join("\n\n"), "Visitor/Parking info");
   };
 
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
@@ -233,34 +278,96 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
         onConfirm={handleDelete}
       />
 
+      {/* Summary (collapsed by default) */}
+      <div className="bg-card rounded-xl shadow-sm border border-border">
+        <button
+          type="button"
+          onClick={() => setShowSummary(v => !v)}
+          className="w-full flex items-center justify-between p-4 hover:bg-secondary/40 transition-colors rounded-xl"
+        >
+          <div className="flex items-center gap-2">
+            {showSummary ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+            <h3 className="text-base font-semibold text-foreground">Summary</h3>
+            <span className="text-xs text-muted-foreground">
+              ({summaryTotals.totalBuildings} buildings · {summaryTotals.availableUnits}/{summaryTotals.totalUnits} units available)
+            </span>
+          </div>
+        </button>
+        {showSummary && (
+          <div className="border-t border-border p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Buildings" value={summaryTotals.totalBuildings} />
+            <StatCard
+              label="Available Units"
+              value={<><span className="text-emerald-600">{summaryTotals.availableUnits}</span><span className="text-muted-foreground text-lg font-semibold">/{summaryTotals.totalUnits}</span></>}
+            />
+            <StatCard
+              label="Available Rooms"
+              value={<><span className="text-emerald-600">{summaryTotals.availableRooms}</span><span className="text-muted-foreground text-lg font-semibold">/{summaryTotals.totalRooms}</span></>}
+            />
+            <StatCard
+              label="Available Carparks"
+              value={<><span className="text-emerald-600">{summaryTotals.availableCarparks}</span><span className="text-muted-foreground text-lg font-semibold">/{summaryTotals.totalCarparks}</span></>}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Filters */}
       <StandardFilterBar search={search} onSearchChange={setSearch} placeholder="Search buildings..." hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}>
-        <select className={`${inputClass}`} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
-          <option value="">All Locations</option>
-          {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-        </select>
-        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm">
-          {showAdvanced ? "Hide" : "Show"} Advanced Filters
-        </Button>
-        {showAdvanced && (
-          <>
-            <select className={`${inputClass}`} value={hasAvailableUnits} onChange={e => setHasAvailableUnits(e.target.value)}>
-              <option value="">Has Available Units</option>
+        <div className="space-y-1.5 min-w-[160px]">
+          <label className={labelClass}>Location</label>
+          <select className={filterFieldClass(!!locationFilter)} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
+            <option value="">All</option>
+            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        </div>
+        <AdvancedFiltersToggle
+          open={showAdvanced}
+          onToggle={() => setShowAdvanced(v => !v)}
+          activeCount={
+            (nameFilter ? 1 : 0) +
+            (hasAvailableUnits ? 1 : 0) +
+            (hasAvailableRooms ? 1 : 0) +
+            (hasAvailableCarparks ? 1 : 0)
+          }
+          className="self-end"
+        />
+        <AdvancedFiltersPanel open={showAdvanced}>
+          <div className="space-y-1.5 min-w-[200px] flex-1 max-w-xs">
+            <label className={labelClass}>Building Name</label>
+            <input
+              type="text"
+              placeholder="Type to filter..."
+              value={nameFilter}
+              onChange={e => setNameFilter(e.target.value)}
+              className={filterFieldClass(!!nameFilter)}
+            />
+          </div>
+          <div className="space-y-1.5 min-w-[140px]">
+            <label className={labelClass}>Available Units</label>
+            <select className={filterFieldClass(!!hasAvailableUnits)} value={hasAvailableUnits} onChange={e => setHasAvailableUnits(e.target.value)}>
+              <option value="">All</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
             </select>
-            <select className={`${inputClass}`} value={hasAvailableRooms} onChange={e => setHasAvailableRooms(e.target.value)}>
-              <option value="">Has Available Rooms</option>
+          </div>
+          <div className="space-y-1.5 min-w-[140px]">
+            <label className={labelClass}>Available Rooms</label>
+            <select className={filterFieldClass(!!hasAvailableRooms)} value={hasAvailableRooms} onChange={e => setHasAvailableRooms(e.target.value)}>
+              <option value="">All</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
             </select>
-            <select className={`${inputClass}`} value={hasAvailableCarparks} onChange={e => setHasAvailableCarparks(e.target.value)}>
-              <option value="">Has Available Carparks</option>
+          </div>
+          <div className="space-y-1.5 min-w-[140px]">
+            <label className={labelClass}>Available Carparks</label>
+            <select className={filterFieldClass(!!hasAvailableCarparks)} value={hasAvailableCarparks} onChange={e => setHasAvailableCarparks(e.target.value)}>
+              <option value="">All</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
             </select>
-          </>
-        )}
+          </div>
+        </AdvancedFiltersPanel>
       </StandardFilterBar>
 
       {/* Table */}
@@ -359,14 +466,13 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {/* 2. Building Photos */}
               <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("photos")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Building Photos</h3>
+                  <h3 className="text-base font-semibold text-foreground">Building Photos</h3>
                   <div className="flex items-center gap-2">
                     <span
                       onClick={e => {
                         e.stopPropagation();
                         const url = `${window.location.origin}/building-photos/${viewing.id}`;
-                        navigator.clipboard.writeText(url);
-                        toast.success("Building photo link copied");
+                        copyToClipboard(url, "Building photo link");
                       }}
                       className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer"
                       title="Copy building photo link"
@@ -400,7 +506,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {/* 3. Building Details - Collapsible */}
               <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("details")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Building Details</h3>
+                  <h3 className="text-base font-semibold text-foreground">Building Details</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyBuildingDetails(viewing); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy building details">
                       <Copy className="h-3.5 w-3.5" /> Copy Building Details
@@ -425,7 +531,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {/* 4. Visitor / Parking Info */}
               <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("visitor")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Visitor / Parking Info</h3>
+                  <h3 className="text-base font-semibold text-foreground">Visitor / Parking Info</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyVisitorInfo(viewing); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy visitor/parking info">
                       <Copy className="h-3.5 w-3.5" /> Copy Visitor/Parking Info
@@ -447,7 +553,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {/* 5. Pedestrian Access */}
               <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("pedestrian")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Pedestrian Access</h3>
+                  <h3 className="text-base font-semibold text-foreground">Pedestrian Access</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "pedestrian"), "Pedestrian Access", true), "Pedestrian access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy pedestrian access">
                       <Copy className="h-3.5 w-3.5" /> Copy Pedestrian Access
@@ -463,7 +569,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {/* 6. Car Park Access */}
               <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("carpark")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Car Park Access</h3>
+                  <h3 className="text-base font-semibold text-foreground">Car Park Access</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "carpark"), "Car Park Access", false), "Car park access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy car park access">
                       <Copy className="h-3.5 w-3.5" /> Copy Car Park Access
@@ -479,7 +585,7 @@ export function CondosContent({ onOpenForm }: CondosContentProps) {
               {/* 7. Motorcycle Access */}
               <div className="bg-card border rounded-lg overflow-hidden">
                 <button type="button" onClick={() => toggleViewSection("motorcycle")} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                  <h3 className="text-sm font-bold text-foreground">Motorcycle Access</h3>
+                  <h3 className="text-base font-semibold text-foreground">Motorcycle Access</h3>
                   <div className="flex items-center gap-2">
                     <span onClick={e => { e.stopPropagation(); copyToClipboard(formatAccessText(getAccessItems(viewing, "motorcycle"), "Motorcycle Access", false), "Motorcycle access"); }} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors cursor-pointer" title="Copy motorcycle access">
                       <Copy className="h-3.5 w-3.5" /> Copy Motorcycle Access

@@ -15,7 +15,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
-import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Trash2, SlidersHorizontal, X, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Trash2, X, Copy } from "lucide-react";
+import { AdvancedFiltersToggle, AdvancedFiltersPanel } from "@/components/AdvancedFiltersToggle";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
@@ -298,16 +299,11 @@ export function RoomsContent() {
             onApply={v => { setSelectedBuildings(v); setPage(1); }} className="min-w-[140px]" />
 
           {/* Advanced toggle */}
-          <Button
-            variant={showAdvanced ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="gap-1"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filters
-            {hasAdvancedFilters && <Badge variant="destructive" className="h-4 px-1 text-[10px] ml-1">{[selectedUnitTypes, selectedBedTypes, selectedWallTypes, selectedFeatures].filter(a => a.length).length + (minPrice || maxPrice ? 1 : 0) + (minCapacity ? 1 : 0) + (internalOnly ? 1 : 0) + (availableFrom || availableTo ? 1 : 0)}</Badge>}
-          </Button>
+          <AdvancedFiltersToggle
+            open={showAdvanced}
+            onToggle={() => setShowAdvanced(!showAdvanced)}
+            activeCount={hasAdvancedFilters ? [selectedUnitTypes, selectedBedTypes, selectedWallTypes, selectedFeatures].filter(a => a.length).length + (minPrice || maxPrice ? 1 : 0) + (minCapacity ? 1 : 0) + (internalOnly ? 1 : 0) + (availableFrom || availableTo ? 1 : 0) : 0}
+          />
 
           {hasAnyFilter && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
@@ -317,8 +313,7 @@ export function RoomsContent() {
         </div>
 
         {/* Advanced filter panel */}
-        {showAdvanced && (
-          <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-border">
+        <AdvancedFiltersPanel open={showAdvanced}>
             <MultiSelectFilter label="Unit Type" placeholder="All" options={unitTypes} selected={selectedUnitTypes}
               onApply={v => { setSelectedUnitTypes(v); setPage(1); }} className="min-w-[130px]" />
             <MultiSelectFilter label="Bed Type" placeholder="All" options={bedTypes} selected={selectedBedTypes}
@@ -367,8 +362,7 @@ export function RoomsContent() {
                   onChange={e => { setAvailableTo(e.target.value); setPage(1); }} />
               </div>
             </div>
-          </div>
-        )}
+        </AdvancedFiltersPanel>
       </div>
 
       {/* Table */}

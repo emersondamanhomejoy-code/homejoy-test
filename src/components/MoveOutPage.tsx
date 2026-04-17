@@ -14,9 +14,9 @@ import { StandardTable } from "@/components/ui/standard-table";
 import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { StatusBadge } from "@/components/StatusBadge";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AdvancedFiltersToggle, AdvancedFiltersPanel } from "@/components/AdvancedFiltersToggle";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { inputClass, labelClass } from "@/lib/ui-constants";
@@ -487,18 +487,18 @@ export function MoveOutPage() {
           <label className={lbl}>Effective To</label>
           <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="h-10 w-[140px]" />
         </div>
-      </StandardFilterBar>
-
-      {/* Advanced filters */}
-      <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">
-            {advancedOpen ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
-            Advanced Filters
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="bg-card rounded-xl shadow-sm border border-border p-5 mt-2 flex flex-wrap items-end gap-3">
+        <AdvancedFiltersToggle
+          open={advancedOpen}
+          onToggle={() => setAdvancedOpen(v => !v)}
+          activeCount={
+            (buildingFilter !== "all" ? 1 : 0) +
+            (nextStatusFilter !== "all" ? 1 : 0) +
+            (statusFilter !== "all" ? 1 : 0) +
+            (createdFrom || createdTo ? 1 : 0)
+          }
+          className="self-end"
+        />
+        <AdvancedFiltersPanel open={advancedOpen}>
             <div className="space-y-1.5">
               <label className={lbl}>Building</label>
               <Select value={buildingFilter} onValueChange={v => { setBuildingFilter(v); setPage(0); }}>
@@ -539,9 +539,8 @@ export function MoveOutPage() {
               <label className={lbl}>Created To</label>
               <Input type="date" value={createdTo} onChange={e => { setCreatedTo(e.target.value); setPage(0); }} className="h-10 w-[140px]" />
             </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </AdvancedFiltersPanel>
+      </StandardFilterBar>
 
       {/* Table */}
       <StandardTable

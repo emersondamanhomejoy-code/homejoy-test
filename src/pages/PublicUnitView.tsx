@@ -202,7 +202,7 @@ export default function PublicUnitView() {
 
         {/* Section 1: Condo / Common Area */}
         <section id="section-condo" className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground border-b pb-2">Building & Common Area</h2>
+          <h2 className="text-base font-semibold text-foreground border-b pb-2">Building & Common Area</h2>
           {/* Condo photos — above text details */}
           {Array.isArray(condo?.photos) && condo.photos.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -283,7 +283,7 @@ export default function PublicUnitView() {
 
         {/* Section 2: Unit Details */}
         <section id="section-unit" className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground border-b pb-2">Unit Details</h2>
+          <h2 className="text-base font-semibold text-foreground border-b pb-2">Unit Details</h2>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><span className="text-muted-foreground">Unit:</span> <span className="font-medium">{unit.unit}</span></div>
             <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{unit.unit_type}</span></div>
@@ -293,7 +293,7 @@ export default function PublicUnitView() {
 
         {/* Section 3: Room Details */}
         <section id="section-room" className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground border-b pb-2">
+          <h2 className="text-base font-semibold text-foreground border-b pb-2">
             {selectedRoom ? `Room ${selectedRoom.room.replace(/^Room\s+/i, "")}` : "Available Rooms"}
           </h2>
           {(selectedRoom ? [selectedRoom] : displayRooms).map(room => (

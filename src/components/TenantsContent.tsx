@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { StandardPageLayout } from "@/components/ui/standard-page-layout";
 import { StandardFilterBar } from "@/components/ui/standard-filter-bar";
+import { AdvancedFiltersToggle, AdvancedFiltersPanel } from "@/components/AdvancedFiltersToggle";
 import { StandardTable } from "@/components/ui/standard-table";
 import { StandardModal } from "@/components/ui/standard-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -402,11 +403,18 @@ export function TenantsContent() {
           onApply={v => { setSelectedNationalities(v); setPage(0); }} />
         <MultiSelectFilter label="Gender" placeholder="All" options={genders} selected={selectedGenders}
           onApply={v => { setSelectedGenders(v); setPage(0); }} />
-        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(v => !v)} className="text-sm self-end">
-          {showAdvanced ? "Hide" : "Show"} Advanced
-        </Button>
-        {showAdvanced && (
-          <>
+        <AdvancedFiltersToggle
+          open={showAdvanced}
+          onToggle={() => setShowAdvanced(v => !v)}
+          activeCount={
+            (occupationFilter ? 1 : 0) +
+            (hasActiveRooms ? 1 : 0) +
+            (hasActiveCarparks ? 1 : 0) +
+            (selectedBuildings.length > 0 ? 1 : 0)
+          }
+          className="self-end"
+        />
+        <AdvancedFiltersPanel open={showAdvanced}>
             <div className="space-y-1.5 min-w-[140px]">
               <label className={labelClass}>Occupation</label>
               <select className={inputClass} value={occupationFilter} onChange={e => { setOccupationFilter(e.target.value); setPage(0); }}>
@@ -432,8 +440,7 @@ export function TenantsContent() {
             </div>
             <MultiSelectFilter label="Building" placeholder="All" options={buildings} selected={selectedBuildings}
               onApply={v => { setSelectedBuildings(v); setPage(0); }} />
-          </>
-        )}
+        </AdvancedFiltersPanel>
       </StandardFilterBar>
 
       {/* ── Table ── */}
